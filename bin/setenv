@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# Prism setenv — 初始化/读取 prism.local.yaml，输出可 source 的环境变量。
+#
+# 用法:
+#   bin/setenv              显示当前配置
+#   bin/setenv --init       交互式创建 prism.local.yaml
+#   bin/setenv --export     输出 export 语句（可 source）
+#   source <(bin/setenv --export)   注入环境变量到当前 shell
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG="$PRISM_DIR/prism.local.yaml"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+yaml_get() {
+  local key="$1"
+  grep "^${key}:" "$CONFIG" 2>/dev/null | sed "s/^${key}: *//"
+}
+
+yaml_get_project() {
+  local code="$1"
+  grep "^  ${code}:" "$CONFIG" 2>/dev/null | sed "s/^  ${code}: *//"
+}
+
+show_config() {
+  if [[ ! -f "$CONFIG" ]]; then
+    echo -e "${RED}✗ prism.local.yaml 不存在，运行 bin/setenv --init 初始化${NC}"
+    exit 1
+  fi
+
+  local sdk vault ws_sub sk_sub
+  sdk=$(yaml_get sdk_path)
+  vault=$(yaml_get vault_path)
+  ws_sub=$(yaml_get workspace_subdir)
+  sk_sub=$(yaml_get skills_subdir)
+
+  echo -e "${CYAN}Prism Local Configuration${NC}"
+  echo "─────────────────────────────────"
+  echo -e "  SDK 路径:       ${GREEN}${sdk}${NC}"
+  echo -e "  Vault 路径:     ${GREEN}${vault}${NC}"
+  echo -e "  Workspace 子目录: ${ws_sub}"
+  echo -e "  Skills 子目录:    ${sk_sub}"
+  echo ""
+  echo -e "  ${CYAN}完整路径:${NC}"
+  echo -e "    Workspace: ${vault}/${ws_sub}"
+  echo -e "    Skills:    ${vault}/${sk_sub}"
+  echo ""
+
+  echo -e "  ${CYAN}注册项目:${NC}"
+  local in_projects=false
+  while IFS= read -r line; do
+    if [[ "$line" == "projects:" ]]; then
+      in_projects=true
+      continue
+    fi
+    if $in_projects; then
+      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
+        local code="${BASH_REMATCH[1]}"
+        local path="${BASH_REMATCH[2]}"
+        echo -e "    ${code}: ${path}"
+      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
+        break
+      fi
+    fi
+  done < "$CONFIG"
+
+  echo ""
+  echo -e "  ${CYAN}路径状态:${NC}"
+  [[ -d "$sdk" ]] && echo -e "    SDK:       ${GREEN}✓${NC}" || echo -e "    SDK:       ${RED}✗ 不存在${NC}"
+  [[ -d "$vault" ]] && echo -e "    Vault:     ${GREEN}✓${NC}" || echo -e "    Vault:     ${RED}✗ 不存在${NC}"
+  [[ -d "${vault}/${ws_sub}" ]] && echo -e "    Workspace: ${GREEN}✓${NC}" || echo -e "    Workspace: ${YELLOW}⚠ 不存在${NC}"
+  [[ -d "${vault}/${sk_sub}" ]] && echo -e "    Skills:    ${GREEN}✓${NC}" || echo -e "    Skills:    ${YELLOW}⚠ 不存在${NC}"
+}
+
+do_export() {
+  if [[ ! -f "$CONFIG" ]]; then
+    echo "# prism.local.yaml not found" >&2
+    exit 1
+  fi
+
+  local sdk vault ws_sub sk_sub
+  sdk=$(yaml_get sdk_path)
+  vault=$(yaml_get vault_path)
+  ws_sub=$(yaml_get workspace_subdir)
+  sk_sub=$(yaml_get skills_subdir)
+
+  echo "export PRISM_DIR=\"${sdk}\""
+  echo "export PRISM_VAULT=\"${vault}\""
+  echo "export PRISM_WORKSPACE=\"${vault}/${ws_sub}\""
+  echo "export PRISM_SKILLS=\"${vault}/${sk_sub}\""
+}
+
+do_init() {
+  echo -e "${CYAN}Prism 配置初始化${NC}"
+  echo "─────────────────────────────────"
+
+  local sdk vault ws_sub sk_sub
+  read -r -p "SDK 路径 [${PRISM_DIR}]: " sdk
+  sdk="${sdk:-$PRISM_DIR}"
+
+  local default_vault
+  default_vault="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"
+  read -r -p "Vault 路径 [${default_vault}]: " vault
+  vault="${vault:-$default_vault}"
+
+  read -r -p "Workspace 子目录 [Prism/Workspace]: " ws_sub
+  ws_sub="${ws_sub:-Prism/Workspace}"
+
+  read -r -p "Skills 子目录 [Prism/Skills]: " sk_sub
+  sk_sub="${sk_sub:-Prism/Skills}"
+
+  cat > "$CONFIG" << YAML
+# Prism Local Configuration
+# 本地路径状态，不入版本控制。
+# 由 bin/setenv 初始化，bin/relink 读取刷新软链接。
+
+# SDK 路径（Prism 仓库位置）
+sdk_path: ${sdk}
+
+# Vault 基础路径（iCloud Obsidian vault）
+vault_path: ${vault}
+
+# Vault 内子目录（相对于 vault_path）
+workspace_subdir: ${ws_sub}
+skills_subdir: ${sk_sub}
+
+# 注册项目（CODE: 本地路径）
+# relink 据此刷新 workspace.{code}.local 软链接
+projects:
+YAML
+
+  echo ""
+  echo -e "${GREEN}✓ 已创建 prism.local.yaml${NC}"
+  echo ""
+
+  local add_more="y"
+  while [[ "$add_more" == "y" ]]; do
+    local code path
+    read -r -p "注册项目代号 (留空跳过): " code
+    [[ -z "$code" ]] && break
+    read -r -p "  本地路径: " path
+    echo "  ${code}: ${path}" >> "$CONFIG"
+    echo -e "  ${GREEN}✓ 已注册 ${code}${NC}"
+    read -r -p "继续注册? [y/N]: " add_more
+    add_more="${add_more:-n}"
+  done
+
+  echo ""
+  echo -e "${GREEN}配置完成。运行 bin/relink 刷新软链接。${NC}"
+}
+
+case "${1:-}" in
+  --init)  do_init ;;
+  --export) do_export ;;
+  --help|-h)
+    echo "用法: bin/setenv [--init|--export|--help]"
+    echo "  (无参数)  显示当前配置"
+    echo "  --init    交互式创建 prism.local.yaml"
+    echo "  --export  输出 export 语句（配合 source 使用）"
+    ;;
+  *)       show_config ;;
+esac

@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+# Prism relink — 基于 prism.local.yaml 刷新所有软链接。
+#
+# 用法:
+#   bin/relink              刷新所有软链接
+#   bin/relink --check      仅检查状态，不修改
+#   bin/relink --dry-run    预览变更，不实际执行
+#   bin/relink --project X  仅刷新指定项目
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG="$PRISM_DIR/prism.local.yaml"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+DIM='\033[2m'
+NC='\033[0m'
+
+DRY_RUN=false
+CHECK_ONLY=false
+TARGET_PROJECT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --check)    CHECK_ONLY=true; shift ;;
+    --dry-run)  DRY_RUN=true; shift ;;
+    --project)  TARGET_PROJECT="$2"; shift 2 ;;
+    --help|-h)
+      echo "用法: bin/relink [--check|--dry-run|--project CODE]"
+      echo "  (无参数)     刷新所有软链接"
+      echo "  --check      仅检查状态"
+      echo "  --dry-run    预览变更"
+      echo "  --project X  仅刷新指定项目"
+      exit 0
+      ;;
+    *) echo "未知参数: $1"; exit 1 ;;
+  esac
+done
+
+if [[ ! -f "$CONFIG" ]]; then
+  echo -e "${RED}✗ prism.local.yaml 不存在，运行 bin/setenv --init 初始化${NC}"
+  exit 1
+fi
+
+yaml_get() {
+  grep "^${1}:" "$CONFIG" 2>/dev/null | sed "s/^${1}: *//"
+}
+
+SDK_PATH=$(yaml_get sdk_path)
+VAULT_PATH=$(yaml_get vault_path)
+WS_SUBDIR=$(yaml_get workspace_subdir)
+SK_SUBDIR=$(yaml_get skills_subdir)
+
+WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
+SK_ROOT="${VAULT_PATH}/${SK_SUBDIR}"
+
+TOTAL=0
+OK=0
+FIXED=0
+ERRORS=0
+
+log_ok()    { echo -e "  ${GREEN}✓${NC} $1"; ((OK++)) || true; ((TOTAL++)) || true; }
+log_fix()   { echo -e "  ${GREEN}⟳${NC} $1"; ((FIXED++)) || true; ((TOTAL++)) || true; }
+log_skip()  { echo -e "  ${DIM}⊘${NC} $1"; ((TOTAL++)) || true; }
+log_warn()  { echo -e "  ${YELLOW}⚠${NC} $1"; ((TOTAL++)) || true; }
+log_err()   { echo -e "  ${RED}✗${NC} $1"; ((ERRORS++)) || true; ((TOTAL++)) || true; }
+
+ensure_link() {
+  local link_path="$1"
+  local target="$2"
+  local label="$3"
+
+  if [[ ! -d "$target" && ! -f "$target" ]]; then
+    log_err "${label}: 目标不存在 ${DIM}${target}${NC}"
+    return
+  fi
+
+  if [[ -L "$link_path" ]]; then
+    local current
+    current=$(readlink "$link_path")
+    if [[ "$current" == "$target" ]]; then
+      log_ok "${label} ${DIM}→ ${target}${NC}"
+      return
+    fi
+
+    if $CHECK_ONLY; then
+      log_warn "${label}: 指向错误 ${DIM}${current} ≠ ${target}${NC}"
+      return
+    fi
+
+    if $DRY_RUN; then
+      log_fix "${label}: 将更新 ${DIM}${current} → ${target}${NC}"
+      return
+    fi
+
+    rm "$link_path"
+    ln -s "$target" "$link_path"
+    log_fix "${label}: 已更新 ${DIM}→ ${target}${NC}"
+    return
+  fi
+
+  if [[ -e "$link_path" ]]; then
+    log_err "${label}: 存在同名普通文件，请手动处理 ${DIM}${link_path}${NC}"
+    return
+  fi
+
+  if $CHECK_ONLY; then
+    log_warn "${label}: 不存在 ${DIM}${link_path}${NC}"
+    return
+  fi
+
+  if $DRY_RUN; then
+    log_fix "${label}: 将创建 ${DIM}→ ${target}${NC}"
+    return
+  fi
+
+  ln -s "$target" "$link_path"
+  log_fix "${label}: 已创建 ${DIM}→ ${target}${NC}"
+}
+
+echo -e "${CYAN}Prism Relink${NC}"
+if $CHECK_ONLY; then
+  echo -e "${DIM}模式: 仅检查${NC}"
+elif $DRY_RUN; then
+  echo -e "${DIM}模式: 预览（不实际修改）${NC}"
+fi
+echo "─────────────────────────────────"
+
+# 1. 检查基础路径
+echo -e "\n${CYAN}[路径检查]${NC}"
+[[ -d "$SDK_PATH" ]] && log_ok "SDK: ${SDK_PATH}" || log_err "SDK 不存在: ${SDK_PATH}"
+[[ -d "$VAULT_PATH" ]] && log_ok "Vault: ${VAULT_PATH}" || log_err "Vault 不存在: ${VAULT_PATH}"
+
+if [[ ! -d "$WS_ROOT" ]]; then
+  if $CHECK_ONLY || $DRY_RUN; then
+    log_warn "Workspace 根目录不存在: ${WS_ROOT}"
+  else
+    mkdir -p "$WS_ROOT"
+    log_fix "已创建 Workspace 根目录: ${WS_ROOT}"
+  fi
+else
+  log_ok "Workspace: ${WS_ROOT}"
+fi
+
+if [[ ! -d "$SK_ROOT" ]]; then
+  if $CHECK_ONLY || $DRY_RUN; then
+    log_warn "Skills 根目录不存在: ${SK_ROOT}"
+  else
+    mkdir -p "$SK_ROOT"
+    log_fix "已创建 Skills 根目录: ${SK_ROOT}"
+  fi
+else
+  log_ok "Skills: ${SK_ROOT}"
+fi
+
+# 2. 刷新项目软链接
+echo -e "\n${CYAN}[项目软链接]${NC}"
+in_projects=false
+while IFS= read -r line; do
+  if [[ "$line" == "projects:" ]]; then
+    in_projects=true
+    continue
+  fi
+
+  if $in_projects; then
+    if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
+      code="${BASH_REMATCH[1]}"
+      local_path="${BASH_REMATCH[2]}"
+      code_lower=$(echo "$code" | tr '[:upper:]' '[:lower:]')
+
+      if [[ -n "$TARGET_PROJECT" && "$code" != "$TARGET_PROJECT" ]]; then
+        continue
+      fi
+
+      echo -e "  ${CYAN}${code}${NC} (${local_path})"
+
+      # workspace.{code}.local → vault/workspace_subdir/{CODE}/
+      ws_target="${WS_ROOT}/${code}"
+      ws_link="${local_path}/workspace.${code_lower}.local"
+      ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
+
+      # AGENT.local.md → vault/workspace_subdir/{CODE}/AGENT.md
+      agent_target="${WS_ROOT}/${code}/AGENT.md"
+      agent_link="${local_path}/AGENT.local.md"
+      if [[ -f "$agent_target" ]]; then
+        ensure_link "$agent_link" "$agent_target" "    AGENT.local.md"
+      fi
+
+    elif [[ ! "$line" =~ ^[[:space:]] ]]; then
+      break
+    fi
+  fi
+done < "$CONFIG"
+
+# 3. 刷新 Skills 目录到 IDE
+echo -e "\n${CYAN}[Skills IDE 映射]${NC}"
+if [[ -d "$SK_ROOT" ]]; then
+  for skill_dir in "$SK_ROOT"/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    skill_name=$(basename "$skill_dir")
+
+    # Cursor
+    cursor_target="$HOME/.cursor/skills-cursor/${skill_name}"
+    if [[ -d "$HOME/.cursor/skills-cursor" ]]; then
+      ensure_link "$cursor_target" "$skill_dir" "cursor: ${skill_name}"
+    fi
+
+    # Claude
+    claude_target="$HOME/.claude/skills/${skill_name}"
+    if [[ -d "$HOME/.claude/skills" ]]; then
+      ensure_link "$claude_target" "$skill_dir" "claude: ${skill_name}"
+    fi
+  done
+
+  if [[ $(find "$SK_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l) -eq 0 ]]; then
+    log_skip "Skills 目录为空，跳过 IDE 映射"
+  fi
+else
+  log_skip "Skills 根目录不存在，跳过 IDE 映射"
+fi
+
+# 4. 汇总
+echo ""
+echo "─────────────────────────────────"
+echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${RED}错误: ${ERRORS}${NC}"
+
+if [[ $ERRORS -gt 0 ]]; then
+  echo -e "  ${RED}存在错误，请检查上述输出。${NC}"
+  exit 1
+fi
+
+if $CHECK_ONLY && [[ $FIXED -gt 0 ]]; then
+  echo -e "  ${YELLOW}发现需要修复的项，运行 bin/relink 修复。${NC}"
+fi
