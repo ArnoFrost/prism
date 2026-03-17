@@ -170,7 +170,17 @@ projects:
 
 ### `.local` 后缀与全局 Gitignore
 
-Prism 所有不入库的本地文件均使用 `.local` 后缀（`workspace.*.local`、`*.local.md`、`prism.local.yaml`）。推荐将这些模式配置在全局 gitignore（`~/.gitignore_global`）中，这样接入 Prism 的项目无需修改自身的 `.gitignore`——真正的零侵入。
+Prism 所有不入库的本地文件均使用 `.local` 后缀。推荐将以下模式配置在全局 gitignore（`~/.gitignore_global`）中，接入项目无需修改自身 `.gitignore`：
+
+```gitignore
+AGENT.local.md          # 用户级协作上下文
+AGENT.*.local.md        # 变体（如 AGENT.personal.local.md）
+workspace.*.local       # Prism 桥接文件/目录
+workspace.*.local/
+prism.local.yaml        # 本地配置
+```
+
+注意：**不使用 `*.local.md`**——这个通配符会误伤其他项目中合法的 `.local.md` 文件。Prism 用 `AGENT.` 前缀限定范围，确保最小影响面。
 
 ---
 

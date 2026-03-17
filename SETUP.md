@@ -291,7 +291,7 @@ bin/relink --check
 
 ## Step 4.5: 全局 Gitignore 对齐
 
-Prism 使用 `.local` 后缀约定（`workspace.*.local`、`*.local.md`、`prism.local.yaml`）来标识不入库的本地桥接文件。这些模式应配置在全局 gitignore 中，避免每个项目重复配置。
+Prism 使用 `.local` 后缀约定标识不入库的本地桥接文件。推荐将这些模式配置在全局 gitignore 中，接入项目无需修改自身 `.gitignore`。
 
 检查 Step 1 探测结果中的 `GI_MISS` 行。如果有缺失：
 
@@ -309,11 +309,15 @@ fi
 需要追加的模式（仅补缺失的）：
 
 ```gitignore
-# Prism (workspace bridge symlinks + local config)
+# Prism / AI-TASK — .local 后缀约定（本地桥接，不入库）
+AGENT.local.md
+AGENT.*.local.md
 workspace.*.local
 workspace.*.local/
 prism.local.yaml
 ```
+
+> **为什么不用 `*.local.md`？** 这个通配符太宽泛，会误伤其他项目中合法的 `.local.md` 文件。Prism 仅使用 `AGENT.local.md` 和 `AGENT.{variant}.local.md`（如 `AGENT.personal.local.md`），因此用显式前缀限定范围，最小影响面。
 
 **模式 A**：用 AskQuestion 确认是否自动追加。
 **模式 B**：展示将追加的内容，等待用户确认。
@@ -324,7 +328,7 @@ prism.local.yaml
 grep -c "workspace\.\*\.local" "$GI_GLOBAL" && echo "✓ gitignore 已对齐"
 ```
 
-> **为什么放全局？** Prism 的 `.local` 约定意在零侵入——接入项目无需修改项目自身的 `.gitignore`。全局配置一次，所有项目自动生效。已有的 `*.local.md` 和 `ai-task.local` 也遵循此约定。
+> **为什么放全局？** 全局配置一次，所有项目自动生效——真正的零侵入。
 
 ---
 

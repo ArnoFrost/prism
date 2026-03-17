@@ -1,6 +1,7 @@
 # === 本地协作状态（不入库） ===
+# 使用显式文件名而非 *.local.md，避免全局 gitignore 误伤其他项目
 AGENT.local.md
-*.local.md
+AGENT.*.local.md
 prism.local.yaml
 
 # Workspace 实例桥接（新模式）
