@@ -84,9 +84,29 @@ archive:
     active_task_limit: 20
   structure: "archive/{YYYY-MM}/"
 
+# Task artifacts taxonomy
+# Review → Plan → Steps 三层产物模型
+task_artifacts:
+  task_review:
+    filename: "task_review.md"
+    description: "评审综合报告（高能模型产出：评审 + 拆解 + 行动计划）"
+    producer: "prism-review / 手动"
+  task_plan:
+    filename: "task_plan.md"
+    description: "执行计划（可选，简单任务可省略）"
+    producer: "评审拆解 / 手动"
+  task_step:
+    filename_pattern: "task_step_{N}_{topic}.md"
+    description: "原子执行步骤（供 Codex 等快速模型直接执行）"
+    producer: "从 task_review / task_plan 拆解"
+  reviewer:
+    filename_pattern: "reviewer_{ROLE}_{name}.md"
+    description: "独立角色评审报告"
+    producer: "prism-review 子任务"
+
 # Constraints
 constraints:
-  task_plan_max_lines: 300
+  task_doc_max_lines: 300
   max_active_tasks: 15
   archive_after_days: 7
   tags_per_task: 1

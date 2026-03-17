@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+# Prism rename-artifacts — 批量重命名任务产物，适配 Prism 产物命名规范。
+#
+# 用法:
+#   bin/rename-artifacts                 扫描所有已注册 Workspace，重命名评审产物
+#   bin/rename-artifacts --dry-run       预览变更，不实际执行
+#   bin/rename-artifacts --project X     仅处理指定项目
+#   bin/rename-artifacts <path>          扫描指定目录（无需 prism.local.yaml）
+#
+# 规则:
+#   评审类任务的 task_plan.md → task_review.md
+#   判定条件（满足任一）：
+#     1. 目录名包含 [评审] 或 [专项]
+#     2. 目录中存在 reviewer_*.md 文件
+#
+# 安全:
+#   - 不会覆盖已存在的 task_review.md
+#   - 执行计划类 task_plan.md 不受影响
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG="$PRISM_DIR/prism.local.yaml"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+DIM='\033[2m'
+NC='\033[0m'
+
+DRY_RUN=false
+TARGET_PROJECT=""
+DIRECT_PATH=""
+
+renamed=0
+skipped=0
+conflict=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)  DRY_RUN=true; shift ;;
+    --project)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo -e "${RED}error:${NC} --project 需要项目代码参数" >&2
+        exit 1
+      fi
+      TARGET_PROJECT="$2"; shift 2 ;;
+    -h|--help)
+      sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+      exit 0 ;;
+    *)
+      if [[ -d "$1" ]]; then
+        DIRECT_PATH="$1"
+      else
+        echo -e "${RED}error:${NC} 未知参数或目录不存在: $1" >&2
+        exit 1
+      fi
+      shift ;;
+  esac
+done
+
+is_review_task() {
+  local dir_name="$1"
+  local dir_path="$2"
+
+  # 规则 1: 目录名含评审/专项标签
+  if [[ "$dir_name" == *"[评审]"* || "$dir_name" == *"[专项]"* ]]; then
+    return 0
+  fi
+
+  # 规则 2: 存在 reviewer_*.md 文件
+  local reviewer_count
+  reviewer_count=$(find "$dir_path" -maxdepth 1 -name 'reviewer_*.md' 2>/dev/null | wc -l)
+  if [[ "$reviewer_count" -gt 0 ]]; then
+    return 0
+  fi
+
+  return 1
+}
+
+process_dir() {
+  local scan_root="$1"
+  local label="$2"
+
+  if [[ ! -d "$scan_root" ]]; then
+    return
+  fi
+
+  for task_dir in "$scan_root"/*/; do
+    [[ -d "$task_dir" ]] || continue
+
+    local dir_name
+    dir_name="$(basename "$task_dir")"
+    local src="$task_dir/task_plan.md"
+    local dst="$task_dir/task_review.md"
+
+    [[ -f "$src" ]] || continue
+
+    if ! is_review_task "$dir_name" "$task_dir"; then
+      skipped=$((skipped + 1))
+      if $DRY_RUN; then
+        echo -e "  ${DIM}SKIP${NC}  $label/$dir_name/task_plan.md  ${DIM}(非评审类)${NC}"
+      fi
+      continue
+    fi
+
+    if [[ -f "$dst" ]]; then
+      conflict=$((conflict + 1))
+      echo -e "  ${YELLOW}CONFLICT${NC}  $label/$dir_name/  ${DIM}(task_review.md 已存在)${NC}"
+      continue
+    fi
+
+    if $DRY_RUN; then
+      echo -e "  ${CYAN}RENAME${NC}  $label/$dir_name/task_plan.md → task_review.md"
+    else
+      mv "$src" "$dst"
+      echo -e "  ${GREEN}RENAMED${NC}  $label/$dir_name/task_plan.md → task_review.md"
+    fi
+    renamed=$((renamed + 1))
+  done
+}
+
+process_workspace() {
+  local ws_path="$1"
+  local ws_label="$2"
+
+  echo -e "${CYAN}[$ws_label]${NC}"
+
+  process_dir "$ws_path/tasks" "$ws_label/tasks"
+
+  # 递归扫描 archive 下的月份子目录
+  if [[ -d "$ws_path/archive" ]]; then
+    for month_dir in "$ws_path/archive"/*/; do
+      [[ -d "$month_dir" ]] || continue
+      local month_name
+      month_name="$(basename "$month_dir")"
+      process_dir "$month_dir" "$ws_label/archive/$month_name"
+    done
+  fi
+
+  echo ""
+}
+
+# --- Main ---
+
+if $DRY_RUN; then
+  echo -e "${YELLOW}[DRY RUN]${NC} 预览模式，不会实际修改文件"
+  echo ""
+fi
+
+if [[ -n "$DIRECT_PATH" ]]; then
+  # 直接扫描指定路径
+  echo -e "${CYAN}扫描路径:${NC} $DIRECT_PATH"
+  echo ""
+  process_dir "$DIRECT_PATH" "$(basename "$DIRECT_PATH")"
+
+  # 也检查 archive 子目录
+  if [[ -d "$DIRECT_PATH/archive" ]]; then
+    for month_dir in "$DIRECT_PATH/archive"/*/; do
+      [[ -d "$month_dir" ]] || continue
+      process_dir "$month_dir" "archive/$(basename "$month_dir")"
+    done
+  fi
+else
+  # 从 prism.local.yaml 读取 Workspace 路径
+  if [[ ! -f "$CONFIG" ]]; then
+    echo -e "${RED}error:${NC} $CONFIG 不存在，请指定路径或先运行 bin/setenv --init" >&2
+    exit 1
+  fi
+
+  yaml_get() { grep "^${1}:" "$CONFIG" 2>/dev/null | sed "s/^${1}:[[:space:]]*//" | sed 's/^"//' | sed 's/"$//' ; }
+
+  VAULT_PATH="$(yaml_get vault_path)"
+  WS_SUB="$(yaml_get workspace_subdir)"
+  WS_ROOT="${VAULT_PATH}/${WS_SUB}"
+
+  if [[ ! -d "$WS_ROOT" ]]; then
+    echo -e "${RED}error:${NC} Workspace 根目录不存在: $WS_ROOT" >&2
+    exit 1
+  fi
+
+  echo -e "${CYAN}Workspace 根目录:${NC} $WS_ROOT"
+  echo ""
+
+  # 收集项目目录
+  for project_dir in "$WS_ROOT"/*/; do
+    [[ -d "$project_dir" ]] || continue
+    local_code="$(basename "$project_dir")"
+
+    if [[ -n "$TARGET_PROJECT" && "$local_code" != "$TARGET_PROJECT" ]]; then
+      continue
+    fi
+
+    process_workspace "$project_dir" "$local_code"
+  done
+fi
+
+# --- Summary ---
+echo -e "────────────────────────────────"
+if $DRY_RUN; then
+  echo -e "${CYAN}预览汇总:${NC}"
+  echo -e "  将重命名: ${GREEN}${renamed}${NC} 个"
+else
+  echo -e "${GREEN}完成汇总:${NC}"
+  echo -e "  已重命名: ${GREEN}${renamed}${NC} 个"
+fi
+echo -e "  已跳过 (非评审): ${DIM}${skipped}${NC} 个"
+if [[ $conflict -gt 0 ]]; then
+  echo -e "  冲突 (task_review.md 已存在): ${YELLOW}${conflict}${NC} 个"
+fi

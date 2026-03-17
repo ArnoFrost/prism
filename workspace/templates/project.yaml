@@ -33,6 +33,6 @@ related: []
 
 # Task constraints
 task_constraints:
-  task_plan_max_lines: 300
+  task_doc_max_lines: 300
   max_active_tasks: 15
   archive_after_days: 7
