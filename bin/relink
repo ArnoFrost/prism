@@ -188,9 +188,21 @@ while IFS= read -r line; do
   fi
 done < "$CONFIG"
 
-# 3. 刷新 Skills 到 IDE 环境
-echo -e "\n${CYAN}[Skills IDE 映射]${NC}"
+# 3. 刷新 Skills 到 Agent/IDE 环境
+echo -e "\n${CYAN}[Skills Agent/IDE 映射]${NC}"
 if [[ -d "$SKILLS_PATH" ]]; then
+  # 自动探测可用平台目录。Prism 仅在目录已存在时注入，不主动创建平台目录。
+  PLATFORM_TARGETS=()
+  [[ -d "$HOME/.cursor/skills-cursor" ]] && PLATFORM_TARGETS+=("cursor|$HOME/.cursor/skills-cursor")
+  [[ -d "$HOME/.claude/skills" ]] && PLATFORM_TARGETS+=("claude|$HOME/.claude/skills")
+  [[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_TARGETS+=("claude-internal|$HOME/.claude-internal/skills")
+  [[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_TARGETS+=("codebuddy|$HOME/.codebuddy/skills")
+  [[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_TARGETS+=("codebuddy-cli|$HOME/.codebuddy/commands")
+
+  if [[ ${#PLATFORM_TARGETS[@]} -eq 0 ]]; then
+    log_skip "未探测到可用平台目录，跳过 Skills 映射"
+  fi
+
   skill_count=0
   for skill_dir in "$SKILLS_PATH"/*/; do
     [[ -d "$skill_dir" ]] || continue
@@ -198,21 +210,16 @@ if [[ -d "$SKILLS_PATH" ]]; then
     [[ "$skill_name" == ".git" ]] && continue
     ((skill_count++)) || true
 
-    # Cursor
-    if [[ -d "$HOME/.cursor/skills-cursor" ]]; then
-      cursor_link="$HOME/.cursor/skills-cursor/${skill_name}"
-      ensure_link "$cursor_link" "$skill_dir" "cursor: ${skill_name}"
-    fi
-
-    # Claude Code
-    if [[ -d "$HOME/.claude/skills" ]]; then
-      claude_link="$HOME/.claude/skills/${skill_name}"
-      ensure_link "$claude_link" "$skill_dir" "claude: ${skill_name}"
-    fi
+    for target in "${PLATFORM_TARGETS[@]}"; do
+      platform="${target%%|*}"
+      root_dir="${target#*|}"
+      link_path="${root_dir}/${skill_name}"
+      ensure_link "$link_path" "$skill_dir" "${platform}: ${skill_name}"
+    done
   done
 
   if [[ $skill_count -eq 0 ]]; then
-    log_skip "Skills 目录为空，跳过 IDE 映射"
+    log_skip "Skills 目录为空，跳过 Agent/IDE 映射"
   fi
 else
   log_err "Skills 路径不存在: ${SKILLS_PATH}"

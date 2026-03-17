@@ -31,6 +31,14 @@ bin/relink --dry-run    # 预览变更，不实际执行
 bin/relink --project X  # 仅刷新指定项目
 ```
 
+`relink` 会在目录存在时自动映射 Skills 到以下平台：
+
+- Cursor: `~/.cursor/skills-cursor/`
+- Claude: `~/.claude/skills/`
+- Claude Internal: `~/.claude-internal/skills/`
+- CodeBuddy IDE: `~/.codebuddy/skills/`
+- CodeBuddy CLI: `~/.codebuddy/commands/`（若存在）
+
 ## 配置文件
 
 `prism.local.yaml`（项目根目录，不入库）记录本地路径状态：
