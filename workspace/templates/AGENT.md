@@ -4,14 +4,14 @@
 
 ## 项目信息
 
-详见 `workspace.{code}.local/project.yaml`
+详见 `workspace.{PROJECT_CODE_LOWER}.local/project.yaml`
 
 ## 任务管理
 
 | 操作 | 说明 |
 |------|------|
-| 创建任务 | 描述需求，AI 自动创建到 workspace.{code}.local/tasks/ |
-| 查看任务 | 查看 workspace.{code}.local/index.md 任务列表 |
+| 创建任务 | 描述需求，AI 自动创建到 workspace.{PROJECT_CODE_LOWER}.local/tasks/ |
+| 查看任务 | 查看 workspace.{PROJECT_CODE_LOWER}.local/index.md 任务列表 |
 | 完成任务 | AI 自动更新状态并归档 |
 
 ## 标签
@@ -21,7 +21,7 @@
 ## 结构
 
 ```text
-workspace.{code}.local/          # 软链接 → Prism vault Workspace/{CODE}/
+workspace.{PROJECT_CODE_LOWER}.local/   # 软链接 → Prism vault Workspace/{PROJECT_CODE}/
 ├── project.yaml                 # 项目元数据
 ├── index.md                     # 项目入口
 ├── tasks/                       # 任务目录
@@ -29,6 +29,6 @@ workspace.{code}.local/          # 软链接 → Prism vault Workspace/{CODE}/
 ```
 
 <!--
-存储策略: 此文件存储在 Prism vault 的 Workspace/{CODE}/ 下，
-工作仓库根目录通过 workspace.{code}.local 软链接引用。
+存储策略: 此文件存储在 Prism vault 的 Workspace/{PROJECT_CODE}/ 下，
+工作仓库根目录通过 workspace.{PROJECT_CODE_LOWER}.local 软链接引用。
 -->

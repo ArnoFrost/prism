@@ -11,7 +11,7 @@
 ## 目录结构
 
 ```text
-{PROJECT_CODE}/
+{PROJECT_CODE}/  # 项目 Workspace 根目录
 ├── project.yaml          # 项目元数据
 ├── index.md              # 项目入口（任务列表）
 ├── README.md             # 本文件（协作规范）
@@ -25,7 +25,7 @@
 
 ```text
 工作仓库/
-└── workspace.{code}.local -> Prism vault Workspace/{CODE}/
+└── workspace.{PROJECT_CODE_LOWER}.local -> Prism vault Workspace/{PROJECT_CODE}/
 ```
 
 ## 工作流

@@ -1,5 +1,5 @@
 # Prism Workspace — Project Metadata
-# Location: Workspace/{CODE}/project.yaml
+# Location: Workspace/{PROJECT_CODE}/project.yaml
 
 # ========== Required ==========
 
@@ -9,7 +9,7 @@ name: "{PROJECT_NAME}"
 # Cross-device paths (ordered by priority, agent auto-detects)
 paths:
   - ~/path/to/project
-  # - ~/Projects/{PROJECT}
+  # - ~/Projects/{PROJECT_NAME}
 
 # ========== Optional ==========
 
