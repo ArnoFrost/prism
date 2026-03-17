@@ -43,7 +43,7 @@ categories:
   workspace:
     description: "Workspace lifecycle management"
     examples:
-      - prism-project-init
+      - prism-workspace-init
   review:
     description: "Multi-perspective review capabilities"
     examples:

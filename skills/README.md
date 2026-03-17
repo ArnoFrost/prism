@@ -24,7 +24,7 @@ skills/
 
 | 类别 | 说明 | 代表技能 |
 |------|------|---------|
-| workspace | 工作区生命周期管理 | prism-project-init |
+| workspace | 工作区生命周期管理 | prism-workspace-init |
 | review | 多视角评审能力 | prism-review |
 | migration | 路径迁移管理 | prism-workspace-migrate |
 | utility | 通用工具 | commit, digest |

@@ -41,6 +41,6 @@ workspace/
 1. 在 Prism vault 的 `Workspace/` 下创建项目目录
 2. 复制模板文件并填写项目信息
 3. 在工作仓库创建 `workspace.{code}.local` 软链接
-4. 或使用 `prism-project-init` 技能自动完成
+4. 或使用 `prism-workspace-init` 技能自动完成
 
 Prism 仓库内永远只保存系统定义，不保存实例数据。

@@ -3,7 +3,7 @@
 自动行为: 创建任务 → 执行 → 更新 index.md → 归档
 约束: 严格遵循 README.md 中的命名/标签/归档规范，不创造新标签
 skills:
-  - prism-project-init
+  - prism-workspace-init
   - prism-review
 </prism-workspace>
 
