@@ -1,0 +1,93 @@
+# Prism Workspace Schema
+# Defines the structure and constraints for workspace instances.
+
+version: "1.0.0"
+
+# Workspace instance directory structure
+structure:
+  required:
+    - project.yaml
+    - index.md
+    - README.md
+    - tasks/
+  optional:
+    - docs/
+    - archive/
+    - AGENT.md
+
+# Symlink naming convention
+# workspace.{code}.local → Prism vault Workspace/{CODE}/
+symlink:
+  pattern: "workspace.{code}.local"
+  description: ".local suffix = personal, not committed to version control"
+
+# Task naming formats
+task_naming:
+  formats:
+    full:
+      pattern: "{YYYYMMDD}-{NNN}_[{TAG}]{NAME}.md"
+      example: "20260317-001_[功能]用户登录.md"
+    date:
+      pattern: "{YYYYMMDD}-{NNN}_{NAME}.md"
+      example: "20260317-001_用户登录.md"
+    simple:
+      pattern: "{NNN}-{NAME}.md"
+      example: "001-用户登录.md"
+    custom:
+      pattern: "user-defined via project.yaml"
+  defaults:
+    format: full
+    seq_digits: 3
+
+# Core tags (exactly 1 per task)
+tags:
+  - 功能      # New feature
+  - 优化      # Performance/UX optimization
+  - 修复      # Bug fix
+  - 排查      # Investigation/diagnosis
+  - 文档      # Documentation
+  - 调研      # Research
+  - 技术方案  # Technical design
+  - 规范      # Standard/convention
+  - 下线      # Deprecation
+  - 清理      # Cleanup
+  - 梳理      # Analysis/review
+  - 测试      # Testing
+  - 评审      # Review
+  - 架构      # Architecture
+  - 集成      # Integration
+  - 同步      # Sync/summary
+
+# Task status lifecycle
+task_status:
+  values: [todo, in-progress, done]
+  transitions:
+    todo: [in-progress]
+    in-progress: [done, todo]
+    done: []
+
+# Task frontmatter schema
+task_frontmatter:
+  required:
+    date: "YYYY-MM-DD"
+    status: "{task_status.values}"
+    type: "{tags}"
+    tags: "list[string]"
+  optional:
+    related: "list[string]"
+
+# Archive rules
+archive:
+  trigger:
+    status_done: true
+    days_since_creation: 7
+    active_task_limit: 20
+  structure: "archive/{YYYY-MM}/"
+
+# Constraints
+constraints:
+  task_plan_max_lines: 300
+  max_active_tasks: 15
+  archive_after_days: 7
+  tags_per_task: 1
+  no_custom_tags: true
