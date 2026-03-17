@@ -168,6 +168,10 @@ projects:
 - 不把本地状态静默写入共享仓库历史。
 - 保持边界清晰：Prism 负责折射，不负责接管。
 
+### `.local` 后缀与全局 Gitignore
+
+Prism 所有不入库的本地文件均使用 `.local` 后缀（`workspace.*.local`、`*.local.md`、`prism.local.yaml`）。推荐将这些模式配置在全局 gitignore（`~/.gitignore_global`）中，这样接入 Prism 的项目无需修改自身的 `.gitignore`——真正的零侵入。
+
 ---
 
 ## 向后兼容

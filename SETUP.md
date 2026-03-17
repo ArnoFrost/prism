@@ -85,6 +85,16 @@ echo "---"
 for d in "$HOME/.cursor/skills-cursor" "$HOME/.claude/skills" "$HOME/.claude-internal/skills" "$HOME/.codebuddy/skills" "$HOME/.codebuddy/commands"; do
   test -d "$d" && echo "IDE: $(basename "$(dirname "$d")")/$(basename "$d")"
 done
+echo "---"
+# 全局 gitignore 检查
+GI_GLOBAL=$(git config --global core.excludesfile 2>/dev/null)
+GI_GLOBAL="${GI_GLOBAL/#\~/$HOME}"
+echo "GITIGNORE_GLOBAL=${GI_GLOBAL:-not_configured}"
+if [ -f "$GI_GLOBAL" ]; then
+  for pat in "workspace.*.local" "prism.local.yaml"; do
+    grep -qF "$pat" "$GI_GLOBAL" 2>/dev/null && echo "GI_HAS: $pat" || echo "GI_MISS: $pat"
+  done
+fi
 echo "=== Probe Done ==="
 ```
 
@@ -279,6 +289,45 @@ bin/relink --check
 
 ---
 
+## Step 4.5: 全局 Gitignore 对齐
+
+Prism 使用 `.local` 后缀约定（`workspace.*.local`、`*.local.md`、`prism.local.yaml`）来标识不入库的本地桥接文件。这些模式应配置在全局 gitignore 中，避免每个项目重复配置。
+
+检查 Step 1 探测结果中的 `GI_MISS` 行。如果有缺失：
+
+```bash
+GI_GLOBAL=$(git config --global core.excludesfile)
+GI_GLOBAL="${GI_GLOBAL/#\~/$HOME}"
+
+# 如果全局 gitignore 未配置
+if [ -z "$GI_GLOBAL" ]; then
+  git config --global core.excludesfile '~/.gitignore_global'
+  GI_GLOBAL="$HOME/.gitignore_global"
+fi
+```
+
+需要追加的模式（仅补缺失的）：
+
+```gitignore
+# Prism (workspace bridge symlinks + local config)
+workspace.*.local
+workspace.*.local/
+prism.local.yaml
+```
+
+**模式 A**：用 AskQuestion 确认是否自动追加。
+**模式 B**：展示将追加的内容，等待用户确认。
+
+追加后验证：
+
+```bash
+grep -c "workspace\.\*\.local" "$GI_GLOBAL" && echo "✓ gitignore 已对齐"
+```
+
+> **为什么放全局？** Prism 的 `.local` 约定意在零侵入——接入项目无需修改项目自身的 `.gitignore`。全局配置一次，所有项目自动生效。已有的 `*.local.md` 和 `ai-task.local` 也遵循此约定。
+
+---
+
 ## Step 5: 引导下一步（可选）
 
 初始化完成后，根据用户意图提供后续指引：
@@ -316,6 +365,8 @@ bin/relink --check
 | 路径含空格 | 双引号包裹所有路径变量 |
 | Agent 无 Shell 能力 | 降级为模式 C，输出命令让用户手动执行 |
 | Agent 无文件编辑能力 | 输出需要追加的内容，让用户手动编辑 |
+| 全局 gitignore 未配置 | 先 `git config --global core.excludesfile`，再追加模式 |
+| 全局 gitignore 已有部分 Prism 规则 | 仅补缺失项，幂等安全 |
 
 ## 参考
 
