@@ -1,0 +1,20 @@
+# === 本地协作状态（不入库） ===
+AGENT.local.md
+*.local.md
+ai-task.local
+ai-task.local/
+
+# === OS ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
