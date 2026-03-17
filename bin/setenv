@@ -4,8 +4,16 @@
 # 用法:
 #   bin/setenv              显示当前配置
 #   bin/setenv --init       交互式创建 prism.local.yaml
+#   bin/setenv --init --non-interactive  非交互创建（从参数/环境变量读取）
 #   bin/setenv --export     输出 export 语句（可 source）
+#   bin/setenv --validate   校验 prism.local.yaml 路径是否有效
 #   source <(bin/setenv --export)   注入环境变量到当前 shell
+#
+# --non-interactive 环境变量：
+#   PRISM_SDK_PATH     SDK 路径（默认当前 Prism 目录）
+#   PRISM_SKILLS_PATH  Skills 路径（默认 ~/prism-skills）
+#   PRISM_VAULT_PATH   Vault 路径（默认 iCloud AI Obsidian）
+#   PRISM_WS_SUBDIR    Workspace 子目录（默认 Prism/Workspace）
 
 set -euo pipefail
 
@@ -92,26 +100,103 @@ do_export() {
   echo "export PRISM_WORKSPACE=\"${vault}/${ws_sub}\""
 }
 
-do_init() {
-  echo -e "${CYAN}Prism 配置初始化${NC}"
+do_validate() {
+  if [[ ! -f "$CONFIG" ]]; then
+    echo -e "${RED}✗ prism.local.yaml 不存在${NC}"
+    exit 1
+  fi
+
+  echo -e "${CYAN}Prism 配置校验${NC}"
   echo "─────────────────────────────────"
 
+  local errors=0
+  local required_keys=("sdk_path" "skills_path" "vault_path" "workspace_subdir")
+
+  for key in "${required_keys[@]}"; do
+    local val
+    val=$(yaml_get "$key")
+    if [[ -z "$val" ]]; then
+      echo -e "  ${RED}✗${NC} ${key}: 缺失（必填字段）"
+      ((errors++)) || true
+    else
+      echo -e "  ${GREEN}✓${NC} ${key}: ${val}"
+    fi
+  done
+
+  echo ""
+  echo -e "  ${CYAN}路径可达性:${NC}"
+
   local sdk skills vault ws_sub
+  sdk=$(yaml_get sdk_path)
+  skills=$(yaml_get skills_path)
+  vault=$(yaml_get vault_path)
+  ws_sub=$(yaml_get workspace_subdir)
 
-  read -r -p "SDK 路径 [${PRISM_DIR}]: " sdk
-  sdk="${sdk:-$PRISM_DIR}"
+  for pair in "SDK:${sdk}" "Skills:${skills}" "Vault:${vault}"; do
+    local label="${pair%%:*}"
+    local p="${pair#*:}"
+    if [[ -z "$p" ]]; then
+      continue
+    elif [[ -d "$p" ]]; then
+      echo -e "  ${GREEN}✓${NC} ${label}: 可达"
+    else
+      echo -e "  ${RED}✗${NC} ${label}: 不可达 ${p}"
+      ((errors++)) || true
+    fi
+  done
 
-  local default_skills="$HOME/prism-skills"
-  read -r -p "Skills 路径 [${default_skills}]: " skills
-  skills="${skills:-$default_skills}"
+  if [[ -n "$vault" && -n "$ws_sub" ]]; then
+    local ws="${vault}/${ws_sub}"
+    if [[ -d "$ws" ]]; then
+      echo -e "  ${GREEN}✓${NC} Workspace: 可达"
+    else
+      echo -e "  ${YELLOW}⚠${NC} Workspace: 不存在（首次 relink 时自动创建）"
+    fi
+  fi
 
-  local default_vault="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"
-  read -r -p "Vault 路径 [${default_vault}]: " vault
-  vault="${vault:-$default_vault}"
+  # projects 段检查
+  echo ""
+  echo -e "  ${CYAN}注册项目:${NC}"
+  local proj_count=0
+  local in_projects=false
+  while IFS= read -r line; do
+    if [[ "$line" == "projects:" ]]; then
+      in_projects=true
+      continue
+    fi
+    if $in_projects; then
+      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
+        local code="${BASH_REMATCH[1]}"
+        local p="${BASH_REMATCH[2]}"
+        ((proj_count++)) || true
+        if [[ -d "$p" ]]; then
+          echo -e "    ${GREEN}✓${NC} ${code}: ${p}"
+        else
+          echo -e "    ${RED}✗${NC} ${code}: 不可达 ${p}"
+          ((errors++)) || true
+        fi
+      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
+        break
+      fi
+    fi
+  done < "$CONFIG"
 
-  read -r -p "Workspace 子目录 [Prism/Workspace]: " ws_sub
-  ws_sub="${ws_sub:-Prism/Workspace}"
+  if [[ $proj_count -eq 0 ]]; then
+    echo -e "    ${YELLOW}⚠${NC} 无注册项目"
+  fi
 
+  echo ""
+  echo "─────────────────────────────────"
+  if [[ $errors -gt 0 ]]; then
+    echo -e "  ${RED}校验失败：${errors} 个问题${NC}"
+    exit 1
+  else
+    echo -e "  ${GREEN}✓ 校验通过${NC}"
+  fi
+}
+
+write_config() {
+  local sdk="$1" skills="$2" vault="$3" ws_sub="$4"
   cat > "$CONFIG" << YAML
 # Prism Local Configuration
 # 本地路径状态，不入版本控制。
@@ -133,6 +218,47 @@ workspace_subdir: ${ws_sub}
 # relink 据此刷新 workspace.{code}.local 软链接
 projects:
 YAML
+}
+
+do_init() {
+  echo -e "${CYAN}Prism 配置初始化${NC}"
+  echo "─────────────────────────────────"
+
+  local sdk skills vault ws_sub
+
+  if $NON_INTERACTIVE; then
+    sdk="${PRISM_SDK_PATH:-$PRISM_DIR}"
+    skills="${PRISM_SKILLS_PATH:-$HOME/prism-skills}"
+    vault="${PRISM_VAULT_PATH:-$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian}"
+    ws_sub="${PRISM_WS_SUBDIR:-Prism/Workspace}"
+
+    echo -e "  SDK:       ${sdk}"
+    echo -e "  Skills:    ${skills}"
+    echo -e "  Vault:     ${vault}"
+    echo -e "  子目录:    ${ws_sub}"
+
+    write_config "$sdk" "$skills" "$vault" "$ws_sub"
+    echo ""
+    echo -e "${GREEN}✓ 已创建 prism.local.yaml（非交互模式）${NC}"
+    echo -e "运行 ${CYAN}bin/setenv --validate${NC} 校验路径，${CYAN}bin/relink${NC} 刷新软链接。"
+    return
+  fi
+
+  read -r -p "SDK 路径 [${PRISM_DIR}]: " sdk
+  sdk="${sdk:-$PRISM_DIR}"
+
+  local default_skills="$HOME/prism-skills"
+  read -r -p "Skills 路径 [${default_skills}]: " skills
+  skills="${skills:-$default_skills}"
+
+  local default_vault="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"
+  read -r -p "Vault 路径 [${default_vault}]: " vault
+  vault="${vault:-$default_vault}"
+
+  read -r -p "Workspace 子目录 [Prism/Workspace]: " ws_sub
+  ws_sub="${ws_sub:-Prism/Workspace}"
+
+  write_config "$sdk" "$skills" "$vault" "$ws_sub"
 
   echo ""
   echo -e "${GREEN}✓ 已创建 prism.local.yaml${NC}"
@@ -154,14 +280,31 @@ YAML
   echo -e "${GREEN}配置完成。运行 bin/relink 刷新软链接。${NC}"
 }
 
-case "${1:-}" in
-  --init)  do_init ;;
-  --export) do_export ;;
-  --help|-h)
-    echo "用法: bin/setenv [--init|--export|--help]"
-    echo "  (无参数)  显示当前配置"
-    echo "  --init    交互式创建 prism.local.yaml"
-    echo "  --export  输出 export 语句（配合 source 使用）"
-    ;;
-  *)       show_config ;;
+NON_INTERACTIVE=false
+ACTION=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --init)             ACTION="init"; shift ;;
+    --export)           ACTION="export"; shift ;;
+    --validate)         ACTION="validate"; shift ;;
+    --non-interactive)  NON_INTERACTIVE=true; shift ;;
+    --help|-h)
+      echo "用法: bin/setenv [--init [--non-interactive]|--export|--validate|--help]"
+      echo "  (无参数)          显示当前配置"
+      echo "  --init            交互式创建 prism.local.yaml"
+      echo "  --init --non-interactive  从环境变量读取路径创建配置"
+      echo "  --export          输出 export 语句（配合 source 使用）"
+      echo "  --validate        校验 prism.local.yaml 字段与路径"
+      exit 0
+      ;;
+    *) echo "未知参数: $1"; exit 1 ;;
+  esac
+done
+
+case "${ACTION:-show}" in
+  init)     do_init ;;
+  export)   do_export ;;
+  validate) do_validate ;;
+  show)     show_config ;;
 esac

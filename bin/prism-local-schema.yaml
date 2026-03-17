@@ -1,0 +1,73 @@
+# prism.local.yaml Schema
+# 定义 prism.local.yaml 的结构约束，供 bin/setenv --validate 参考。
+# 此文件本身不被脚本直接解析，作为人类可读的契约文档。
+
+version: "1.0.0"
+
+fields:
+  sdk_path:
+    type: string
+    required: true
+    description: "Prism SDK 仓库的绝对路径"
+    example: "/Users/xuxin/prism"
+    validation:
+      - "必须是绝对路径（以 / 开头）"
+      - "目录必须存在"
+      - "目录内应包含 bin/setenv（SDK 完整性校验）"
+
+  skills_path:
+    type: string
+    required: true
+    description: "Skills 实现仓库的绝对路径（独立 Git 仓库）"
+    example: "/Users/xuxin/prism-skills"
+    validation:
+      - "必须是绝对路径"
+      - "目录必须存在"
+      - "目录内应包含至少一个含 SKILL.md 的子目录"
+
+  vault_path:
+    type: string
+    required: true
+    description: "iCloud Obsidian vault 基础路径（仅承载 Workspace）"
+    example: "/Users/xuxin/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"
+    validation:
+      - "必须是绝对路径"
+      - "目录必须存在（iCloud 同步状态可能导致暂时不可达）"
+      - "路径可含空格（iCloud 常见）"
+
+  workspace_subdir:
+    type: string
+    required: true
+    description: "Vault 内 Workspace 子目录（相对于 vault_path）"
+    example: "Prism/Workspace"
+    default: "Prism/Workspace"
+    validation:
+      - "相对路径，不以 / 开头"
+      - "首次 relink 时自动创建"
+
+  projects:
+    type: map
+    required: false
+    description: "注册项目映射，key 为项目代号（大写），value 为本地路径"
+    example:
+      PRISM: "/Users/xuxin/prism"
+      MYAPP: "/Users/xuxin/Projects/myapp"
+    key_constraints:
+      - "大写字母、数字、连字符、下划线"
+      - "匹配 [A-Za-z0-9_-]+"
+    value_constraints:
+      - "绝对路径"
+      - "目录必须存在"
+
+conventions:
+  - "此文件不入版本控制（已在 .gitignore 中排除）"
+  - "由 bin/setenv --init 生成，bin/relink 读取"
+  - "路径不使用 ~ 缩写，始终展开为绝对路径"
+  - "YAML 顶层键用 snake_case"
+  - "projects 段在文件末尾，便于追加"
+
+tool_integration:
+  setenv_init: "生成符合此 schema 的配置文件"
+  setenv_validate: "校验配置文件是否符合此 schema（必填字段 + 路径可达性 + 项目注册）"
+  setenv_export: "读取配置并输出 shell export 语句"
+  relink: "读取配置刷新所有软链接"
