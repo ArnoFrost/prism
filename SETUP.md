@@ -1,8 +1,7 @@
 # Prism Setup Guide
 
 > 本文件供 AI Agent 阅读后交互式引导用户完成 Prism 初始化。
->
-> **使用方式**：在 IDE 中打开 Prism 仓库，将本文件发送给 Agent，按提示确认即可。
+> Agent 可通过用户的一句话指令自动触发完整流程。
 
 ## Agent 执行协议
 
@@ -14,6 +13,20 @@
 2. 路径中可能含空格（尤其是 iCloud 路径），所有 shell 命令中**必须双引号包裹变量**
 3. 不要一次性执行所有命令，分步确认、分步执行
 4. 每步执行前说明将要做什么，执行后报告结果
+
+---
+
+## Step -1: 前置检查（仓库就绪）
+
+在开始 Setup 前，确认 Prism SDK 仓库已就绪：
+
+```bash
+if [ ! -d ~/prism/.git ]; then
+  git clone git@github.com:ArnoFrost/prism.git ~/prism
+fi
+```
+
+如果用户指定了不同的 clone 路径，以用户指定为准。后续所有 `bin/` 命令均基于此路径执行。
 
 ---
 

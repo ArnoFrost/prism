@@ -19,13 +19,11 @@ Prism 是一套**本地优先、无侵入**的个人 AI 协作基座。
 
 ### Agent 引导（推荐）
 
-使用 AI Agent（Cursor / Claude Code / CodeBuddy）？直接让 Agent 帮你完成初始化：
+把下面这句话发给你的 AI Agent（Cursor / Claude Code / CodeBuddy），然后跟着确认就行：
 
-1. `git clone git@github.com:ArnoFrost/prism.git ~/prism`
-2. 在 IDE 中打开 `~/prism`
-3. 将 [`SETUP.md`](SETUP.md) 发送给 Agent，按提示确认即可
+> 帮我克隆 `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，然后读取 `~/prism/SETUP.md` 并按里面的指引帮我完成初始化。
 
-Agent 会自动探测环境、确认路径、执行初始化和软链接配置。
+Agent 会自动 clone → 探测环境 → 确认路径 → 执行初始化 → 配置软链接，全程你只需确认。
 
 ### 最小安装（仅 SDK）
 
