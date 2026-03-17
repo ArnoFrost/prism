@@ -1,0 +1,68 @@
+# Prism Skill Schema
+# Defines the structure for skills in the Prism ecosystem.
+
+version: "1.0.0"
+
+# Skill directory structure
+structure:
+  required:
+    - SKILL.md
+  optional:
+    - scripts/
+    - references/
+    - assets/
+    - shared/
+
+# SKILL.md frontmatter
+frontmatter:
+  required:
+    name: "string, lowercase + hyphens, matches directory name"
+    description: "string, includes 'Use when:' trigger phrases"
+  optional:
+    license: "string"
+    compatibility: "string"
+    metadata:
+      author: "string"
+      version: "string"
+
+# Loading strategy (progressive)
+loading:
+  stages:
+    - name: startup
+      content: "name + description from frontmatter"
+      budget: "~100 tokens"
+    - name: activated
+      content: "full SKILL.md"
+      budget: "<5000 tokens"
+    - name: on_demand
+      content: "scripts/ references/ assets/"
+      budget: "unlimited"
+
+# Skill categories in Prism
+categories:
+  workspace:
+    description: "Workspace lifecycle management"
+    examples:
+      - prism-project-init
+      - prism-project-sync
+  review:
+    description: "Multi-perspective review capabilities"
+    examples:
+      - prism-review
+  codegen:
+    description: "Code generation from review artifacts"
+    examples:
+      - prism-genskill
+  utility:
+    description: "General-purpose tools"
+    examples:
+      - commit
+      - digest
+
+# Instance mounting
+mounting:
+  system_layer: "prism/skills/{skill-name}/SKILL.md"
+  instance_layer: "Prism vault Skills/{skill-name}/SKILL.md"
+  ide_integration:
+    cursor: ".cursor/skills-cursor/{skill-name} -> instance"
+    claude: ".claude/skills/{skill-name} -> instance"
