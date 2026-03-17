@@ -31,7 +31,12 @@ while [[ $# -gt 0 ]]; do
     --check)    CHECK_ONLY=true; shift ;;
     --dry-run)  DRY_RUN=true; shift ;;
     --prune)    PRUNE=true; shift ;;
-    --project)  TARGET_PROJECT="$2"; shift 2 ;;
+    --project)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo -e "${RED}✗ --project 需要指定项目代号${NC}" >&2; exit 1
+      fi
+      TARGET_PROJECT="$2"; shift 2
+      ;;
     --help|-h)
       echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE]"
       echo "  (无参数)     刷新所有软链接"
@@ -65,6 +70,7 @@ TOTAL=0
 OK=0
 FIXED=0
 ERRORS=0
+PLATFORM_TARGETS=()
 
 log_ok()    { echo -e "  ${GREEN}✓${NC} $1"; ((OK++)) || true; ((TOTAL++)) || true; }
 log_fix()   { echo -e "  ${GREEN}⟳${NC} $1"; ((FIXED++)) || true; ((TOTAL++)) || true; }
@@ -247,7 +253,7 @@ if $PRUNE; then
   }
 
   # 4a. IDE 平台目录：清理指向 SKILLS_PATH 下已不存在 skill 的链接
-  for target in "${PLATFORM_TARGETS[@]}"; do
+  for target in ${PLATFORM_TARGETS[@]+"${PLATFORM_TARGETS[@]}"}; do
     platform="${target%%|*}"
     root_dir="${target#*|}"
     for link in "$root_dir"/*/; do

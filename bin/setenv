@@ -25,6 +25,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
+DIM='\033[2m'
 NC='\033[0m'
 
 yaml_get() {
@@ -197,11 +198,13 @@ do_validate() {
 
 write_config() {
   local sdk="$1" skills="$2" vault="$3" ws_sub="$4"
-  cat > "$CONFIG" << YAML
+  cat > "$CONFIG" << 'YAML_END'
 # Prism Local Configuration
-# 本地路径状态，不入版本控制。
+# 本地路径状态，不入版本控制（受控最小 schema，不可自由扩展）。
 # 由 bin/setenv 初始化，bin/relink 读取刷新软链接。
 
+YAML_END
+  cat >> "$CONFIG" << CONFDATA
 # SDK 路径（Prism 仓库位置）
 sdk_path: ${sdk}
 
@@ -217,10 +220,28 @@ workspace_subdir: ${ws_sub}
 # 注册项目（CODE: 本地路径）
 # relink 据此刷新 workspace.{code}.local 软链接
 projects:
-YAML
+CONFDATA
 }
 
 do_init() {
+  if [[ -f "$CONFIG" ]]; then
+    if $NON_INTERACTIVE; then
+      echo -e "${RED}✗ prism.local.yaml 已存在，非交互模式拒绝覆盖。${NC}" >&2
+      echo -e "${DIM}如需重新初始化，请先手动删除或备份。${NC}" >&2
+      exit 1
+    fi
+    echo -e "${YELLOW}⚠ prism.local.yaml 已存在${NC}"
+    echo ""
+    read -r -p "覆盖现有配置？已注册的 projects 段将丢失 [y/N]: " confirm
+    if [[ "${confirm,,}" != "y" ]]; then
+      echo "已取消。"
+      exit 0
+    fi
+    cp "$CONFIG" "${CONFIG}.bak.$(date +%Y%m%d%H%M%S)"
+    echo -e "${DIM}已备份至 ${CONFIG}.bak.*${NC}"
+    echo ""
+  fi
+
   echo -e "${CYAN}Prism 配置初始化${NC}"
   echo "─────────────────────────────────"
 

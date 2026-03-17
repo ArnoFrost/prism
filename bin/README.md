@@ -50,15 +50,17 @@ bin/relink --project X  # 仅刷新指定项目
 `prism.local.yaml`（项目根目录，不入库）记录本地路径状态：
 
 ```yaml
-sdk_path: ~/prism
-skills_path: ~/prism-skills
-vault_path: ~/Library/.../AI Obsidian
+sdk_path: /Users/xuxin/prism
+skills_path: /Users/xuxin/prism-skills
+vault_path: /Users/xuxin/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian
 workspace_subdir: Prism/Workspace
 
 projects:
-  PRISM: ~/prism
-  MYAPP: ~/Projects/myapp
+  PRISM: /Users/xuxin/prism
+  MYAPP: /Users/xuxin/Projects/myapp
 ```
+
+> **受控最小 schema**：`prism.local.yaml` 当前仅支持上述扁平 key-value 格式。不支持 YAML 引号值、行内注释、嵌套结构、多行值。内容由 `bin/setenv --init` 生成为准，手动编辑请保持 `KEY: value` 格式，路径始终使用绝对路径（不使用 `~`）。
 
 | 字段 | 必填 | 说明 |
 |------|:----:|------|
@@ -66,7 +68,7 @@ projects:
 | `skills_path` | ✅ | Skills 独立仓库绝对路径 |
 | `vault_path` | ✅ | iCloud Obsidian vault 基础路径 |
 | `workspace_subdir` | ✅ | Vault 内 Workspace 子目录（相对路径） |
-| `projects` | — | 注册项目映射（CODE: 本地路径） |
+| `projects` | — | 注册项目映射（CODE: 绝对路径），手动追加 |
 
 完整 schema 定义见 [`prism-local-schema.yaml`](./prism-local-schema.yaml)。可通过 `bin/setenv --validate` 校验。
 
