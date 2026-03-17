@@ -3,6 +3,16 @@ name: skill-name
 description: |
   技能功能描述。
   Use when: 触发词1、触发词2、触发词3
+visibility: internal
+stability: experimental
+compatibility: backward-compatible
+public_gate:
+  reviewed: false
+  reviewed_by: ""
+  reviewed_at: ""
+  rationale: ""
+  rollback: ""
+  ssot_id: ""
 license: MIT
 metadata:
   author: ""
@@ -41,6 +51,19 @@ metadata:
 
 - 约束 1
 - 约束 2
+
+## 公开准入（visibility=public 时必填）
+
+- `public_gate.reviewed` 必须为 `true`
+- `public_gate.reviewed_by` / `reviewed_at` 必填
+- `public_gate.rationale` 需说明“普适性 + 规范必要性”
+- `public_gate.rollback` 必须可执行
+- `public_gate.ssot_id` 必须在 `skills/schema/skills-catalog.yaml` 存在
+
+## 兼容与回滚
+
+- 兼容策略：新增能力默认向后兼容；破坏性变更需给迁移说明
+- 回滚策略：写明失败触发条件、回滚命令或步骤、验收标准
 
 ## 示例
 

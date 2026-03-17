@@ -1,0 +1,36 @@
+# Prism Skills Catalog (SSOT)
+# Public injected skills must be declared here.
+
+version: "1.0.0"
+
+policy:
+  default_visibility: internal
+  default_stability: experimental
+  public_requires_audit: true
+  note: "Private skills are unrestricted. Public skills require universality and normative necessity."
+
+entries:
+  - id: prism-workspace-init
+    visibility: public
+    stability: stable
+    source_repo: prism-skills
+    inject_default: true
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-17"
+    rationale: "Core project enablement entry in Prism MVP."
+  - id: prism-review
+    visibility: public
+    stability: stable
+    source_repo: prism-skills
+    inject_default: true
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-17"
+    rationale: "Core high-frequency collaboration action in Prism MVP."
+  - id: prism-workspace-migrate
+    visibility: public
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: true
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-17"
+    rationale: "Advanced migration entry kept as validated optional surface."

@@ -1,7 +1,7 @@
 # Prism Skill Schema
 # Defines the structure for skills in the Prism ecosystem.
 
-version: "1.0.0"
+version: "1.1.0"
 
 # Skill directory structure
 structure:
@@ -18,12 +18,39 @@ frontmatter:
   required:
     name: "string, lowercase + hyphens, matches directory name"
     description: "string, includes 'Use when:' trigger phrases"
+    visibility: "enum: internal | public (default internal)"
+    stability: "enum: experimental | stable (default experimental)"
   optional:
     license: "string"
     compatibility: "string"
+    public_gate:
+      reviewed: "boolean, must be true when visibility=public"
+      reviewed_by: "string, reviewer identity"
+      reviewed_at: "string, ISO date"
+      rationale: "string, why this should be public and universal"
+      rollback: "string, rollback strategy summary"
+      ssot_id: "string, id in skills/schema/skills-catalog.yaml"
     metadata:
       author: "string"
       version: "string"
+
+# Governance: 私人能力默认内部；公开能力必须经审计后显式进入 SSOT
+governance:
+  defaults:
+    visibility: "internal"
+    stability: "experimental"
+  public_publish_gate:
+    rule: "Only audited skills can be public."
+    required_when_public:
+      - public_gate.reviewed=true
+      - public_gate.reviewed_by
+      - public_gate.reviewed_at
+      - public_gate.rationale
+      - public_gate.rollback
+      - public_gate.ssot_id
+  ssot:
+    public_catalog: "skills/schema/skills-catalog.yaml"
+    rule: "Public injected skills MUST exist in catalog entries."
 
 # Loading strategy (progressive)
 loading:
@@ -65,4 +92,7 @@ distribution:
   ide_integration:
     cursor: "~/.cursor/skills-cursor/{skill-name} -> ~/prism-skills/{skill-name}/"
     claude: "~/.claude/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
+    claude_internal: "~/.claude-internal/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
+    codebuddy: "~/.codebuddy/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
+    codebuddy_cli: "~/.codebuddy/commands/{skill-name} -> ~/prism-skills/{skill-name}/ (if directory exists)"
   mechanism: "bin/relink reads prism.local.yaml skills_path, auto-creates symlinks"
