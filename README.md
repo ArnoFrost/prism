@@ -32,7 +32,7 @@ cd ~/prism && bin/setenv --init
 # 1. SDK
 git clone git@github.com:ArnoFrost/prism.git ~/prism
 
-# 2. Skills（推荐，可跳过）
+# 2. Skills（推荐，可跳过；也可替换成你的自有 skills 仓）
 git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
 
 # 3. 初始化配置 + 刷新软链接
@@ -40,6 +40,8 @@ cd ~/prism
 bin/setenv --init     # 交互式填写路径
 bin/relink            # 自动创建所有软链接（项目桥接 + Skills IDE 分发）
 ```
+
+> 说明：Prism 不会自动扫描你机器上的其他技能仓，只会使用 `prism.local.yaml` 中 `skills_path` 指向的当前技能源。
 
 ### 接入已有项目
 
@@ -61,6 +63,7 @@ Skills 是 Prism 持续产生协作复利的核心能力层。
 - 技能可以独立版本控制、独立分发
 - 没有 Skills 时 Prism 仍完整可用（Protocol + Workspace 独立运行）
 - 有 Skills 时能力倍增：评审、初始化、迁移等均可通过自然语言触发
+- 用户可在本地自建/迁移 skills 仓，成熟后再反哺官方模板与官方技能
 
 **当前技能**（[prism-skills](https://github.com/ArnoFrost/prism-skills)）：
 
@@ -71,6 +74,8 @@ Skills 是 Prism 持续产生协作复利的核心能力层。
 | prism-workspace-migrate | `/prism-workspace-migrate` | Vault/SDK 路径迁移 |
 
 **分发机制**：`bin/relink` 自动将 `~/prism-skills/*` 软链接到 IDE 技能目录（Cursor、Claude Code 等），无需手动配置。
+
+**治理边界**：Prism 只治理 `skills_path` 指向的技能源；其他散落 skills 仓保持用户自主管理，不被 Prism 自动感知。
 
 ---
 
@@ -220,6 +225,8 @@ prism/
 |------|------|------|
 | `bin/setenv` | 管理 prism.local.yaml 配置，导出环境变量 | ✅ 可用 |
 | `bin/relink` | 基于配置刷新所有软链接（项目桥接 + Skills IDE 分发） | ✅ 可用 |
+
+其中 `bin/setenv --init + bin/relink` 构成 `prism-init` 的 SDK 入口语义（初始化与桥接，不作为独立 SKILL）。
 
 详见 [bin/README.md](bin/README.md)。
 
