@@ -8,86 +8,149 @@
 
 你正在帮助用户完成 Prism 的首次安装或已有环境的刷新配置。
 
-**关键约束**：
+**硬约束**：
 
 1. Shell 不支持交互式输入（`read -p` 会挂起），**禁止**直接调用 `bin/setenv --init`（不带 `--non-interactive`）
-2. 需要用户确认的内容通过**对话**获取，不通过 shell stdin
-3. 每个关键步骤执行前向用户说明将要做什么，执行后报告结果
-4. 路径中可能含空格（尤其是 iCloud 路径），所有 shell 命令中**必须双引号包裹变量**
-5. 不要一次性执行所有命令，分步确认、分步执行
+2. 路径中可能含空格（尤其是 iCloud 路径），所有 shell 命令中**必须双引号包裹变量**
+3. 不要一次性执行所有命令，分步确认、分步执行
+4. 每步执行前说明将要做什么，执行后报告结果
 
 ---
 
-## Step 0: 环境探测
+## Step 0: 平台能力探测
 
-在提问用户前，先静默执行以下探测：
+在执行任何操作前，先判断当前 Agent 环境的交互能力。
+
+### 探测方法
+
+检查当前可用的工具/能力：
+
+| 能力 | 探测方式 | 结果 |
+|------|---------|------|
+| **结构化选择** | 是否可用 `AskQuestion` 工具（Cursor）或等效选择框机制 | 可用 → 模式 A；不可用 → 模式 B |
+| **Shell 执行** | 是否可用 Shell / bash 工具 | 可用 → 正常流程；不可用 → 纯对话 fallback |
+| **文件读写** | 是否可用 Read / Write / StrReplace 工具 | 可用 → 直接编辑配置；不可用 → 输出指令让用户手动执行 |
+
+### 交互模式
+
+**模式 A — 结构化交互**（Cursor 等支持选择框的平台）
+
+使用 `AskQuestion` 或等效工具向用户呈现结构化选择：
+- 路径确认用单选/多选框
+- 场景选择用选项卡
+- 减少用户打字，提升体验
+
+**模式 B — 对话式交互**（Claude Code、CodeBuddy 等）
+
+通过多轮对话完成：
+- 展示探测结果 → 用户文本回复确认/修改
+- 逐步推进，每步等待用户回复
+
+**模式 C — 纯指令输出**（无 Shell 能力的平台）
+
+输出完整命令序列，让用户自己复制执行：
+- 本模式下，Agent 只做"智能 README"，生成定制化的安装命令
+
+> 优先使用模式 A，fallback 到 B，最终 fallback 到 C。
+
+---
+
+## Step 1: 环境探测
+
+在提问用户前，先静默执行以下探测（合并为一条命令减少交互轮次）：
 
 ```bash
-# 定位 Prism SDK
+echo "=== Prism Environment Probe ==="
 echo "SDK_DIR=$(pwd)"
-
-# 检查 prism.local.yaml
 test -f prism.local.yaml && echo "CONFIG=exists" || echo "CONFIG=missing"
-
-# 如果存在，显示当前配置
 [ -f prism.local.yaml ] && cat prism.local.yaml
-
-# 探测 Skills 仓库
+echo "---"
 test -d "$HOME/prism-skills" && echo "SKILLS=$HOME/prism-skills" || echo "SKILLS=not_found"
-
-# 探测 iCloud Obsidian vault（macOS 常见路径）
 VAULT="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"
 test -d "$VAULT" && echo "VAULT_FOUND=$VAULT" || echo "VAULT=not_found"
-
-# 探测 IDE 技能目录
-test -d "$HOME/.cursor/skills-cursor" && echo "IDE: Cursor"
-test -d "$HOME/.claude/skills" && echo "IDE: Claude"
-test -d "$HOME/.claude-internal/skills" && echo "IDE: Claude Internal"
-test -d "$HOME/.codebuddy/skills" && echo "IDE: CodeBuddy"
+echo "---"
+for d in "$HOME/.cursor/skills-cursor" "$HOME/.claude/skills" "$HOME/.claude-internal/skills" "$HOME/.codebuddy/skills" "$HOME/.codebuddy/commands"; do
+  test -d "$d" && echo "IDE: $(basename "$(dirname "$d")")/$(basename "$d")"
+done
+echo "=== Probe Done ==="
 ```
 
 ---
 
-## Step 1: 向用户展示结果并确认
+## Step 2: 场景分流
 
-根据探测结果，进入对应场景。
+根据 `CONFIG` 探测结果，进入对应场景。
 
-### 场景 A: 首次安装（prism.local.yaml 不存在）
+### 场景 A: 首次安装（CONFIG=missing）
 
-向用户展示探测到的路径并提出建议：
+#### 模式 A 交互（Cursor — 结构化选择）
+
+使用 AskQuestion 工具同时收集所有路径确认：
+
+```
+问题 1（单选）: "Skills 仓库"
+  - "使用探测到的路径: ~/prism-skills" (如果存在)
+  - "帮我 clone 到 ~/prism-skills"
+  - "我指定其他路径"
+  - "跳过 Skills（稍后配置）"
+
+问题 2（单选）: "Vault 路径"
+  - "使用探测到的路径: {vault}" (如果存在)
+  - "我指定其他路径"
+  - "帮我创建本地目录"
+
+问题 3（单选）: "Workspace 子目录"
+  - "使用默认: Prism/Workspace"
+  - "我指定其他路径"
+```
+
+一次收集，减少来回。如果用户选了"指定其他路径"，再追问具体路径。
+
+#### 模式 B 交互（Claude Code / CodeBuddy — 对话式）
+
+向用户展示探测结果表格，附带默认建议：
 
 ```
 我检测到以下环境：
 
-| 配置项 | 探测结果 | 默认值 |
+| 配置项 | 探测结果 | 建议值 |
 |--------|---------|--------|
 | SDK 路径 | {当前目录} | {当前目录} |
-| Skills 仓库 | {探测结果或"未找到"} | ~/prism-skills |
-| Vault 路径 | {探测结果或"未找到"} | {iCloud 路径} |
+| Skills 仓库 | {存在/未找到} | ~/prism-skills |
+| Vault 路径 | {存在/未找到} | {iCloud 路径或提示手动填写} |
 | Workspace 子目录 | — | Prism/Workspace |
 
-请确认以上路径，或告诉我需要调整的项。
+如果以上路径都正确，回复"确认"即可。
+需要调整请告诉我哪项需要改。
 ```
 
-**如果 Skills 仓库未找到**，提示：
+#### 补充动作
+
+**Skills 未找到时**，在确认流程中提示：
 
 ```
-prism-skills 仓库未找到。推荐 clone 到 ~/prism-skills：
+prism-skills 仓库未找到。是否需要我帮你 clone？
   git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
-
-是否需要我帮你执行？（也可以跳过，Prism 无 Skills 也能运行）
+（也可以跳过，Prism 无 Skills 也能运行）
 ```
 
-**如果 Vault 未找到**（非 macOS 或无 iCloud），请用户提供路径：
+**Vault 未找到时**（非 macOS / 无 iCloud），请用户提供路径或创建本地目录。
+
+### 场景 B: 已有配置（CONFIG=exists）
+
+#### 模式 A 交互（结构化选择）
 
 ```
-未检测到 iCloud Obsidian vault。请提供你的 Obsidian vault 路径，
-或指定一个本地目录作为 Workspace 存储位置。
+问题（单选）: "检测到已有 Prism 配置，你希望？"
+  - "保持当前配置，仅刷新软链接"
+  - "接入一个新项目"
+  - "重新初始化（将自动备份当前配置）"
+  - "仅查看当前状态"
 ```
 
-### 场景 B: 已有配置（prism.local.yaml 存在）
+#### 模式 B 交互（对话式）
 
-读取现有配置并展示，然后询问用户意图：
+读取现有配置展示后，文字列出选项：
 
 ```
 已检测到 Prism 配置：
@@ -101,13 +164,14 @@ prism-skills 仓库未找到。推荐 clone 到 ~/prism-skills：
 1. 保持当前配置，仅刷新软链接
 2. 接入一个新项目
 3. 重新初始化（将自动备份当前配置）
+4. 仅查看当前状态
 ```
 
 ---
 
-## Step 2: 执行
+## Step 3: 执行
 
-### 2a. 首次安装
+### 3a. 首次安装
 
 用户确认路径后，通过环境变量创建配置：
 
@@ -119,15 +183,21 @@ PRISM_WS_SUBDIR="{确认的子目录，默认 Prism/Workspace}" \
 bin/setenv --init --non-interactive
 ```
 
-### 2b. 刷新软链接
-
-直接执行，无需 init：
+然后立即刷新软链接：
 
 ```bash
 bin/relink
 ```
 
-### 2c. 接入新项目
+### 3b. 刷新软链接
+
+直接执行：
+
+```bash
+bin/relink
+```
+
+### 3c. 接入新项目
 
 使用文件编辑工具向 `prism.local.yaml` 的 `projects:` 段追加：
 
@@ -141,9 +211,24 @@ bin/relink
 bin/relink --project {CODE}
 ```
 
-### 2d. 重新初始化
+#### 模式 A 交互：接入新项目
 
-先备份再删除，然后走 2a 流程：
+```
+问题 1（填写）: "项目代号（大写，如 MYAPP）"
+问题 2（填写）: "项目本地路径（绝对路径）"
+```
+
+#### 模式 B 交互：接入新项目
+
+```
+请告诉我：
+1. 项目代号（大写，如 MYAPP）
+2. 项目本地绝对路径
+```
+
+### 3d. 重新初始化
+
+先备份再删除，然后走 3a 流程：
 
 ```bash
 cp prism.local.yaml "prism.local.yaml.bak.$(date +%Y%m%d%H%M%S)"
@@ -154,7 +239,7 @@ rm prism.local.yaml
 
 ---
 
-## Step 3: 验证
+## Step 4: 验证
 
 执行校验并向用户报告结果：
 
@@ -162,6 +247,8 @@ rm prism.local.yaml
 bin/setenv --validate
 bin/relink --check
 ```
+
+### 报告模板
 
 将输出整合为简洁报告：
 
@@ -173,9 +260,32 @@ bin/relink --check
 软链接: N 个技能已映射到 {检测到的 IDE 列表}
 
 下一步：
-  - 接入项目: 编辑 prism.local.yaml 的 projects 段 → bin/relink
-  - 创建项目工作区: 使用 /prism-workspace-init
-  - 启动协作评审: 使用 /prism-review
+  - 接入项目: 使用 /prism-workspace-init
+  - 启动评审: 使用 /prism-review
+```
+
+---
+
+## Step 5: 引导下一步（可选）
+
+初始化完成后，根据用户意图提供后续指引：
+
+#### 模式 A（结构化选择）
+
+```
+问题（单选）: "初始化已完成，你想接下来？"
+  - "接入一个项目到 Prism（/prism-workspace-init）"
+  - "先看看当前状态就好"
+  - "直接开始一轮评审（/prism-review）"
+```
+
+#### 模式 B（对话式）
+
+```
+初始化已完成。你可以：
+- 输入 /prism-workspace-init 为项目创建工作区
+- 输入 /prism-review 对当前项目启动评审
+- 或告诉我你接下来想做什么
 ```
 
 ---
@@ -191,9 +301,12 @@ bin/relink --check
 | bin/relink 报错 | 展示错误，逐项排查 |
 | IDE 技能目录不存在 | relink 自动跳过，无需处理 |
 | 路径含空格 | 双引号包裹所有路径变量 |
+| Agent 无 Shell 能力 | 降级为模式 C，输出命令让用户手动执行 |
+| Agent 无文件编辑能力 | 输出需要追加的内容，让用户手动编辑 |
 
 ## 参考
 
 - 工具详细参数：[bin/README.md](bin/README.md)
 - 协作契约：[AGENT.md](AGENT.md)
 - 项目说明：[README.md](README.md)
+- 首屏能力闭环：`setenv → relink → workspace-init → review`
