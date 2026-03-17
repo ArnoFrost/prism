@@ -1,11 +1,13 @@
 # skills/ — 技能定义层（系统层）
 
-此目录保存 Prism 的技能 schema、模板，以及 Prism 原生技能。
+此目录保存 Prism 的技能 schema 和模板定义。
+
+**技能实现不在此目录**，而在独立的 Skills 仓库（`~/prism-skills`），通过软链接分发到各 IDE 环境。
 
 ## 系统层 vs 实例层
 
-- **系统层**（本目录）：技能的 schema、模板、Prism 原生技能定义
-- **实例层**（外部挂载）：用户个人技能、项目专属技能，存放在 Prism vault 的 `Skills/` 下
+- **系统层**（本目录）：技能的 schema、模板定义
+- **实例层**（`~/prism-skills`）：实际技能实现，独立 Git 仓库管理
 
 ## 子目录
 
@@ -14,12 +16,8 @@ skills/
 ├── README.md                          # 本文件
 ├── schema/
 │   └── skill.schema.yaml             # 技能结构约束
-├── templates/
-│   └── SKILL.template.md             # 技能编写模板
-├── prism-project-init/               # Prism 原生：项目初始化
-│   └── SKILL.md
-└── prism-review/                     # Prism 原生：多角色评审
-    └── SKILL.md
+└── templates/
+    └── SKILL.template.md             # 技能编写模板
 ```
 
 ## 技能分类
@@ -28,26 +26,22 @@ skills/
 |------|------|---------|
 | workspace | 工作区生命周期管理 | prism-project-init |
 | review | 多视角评审能力 | prism-review |
-| codegen | 从评审产物生成编码规范 | prism-genskill |
+| migration | 路径迁移管理 | prism-workspace-migrate |
 | utility | 通用工具 | commit, digest |
 
-## 挂载模式
-
-Prism 原生技能直接在本仓库维护。用户个人技能通过 Prism vault 挂载：
+## 三正交分离
 
 ```
-Prism vault/
-└── Skills/
-    ├── prism-project-init/   # 从系统层复制或扩展
-    ├── prism-review/         # 从系统层复制或扩展
-    └── custom-skill/         # 用户自定义
+~/prism          (SDK)     — 协议 + Schema + 模板（Git 共享）
+~/prism-skills   (Skills)  — 技能实现（独立 Git，可分发）
+iCloud vault     (Workspace) — 项目状态（iCloud 同步）
 ```
 
-IDE 集成通过软链接接入：
+技能通过 `bin/relink` 自动分发到 IDE 环境：
 
 ```
-~/.cursor/skills-cursor/{skill} -> Prism vault Skills/{skill}
-~/.claude/skills/{skill}        -> Prism vault Skills/{skill}
+~/.cursor/skills-cursor/prism-* -> ~/prism-skills/prism-*
+~/.claude/skills/prism-*        -> ~/prism-skills/prism-*
 ```
 
 ## SKILL.md 规范

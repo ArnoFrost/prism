@@ -51,12 +51,11 @@ yaml_get() {
 }
 
 SDK_PATH=$(yaml_get sdk_path)
+SKILLS_PATH=$(yaml_get skills_path)
 VAULT_PATH=$(yaml_get vault_path)
 WS_SUBDIR=$(yaml_get workspace_subdir)
-SK_SUBDIR=$(yaml_get skills_subdir)
 
 WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
-SK_ROOT="${VAULT_PATH}/${SK_SUBDIR}"
 
 TOTAL=0
 OK=0
@@ -133,6 +132,7 @@ echo "────────────────────────�
 # 1. 检查基础路径
 echo -e "\n${CYAN}[路径检查]${NC}"
 [[ -d "$SDK_PATH" ]] && log_ok "SDK: ${SDK_PATH}" || log_err "SDK 不存在: ${SDK_PATH}"
+[[ -d "$SKILLS_PATH" ]] && log_ok "Skills: ${SKILLS_PATH}" || log_err "Skills 不存在: ${SKILLS_PATH}"
 [[ -d "$VAULT_PATH" ]] && log_ok "Vault: ${VAULT_PATH}" || log_err "Vault 不存在: ${VAULT_PATH}"
 
 if [[ ! -d "$WS_ROOT" ]]; then
@@ -144,17 +144,6 @@ if [[ ! -d "$WS_ROOT" ]]; then
   fi
 else
   log_ok "Workspace: ${WS_ROOT}"
-fi
-
-if [[ ! -d "$SK_ROOT" ]]; then
-  if $CHECK_ONLY || $DRY_RUN; then
-    log_warn "Skills 根目录不存在: ${SK_ROOT}"
-  else
-    mkdir -p "$SK_ROOT"
-    log_fix "已创建 Skills 根目录: ${SK_ROOT}"
-  fi
-else
-  log_ok "Skills: ${SK_ROOT}"
 fi
 
 # 2. 刷新项目软链接
@@ -178,12 +167,10 @@ while IFS= read -r line; do
 
       echo -e "  ${CYAN}${code}${NC} (${local_path})"
 
-      # workspace.{code}.local → vault/workspace_subdir/{CODE}/
       ws_target="${WS_ROOT}/${code}"
       ws_link="${local_path}/workspace.${code_lower}.local"
       ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
 
-      # AGENT.local.md → vault/workspace_subdir/{CODE}/AGENT.md
       agent_target="${WS_ROOT}/${code}/AGENT.md"
       agent_link="${local_path}/AGENT.local.md"
       if [[ -f "$agent_target" ]]; then
@@ -196,31 +183,34 @@ while IFS= read -r line; do
   fi
 done < "$CONFIG"
 
-# 3. 刷新 Skills 目录到 IDE
+# 3. 刷新 Skills 到 IDE 环境
 echo -e "\n${CYAN}[Skills IDE 映射]${NC}"
-if [[ -d "$SK_ROOT" ]]; then
-  for skill_dir in "$SK_ROOT"/*/; do
+if [[ -d "$SKILLS_PATH" ]]; then
+  skill_count=0
+  for skill_dir in "$SKILLS_PATH"/*/; do
     [[ -d "$skill_dir" ]] || continue
     skill_name=$(basename "$skill_dir")
+    [[ "$skill_name" == ".git" ]] && continue
+    ((skill_count++)) || true
 
     # Cursor
-    cursor_target="$HOME/.cursor/skills-cursor/${skill_name}"
     if [[ -d "$HOME/.cursor/skills-cursor" ]]; then
-      ensure_link "$cursor_target" "$skill_dir" "cursor: ${skill_name}"
+      cursor_link="$HOME/.cursor/skills-cursor/${skill_name}"
+      ensure_link "$cursor_link" "$skill_dir" "cursor: ${skill_name}"
     fi
 
-    # Claude
-    claude_target="$HOME/.claude/skills/${skill_name}"
+    # Claude Code
     if [[ -d "$HOME/.claude/skills" ]]; then
-      ensure_link "$claude_target" "$skill_dir" "claude: ${skill_name}"
+      claude_link="$HOME/.claude/skills/${skill_name}"
+      ensure_link "$claude_link" "$skill_dir" "claude: ${skill_name}"
     fi
   done
 
-  if [[ $(find "$SK_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l) -eq 0 ]]; then
+  if [[ $skill_count -eq 0 ]]; then
     log_skip "Skills 目录为空，跳过 IDE 映射"
   fi
 else
-  log_skip "Skills 根目录不存在，跳过 IDE 映射"
+  log_err "Skills 路径不存在: ${SKILLS_PATH}"
 fi
 
 # 4. 汇总
