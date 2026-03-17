@@ -208,6 +208,7 @@ if [[ -d "$SKILLS_PATH" ]]; then
     [[ -d "$skill_dir" ]] || continue
     skill_name=$(basename "$skill_dir")
     [[ "$skill_name" == ".git" ]] && continue
+    [[ ! -f "$skill_dir/SKILL.md" ]] && continue
     ((skill_count++)) || true
 
     for target in "${PLATFORM_TARGETS[@]}"; do
