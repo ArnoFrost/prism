@@ -44,25 +44,25 @@ categories:
     description: "Workspace lifecycle management"
     examples:
       - prism-project-init
-      - prism-project-sync
   review:
     description: "Multi-perspective review capabilities"
     examples:
       - prism-review
-  codegen:
-    description: "Code generation from review artifacts"
+  migration:
+    description: "Path and workspace migration"
     examples:
-      - prism-genskill
+      - prism-workspace-migrate
   utility:
     description: "General-purpose tools"
     examples:
       - commit
       - digest
 
-# Instance mounting
-mounting:
-  system_layer: "prism/skills/{skill-name}/SKILL.md"
-  instance_layer: "Prism vault Skills/{skill-name}/SKILL.md"
+# Distribution model (三正交分离)
+distribution:
+  system_layer: "prism/skills/schema/ + templates/ (SDK, schema + templates only)"
+  skills_repo: "~/prism-skills/{skill-name}/SKILL.md (independent Git repo)"
   ide_integration:
-    cursor: ".cursor/skills-cursor/{skill-name} -> instance"
-    claude: ".claude/skills/{skill-name} -> instance"
+    cursor: "~/.cursor/skills-cursor/{skill-name} -> ~/prism-skills/{skill-name}/"
+    claude: "~/.claude/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
+  mechanism: "bin/relink reads prism.local.yaml skills_path, auto-creates symlinks"
