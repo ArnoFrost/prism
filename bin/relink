@@ -6,6 +6,7 @@
 #   bin/relink --check      仅检查状态，不修改
 #   bin/relink --dry-run    预览变更，不实际执行
 #   bin/relink --project X  仅刷新指定项目
+#   bin/relink --prune      清理陈旧/失效软链接（可与 --dry-run 组合）
 
 set -euo pipefail
 
@@ -22,18 +23,21 @@ NC='\033[0m'
 
 DRY_RUN=false
 CHECK_ONLY=false
+PRUNE=false
 TARGET_PROJECT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check)    CHECK_ONLY=true; shift ;;
     --dry-run)  DRY_RUN=true; shift ;;
+    --prune)    PRUNE=true; shift ;;
     --project)  TARGET_PROJECT="$2"; shift 2 ;;
     --help|-h)
-      echo "用法: bin/relink [--check|--dry-run|--project CODE]"
+      echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE]"
       echo "  (无参数)     刷新所有软链接"
       echo "  --check      仅检查状态"
       echo "  --dry-run    预览变更"
+      echo "  --prune      清理陈旧/失效软链接（可与 --dry-run 组合）"
       echo "  --project X  仅刷新指定项目"
       exit 0
       ;;
@@ -226,10 +230,77 @@ else
   log_err "Skills 路径不存在: ${SKILLS_PATH}"
 fi
 
-# 4. 汇总
+# 4. Prune: 清理陈旧软链接
+PRUNED=0
+if $PRUNE; then
+  echo -e "\n${CYAN}[Prune 陈旧链接]${NC}"
+
+  prune_link() {
+    local link="$1" label="$2"
+    if $DRY_RUN; then
+      echo -e "  ${YELLOW}⌫${NC} ${label}: 将删除 ${DIM}$(readlink "$link")${NC}"
+    else
+      rm "$link"
+      echo -e "  ${YELLOW}⌫${NC} ${label}: 已删除 ${DIM}$(basename "$link")${NC}"
+    fi
+    ((PRUNED++)) || true
+  }
+
+  # 4a. IDE 平台目录：清理指向 SKILLS_PATH 下已不存在 skill 的链接
+  for target in "${PLATFORM_TARGETS[@]}"; do
+    platform="${target%%|*}"
+    root_dir="${target#*|}"
+    for link in "$root_dir"/*/; do
+      [[ -L "${link%/}" ]] || continue
+      link="${link%/}"
+      link_target=$(readlink "$link")
+      # 只处理 Prism Skills 管辖范围内的链接
+      if [[ "$link_target" == "$SKILLS_PATH"* || "$link_target" == *prism-skills* ]]; then
+        if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
+          prune_link "$link" "${platform}: $(basename "$link")"
+        fi
+      fi
+    done
+  done
+
+  # 4b. 项目目录：清理指向 WS_ROOT 下已不存在 Workspace 的桥接链接
+  in_projects=false
+  while IFS= read -r line; do
+    if [[ "$line" == "projects:" ]]; then
+      in_projects=true
+      continue
+    fi
+    if $in_projects; then
+      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
+        local_path="${BASH_REMATCH[2]}"
+        [[ -d "$local_path" ]] || continue
+        # 扫描 workspace.*.local 和 AGENT.local.md
+        for link in "$local_path"/workspace.*.local "$local_path"/AGENT.local.md; do
+          [[ -L "$link" ]] || continue
+          link_target=$(readlink "$link")
+          if [[ ! -e "$link_target" ]]; then
+            prune_link "$link" "项目: $(basename "$link")"
+          fi
+        done
+      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
+        break
+      fi
+    fi
+  done < "$CONFIG"
+
+  if [[ $PRUNED -eq 0 ]]; then
+    echo -e "  ${GREEN}✓${NC} 无陈旧链接"
+  fi
+fi
+
+# 5. 汇总
 echo ""
 echo "─────────────────────────────────"
-echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${RED}错误: ${ERRORS}${NC}"
+if [[ $PRUNED -gt 0 ]]; then
+  echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${YELLOW}清理: ${PRUNED}${NC}  ${RED}错误: ${ERRORS}${NC}"
+else
+  echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${RED}错误: ${ERRORS}${NC}"
+fi
 
 if [[ $ERRORS -gt 0 ]]; then
   echo -e "  ${RED}存在错误，请检查上述输出。${NC}"
