@@ -2,9 +2,20 @@
 # 定义 prism.local.yaml 的结构约束，供 bin/setenv --validate 参考。
 # 此文件本身不被脚本直接解析，作为人类可读的契约文档。
 
-version: "1.0.0"
+version: "1.1.0"
 
 fields:
+  device_id:
+    type: string
+    required: true
+    description: "当前设备标识符，用于跨设备路径解析"
+    example: "ARNOFROSTXU-MC1"
+    default: "$(hostname -s)"
+    validation:
+      - "由 setenv --init 自动从 hostname -s 生成"
+      - "可手动修改为自定义别名"
+      - "用于 project.yaml paths 的设备键匹配"
+
   sdk_path:
     type: string
     required: true
@@ -65,9 +76,22 @@ conventions:
   - "路径不使用 ~ 缩写，始终展开为绝对路径"
   - "YAML 顶层键用 snake_case"
   - "projects 段在文件末尾，便于追加"
+  - "device_id 紧跟注释块后、sdk_path 之前"
+
+multi_device:
+  description: "跨设备支持机制"
+  flow:
+    - "每台设备的 prism.local.yaml 有唯一 device_id"
+    - "Workspace 内 project.yaml 的 paths 以 device_id 为 key 存储各设备路径"
+    - "bin/setenv --sync 读取 Workspace project.yaml，按 device_id 解析本设备路径"
+    - "bin/relink 链接成功后，自动将 device_id → local_path 写回 project.yaml"
+  paths_format:
+    legacy: "list of strings（向后兼容，按路径是否存在逐个尝试）"
+    current: "map of device_id → absolute_path"
 
 tool_integration:
-  setenv_init: "生成符合此 schema 的配置文件"
+  setenv_init: "生成符合此 schema 的配置文件，自动写入 device_id"
+  setenv_sync: "从 Workspace project.yaml 同步项目注册到本地 yaml"
   setenv_validate: "校验配置文件是否符合此 schema（必填字段 + 路径可达性 + 项目注册）"
   setenv_export: "读取配置并输出 shell export 语句"
-  relink: "读取配置刷新所有软链接"
+  relink: "读取配置刷新所有软链接，成功后回写 project.yaml paths"

@@ -7,6 +7,7 @@
 #   bin/setenv --init --non-interactive  非交互创建（从参数/环境变量读取）
 #   bin/setenv --export     输出 export 语句（可 source）
 #   bin/setenv --validate   校验 prism.local.yaml 路径是否有效
+#   bin/setenv --sync       从 Workspace project.yaml 同步项目注册
 #   source <(bin/setenv --export)   注入环境变量到当前 shell
 #
 # --non-interactive 环境变量：
@@ -45,8 +46,16 @@ show_config() {
   vault=$(yaml_get vault_path)
   ws_sub=$(yaml_get workspace_subdir)
 
+  local device_id
+  device_id=$(yaml_get device_id)
+
   echo -e "${CYAN}Prism Local Configuration${NC}"
   echo "─────────────────────────────────"
+  if [[ -n "$device_id" ]]; then
+    echo -e "  设备 ID:       ${GREEN}${device_id}${NC}"
+  else
+    echo -e "  设备 ID:       ${YELLOW}未设置（运行 bin/setenv --sync 补充）${NC}"
+  fi
   echo -e "  SDK 路径:       ${GREEN}${sdk}${NC}"
   echo -e "  Skills 路径:    ${GREEN}${skills}${NC}"
   echo -e "  Vault 路径:     ${GREEN}${vault}${NC}"
@@ -95,6 +104,10 @@ do_export() {
   vault=$(yaml_get vault_path)
   ws_sub=$(yaml_get workspace_subdir)
 
+  local device_id
+  device_id=$(yaml_get device_id)
+
+  echo "export PRISM_DEVICE_ID=\"${device_id}\""
   echo "export PRISM_DIR=\"${sdk}\""
   echo "export PRISM_SKILLS=\"${skills}\""
   echo "export PRISM_VAULT=\"${vault}\""
@@ -111,6 +124,16 @@ do_validate() {
   echo "─────────────────────────────────"
 
   local errors=0
+
+  # device_id 单独检查（非路径类型）
+  local did
+  did=$(yaml_get device_id)
+  if [[ -z "$did" ]]; then
+    echo -e "  ${YELLOW}⚠${NC} device_id: 缺失（运行 bin/setenv --sync 自动补充）"
+  else
+    echo -e "  ${GREEN}✓${NC} device_id: ${did}"
+  fi
+
   local required_keys=("sdk_path" "skills_path" "vault_path" "workspace_subdir")
 
   for key in "${required_keys[@]}"; do
@@ -198,6 +221,8 @@ do_validate() {
 
 write_config() {
   local sdk="$1" skills="$2" vault="$3" ws_sub="$4"
+  local device_id
+  device_id=$(hostname -s)
   cat > "$CONFIG" << 'YAML_END'
 # Prism Local Configuration
 # 本地路径状态，不入版本控制（受控最小 schema，不可自由扩展）。
@@ -205,6 +230,9 @@ write_config() {
 
 YAML_END
   cat >> "$CONFIG" << CONFDATA
+# 设备标识（hostname -s 自动生成，跨设备路径解析用）
+device_id: ${device_id}
+
 # SDK 路径（Prism 仓库位置）
 sdk_path: ${sdk}
 
@@ -301,6 +329,265 @@ do_init() {
   echo -e "${GREEN}配置完成。运行 bin/relink 刷新软链接。${NC}"
 }
 
+do_sync() {
+  if [[ ! -f "$CONFIG" ]]; then
+    echo -e "${RED}✗ prism.local.yaml 不存在，先运行 bin/setenv --init${NC}"
+    exit 1
+  fi
+
+  local device_id vault ws_sub ws_root
+  device_id=$(yaml_get device_id)
+  vault=$(yaml_get vault_path)
+  ws_sub=$(yaml_get workspace_subdir)
+  ws_root="${vault}/${ws_sub}"
+
+  # 如果没有 device_id，自动补充
+  if [[ -z "$device_id" ]]; then
+    device_id=$(hostname -s)
+    # 插入 device_id 到 sdk_path 之前
+    local tmp="${CONFIG}.tmp.$$"
+    awk -v did="$device_id" '
+      /^sdk_path:/ && !inserted {
+        print "# 设备标识（hostname -s 自动生成，跨设备路径解析用）"
+        print "device_id: " did
+        print ""
+        inserted=1
+      }
+      { print }
+    ' "$CONFIG" > "$tmp" && mv "$tmp" "$CONFIG"
+    echo -e "${GREEN}⟳${NC} 自动补充 device_id: ${device_id}"
+  fi
+
+  echo -e "${CYAN}Prism Sync — 从 Workspace 同步项目注册${NC}"
+  echo -e "${DIM}设备: ${device_id}${NC}"
+  echo "─────────────────────────────────"
+
+  if [[ ! -d "$ws_root" ]]; then
+    echo -e "${RED}✗ Workspace 根目录不存在: ${ws_root}${NC}"
+    exit 1
+  fi
+
+  # 收集本地已注册项目（bash 3.2 兼容，用 \n 分隔的 CODE=PATH 列表）
+  local local_project_list=""
+  local in_projects=false
+  while IFS= read -r line; do
+    if [[ "$line" == "projects:" ]]; then
+      in_projects=true
+      continue
+    fi
+    if $in_projects; then
+      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
+        local_project_list="${local_project_list}${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"$'\n'
+      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
+        break
+      fi
+    fi
+  done < "$CONFIG"
+
+  local added=0
+  local updated=0
+  local skipped=0
+
+  # 扫描 Workspace 内所有 project.yaml
+  for proj_dir in "$ws_root"/*/; do
+    [[ -d "$proj_dir" ]] || continue
+    local proj_yaml="${proj_dir}project.yaml"
+    [[ -f "$proj_yaml" ]] || continue
+
+    local code
+    code=$(grep "^code:" "$proj_yaml" 2>/dev/null | sed 's/^code: *//; s/^"//; s/"$//')
+    [[ -z "$code" ]] && continue
+
+    echo -e "\n  ${CYAN}${code}${NC}"
+
+    # 解析 paths（支持 map 和 list 两种格式）
+    local resolved_path=""
+    local paths_is_map=false
+    local in_paths=false
+    local paths_raw=""
+
+    while IFS= read -r line; do
+      if [[ "$line" =~ ^paths: ]]; then
+        in_paths=true
+        continue
+      fi
+      if $in_paths; then
+        if [[ "$line" =~ ^[[:space:]]+-[[:space:]]*(.*) ]]; then
+          paths_raw="${paths_raw}list:${BASH_REMATCH[1]}"$'\n'
+        elif [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
+          paths_raw="${paths_raw}map:${BASH_REMATCH[1]}:${BASH_REMATCH[2]}"$'\n'
+          paths_is_map=true
+        elif [[ ! "$line" =~ ^[[:space:]] || "$line" =~ ^[a-z_]+: ]]; then
+          break
+        fi
+      fi
+    done < "$proj_yaml"
+
+    # 解析路径
+    if $paths_is_map; then
+      local match
+      match=$(echo "$paths_raw" | grep "^map:${device_id}:" | head -1 || true)
+      if [[ -n "$match" ]]; then
+        resolved_path="${match#map:${device_id}:}"
+        resolved_path=$(echo "$resolved_path" | sed 's/^"//; s/"$//')
+      fi
+    else
+      while IFS= read -r entry; do
+        [[ -z "$entry" ]] && continue
+        local p="${entry#list:}"
+        p=$(echo "$p" | sed 's/^"//; s/"$//')
+        local expanded="${p/#\~/$HOME}"
+        if [[ -d "$expanded" ]]; then
+          resolved_path="$expanded"
+          break
+        fi
+      done <<< "$paths_raw"
+    fi
+
+    # 已在本地注册？
+    local registered_path=""
+    registered_path=$(echo "$local_project_list" | grep "^${code}=" | head -1 | sed "s/^${code}=//" || true)
+    if [[ -n "$registered_path" ]]; then
+      if [[ -d "$registered_path" ]]; then
+        echo -e "    ${GREEN}✓${NC} 已注册: ${registered_path}"
+
+        # 回写 project.yaml（如果是 map 格式且缺少当前设备）
+        _sync_writeback_path "$proj_yaml" "$device_id" "$registered_path" "$paths_is_map"
+        ((skipped++)) || true
+        continue
+      else
+        echo -e "    ${YELLOW}⚠${NC} 已注册但路径不可达: ${registered_path}"
+      fi
+    fi
+
+    # 尝试已解析的路径
+    if [[ -n "$resolved_path" && -d "$resolved_path" ]]; then
+      echo -e "    ${GREEN}⟳${NC} 从 project.yaml 解析: ${resolved_path}"
+      _sync_add_project "$code" "$resolved_path"
+      _sync_writeback_path "$proj_yaml" "$device_id" "$resolved_path" "$paths_is_map"
+      ((added++)) || true
+      continue
+    fi
+
+    # 尝试 repo 字段做 git remote 匹配
+    local repo_url
+    repo_url=$(grep "^repo:" "$proj_yaml" 2>/dev/null | sed 's/^repo: *//; s/^"//; s/"$//' || true)
+    if [[ -n "$repo_url" ]]; then
+      local found_by_repo=""
+      found_by_repo=$(_sync_find_by_remote "$repo_url" || true)
+      if [[ -n "$found_by_repo" ]]; then
+        echo -e "    ${GREEN}⟳${NC} 通过 git remote 匹配: ${found_by_repo}"
+        _sync_add_project "$code" "$found_by_repo"
+        _sync_writeback_path "$proj_yaml" "$device_id" "$found_by_repo" "$paths_is_map"
+        ((added++)) || true
+        continue
+      fi
+    fi
+
+    # 无法自动解析，交互提示
+    if $NON_INTERACTIVE; then
+      echo -e "    ${YELLOW}⊘${NC} 无法自动解析，跳过（非交互模式）"
+      ((skipped++)) || true
+      continue
+    fi
+
+    echo -e "    ${YELLOW}?${NC} 未找到本地路径"
+    read -r -p "    输入 ${code} 的本地路径（留空跳过）: " user_path
+    if [[ -n "$user_path" ]]; then
+      # 展开 ~
+      user_path="${user_path/#\~/$HOME}"
+      if [[ -d "$user_path" ]]; then
+        _sync_add_project "$code" "$user_path"
+        _sync_writeback_path "$proj_yaml" "$device_id" "$user_path" "$paths_is_map"
+        ((added++)) || true
+      else
+        echo -e "    ${RED}✗${NC} 路径不存在: ${user_path}"
+        ((skipped++)) || true
+      fi
+    else
+      ((skipped++)) || true
+    fi
+  done
+
+  echo ""
+  echo "─────────────────────────────────"
+  echo -e "  新增: ${GREEN}${added}${NC}  跳过: ${DIM}${skipped}${NC}"
+  if [[ $added -gt 0 ]]; then
+    echo -e "\n  运行 ${CYAN}bin/relink${NC} 刷新软链接。"
+  fi
+}
+
+_sync_add_project() {
+  local code="$1" path="$2"
+  echo "  ${code}: ${path}" >> "$CONFIG"
+}
+
+_sync_writeback_path() {
+  local proj_yaml="$1" device_id="$2" local_path="$3" is_map="$4"
+  # 检查 project.yaml 是否已有当前 device_id 的条目
+  if grep -q "  ${device_id}:" "$proj_yaml" 2>/dev/null; then
+    return 0
+  fi
+
+  if [[ "$is_map" == "true" ]]; then
+    # map 格式：在 paths 段末尾追加当前设备
+    local tmp="${proj_yaml}.tmp.$$"
+    awk -v did="$device_id" -v lp="$local_path" '
+      /^paths:/ { in_paths=1; print; next }
+      in_paths && /^[^ ]/ && !/^  / {
+        print "  " did ": " lp
+        in_paths=0
+      }
+      { print }
+      END { if (in_paths) print "  " did ": " lp }
+    ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
+    echo -e "    ${DIM}↪ 已写回 project.yaml (${device_id})${NC}"
+  else
+    # list 格式：转换为 map 格式
+    local tmp="${proj_yaml}.tmp.$$"
+    local converted=false
+    awk -v did="$device_id" -v lp="$local_path" '
+      /^paths:/ { in_paths=1; print; next }
+      in_paths && /^  - / {
+        # 跳过旧 list 条目（保留为注释）
+        sub(/^  - /, "  # (legacy) ")
+        print
+        next
+      }
+      in_paths && /^[^ ]/ && !/^  / {
+        if (!wrote) {
+          print "  " did ": " lp
+          wrote=1
+        }
+        in_paths=0
+      }
+      { print }
+      END { if (in_paths && !wrote) print "  " did ": " lp }
+    ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
+    echo -e "    ${DIM}↪ project.yaml paths 已从 list 转为 map 格式${NC}"
+  fi
+}
+
+_sync_find_by_remote() {
+  local target_remote="$1"
+  # 在常见目录搜索匹配的 git remote
+  local search_dirs=("$HOME/Desktop" "$HOME/Projects" "$HOME/code" "$HOME/dev" "$HOME/Work" "$HOME/Desktop/Work")
+  for dir in "${search_dirs[@]}"; do
+    [[ -d "$dir" ]] || continue
+    while IFS= read -r git_dir; do
+      local repo_dir
+      repo_dir=$(dirname "$git_dir")
+      local remote
+      remote=$(git -C "$repo_dir" remote get-url origin 2>/dev/null)
+      if [[ "$remote" == "$target_remote" ]]; then
+        echo "$repo_dir"
+        return 0
+      fi
+    done < <(find "$dir" -maxdepth 3 -name ".git" -type d 2>/dev/null)
+  done
+  return 1
+}
+
 NON_INTERACTIVE=false
 ACTION=""
 
@@ -309,14 +596,16 @@ while [[ $# -gt 0 ]]; do
     --init)             ACTION="init"; shift ;;
     --export)           ACTION="export"; shift ;;
     --validate)         ACTION="validate"; shift ;;
+    --sync)             ACTION="sync"; shift ;;
     --non-interactive)  NON_INTERACTIVE=true; shift ;;
     --help|-h)
-      echo "用法: bin/setenv [--init [--non-interactive]|--export|--validate|--help]"
+      echo "用法: bin/setenv [--init [--non-interactive]|--export|--validate|--sync|--help]"
       echo "  (无参数)          显示当前配置"
       echo "  --init            交互式创建 prism.local.yaml"
       echo "  --init --non-interactive  从环境变量读取路径创建配置"
       echo "  --export          输出 export 语句（配合 source 使用）"
       echo "  --validate        校验 prism.local.yaml 字段与路径"
+      echo "  --sync            从 Workspace project.yaml 同步项目注册"
       exit 0
       ;;
     *) echo "未知参数: $1"; exit 1 ;;
@@ -327,5 +616,6 @@ case "${ACTION:-show}" in
   init)     do_init ;;
   export)   do_export ;;
   validate) do_validate ;;
+  sync)     do_sync ;;
   show)     show_config ;;
 esac

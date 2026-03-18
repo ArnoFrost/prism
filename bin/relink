@@ -59,6 +59,7 @@ yaml_get() {
   grep "^${1}:" "$CONFIG" 2>/dev/null | sed "s/^${1}: *//"
 }
 
+DEVICE_ID=$(yaml_get device_id)
 SDK_PATH=$(yaml_get sdk_path)
 SKILLS_PATH=$(yaml_get skills_path)
 VAULT_PATH=$(yaml_get vault_path)
@@ -136,6 +137,55 @@ ensure_link() {
   log_fix "${label}: 已创建 ${DIM}→ ${target}${NC}"
 }
 
+_relink_writeback_path() {
+  local proj_yaml="$1" device_id="$2" local_path="$3"
+  [[ -f "$proj_yaml" ]] || return 0
+  # 已有当前设备条目则跳过
+  if grep -q "  ${device_id}:" "$proj_yaml" 2>/dev/null; then
+    return 0
+  fi
+
+  # 检测 paths 格式
+  local in_paths=false has_map=false has_list=false
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^paths: ]]; then in_paths=true; continue; fi
+    if $in_paths; then
+      if [[ "$line" =~ ^[[:space:]]+-[[:space:]] ]]; then has_list=true; fi
+      if [[ "$line" =~ ^[[:space:]]+[A-Za-z0-9_-]+:[[:space:]] ]]; then has_map=true; fi
+      if [[ ! "$line" =~ ^[[:space:]] ]]; then break; fi
+    fi
+  done < "$proj_yaml"
+
+  if $has_map; then
+    local tmp="${proj_yaml}.tmp.$$"
+    awk -v did="$device_id" -v lp="$local_path" '
+      /^paths:/ { in_paths=1; print; next }
+      in_paths && /^[^ ]/ && !/^  / {
+        print "  " did ": " lp
+        in_paths=0
+      }
+      { print }
+      END { if (in_paths) print "  " did ": " lp }
+    ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
+  elif $has_list; then
+    local tmp="${proj_yaml}.tmp.$$"
+    awk -v did="$device_id" -v lp="$local_path" '
+      /^paths:/ { in_paths=1; print; next }
+      in_paths && /^  - / { sub(/^  - /, "  # (legacy) "); print; next }
+      in_paths && /^[^ ]/ && !/^  / {
+        if (!wrote) { print "  " did ": " lp; wrote=1 }
+        in_paths=0
+      }
+      { print }
+      END { if (in_paths && !wrote) print "  " did ": " lp }
+    ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
+  else
+    echo "" >> "$proj_yaml"
+    echo "paths:" >> "$proj_yaml"
+    echo "  ${device_id}: ${local_path}" >> "$proj_yaml"
+  fi
+}
+
 echo -e "${CYAN}Prism Relink${NC}"
 if $CHECK_ONLY; then
   echo -e "${DIM}模式: 仅检查${NC}"
@@ -190,6 +240,11 @@ while IFS= read -r line; do
       agent_link="${local_path}/AGENT.local.md"
       if [[ -f "$agent_target" ]]; then
         ensure_link "$agent_link" "$agent_target" "    AGENT.local.md"
+      fi
+
+      # 回写 project.yaml paths（跨设备支持）
+      if [[ -n "$DEVICE_ID" && -d "$ws_target" ]] && ! $CHECK_ONLY && ! $DRY_RUN; then
+        _relink_writeback_path "${ws_target}/project.yaml" "$DEVICE_ID" "$local_path"
       fi
 
     elif [[ ! "$line" =~ ^[[:space:]] ]]; then

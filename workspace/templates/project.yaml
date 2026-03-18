@@ -6,10 +6,11 @@
 code: "{PROJECT_CODE}"
 name: "{PROJECT_NAME}"
 
-# Cross-device paths (ordered by priority, agent auto-detects)
+# Cross-device paths (device_id → local absolute path)
+# device_id 来自 prism.local.yaml，由 hostname -s 自动生成
+# bin/relink 链接成功后自动补写当前设备条目
 paths:
-  - ~/path/to/project
-  # - ~/Projects/{PROJECT_NAME}
+  # {DEVICE_ID}: /path/to/project
 
 # ========== Optional ==========
 
