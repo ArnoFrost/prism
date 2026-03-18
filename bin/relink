@@ -141,14 +141,14 @@ _relink_writeback_path() {
   local proj_yaml="$1" device_id="$2" local_path="$3"
   [[ -f "$proj_yaml" ]] || return 0
   # 已有当前设备条目则跳过
-  if grep -q "  ${device_id}:" "$proj_yaml" 2>/dev/null; then
+  if grep -Fq "  ${device_id}:" "$proj_yaml" 2>/dev/null; then
     return 0
   fi
 
   # 检测 paths 格式
-  local in_paths=false has_map=false has_list=false
+  local in_paths=false has_paths=false has_map=false has_list=false
   while IFS= read -r line; do
-    if [[ "$line" =~ ^paths: ]]; then in_paths=true; continue; fi
+    if [[ "$line" =~ ^paths: ]]; then in_paths=true; has_paths=true; continue; fi
     if $in_paths; then
       if [[ "$line" =~ ^[[:space:]]+-[[:space:]] ]]; then has_list=true; fi
       if [[ "$line" =~ ^[[:space:]]+[A-Za-z0-9_-]+:[[:space:]] ]]; then has_map=true; fi
@@ -157,6 +157,7 @@ _relink_writeback_path() {
   done < "$proj_yaml"
 
   if $has_map; then
+    # paths 段有 map 条目：在段末追加新设备条目
     local tmp="${proj_yaml}.tmp.$$"
     awk -v did="$device_id" -v lp="$local_path" '
       /^paths:/ { in_paths=1; print; next }
@@ -168,6 +169,7 @@ _relink_writeback_path() {
       END { if (in_paths) print "  " did ": " lp }
     ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
   elif $has_list; then
+    # paths 段有 list 条目：转为 map 格式
     local tmp="${proj_yaml}.tmp.$$"
     awk -v did="$device_id" -v lp="$local_path" '
       /^paths:/ { in_paths=1; print; next }
@@ -179,7 +181,20 @@ _relink_writeback_path() {
       { print }
       END { if (in_paths && !wrote) print "  " did ": " lp }
     ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
+  elif $has_paths; then
+    # paths 段存在但无有效条目（纯注释或空）：在现有 paths 段下追加
+    local tmp="${proj_yaml}.tmp.$$"
+    awk -v did="$device_id" -v lp="$local_path" '
+      /^paths:/ { in_paths=1; print; next }
+      in_paths && /^[^ ]/ && !/^  / {
+        print "  " did ": " lp
+        in_paths=0
+      }
+      { print }
+      END { if (in_paths) print "  " did ": " lp }
+    ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
   else
+    # 完全没有 paths 段：追加新段
     echo "" >> "$proj_yaml"
     echo "paths:" >> "$proj_yaml"
     echo "  ${device_id}: ${local_path}" >> "$proj_yaml"
