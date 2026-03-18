@@ -1,16 +1,23 @@
-# === 本地协作状态（不入库） ===
-# 使用显式文件名而非 *.local.md，避免全局 gitignore 误伤其他项目
+# === Prism 本地状态（不入库） ===
 AGENT.local.md
 AGENT.*.local.md
 prism.local.yaml
-
-# Workspace 实例桥接（新模式）
 workspace.*.local
 workspace.*.local/
-
-# AI-TASK 桥接（兼容旧模式，逐步退出）
 ai-task.local
 ai-task.local/
+
+# === AI IDE dotfiles（各 AI 工具注入的本地配置） ===
+.cursor/
+.claude/
+.codebuddy/
+.trae/
+.codex/
+.continue/
+.windsurf/
+.augment/
+.aider*
+.copilot/
 
 # === OS ===
 .DS_Store
@@ -20,7 +27,7 @@ ai-task.local/
 .Trashes
 Thumbs.db
 
-# === IDE ===
+# === 传统 IDE ===
 .idea/
 .vscode/
 *.swp
