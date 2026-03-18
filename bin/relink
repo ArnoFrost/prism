@@ -56,7 +56,7 @@ if [[ ! -f "$CONFIG" ]]; then
 fi
 
 yaml_get() {
-  grep "^${1}:" "$CONFIG" 2>/dev/null | sed "s/^${1}: *//"
+  (grep "^${1}:" "$CONFIG" 2>/dev/null || true) | sed "s/^${1}: *//"
 }
 
 DEVICE_ID=$(yaml_get device_id)
