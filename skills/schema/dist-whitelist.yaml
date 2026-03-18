@@ -1,0 +1,34 @@
+# Prism Distribution Whitelist
+# 控制 prism-dist 打包时包含哪些 skills
+# 策略与机制分离：修改此文件即可调整分发范围，无需改脚本
+
+version: "1.0.0"
+
+profiles:
+  mvp:
+    description: "MVP 1.0.0 内部测试版"
+    skills:
+      - prism-workspace-init
+      - prism-review
+      - commit
+    include_shared: true
+
+  full:
+    description: "完整版（所有 public + internal stable）"
+    skills:
+      - prism-workspace-init
+      - prism-review
+      - prism-workspace-migrate
+      - prism-pull
+      - prism-push
+      - commit
+      - digest
+      - humanizer
+      - learnnote
+    include_shared: true
+
+# 永远排除的 skills（个人固化版、实验性迁移工具等）
+always_exclude:
+  - prism-review-arno
+  - prism-workspace-init-arno
+  - aitask-to-prism
