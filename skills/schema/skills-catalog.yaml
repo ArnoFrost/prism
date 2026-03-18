@@ -34,3 +34,11 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-17"
     rationale: "Advanced migration entry kept as validated optional surface."
+  - id: prism-dist
+    visibility: internal
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-18"
+    rationale: "MVP internal distribution tool, not for end users."
