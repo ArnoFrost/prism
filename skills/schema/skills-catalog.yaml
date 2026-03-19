@@ -11,16 +11,21 @@ policy:
 
 # 版本策略（SSOT）
 # ─────────────────────────────────────────────
-# public  skill → version = 仓库 tag（如 0.5.0），repo bump 时统一 bump
-# internal skill → version = internal-NN，skill 级独立递增，NN 从 01 起
-# personal variant → version = internal-NN-{user}，同 internal 但带用户后缀
-# 开源过渡 → v1.0.0 时，internal skill 如需 public 化，重新进入 catalog + 重置为 semver
+# public  → prism-* 前缀，对外暴露，version = 仓库 tag（如 0.5.0），repo bump 时统一 bump
+# dev     → prism-* 前缀，不暴露，维护者内部工具，version = dev-NN，内部耦合演进
+# common  → 无 prism-* 前缀，泛化技能，用户可自选装入，version = 独立 semver
+# personal variant → dev-NN-{user}，基于 dev 方案加用户后缀
+# 开源过渡 → v1.0.0 时 dev/common skill 如需 public 化，进入 catalog + 重置为 semver
 versioning:
   public: "{repo_tag}"
-  internal: "internal-{NN}"
-  personal: "internal-{NN}-{user}"
+  dev: "dev-{NN}"
+  common: "independent semver"
+  personal: "dev-{NN}-{user}"
   note: "NN starts at 01 per skill, increments on substantive change. Public versions bump atomically with repo tag."
 
+# ─────────────────────────────────────────────
+# Public skills — 对外暴露，随 SDK 发布
+# ─────────────────────────────────────────────
 entries:
   - id: prism-workspace-init
     visibility: public
@@ -46,11 +51,39 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-17"
     rationale: "Advanced migration entry kept as validated optional surface."
+
+# ─────────────────────────────────────────────
+# Dev skills — prism-* 前缀，维护者内部工具，不对外暴露
+# ─────────────────────────────────────────────
   - id: prism-dist
-    visibility: internal
+    visibility: dev
     stability: experimental
     source_repo: prism-skills
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-18"
-    rationale: "MVP internal distribution tool, not for end users."
+    rationale: "MVP internal distribution tool."
+  - id: prism-push
+    visibility: dev
+    stability: stable
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-19"
+    rationale: "Maintainer repo sync — push local changes."
+  - id: prism-pull
+    visibility: dev
+    stability: stable
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-19"
+    rationale: "Maintainer repo sync — pull remote updates."
+  - id: aitask-to-prism
+    visibility: dev
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-19"
+    rationale: "Legacy migration tool, always_exclude from dist."

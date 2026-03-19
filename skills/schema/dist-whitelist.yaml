@@ -6,29 +6,30 @@ version: "0.5.0"
 
 profiles:
   mvp:
-    description: "MVP 1.0.0 内部测试版"
+    description: "MVP 0.5.x 内部测试版 — public + 核心 common"
     skills:
-      - prism-workspace-init
-      - prism-review
-      - commit
+      - prism-workspace-init       # [public]
+      - prism-review               # [public]
+      - commit                     # [common]
     include_shared: true
 
   full:
-    description: "完整版（所有 public + internal stable）"
+    description: "完整版 — 全部 public + common"
     skills:
-      - prism-workspace-init
-      - prism-review
-      - prism-workspace-migrate
-      - prism-pull
-      - prism-push
-      - commit
-      - digest
-      - humanizer
-      - learnnote
+      - prism-workspace-init       # [public]
+      - prism-review               # [public]
+      - prism-workspace-migrate    # [public]
+      - commit                     # [common]
+      - digest                     # [common]
+      - humanizer                  # [common]
+      - learnnote                  # [common]
     include_shared: true
 
-# 永远排除的 skills（个人固化版、实验性迁移工具等）
+# 永远排除（dev 工具 + 个人固化版）
 always_exclude:
-  - prism-review-arno
-  - prism-workspace-init-arno
-  - aitask-to-prism
+  - prism-dist                     # [dev] 分发工具自身不入包
+  - prism-push                     # [dev] 维护者工具
+  - prism-pull                     # [dev] 维护者工具
+  - aitask-to-prism                # [dev] 历史迁移工具
+  - prism-review-arno              # [personal]
+  - prism-workspace-init-arno      # [personal]
