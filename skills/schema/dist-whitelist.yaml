@@ -2,7 +2,7 @@
 # 控制 prism-dist 打包时包含哪些 skills
 # 策略与机制分离：修改此文件即可调整分发范围，无需改脚本
 
-version: "1.0.0"
+version: "0.5.0"
 
 profiles:
   mvp:

@@ -1,7 +1,7 @@
 # Prism Skills Catalog (SSOT)
 # Public injected skills must be declared here.
 
-version: "1.0.0"
+version: "0.5.0"
 
 policy:
   default_visibility: internal
