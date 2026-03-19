@@ -18,7 +18,29 @@
 
 ## Step -1: 前置检查（仓库就绪）
 
-在开始 Setup 前，确认 Prism SDK 仓库已就绪：
+在开始 Setup 前，确认 Prism SDK 仓库已就绪。
+
+### 场景判断
+
+先检测安装来源：
+
+```bash
+# 判断是 git clone 还是 zip 安装
+if [ -f ~/prism/VERSION ] && [ ! -d ~/prism/.git ]; then
+  echo "INSTALL_SOURCE=zip"
+else
+  echo "INSTALL_SOURCE=git"
+fi
+```
+
+### ZIP 安装（`INSTALL_SOURCE=zip`）
+
+> 如果你是从 INSTALL.md 跳转过来的，**直接跳过 Step -1，从 Step 0 开始**。
+> SDK 和 Skills 已通过 INSTALL.md 的流程放置到正确位置。
+
+无需任何操作，继续 Step 0。
+
+### Git Clone 安装（`INSTALL_SOURCE=git`）
 
 ```bash
 if [ ! -d ~/prism/.git ]; then
