@@ -278,6 +278,8 @@ if [[ -d "$SKILLS_PATH" ]]; then
   [[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_TARGETS+=("claude-internal|$HOME/.claude-internal/skills")
   [[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_TARGETS+=("codebuddy|$HOME/.codebuddy/skills")
   [[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_TARGETS+=("codebuddy-cli|$HOME/.codebuddy/commands")
+  [[ -d "$HOME/.workbuddy/skills" ]] && PLATFORM_TARGETS+=("workbuddy|$HOME/.workbuddy/skills")
+  [[ -d "$HOME/.workbuddy/commands" ]] && PLATFORM_TARGETS+=("workbuddy-cli|$HOME/.workbuddy/commands")
 
   if [[ ${#PLATFORM_TARGETS[@]} -eq 0 ]]; then
     log_skip "未探测到可用平台目录，跳过 Skills 映射"

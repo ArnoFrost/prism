@@ -104,6 +104,8 @@ else
   [[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_DIRS+=("claude-internal|$HOME/.claude-internal/skills")
   [[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_DIRS+=("codebuddy|$HOME/.codebuddy/skills")
   [[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_DIRS+=("codebuddy-cli|$HOME/.codebuddy/commands")
+  [[ -d "$HOME/.workbuddy/skills" ]] && PLATFORM_DIRS+=("workbuddy|$HOME/.workbuddy/skills")
+  [[ -d "$HOME/.workbuddy/commands" ]] && PLATFORM_DIRS+=("workbuddy-cli|$HOME/.workbuddy/commands")
 
   if [[ ${#PLATFORM_DIRS[@]} -eq 0 ]]; then
     echo -e "  ${DIM}未探测到平台目录${NC}"
