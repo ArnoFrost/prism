@@ -9,6 +9,18 @@ policy:
   public_requires_audit: true
   note: "Private skills are unrestricted. Public skills require universality and normative necessity."
 
+# 版本策略（SSOT）
+# ─────────────────────────────────────────────
+# public  skill → version = 仓库 tag（如 0.5.0），repo bump 时统一 bump
+# internal skill → version = internal-NN，skill 级独立递增，NN 从 01 起
+# personal variant → version = internal-NN-{user}，同 internal 但带用户后缀
+# 开源过渡 → v1.0.0 时，internal skill 如需 public 化，重新进入 catalog + 重置为 semver
+versioning:
+  public: "{repo_tag}"
+  internal: "internal-{NN}"
+  personal: "internal-{NN}-{user}"
+  note: "NN starts at 01 per skill, increments on substantive change. Public versions bump atomically with repo tag."
+
 entries:
   - id: prism-workspace-init
     visibility: public
