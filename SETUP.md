@@ -305,8 +305,8 @@ bin/relink --check
 软链接: N 个技能已映射到 {检测到的 IDE 列表}
 
 下一步：
-  - 接入项目: 使用 /prism-workspace-init
-  - 启动评审: 使用 /prism-review
+  - 接入项目: 使用 /prism-workflow-init
+  - 启动评审: 使用 /prism-workflow-review
 ```
 
 ---
@@ -362,17 +362,17 @@ grep -c "workspace\.\*\.local" "$GI_GLOBAL" && echo "✓ gitignore 已对齐"
 
 ```
 问题（单选）: "初始化已完成，你想接下来？"
-  - "接入一个项目到 Prism（/prism-workspace-init）"
+  - "接入一个项目到 Prism（/prism-workflow-init）"
   - "先看看当前状态就好"
-  - "直接开始一轮评审（/prism-review）"
+  - "直接开始一轮评审（/prism-workflow-review）"
 ```
 
 #### 模式 B（对话式）
 
 ```
 初始化已完成。你可以：
-- 输入 /prism-workspace-init 为项目创建工作区
-- 输入 /prism-review 对当前项目启动评审
+- 输入 /prism-workflow-init 为项目创建工作区
+- 输入 /prism-workflow-review 对当前项目启动评审
 - 或告诉我你接下来想做什么
 ```
 

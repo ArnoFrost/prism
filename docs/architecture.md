@@ -140,7 +140,7 @@ prism/
 
 **Phase 2 — 规范收敛与开源准备** ✅
 
-- [x] `prism-review` IDE 并行适配（Cursor 实战验证）
+- [x] `prism-review`（现 `prism-workflow-review`）IDE 并行适配（Cursor 实战验证）
 - [x] 工具加固：`--prune` / `--validate` / `--non-interactive` / 覆盖保护
 - [x] 模板占位符统一 + `prism.local.yaml` schema
 - [x] `ai-task.local` 退出计划
