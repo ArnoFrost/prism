@@ -16,13 +16,14 @@
 ├── index.md              # 项目入口（任务列表）
 ├── README.md             # 本文件（协作规范）
 ├── tasks/                # 进行中的任务
-│   ├── {topic-name}/     # 专项子目录（可选，高内聚任务组）
-│   │   ├── README.md     # 专项入口（轮次索引 + 当前状态）
+│   ├── {NNN}_{topic}/    # 专项子目录（编号全局递增，与 archive 共享）
+│   │   ├── README.md     # 专项入口（含 created / updated）
 │   │   └── {task-dirs}   # 子任务目录
 │   └── {standalone}      # 独立任务
 ├── docs/                 # 项目文档
-└── archive/              # 已完成任务归档
-    └── YYYY-MM/
+└── archive/              # 已完成归档
+    ├── README.md         # 归档总览（可选）
+    └── {NNN}_{topic}/    # 编号与 tasks 连续；legacy 可为 YYYY-MM/
 ```
 
 ## 桥接方式
@@ -36,7 +37,7 @@
 
 1. 描述需求，AI 自动创建任务文档
 2. AI 执行任务并更新 index.md 状态
-3. 完成后归档到 `archive/YYYY-MM/`
+3. 完成后归档到 `archive/{NNN}_{topic-name}/`（保留原编号）；无专项时可沿用 `archive/YYYY-MM/`
 
 ## 归档规则
 

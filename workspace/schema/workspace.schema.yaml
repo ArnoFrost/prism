@@ -1,7 +1,7 @@
 # Prism Workspace Schema
 # Defines the structure and constraints for workspace instances.
 
-version: "1.0.0"
+version: "1.1.0"
 
 # Workspace instance directory structure
 structure:
@@ -14,7 +14,7 @@ structure:
     - docs/
     - archive/
     - AGENT.md
-    - "tasks/{topic-name}/"   # 专项子目录（高内聚任务组）
+    - "tasks/{NNN}_{topic-name}/"   # 专项子目录（NNN 全局递增，tasks/archive 共享编号空间）
 
 # Symlink naming convention
 # workspace.{code}.local → Prism vault Workspace/{CODE}/
@@ -83,7 +83,9 @@ archive:
     status_done: true
     days_since_creation: 7
     active_task_limit: 20
-  structure: "archive/{YYYY-MM}/"
+  # 推荐：编号 + 专项归档，与 tasks/{NNN}_{topic}/ 共享编号空间；legacy 可为 archive/{YYYY-MM}/
+  structure: "archive/{NNN}_{topic-name}/"
+  topic_readme: "archive/{NNN}_{topic-name}/README.md"
 
 # Task artifacts taxonomy
 # Review → Plan → Steps 三层产物模型
@@ -91,7 +93,7 @@ task_artifacts:
   topic_readme:
     filename: "README.md"
     description: "专项目录入口（轮次索引 + 当前状态）"
-    location: "tasks/{topic-name}/"
+    location: "tasks/{NNN}_{topic-name}/"
     producer: "prism-workflow-init / prism-workflow-review / 手动"
   task_review:
     filename: "task_review.md"
