@@ -14,26 +14,9 @@ paths:
 
 # ========== Optional ==========
 
-task_naming:
-  format: "full"    # full | date | simple | custom
-  # pattern: "{DATE}-{NNN}_{TAG}{NAME}.md"  # custom only
-  # seq_digits: 3
-
 tech_stack: []
 
 created: "YYYY-MM-DD"
 status: active       # active | paused | archived
 tags: []
 related: []
-
-# Allowed tag subset (empty = all core tags)
-# allowed_tags:
-#   - 功能
-#   - 修复
-#   - 评审
-
-# Task constraints
-task_constraints:
-  task_doc_max_lines: 300
-  max_active_tasks: 15
-  archive_after_days: 7

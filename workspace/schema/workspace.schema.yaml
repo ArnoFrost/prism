@@ -1,7 +1,7 @@
 # Prism Workspace Schema
 # Defines the structure and constraints for workspace instances.
 
-version: "0.6.0"
+version: "0.7.0"
 
 # Workspace instance directory structure
 structure:
@@ -9,7 +9,7 @@ structure:
     - project.yaml
     - index.md
     - README.md
-    - tasks/
+    - topics/
   optional:
     - docs/
     - archive/
@@ -25,7 +25,7 @@ topic:
   naming: "{NNN}_{topic-name}/"
   numbering:
     digits: 3
-    scope: "tasks/ + archive/ 共享编号空间，全局递增"
+    scope: "topics/ + archive/ 共享编号空间，全局递增"
   # 专项内部结构定义
   structure:
     required:
@@ -33,65 +33,30 @@ topic:
     recommended:
       - intake.md           # 输入整形（混沌输入 → 结构化）
       - scope.md            # 合同收敛（目标/非目标/验收口径/约束/未决）
-      - plan.md             # 当前有效行动方案（跨轮次更新）
+      - plan.md             # 总计划 + 当前焦点（单文件双区，跨轮次更新）
       - review.index.md     # 评审索引
     optional:
       - decision.index.md   # 决策索引
       - reviews/            # 评审轮次产物（rXX_short-desc.md）
       - "reviews/raw/"      # 原始角色报告（可选保留）
       - decisions/          # 决策记录（dXX_short-desc.md）
+      - verify/             # 验证规格（plan 条目按需关联，[auto]/[human] 标记）
       - artifacts/          # 产出工件
       - snapshots/          # 历史快照（scope/plan 旧版本）
 
-# Task naming formats (for subtasks within topics or standalone tasks)
-task_naming:
-  formats:
-    full:
-      pattern: "{YYYYMMDD}-{NNN}_[{TAG}]{NAME}"
-      example: "20260317-001_[功能]用户登录"
-    date:
-      pattern: "{YYYYMMDD}-{NNN}_{NAME}"
-    simple:
-      pattern: "{NNN}-{NAME}"
-    custom:
-      pattern: "user-defined via project.yaml"
-  defaults:
-    format: full
-    seq_digits: 3
-
-# Core tags (exactly 1 per task)
-tags:
-  - 功能
-  - 优化
-  - 修复
-  - 排查
-  - 文档
-  - 调研
-  - 技术方案
-  - 规范
-  - 下线
-  - 清理
-  - 梳理
-  - 测试
-  - 评审
-  - 架构
-  - 集成
-  - 同步
-
-# Task status lifecycle
-task_status:
-  values: [todo, in-progress, done]
+# Topic status lifecycle
+topic_status:
+  values: [in-progress, done]
   transitions:
-    todo: [in-progress]
-    in-progress: [done, todo]
+    in-progress: [done]
     done: []
 
-# Task frontmatter schema
-task_frontmatter:
+# Topic frontmatter schema (for topic root files: intake/scope/plan/review.index)
+topic_frontmatter:
   required:
     date: "YYYY-MM-DD"
-    status: "{task_status.values}"
-    type: "{tags}"
+    status: "string"
+    type: "string"
     tags: "list[string]"
   optional:
     related: "list[string]"
@@ -108,12 +73,12 @@ topic_artifacts:
     producer: "prism-workflow-intake"
   scope:
     filename: "scope.md"
-    description: "合同收敛 — 目标/非目标/验收口径/关键约束/未决问题"
-    producer: "prism-workflow-intake → 手动精修"
+    description: "合同收敛 — 目标/非目标/验收口径/关键约束/未决问题（plan 唯一上游 SSOT）"
+    producer: "prism-workflow-scope / prism-workflow-intake(初稿)"
   plan:
     filename: "plan.md"
-    description: "当前有效行动方案（跨轮次更新，每轮 review 后刷新）"
-    producer: "review 收敛 / 手动"
+    description: "总计划（工作分解 + 里程碑）+ 当前焦点（时间切片）— 由 scope.md 驱动更新，review 不直接修改"
+    producer: "prism-workflow-scope(派生)"
   review:
     filename_pattern: "reviews/rXX_short-desc.md"
     naming_rule: "rXX_{简短描述}.md — 中英文均可，禁止空格/子目录"
@@ -122,7 +87,7 @@ topic_artifacts:
   review_raw:
     filename_pattern: "reviews/raw/role-{X}.md"
     description: "原始角色评审报告（可选保留，默认不暴露）"
-    producer: "prism-workflow-review 子任务"
+    producer: "prism-workflow-review subagent"
   decision:
     filename_pattern: "decisions/dXX_short-desc.md"
     naming_rule: "dXX_{简短描述}.md — 中英文均可，禁止空格/子目录"
@@ -147,6 +112,15 @@ topic_artifacts:
     filename: "review.index.md"
     description: "评审索引 — 哪轮做了什么，当前依据哪轮"
     producer: "prism-workflow-review 自动追加"
+  verify:
+    filename_pattern: "verify/vXX_{short-desc}.md"
+    naming_rule: "vXX_{简短描述}.md — 中英文均可，禁止空格"
+    description: "验证规格 — 由 plan.md 条目按需关联，承载 scope 验收大项的具体判定标准"
+    markers:
+      auto: "[auto] — Agent 可独立执行验证，后跟命令 + 预期输出"
+      human: "[human] — 需人工操作验收，后跟步骤 + 预期结果"
+      plain: "无标记 — 纯判定标准文本"
+    producer: "手动 / prism-workflow-scope(派生)"
   decision_index:
     filename: "decision.index.md"
     description: "决策索引 — 人类裁决历史"
@@ -157,15 +131,13 @@ archive:
   trigger:
     status_done: true
     days_since_creation: 7
-    active_task_limit: 20
+    active_topic_limit: 20
   structure: "archive/{NNN}_{topic-name}/"
   legacy: "archive/{YYYY-MM}/"
   topic_readme: "archive/{NNN}_{topic-name}/README.md"
 
 # Constraints
 constraints:
-  task_doc_max_lines: 300
-  max_active_tasks: 15
+  doc_max_lines: 300
+  max_active_topics: 15
   archive_after_days: 7
-  tags_per_task: 1
-  no_custom_tags: true

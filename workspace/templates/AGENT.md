@@ -6,14 +6,14 @@
 
 ```text
 workspace.{PROJECT_CODE_LOWER}.local/
-├── index.md          # 任务列表 + 专项索引
+├── index.md          # 专项索引
 ├── README.md         # 协作规范
-├── tasks/
+├── topics/
 │   └── {NNN}_{topic}/
 │       ├── README.md         # 专项主线
 │       ├── intake.md         # 输入
 │       ├── scope.md          # 合同
-│       ├── plan.md           # 行动方案
+│       ├── plan.md           # 总计划 + 当前焦点
 │       ├── reviews/rXX.md    # 评审轮次
 │       └── decisions/dXX.md  # 决策记录
 └── docs/
@@ -24,7 +24,9 @@ workspace.{PROJECT_CODE_LOWER}.local/
 | 动作 | 入口 |
 |------|------|
 | 入料/路由 | `/prism-workflow-intake` |
-| 评审 | `/prism-workflow-review` |
+| 合同收敛 | `/prism-workflow-scope` |
+| 评审（正式） | `/prism-workflow-review` |
+| 评审（轻量） | `/prism-workflow-review-lite` |
 | 查看任务 | `index.md` |
 
 ## 决策记录约定

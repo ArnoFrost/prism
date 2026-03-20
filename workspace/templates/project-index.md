@@ -1,6 +1,6 @@
 <prism-workspace project="{PROJECT_CODE}">
 项目: {PROJECT_CODE} | 规范: ./README.md
-自动行为: 创建任务 → 执行 → 更新 index.md → 归档
+自动行为: 创建专项 → 执行 → 更新 index.md → 归档
 约束: 严格遵循 README.md 中的命名规范，标签/归档规则见 workspace.schema.yaml
 </prism-workspace>
 
@@ -19,7 +19,7 @@
 
 ---
 
-## 任务列表
+## 专项列表
 
 ### 进行中
 
@@ -39,7 +39,7 @@ _暂无归档_
 
 ## 快捷链接
 
-- [任务目录](./tasks/)
+- [专项目录](./topics/)
 - [文档目录](./docs/)
 - [项目元数据](./project.yaml)
 - [协作规范](./README.md)
