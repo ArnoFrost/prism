@@ -15,8 +15,9 @@
 skills/
 ├── README.md                          # 本文件
 ├── schema/
-│   └── skill.schema.yaml             # 技能结构约束
-│   └── skills-catalog.yaml           # 公开注入技能清单（SSOT）
+│   ├── skill.schema.yaml             # 技能结构约束
+│   ├── skills-catalog.yaml           # 技能注册表 SSOT（v0.7.0）
+│   └── dist-whitelist.yaml           # 分发白名单（mvp / full profile）
 └── templates/
     └── SKILL.template.md             # 技能编写模板
 ```
@@ -28,6 +29,24 @@ skills/
 | workflow | 专项工作流管线 | prism-workflow-init, intake, scope, review, review-lite |
 | migration | 路径迁移管理 | prism-workspace-migrate |
 | utility | 通用工具 | commit, digest |
+
+## Workflow 管线（v0.7 Beta）
+
+五个 workflow skill 组成一条完整的人机协作管线：
+
+```
+init（项目容器）→ intake（入料路由）→ scope（合同收敛）→ review（评审）→ decision（决策）→ scope（更新）→ ...
+```
+
+| Skill | 触发 | 输入 | 产出 |
+|-------|------|------|------|
+| `prism-workflow-init` | `/prism-workflow-init` | 项目路径 + 用户信息 | workspace 骨架 + 注册 + 软链接 |
+| `prism-workflow-intake` | `/prism-workflow-intake` | 混沌需求描述 | topic 目录 + intake.md + scope 草稿 |
+| `prism-workflow-scope` | `/prism-workflow-scope` | 决策触发 | scope.md 原地更新 + plan.md 派生 |
+| `prism-workflow-review` | `/prism-workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
+| `prism-workflow-review-lite` | `/prism-workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
+
+共享依赖：`shared/sniff_lib.py`（环境探测 + topic 亲和匹配）、`shared/obsidian-config.md`、`shared/parallel-execution.md`。
 
 ## 三正交分离
 
