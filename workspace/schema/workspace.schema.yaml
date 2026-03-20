@@ -125,7 +125,22 @@ topic_artifacts:
   decision:
     filename_pattern: "decisions/dXX.md"
     description: "人类 accept/reject/route 裁决记录"
-    producer: "手动 / 未来 decision-skill"
+    producer: "手动 / review 后触发"
+    template: |
+      # dXX — {决策标题}
+      date: {YYYY-MM-DD}
+      trigger: {触发来源，如 r01 review / intake 路由 / 对话}
+      status: accepted | rejected | deferred
+      ## 决策
+      {一句话结论}
+      ## 上下文
+      {做这个决策时的关键背景}
+      ## 备选方案
+      {考虑过但放弃的选项，简述理由}
+      ## 影响
+      {这个决策改变了什么：scope/plan/schema/skill}
+      ## 后续动作
+      - [ ] {需要执行的动作}
   review_index:
     filename: "review.index.md"
     description: "评审索引 — 哪轮做了什么，当前依据哪轮"
