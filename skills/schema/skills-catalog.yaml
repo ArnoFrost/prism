@@ -47,6 +47,14 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
     rationale: "Topic-aware project init, replaces prism-workspace-init."
+  - id: prism-workflow-intake
+    visibility: dev
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-20"
+    rationale: "Topic intake, routing, and migration. Entry point of the workflow pipeline."
   - id: prism-workflow-review
     visibility: dev
     stability: experimental

@@ -4,6 +4,7 @@
 约束: 严格遵循 README.md 中的命名/标签/归档规范，不创造新标签
 skills:
   - prism-workflow-init
+  - prism-workflow-intake
   - prism-workflow-review
 </prism-workspace>
 

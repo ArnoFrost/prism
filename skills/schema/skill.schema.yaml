@@ -71,6 +71,7 @@ categories:
     description: "Workflow-oriented skills for structured task collaboration"
     examples:
       - prism-workflow-init
+      - prism-workflow-intake
       - prism-workflow-review
   migration:
     description: "Path and workspace migration"
