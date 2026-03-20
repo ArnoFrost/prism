@@ -16,6 +16,10 @@
 ├── index.md              # 项目入口（任务列表）
 ├── README.md             # 本文件（协作规范）
 ├── tasks/                # 进行中的任务
+│   ├── {topic-name}/     # 专项子目录（可选，高内聚任务组）
+│   │   ├── README.md     # 专项入口（轮次索引 + 当前状态）
+│   │   └── {task-dirs}   # 子任务目录
+│   └── {standalone}      # 独立任务
 ├── docs/                 # 项目文档
 └── archive/              # 已完成任务归档
     └── YYYY-MM/

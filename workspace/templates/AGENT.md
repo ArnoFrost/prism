@@ -24,7 +24,11 @@
 workspace.{PROJECT_CODE_LOWER}.local/   # 软链接 → Prism vault Workspace/{PROJECT_CODE}/
 ├── project.yaml                 # 项目元数据
 ├── index.md                     # 项目入口
-├── tasks/                       # 任务目录
+├── tasks/                       # 任务目录（支持 topic 专项子目录）
+│   ├── {topic-name}/            # 专项子目录（可选）
+│   │   ├── README.md            # 专项入口（轮次索引 + 状态）
+│   │   └── {task-dirs...}       # 子任务
+│   └── {standalone-tasks...}    # 独立任务
 └── docs/                        # 文档目录
 ```
 

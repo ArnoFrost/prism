@@ -1,7 +1,7 @@
 # Prism Skills Catalog (SSOT)
 # Public injected skills must be declared here.
 
-version: "0.5.0"
+version: "0.6.0"
 
 policy:
   default_visibility: internal
@@ -27,22 +27,6 @@ versioning:
 # Public skills — 对外暴露，随 SDK 发布
 # ─────────────────────────────────────────────
 entries:
-  - id: prism-workspace-init
-    visibility: public
-    stability: stable
-    source_repo: prism-skills
-    inject_default: true
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-03-17"
-    rationale: "Core project enablement entry in Prism MVP."
-  - id: prism-review
-    visibility: public
-    stability: stable
-    source_repo: prism-skills
-    inject_default: true
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-03-17"
-    rationale: "Core high-frequency collaboration action in Prism MVP."
   - id: prism-workspace-migrate
     visibility: public
     stability: experimental
@@ -55,6 +39,22 @@ entries:
 # ─────────────────────────────────────────────
 # Dev skills — prism-* 前缀，维护者内部工具，不对外暴露
 # ─────────────────────────────────────────────
+  - id: prism-workflow-init
+    visibility: dev
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-20"
+    rationale: "Topic-aware project init, replaces prism-workspace-init."
+  - id: prism-workflow-review
+    visibility: dev
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-20"
+    rationale: "Topic-aware review evolution for task cohesion workflow. Replaces prism-review."
   - id: prism-dist
     visibility: dev
     stability: experimental

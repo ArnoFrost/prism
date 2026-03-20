@@ -14,6 +14,7 @@ structure:
     - docs/
     - archive/
     - AGENT.md
+    - "tasks/{topic-name}/"   # 专项子目录（高内聚任务组）
 
 # Symlink naming convention
 # workspace.{code}.local → Prism vault Workspace/{CODE}/
@@ -87,10 +88,15 @@ archive:
 # Task artifacts taxonomy
 # Review → Plan → Steps 三层产物模型
 task_artifacts:
+  topic_readme:
+    filename: "README.md"
+    description: "专项目录入口（轮次索引 + 当前状态）"
+    location: "tasks/{topic-name}/"
+    producer: "prism-workflow-init / prism-workflow-review / 手动"
   task_review:
     filename: "task_review.md"
     description: "评审综合报告（高能模型产出：评审 + 拆解 + 行动计划）"
-    producer: "prism-review / 手动"
+    producer: "prism-workflow-review / 手动"
   task_plan:
     filename: "task_plan.md"
     description: "执行计划（可选，简单任务可省略）"
@@ -102,7 +108,7 @@ task_artifacts:
   reviewer:
     filename_pattern: "reviewer_{ROLE}_{name}.md"
     description: "独立角色评审报告"
-    producer: "prism-review 子任务"
+    producer: "prism-workflow-review 子任务"
 
 # Constraints
 constraints:

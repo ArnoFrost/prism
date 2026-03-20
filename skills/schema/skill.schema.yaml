@@ -67,14 +67,11 @@ loading:
 
 # Skill categories in Prism
 categories:
-  workspace:
-    description: "Workspace lifecycle management"
+  workflow:
+    description: "Workflow-oriented skills for structured task collaboration"
     examples:
-      - prism-workspace-init
-  review:
-    description: "Multi-perspective review capabilities"
-    examples:
-      - prism-review
+      - prism-workflow-init
+      - prism-workflow-review
   migration:
     description: "Path and workspace migration"
     examples:
