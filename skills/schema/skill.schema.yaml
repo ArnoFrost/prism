@@ -18,9 +18,9 @@ frontmatter:
   required:
     name: "string, lowercase + hyphens, matches directory name"
     description: "string, includes 'Use when:' trigger phrases"
-    visibility: "enum: internal | public (default internal)"
-    stability: "enum: experimental | stable (default experimental)"
   optional:
+    visibility: "enum: internal | public — SSOT 在 skills-catalog.yaml，缺省 = internal"
+    stability: "enum: experimental | stable — SSOT 在 skills-catalog.yaml，缺省 = experimental"
     license: "string"
     compatibility: "string"
     public_gate:

@@ -37,9 +37,9 @@ topic:
       - review.index.md     # 评审索引
     optional:
       - decision.index.md   # 决策索引
-      - reviews/            # 评审轮次产物（rXX.md）
+      - reviews/            # 评审轮次产物（rXX_short-desc.md）
       - "reviews/raw/"      # 原始角色报告（可选保留）
-      - decisions/          # 决策记录（dXX.md）
+      - decisions/          # 决策记录（dXX_short-desc.md）
       - artifacts/          # 产出工件
       - snapshots/          # 历史快照（scope/plan 旧版本）
 
@@ -115,7 +115,8 @@ topic_artifacts:
     description: "当前有效行动方案（跨轮次更新，每轮 review 后刷新）"
     producer: "review 收敛 / 手动"
   review:
-    filename_pattern: "reviews/rXX.md"
+    filename_pattern: "reviews/rXX_short-desc.md"
+    naming_rule: "rXX_{简短描述}.md — 中英文均可，禁止空格/子目录"
     description: "评审综合报告（一轮一个文件）"
     producer: "prism-workflow-review"
   review_raw:
@@ -123,7 +124,8 @@ topic_artifacts:
     description: "原始角色评审报告（可选保留，默认不暴露）"
     producer: "prism-workflow-review 子任务"
   decision:
-    filename_pattern: "decisions/dXX.md"
+    filename_pattern: "decisions/dXX_short-desc.md"
+    naming_rule: "dXX_{简短描述}.md — 中英文均可，禁止空格/子目录"
     description: "人类 accept/reject/route 裁决记录"
     producer: "手动 / review 后触发"
     template: |
