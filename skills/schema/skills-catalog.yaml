@@ -63,6 +63,22 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
     rationale: "Topic-aware review evolution for task cohesion workflow. Replaces prism-review."
+  - id: prism-workflow-review-lite
+    visibility: dev
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-20"
+    rationale: "Lightweight single-pass review — no multi-role, shared sniff with review."
+  - id: prism-workflow-scope
+    visibility: dev
+    stability: experimental
+    source_repo: prism-skills
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-20"
+    rationale: "Scope SSOT maintenance — delta-based scope update + plan derivation."
   - id: prism-dist
     visibility: dev
     stability: experimental

@@ -71,7 +71,7 @@ bin/rename-artifacts <path>       # 直接扫描指定目录（无需 prism.loca
 
 判定规则：目录名含 `[评审]`/`[专项]`，或存在 `reviewer_*.md` 文件。幂等安全，不覆盖已存在的 `task_review.md`。
 
-配合 `aitask-to-prism` 迁移使用：迁移 tasks/ 后执行此脚本即可完成产物规范化，零 token 消耗。
+配合 `aitask-to-prism` 迁移使用：迁移 topics/ 后执行此脚本即可完成产物规范化，零 token 消耗。
 
 ## 配置文件
 
