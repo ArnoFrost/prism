@@ -1,7 +1,7 @@
 # Prism Workspace Schema
 # Defines the structure and constraints for workspace instances.
 
-version: "1.1.0"
+version: "0.6.0"
 
 # Workspace instance directory structure
 structure:
@@ -14,26 +14,45 @@ structure:
     - docs/
     - archive/
     - AGENT.md
-    - "tasks/{NNN}_{topic-name}/"   # 专项子目录（NNN 全局递增，tasks/archive 共享编号空间）
 
 # Symlink naming convention
-# workspace.{code}.local → Prism vault Workspace/{CODE}/
 symlink:
   pattern: "workspace.{code}.local"
   description: ".local suffix = personal, not committed to version control"
 
-# Task naming formats
+# Topic (专项) — the primary organizational unit
+topic:
+  naming: "{NNN}_{topic-name}/"
+  numbering:
+    digits: 3
+    scope: "tasks/ + archive/ 共享编号空间，全局递增"
+  # 专项内部结构定义
+  structure:
+    required:
+      - README.md           # 主线导航（编号/created/updated/status + 轮次索引）
+    recommended:
+      - intake.md           # 输入整形（混沌输入 → 结构化）
+      - scope.md            # 合同收敛（目标/非目标/验收口径/约束/未决）
+      - plan.md             # 当前有效行动方案（跨轮次更新）
+      - review.index.md     # 评审索引
+    optional:
+      - decision.index.md   # 决策索引
+      - reviews/            # 评审轮次产物（rXX.md）
+      - "reviews/raw/"      # 原始角色报告（可选保留）
+      - decisions/          # 决策记录（dXX.md）
+      - artifacts/          # 产出工件
+      - snapshots/          # 历史快照（scope/plan 旧版本）
+
+# Task naming formats (for subtasks within topics or standalone tasks)
 task_naming:
   formats:
     full:
-      pattern: "{YYYYMMDD}-{NNN}_[{TAG}]{NAME}.md"
-      example: "20260317-001_[功能]用户登录.md"
+      pattern: "{YYYYMMDD}-{NNN}_[{TAG}]{NAME}"
+      example: "20260317-001_[功能]用户登录"
     date:
-      pattern: "{YYYYMMDD}-{NNN}_{NAME}.md"
-      example: "20260317-001_用户登录.md"
+      pattern: "{YYYYMMDD}-{NNN}_{NAME}"
     simple:
-      pattern: "{NNN}-{NAME}.md"
-      example: "001-用户登录.md"
+      pattern: "{NNN}-{NAME}"
     custom:
       pattern: "user-defined via project.yaml"
   defaults:
@@ -42,22 +61,22 @@ task_naming:
 
 # Core tags (exactly 1 per task)
 tags:
-  - 功能      # New feature
-  - 优化      # Performance/UX optimization
-  - 修复      # Bug fix
-  - 排查      # Investigation/diagnosis
-  - 文档      # Documentation
-  - 调研      # Research
-  - 技术方案  # Technical design
-  - 规范      # Standard/convention
-  - 下线      # Deprecation
-  - 清理      # Cleanup
-  - 梳理      # Analysis/review
-  - 测试      # Testing
-  - 评审      # Review
-  - 架构      # Architecture
-  - 集成      # Integration
-  - 同步      # Sync/summary
+  - 功能
+  - 优化
+  - 修复
+  - 排查
+  - 文档
+  - 调研
+  - 技术方案
+  - 规范
+  - 下线
+  - 清理
+  - 梳理
+  - 测试
+  - 评审
+  - 架构
+  - 集成
+  - 同步
 
 # Task status lifecycle
 task_status:
@@ -77,40 +96,54 @@ task_frontmatter:
   optional:
     related: "list[string]"
 
+# Topic artifacts — 专项内工件分类
+topic_artifacts:
+  readme:
+    filename: "README.md"
+    description: "专项主线导航（编号 + created/updated + 轮次索引 + 关键决策）"
+    producer: "prism-workflow-intake / 手动"
+  intake:
+    filename: "intake.md"
+    description: "输入整形 — 把混沌材料变成结构化输入"
+    producer: "prism-workflow-intake"
+  scope:
+    filename: "scope.md"
+    description: "合同收敛 — 目标/非目标/验收口径/关键约束/未决问题"
+    producer: "prism-workflow-intake → 手动精修"
+  plan:
+    filename: "plan.md"
+    description: "当前有效行动方案（跨轮次更新，每轮 review 后刷新）"
+    producer: "review 收敛 / 手动"
+  review:
+    filename_pattern: "reviews/rXX.md"
+    description: "评审综合报告（一轮一个文件）"
+    producer: "prism-workflow-review"
+  review_raw:
+    filename_pattern: "reviews/raw/role-{X}.md"
+    description: "原始角色评审报告（可选保留，默认不暴露）"
+    producer: "prism-workflow-review 子任务"
+  decision:
+    filename_pattern: "decisions/dXX.md"
+    description: "人类 accept/reject/route 裁决记录"
+    producer: "手动 / 未来 decision-skill"
+  review_index:
+    filename: "review.index.md"
+    description: "评审索引 — 哪轮做了什么，当前依据哪轮"
+    producer: "prism-workflow-review 自动追加"
+  decision_index:
+    filename: "decision.index.md"
+    description: "决策索引 — 人类裁决历史"
+    producer: "手动"
+
 # Archive rules
 archive:
   trigger:
     status_done: true
     days_since_creation: 7
     active_task_limit: 20
-  # 推荐：编号 + 专项归档，与 tasks/{NNN}_{topic}/ 共享编号空间；legacy 可为 archive/{YYYY-MM}/
   structure: "archive/{NNN}_{topic-name}/"
+  legacy: "archive/{YYYY-MM}/"
   topic_readme: "archive/{NNN}_{topic-name}/README.md"
-
-# Task artifacts taxonomy
-# Review → Plan → Steps 三层产物模型
-task_artifacts:
-  topic_readme:
-    filename: "README.md"
-    description: "专项目录入口（轮次索引 + 当前状态）"
-    location: "tasks/{NNN}_{topic-name}/"
-    producer: "prism-workflow-init / prism-workflow-review / 手动"
-  task_review:
-    filename: "task_review.md"
-    description: "评审综合报告（高能模型产出：评审 + 拆解 + 行动计划）"
-    producer: "prism-workflow-review / 手动"
-  task_plan:
-    filename: "task_plan.md"
-    description: "执行计划（可选，简单任务可省略）"
-    producer: "评审拆解 / 手动"
-  task_step:
-    filename_pattern: "task_step_{N}_{topic}.md"
-    description: "原子执行步骤（供 Codex 等快速模型直接执行）"
-    producer: "从 task_review / task_plan 拆解"
-  reviewer:
-    filename_pattern: "reviewer_{ROLE}_{name}.md"
-    description: "独立角色评审报告"
-    producer: "prism-workflow-review 子任务"
 
 # Constraints
 constraints:

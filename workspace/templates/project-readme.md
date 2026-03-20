@@ -1,30 +1,49 @@
 # {PROJECT_NAME} — 协作规范
 
-> 本文档定义项目的 AI 协作约定。
+> 本文档定义项目的 AI 协作约定。标签与归档规则见 `workspace.schema.yaml`。
 
 ## 命名规范
 
-- **任务格式**：`{YYYYMMDD}-{NNN}_[标签]任务名称.md`（full 模式）
-- **编号规则**：全局递增，跨日期连续编号
-- **标签**：使用核心标签，每个任务必须且只能使用 1 个
+- **子任务**：`{YYYYMMDD}-{NNN}_[标签]任务名称`，全局递增
+- **专项目录**：`{NNN}_{topic-name}/`，编号全局递增，tasks 与 archive 共享
 
 ## 目录结构
 
 ```text
-{PROJECT_CODE}/  # 项目 Workspace 根目录
-├── project.yaml          # 项目元数据
-├── index.md              # 项目入口（任务列表）
-├── README.md             # 本文件（协作规范）
-├── tasks/                # 进行中的任务
-│   ├── {NNN}_{topic}/    # 专项子目录（编号全局递增，与 archive 共享）
-│   │   ├── README.md     # 专项入口（含 created / updated）
-│   │   └── {task-dirs}   # 子任务目录
-│   └── {standalone}      # 独立任务
-├── docs/                 # 项目文档
-└── archive/              # 已完成归档
-    ├── README.md         # 归档总览（可选）
-    └── {NNN}_{topic}/    # 编号与 tasks 连续；legacy 可为 YYYY-MM/
+{PROJECT_CODE}/
+├── project.yaml
+├── index.md
+├── README.md               # 本文件
+├── tasks/
+│   ├── {NNN}_{topic}/      # 专项工作区
+│   │   ├── README.md       # 主线导航（created/updated/status）
+│   │   ├── intake.md       # 输入整形
+│   │   ├── scope.md        # 合同收敛（目标/非目标/验收）
+│   │   ├── plan.md         # 当前有效行动方案
+│   │   ├── review.index.md # 评审索引
+│   │   ├── reviews/        # 评审轮次（rXX.md）
+│   │   ├── decisions/      # 决策记录
+│   │   ├── artifacts/      # 产出工件
+│   │   └── snapshots/      # 历史快照
+│   └── {standalone-task}   # 独立任务（不归专项的轻量任务）
+├── docs/
+└── archive/                # 已完成归档（{NNN}_{topic}/ 或 legacy YYYY-MM/）
 ```
+
+## 专项工作流
+
+```
+intake → scope → review → plan → decision
+                  ↑                  │
+                  └──── 循环 ────────┘
+```
+
+1. `/prism-workflow-intake` — 接收输入，检测亲和，路由到专项或新建
+2. 在专项内收敛 scope（目标/非目标/验收口径）
+3. `/prism-workflow-review` — 多角色评审，产物落入 `reviews/rXX.md`
+4. 从 review 收敛出 `plan.md`（当前有效行动方案）
+5. 人类 accept/route → `decisions/dXX.md`
+6. 循环：下一轮 review 更新 scope/plan，直到专项完成
 
 ## 桥接方式
 
@@ -32,21 +51,3 @@
 工作仓库/
 └── workspace.{PROJECT_CODE_LOWER}.local -> Prism vault Workspace/{PROJECT_CODE}/
 ```
-
-## 工作流
-
-1. 描述需求，AI 自动创建任务文档
-2. AI 执行任务并更新 index.md 状态
-3. 完成后归档到 `archive/{NNN}_{topic-name}/`（保留原编号）；无专项时可沿用 `archive/YYYY-MM/`
-
-## 归档规则
-
-| 条件 | 动作 |
-|------|------|
-| 任务状态 = 已完成 | 可归档 |
-| 任务创建超过 7 天 | 建议归档 |
-| index.md 任务超过 20 条 | 触发归档提醒 |
-
-## 核心标签
-
-`[功能]` `[优化]` `[修复]` `[排查]` `[文档]` `[调研]` `[技术方案]` `[规范]` `[下线]` `[清理]` `[梳理]` `[测试]` `[评审]` `[架构]` `[集成]` `[同步]`

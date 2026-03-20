@@ -1,11 +1,7 @@
 <prism-workspace project="{PROJECT_CODE}">
 项目: {PROJECT_CODE} | 规范: ./README.md
 自动行为: 创建任务 → 执行 → 更新 index.md → 归档
-约束: 严格遵循 README.md 中的命名/标签/归档规范，不创造新标签
-skills:
-  - prism-workflow-init
-  - prism-workflow-intake
-  - prism-workflow-review
+约束: 严格遵循 README.md 中的命名规范，标签/归档规则见 workspace.schema.yaml
 </prism-workspace>
 
 # {PROJECT_NAME}

@@ -1,7 +1,7 @@
 # Prism Skill Schema
 # Defines the structure for skills in the Prism ecosystem.
 
-version: "1.1.0"
+version: "0.6.0"
 
 # Skill directory structure
 structure:
