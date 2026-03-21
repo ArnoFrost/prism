@@ -4,28 +4,32 @@
 
 ---
 
-## 四层模型
+## 四层模型（愿景架构）
 
-| 层 | 职责 | SDK 内对应 |
-|----|------|-----------|
-| **Protocol** | 人与 AI 的协作契约 | `AGENT.md` |
-| **Env** | 运行环境与终端基座 | `env/`（由外部 DotFiles 承担，MVP 阶段暂保留） |
-| **Skills** | 可复用的自然语言能力 | `skills/`（schema + 模板） |
-| **Workspace** | 项目级 AI 协作状态容器 | `workspace/`（schema + 模板） |
+| 层 | 职责 | 必需 | SDK 内对应 |
+|----|------|:----:|-----------|
+| **Protocol** | 人与 AI 的协作契约 | 是 | `AGENT.md` |
+| **Env** | 运行环境与终端基座 | 可选 | 由外部 DotFiles 承担，MVP 阶段保留 |
+| **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（schema + 模板 + 内置技能） |
+| **Workspace** | 项目级 AI 协作状态容器 | 是 | `workspace/`（schema + 模板） |
 
-Protocol / Env / Skills 是无状态层，Workspace 是有状态层。
+Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和 Env 是**可选的能力扩展层**——Prism 最小可用集合是 Protocol + Workspace。
+
+为了开箱即用，SDK 在 `skills/workflow/` 内置了一套工作流最佳实践，这是便利性设计，不改变 Skills 层可选的架构定位。
 
 ---
 
-## 三层模型（v0.9.0）
+## 部署视图（v0.9.0）
 
-| 层 | 存放位置 | 必需 | 内容 |
-|----|---------|------|------|
-| **SDK 内置** | `prism/skills/workflow/` + `workspace/` | 是 | 工作流管线 + 工作区管理 |
-| **外部注入** | `~/prism-skills`（独立 Git） | **可选** | 个人工具 + dev ops（push/pull/dist） |
-| **Workspace** | Vault (iCloud) | 是 | 路书、项目状态、评审记录 |
+四层模型是逻辑架构，实际部署分为三个物理位置：
 
-SDK 自包含核心工作流——clone 即用，不要求配置外部 Skills 或 Env 仓库。外部技能仓库按需创建，提供个人工具和 git 同步能力。两者通过各自 `bin/relink` 独立分发到 IDE。
+| 位置 | 含义 | 必需 | 对应层 |
+|------|------|:----:|--------|
+| **SDK 仓库** | 协议 + schema + 内置 workflow | 是 | Protocol + Skills(内置) + Workspace(模板) |
+| **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
+| **Vault** (iCloud) | 项目状态、评审记录 | 是 | Workspace(实例) |
+
+SDK 内置 workflow 是开箱即用的最佳实践。外部技能仓库按需创建，提供个人工具和 git 同步能力。两者通过各自 `bin/relink` 独立分发到 IDE。
 
 ---
 

@@ -10,14 +10,16 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。
 
 ## 四层模型
 
-| 层 | 职责 | SDK 内对应 |
-|----|------|-----------|
-| **Protocol** | 人与 AI 的协作契约 | `AGENT.md`（本文件） |
-| **Env** | 运行环境与终端基座 | `env/`（MVP 阶段保留） |
-| **Skills** | 可复用的自然语言能力 | `skills/`（schema + 模板定义） |
-| **Workspace** | 项目级 AI 协作状态容器 | `workspace/`（schema + 模板） |
+| 层 | 职责 | 必需 | SDK 内对应 |
+|----|------|:----:|-----------|
+| **Protocol** | 人与 AI 的协作契约 | 是 | `AGENT.md`（本文件） |
+| **Env** | 运行环境与终端基座 | 可选 | 由外部 DotFiles 承担，MVP 阶段保留 |
+| **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（schema + 模板 + 内置技能） |
+| **Workspace** | 项目级 AI 协作状态容器 | 是 | `workspace/`（schema + 模板） |
 
 核心分离：Protocol / Env / Skills 是无状态层，Workspace 是有状态层。
+
+Skills 和 Env 是**可选的能力扩展层**，不是硬依赖。Prism 的最小可用集合是 Protocol + Workspace。为了开箱即用，SDK 在 `skills/workflow/` 内置了一套工作流最佳实践——这是便利性设计，不改变 Skills 层本身可选的架构定位。
 
 ---
 
@@ -125,24 +127,26 @@ Prism vault (iCloud)/
 运行环境与终端基座。包括 shell 初始化、aliases、bootstrap 脚本。MVP 阶段此层保留，由外部 DotFiles 仓库承担。
 
 ### Skills
-可复用的自然语言能力层。SDK 内的 `skills/` 包含：
-- **内置技能**：`workflow/`（工作流管线）和 `workspace/`（工作区管理），随 SDK 版本发布
+可选的自然语言能力扩展层。SDK 内的 `skills/` 包含：
 - **schema + 模板**：`schema/` 和 `templates/` 定义技能规范
+- **内置最佳实践**：`workflow/`（工作流管线）和 `workspace/`（工作区管理），为开箱即用随 SDK 发布
 
-核心工作流能力随 SDK 发布，clone 即可使用。外部个人技能仓库（`~/prism-skills`）为**可选项**——提供个人工具和 git 同步能力，按需配置。两者通过各自的 `bin/relink` 独立分发到 IDE 环境。
+Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 workflow 技能是一套开箱即用的最佳实践，不改变 Skills 层可选的架构定位。外部个人技能仓库（`~/prism-skills`）按需配置，提供个人工具和 git 同步能力。两者通过各自的 `bin/relink` 独立分发到 IDE。
 
 ### Workspace
 项目级 AI 协作状态容器。SDK 内的 `workspace/` 保存 schema 和模板（系统层），项目状态作为实例层存放在 Vault 的 `Workspace/` 目录中，通过 `workspace.{code}.local` 桥接。
 
 ---
 
-## 系统层与实例层
+## 部署视图
 
-| 层级 | 存放位置 | 必需 | 内容 |
-|------|---------|------|------|
-| SDK 内置 | `prism/skills/workflow/` + `workspace/` | 是 | 工作流管线 + 工作区管理 |
-| 外部注入 | `~/prism-skills`（独立 Git） | **可选** | 个人工具、git 同步（push/pull/dist） |
-| Workspace | Vault (iCloud) | 是 | 路书、项目状态、评审记录 |
+四层模型是逻辑架构；实际部署分为三个物理位置：
+
+| 位置 | 含义 | 必需 | 对应层 |
+|------|------|:----:|--------|
+| **SDK 仓库** | 协议 + schema + 内置 workflow | 是 | Protocol + Skills(内置) + Workspace(模板) |
+| **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
+| **Vault** (iCloud) | 项目状态、评审记录 | 是 | Workspace(实例) |
 
 ---
 
@@ -188,10 +192,10 @@ prism.local.yaml        # 本地配置
 
 ## 向后兼容
 
-Prism SDK 自包含核心工作流，不强制外部依赖：
+四层模型中 Skills 和 Env 是可选扩展层，Prism 不强制外部依赖：
 
-- **Prism SDK** 单独 clone + `bin/setenv --init` 初始化后即可使用全部 workflow 技能，不要求配置 Skills 或 Env 仓库。
-- **Skills 仓库**（prism-skills）是**可选增强**——提供个人工具和 git 同步，可以独立运行。
+- **Prism SDK** 单独 clone + `bin/setenv --init` 初始化后即可使用内置 workflow 最佳实践，不要求配置 Skills 或 Env 仓库。
+- **Skills 仓库**（prism-skills）是**可选扩展**——提供个人工具和 git 同步，按需创建。
 - **DotFiles 仓库**（ArnoDotFiles）可以在没有 Prism 的情况下独立运行。
 - **AI-TASK**（Obsidian vault）可以在没有 Prism 的情况下独立运行。
 
