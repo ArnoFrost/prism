@@ -1,0 +1,1 @@
+../../../workflow/shared/obsidian-config.md

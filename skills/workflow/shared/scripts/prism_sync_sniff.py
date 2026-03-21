@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""prism-sync 预探测脚本 — 嗅探 Prism 各仓库的 Git 状态，输出 JSON 供 Agent 消费。
+
+用法: python3 sniff.py [--sdk] [--skills] [--env] [--all]
+
+不传参时等同于 --all。
+
+输出 JSON 字段:
+  repos               - 各仓库状态字典
+    {name}            - 仓库名（sdk / skills / env）
+      .path           - 本地路径
+      .exists         - 目录是否存在
+      .is_git         - 是否为 Git 仓库
+      .branch         - 当前分支
+      .remote         - origin URL
+      .dirty          - 是否有未提交变更
+      .untracked      - 未跟踪文件数
+      .staged         - 已暂存文件数
+      .modified       - 已修改未暂存文件数
+      .ahead          - 本地领先 remote 的 commit 数
+      .behind         - 本地落后 remote 的 commit 数
+      .last_commit    - 最近一次 commit（hash + message）
+      .status_summary - 一句话状态摘要
+      .changes        - 变更文件列表（staged + modified + untracked）
+  requested           - 用户请求同步的目标列表
+  actionable          - 有实际变更可推送的仓库列表
+"""
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+REPOS = {
+    "sdk": {
+        "path": os.path.expanduser("~/prism"),
+        "label": "Prism SDK",
+    },
+    "skills": {
+        "path": os.path.expanduser("~/prism-skills"),
+        "label": "Prism Skills",
+    },
+    "env": {
+        "path": None,
+        "label": "Prism Env (未配置)",
+    },
+}
+
+
+def run_git(repo_path: str, *args: str) -> tuple[int, str]:
+    """在指定目录执行 git 命令，返回 (returncode, stdout)"""
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        return result.returncode, result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return -1, ""
+
+
+def sniff_repo(name: str, repo_def: dict) -> dict:
+    path = repo_def["path"]
+
+    if path is None:
+        return {
+            "path": None,
+            "exists": False,
+            "is_git": False,
+            "status_summary": "路径未配置",
+        }
+
+    if not os.path.isdir(path):
+        return {
+            "path": path,
+            "exists": False,
+            "is_git": False,
+            "status_summary": f"目录不存在: {path}",
+        }
+
+    git_dir = os.path.join(path, ".git")
+    if not os.path.exists(git_dir):
+        return {
+            "path": path,
+            "exists": True,
+            "is_git": False,
+            "status_summary": "非 Git 仓库",
+        }
+
+    _, branch = run_git(path, "branch", "--show-current")
+    _, remote = run_git(path, "remote", "get-url", "origin")
+
+    run_git(path, "fetch", "origin", "--quiet")
+
+    _, status_porcelain = run_git(path, "status", "--porcelain")
+    lines = [l for l in status_porcelain.splitlines() if l.strip()] if status_porcelain else []
+
+    staged = []
+    modified = []
+    untracked = []
+    for line in lines:
+        xy = line[:2]
+        filename = line[3:]
+        if xy[0] == "?":
+            untracked.append(filename)
+        elif xy[0] != " ":
+            staged.append(filename)
+        if xy[1] != " " and xy[1] != "?":
+            modified.append(filename)
+
+    _, ahead_str = run_git(path, "rev-list", f"origin/{branch}..HEAD", "--count")
+    _, behind_str = run_git(path, "rev-list", f"HEAD..origin/{branch}", "--count")
+    ahead = int(ahead_str) if ahead_str.isdigit() else 0
+    behind = int(behind_str) if behind_str.isdigit() else 0
+
+    _, last_commit = run_git(path, "log", "--oneline", "-1")
+
+    dirty = len(staged) + len(modified) + len(untracked) > 0
+
+    if not dirty and ahead == 0 and behind == 0:
+        summary = "已同步，无变更"
+    elif dirty and ahead == 0:
+        summary = f"有未提交变更（{len(staged)} staged, {len(modified)} modified, {len(untracked)} untracked）"
+    elif not dirty and ahead > 0:
+        summary = f"有 {ahead} 个 commit 待推送"
+    elif dirty and ahead > 0:
+        summary = f"有未提交变更 + {ahead} 个 commit 待推送"
+    elif behind > 0:
+        summary = f"落后远程 {behind} 个 commit，建议先 pull"
+    else:
+        summary = "有变更"
+
+    changes = []
+    for f in staged:
+        changes.append({"file": f, "status": "staged"})
+    for f in modified:
+        changes.append({"file": f, "status": "modified"})
+    for f in untracked:
+        changes.append({"file": f, "status": "untracked"})
+
+    return {
+        "path": path,
+        "exists": True,
+        "is_git": True,
+        "branch": branch,
+        "remote": remote,
+        "dirty": dirty,
+        "untracked": len(untracked),
+        "staged": len(staged),
+        "modified": len(modified),
+        "ahead": ahead,
+        "behind": behind,
+        "last_commit": last_commit,
+        "status_summary": summary,
+        "changes": changes,
+    }
+
+
+def main():
+    targets = set()
+    for arg in sys.argv[1:]:
+        arg = arg.lstrip("-")
+        if arg == "all":
+            targets = {"sdk", "skills", "env"}
+            break
+        elif arg in REPOS:
+            targets.add(arg)
+
+    if not targets:
+        targets = {"sdk", "skills", "env"}
+
+    repos = {}
+    for name in sorted(targets):
+        repos[name] = sniff_repo(name, REPOS[name])
+
+    actionable = [
+        name for name, info in repos.items()
+        if info.get("is_git") and (info.get("dirty") or info.get("ahead", 0) > 0)
+    ]
+
+    result = {
+        "repos": repos,
+        "requested": sorted(targets),
+        "actionable": actionable,
+    }
+
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
