@@ -23,10 +23,10 @@ workspace.{PROJECT_CODE_LOWER}.local/
 
 | 动作 | 入口 |
 |------|------|
-| 入料/路由 | `/prism-workflow-intake` |
-| 合同收敛 | `/prism-workflow-scope` |
-| 评审（正式） | `/prism-workflow-review` |
-| 评审（轻量） | `/prism-workflow-review-lite` |
+| 入料/路由 | `/workflow-intake` |
+| 合同收敛 | `/workflow-scope` |
+| 评审（正式） | `/workflow-review` |
+| 评审（轻量） | `/workflow-review-lite` |
 | 查看任务 | `index.md` |
 
 ## Mandatory skill usage
@@ -35,10 +35,10 @@ workspace.{PROJECT_CODE_LOWER}.local/
 
 | 条件 | 动作 |
 |------|------|
-| 有新需求，或不确定该归入哪个专项 | 先执行 `/prism-workflow-intake` 路由 |
-| 接受了评审决策（dXX），需更新边界或派生 plan | 执行 `/prism-workflow-scope` 同步 |
-| 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/prism-workflow-review` |
-| 日常迭代、小改动确认、scope/plan 快速对齐 | 执行 `/prism-workflow-review-lite` |
+| 有新需求，或不确定该归入哪个专项 | 先执行 `/workflow-intake` 路由 |
+| 接受了评审决策（dXX），需更新边界或派生 plan | 执行 `/workflow-scope` 同步 |
+| 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
+| 日常迭代、小改动确认、scope/plan 快速对齐 | 执行 `/workflow-review-lite` |
 
 ## 决策记录约定
 

@@ -43,9 +43,9 @@ intake → scope → review → decision
                    └── plan(derive)
 ```
 
-1. `/prism-workflow-intake` — 接收输入，检测亲和，路由到专项或新建
-2. `/prism-workflow-scope` — 收敛 scope（目标/非目标/验收口径）
-3. `/prism-workflow-review` 或 `/prism-workflow-review-lite` — 评审，产物落入 `reviews/rXX.md`
+1. `/workflow-intake` — 接收输入，检测亲和，路由到专项或新建
+2. `/workflow-scope` — 收敛 scope（目标/非目标/验收口径）
+3. `/workflow-review` 或 `/workflow-review-lite` — 评审，产物落入 `reviews/rXX.md`
 4. 决策(dXX) → scope 更新 → plan 派生
 5. 人类 accept/route → `decisions/dXX.md`
 6. 循环：决策触发 scope 更新，scope 驱动 plan 派生，直到专项完成

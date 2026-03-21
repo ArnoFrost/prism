@@ -28,7 +28,7 @@ Prism 采用三正交分离 + 软链接桥接：
 | 路径 | 含义 | 示例 |
 |------|------|------|
 | **SDK 路径** (`PRISM_DIR`) | 协议、模板、schema、工具 | `~/prism` |
-| **Skills 路径** | 外部个人技能（独立 Git 仓库） | `~/prism-skills` |
+| **Skills 路径** | 外部个人技能（独立 Git，**可选**） | `~/prism-skills` |
 | **Vault 路径** | Workspace 实例的 iCloud 同步存储 | `~/Library/.../AI Obsidian` |
 | **桥接路径** | 工作仓库中的软链接 | `workspace.{code}.local` |
 
@@ -129,7 +129,7 @@ Prism vault (iCloud)/
 - **内置技能**：`workflow/`（工作流管线）和 `workspace/`（工作区管理），随 SDK 版本发布
 - **schema + 模板**：`schema/` 和 `templates/` 定义技能规范
 
-外部个人技能在独立仓库 `~/prism-skills` 中，两者通过各自的 `bin/relink` 分发到 IDE 环境。
+核心工作流能力随 SDK 发布，clone 即可使用。外部个人技能仓库（`~/prism-skills`）为**可选项**——提供个人工具和 git 同步能力，按需配置。两者通过各自的 `bin/relink` 独立分发到 IDE 环境。
 
 ### Workspace
 项目级 AI 协作状态容器。SDK 内的 `workspace/` 保存 schema 和模板（系统层），项目状态作为实例层存放在 Vault 的 `Workspace/` 目录中，通过 `workspace.{code}.local` 桥接。
@@ -138,11 +138,11 @@ Prism vault (iCloud)/
 
 ## 系统层与实例层
 
-| 层级 | 存放位置 | 内容 |
-|------|---------|------|
-| SDK 内置 | Prism SDK `skills/workflow/` `skills/workspace/` | 工作流 + 工作区管理技能 |
-| 外部注入 | `~/prism-skills`（独立 Git） | 个人工具技能，软链接分发到 IDE |
-| Workspace | Vault (iCloud) | 路书、项目状态、评审记录 |
+| 层级 | 存放位置 | 必需 | 内容 |
+|------|---------|------|------|
+| SDK 内置 | `prism/skills/workflow/` + `workspace/` | 是 | 工作流管线 + 工作区管理 |
+| 外部注入 | `~/prism-skills`（独立 Git） | **可选** | 个人工具、git 同步（push/pull/dist） |
+| Workspace | Vault (iCloud) | 是 | 路书、项目状态、评审记录 |
 
 ---
 
@@ -188,13 +188,14 @@ prism.local.yaml        # 本地配置
 
 ## 向后兼容
 
-Prism 是对现有资产体系的整合层，不是替代品：
+Prism SDK 自包含核心工作流，不强制外部依赖：
 
-- **Skills 仓库**（prism-skills）可以在没有 Prism 的情况下独立运行。
+- **Prism SDK** 单独 clone 即可使用全部 workflow 技能，不要求配置 Skills 或 Env 仓库。
+- **Skills 仓库**（prism-skills）是**可选增强**——提供个人工具和 git 同步，可以独立运行。
 - **DotFiles 仓库**（ArnoDotFiles）可以在没有 Prism 的情况下独立运行。
 - **AI-TASK**（Obsidian vault）可以在没有 Prism 的情况下独立运行。
 
-Prism 提供的是统一的折射层，而非不可逆的合并。各仓库的独立运行能力是向后兼容的硬约束。
+Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 + 外部可选是架构硬约束。
 
 迁移策略：`ai-task.local` 与 `workspace.{code}.local` 可共存，项目按节奏逐步迁移。新模式优先。
 

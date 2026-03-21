@@ -19,13 +19,13 @@ Protocol / Env / Skills 是无状态层，Workspace 是有状态层。
 
 ## 三层模型（v0.9.0）
 
-| 层 | 存放位置 | 内容 |
-|----|---------|------|
-| **SDK 内置** | `prism/skills/workflow/` + `skills/workspace/` | 工作流管线 + 工作区管理技能 |
-| **外部注入** | `~/prism-skills`（独立 Git） | 个人工具 + dev ops 技能 |
-| **Workspace** | Vault (iCloud) | 路书、项目状态、评审记录 |
+| 层 | 存放位置 | 必需 | 内容 |
+|----|---------|------|------|
+| **SDK 内置** | `prism/skills/workflow/` + `workspace/` | 是 | 工作流管线 + 工作区管理 |
+| **外部注入** | `~/prism-skills`（独立 Git） | **可选** | 个人工具 + dev ops（push/pull/dist） |
+| **Workspace** | Vault (iCloud) | 是 | 路书、项目状态、评审记录 |
 
-SDK 内置技能随版本发布；外部技能独立管理，两者通过各自 `bin/relink` 分发到 IDE。
+SDK 自包含核心工作流——clone 即用，不要求配置外部 Skills 或 Env 仓库。外部技能仓库按需创建，提供个人工具和 git 同步能力。两者通过各自 `bin/relink` 独立分发到 IDE。
 
 ---
 

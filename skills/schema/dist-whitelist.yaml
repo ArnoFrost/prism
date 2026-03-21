@@ -8,20 +8,19 @@ profiles:
   mvp:
     description: "MVP 0.7.x 内部测试版 — workflow 核心 + common"
     skills:
-      - prism-workflow-init        # [dev] 项目初始化
-      - prism-workflow-review      # [dev] 多角色评审
+      - workspace-init             # [dev] 项目初始化（含迁移）
+      - workflow-review            # [dev] 多角色评审
       - commit                     # [common]
     include_shared: true
 
   full:
     description: "完整版 — workflow 全管线 + common"
     skills:
-      - prism-workflow-init        # [dev] 项目初始化
-      - prism-workflow-intake      # [dev] 入料路由
-      - prism-workflow-scope       # [dev] 合同收敛
-      - prism-workflow-review      # [dev] 多角色评审
-      - prism-workflow-review-lite # [dev] 轻量评审
-      - prism-workspace-migrate    # [public] 路径迁移
+      - workspace-init             # [dev] 项目初始化（含迁移）
+      - workflow-intake            # [dev] 入料路由
+      - workflow-scope             # [dev] 合同收敛
+      - workflow-review            # [dev] 多角色评审
+      - workflow-review-lite       # [dev] 轻量评审
       - commit                     # [common]
       - digest                     # [common]
       - humanizer                  # [common]
@@ -35,5 +34,5 @@ always_exclude:
   - prism-pull                     # [dev] 维护者工具
   - aitask-to-prism                # [dev] 历史迁移工具
   - prism-review-arno              # [personal]
-  - prism-workspace-init-arno      # [personal]
+  # - prism-workspace-init-arno    # [deprecated] 个人固化版已弃用
   - cursor-insights                # [dev] 内部分析工具

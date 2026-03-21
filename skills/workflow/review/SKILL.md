@@ -17,7 +17,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 |------|------|
 | 方向变更、范围调整、里程碑检查点 | 启动 `/workflow-review` |
 | 评审方案/规范/代码（需多视角） | `/workflow-review` |
-| 上次评审 Actions 已执行完毕，需验证效果 | `/prism-workflow-review --incremental` |
+| 上次评审 Actions 已执行完毕，需验证效果 | `/workflow-review --incremental` |
 | 日常迭代检查、小改动确认、快速对齐 | `/workflow-review-lite`（轻量评审） |
 | 沿上一轮产物继续推进 | 直接追问，无需重启 review |
 

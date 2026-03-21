@@ -174,9 +174,9 @@ echo "=== Probe Done ==="
 **Skills 未找到时**，在确认流程中提示：
 
 ```
-prism-skills 仓库未找到。是否需要我帮你 clone？
-  git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
-（也可以跳过，Prism 无 Skills 也能运行）
+prism-skills 仓库未找到。这是可选的个人工具仓库，不影响核心工作流。
+  如需个人工具和 git 同步能力: git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
+（跳过也完全没问题，SDK 内置了全部工作流技能）
 ```
 
 **Vault 未找到时**（非 macOS / 无 iCloud），请用户提供路径或创建本地目录。
@@ -305,8 +305,8 @@ bin/relink --check
 软链接: N 个技能已映射到 {检测到的 IDE 列表}
 
 下一步：
-  - 接入项目: 使用 /prism-workflow-init
-  - 启动评审: 使用 /prism-workflow-review
+  - 接入项目: 使用 /workspace-init
+  - 启动评审: 使用 /workflow-review
 ```
 
 ---
@@ -362,17 +362,17 @@ grep -c "workspace\.\*\.local" "$GI_GLOBAL" && echo "✓ gitignore 已对齐"
 
 ```
 问题（单选）: "初始化已完成，你想接下来？"
-  - "接入一个项目到 Prism（/prism-workflow-init）"
+  - "接入一个项目到 Prism（/workspace-init）"
   - "先看看当前状态就好"
-  - "直接开始一轮评审（/prism-workflow-review）"
+  - "直接开始一轮评审（/workflow-review）"
 ```
 
 #### 模式 B（对话式）
 
 ```
 初始化已完成。你可以：
-- 输入 /prism-workflow-init 为项目创建工作区
-- 输入 /prism-workflow-review 对当前项目启动评审
+- 输入 /workspace-init 为项目创建工作区
+- 输入 /workflow-review 对当前项目启动评审
 - 或告诉我你接下来想做什么
 ```
 

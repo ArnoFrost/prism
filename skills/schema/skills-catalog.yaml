@@ -24,30 +24,21 @@ versioning:
   note: "NN starts at 01 per skill, increments on substantive change. Public versions bump atomically with repo tag."
 
 # ─────────────────────────────────────────────
-# Public skills — 对外暴露，随 SDK 发布
+# Catalog entries（workspace-init 含原 prism-workspace-migrate 迁移能力；当前无单独 public skill）
 # ─────────────────────────────────────────────
 entries:
-  - id: prism-workspace-migrate
-    visibility: public
-    stability: experimental
-    source_repo: prism-skills
-    inject_default: true
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-03-17"
-    rationale: "Advanced migration entry kept as validated optional surface."
-
 # ─────────────────────────────────────────────
 # Dev skills — prism-* 前缀，维护者内部工具，不对外暴露
 # ─────────────────────────────────────────────
-  - id: prism-workflow-init
+  - id: workspace-init
     visibility: dev
     stability: experimental
     source_repo: prism-skills
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
-    rationale: "Topic-aware project init, replaces prism-workspace-init."
-  - id: prism-workflow-intake
+    rationale: "Topic-aware project init + vault/SDK path migration; unified id workspace-init (merges former prism-workspace-migrate, prism-workflow-init; supersedes prism-workspace-init)."
+  - id: workflow-intake
     visibility: dev
     stability: experimental
     source_repo: prism-skills
@@ -55,7 +46,7 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
     rationale: "Topic intake, routing, and migration. Entry point of the workflow pipeline."
-  - id: prism-workflow-review
+  - id: workflow-review
     visibility: dev
     stability: experimental
     source_repo: prism-skills
@@ -63,7 +54,7 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
     rationale: "Topic-aware review evolution for task cohesion workflow. Replaces prism-review."
-  - id: prism-workflow-review-lite
+  - id: workflow-review-lite
     visibility: dev
     stability: experimental
     source_repo: prism-skills
@@ -71,7 +62,7 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
     rationale: "Lightweight single-pass review — no multi-role, shared sniff with review."
-  - id: prism-workflow-scope
+  - id: workflow-scope
     visibility: dev
     stability: experimental
     source_repo: prism-skills

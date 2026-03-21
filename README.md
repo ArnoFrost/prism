@@ -48,8 +48,8 @@ Prism 的核心使用路径只有四步：
 |------|------------|--------|
 | **配置** | `bin/setenv --init` | 填写本地路径，生成 `prism.local.yaml` |
 | **桥接** | `bin/relink` | 刷新所有软链接（项目 + Skills → IDE） |
-| **接入** | `/prism-workflow-init` | 让已有项目接入 Prism 工作区 |
-| **评审** | `/prism-workflow-review` | 多角色协作评审，输出行动计划 |
+| **接入** | `/workspace-init` | 让已有项目接入 Prism 工作区 |
+| **评审** | `/workflow-review` | 多角色协作评审，输出行动计划 |
 
 前两步是 SDK 工具，后两步是 AI Skill（通过 Agent 调用）。
 
@@ -86,12 +86,11 @@ Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitigno
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
-| `prism-workflow-init` | `/prism-workflow-init` | 项目初始化 / 工作区创建 |
-| `prism-workflow-intake` | `/prism-workflow-intake` | 入料 → 路由 → 专项初始化 |
-| `prism-workflow-scope` | `/prism-workflow-scope` | 合同收敛 → plan 派生 |
-| `prism-workflow-review` | `/prism-workflow-review` | 多角色协作评审（总分总结构） |
-| `prism-workflow-review-lite` | `/prism-workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
-| `prism-workspace-migrate` | `/prism-workspace-migrate` | Vault / SDK 路径迁移 |
+| `workspace-init` | `/workspace-init` | 项目初始化 / 工作区创建 |
+| `workflow-intake` | `/workflow-intake` | 入料 → 路由 → 专项初始化 |
+| `workflow-scope` | `/workflow-scope` | 合同收敛 → plan 派生 |
+| `workflow-review` | `/workflow-review` | 多角色协作评审（总分总结构） |
+| `workflow-review-lite` | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
 
 `bin/relink` 自动将技能软链接到 IDE 目录（Cursor · Claude Code · CodeBuddy），无需手动配置。
 
