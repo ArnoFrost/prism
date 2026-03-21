@@ -201,13 +201,13 @@ prism/
 - [x] dist 白名单对齐 workflow 命名 + 注释解析修复
 - [x] SDK 全文档统一到 workflow 命名
 
-**Phase 4 — Agent Workflow Patterns（008 专项）** 🔄
+**Phase 4 — Agent Workflow Patterns（008 专项）** ✅
 
 - [x] AGENT.md mandatory skill triggers（if/then 条件触发 + 可被用户否决）
 - [x] Routing-grade description（5 个 workflow skills 改写，≤ 80 tokens + Use when:）
 - [x] 确定性脚本提取（scaffold.py + index_update.py → intake skill scripts/）
 - [x] `prism-workflow-status` 巡检 skill（report-first, JSON + Markdown 双格式）
-- [ ] `prism-workflow-archive` 自动归档 skill
+- [x] `archive.py` 手动归档脚本 + status 弱提醒（d02 降级，不做独立 skill）
 
 **Phase 5 — 待推进**
 
