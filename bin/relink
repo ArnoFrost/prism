@@ -212,7 +212,13 @@ echo "────────────────────────�
 # 1. 检查基础路径
 echo -e "\n${CYAN}[路径检查]${NC}"
 [[ -d "$SDK_PATH" ]] && log_ok "SDK: ${SDK_PATH}" || log_err "SDK 不存在: ${SDK_PATH}"
-[[ -d "$SKILLS_PATH" ]] && log_ok "Skills: ${SKILLS_PATH}" || log_err "Skills 不存在: ${SKILLS_PATH}"
+if [[ -n "$SKILLS_PATH" && -d "$SKILLS_PATH" ]]; then
+  log_ok "Skills: ${SKILLS_PATH}"
+elif [[ -n "$SKILLS_PATH" ]]; then
+  log_skip "Skills: ${SKILLS_PATH} ${DIM}(未配置或不存在，跳过外部技能)${NC}"
+else
+  log_skip "Skills: ${DIM}(未配置 skills_path，跳过外部技能)${NC}"
+fi
 [[ -d "$VAULT_PATH" ]] && log_ok "Vault: ${VAULT_PATH}" || log_err "Vault 不存在: ${VAULT_PATH}"
 
 if [[ ! -d "$WS_ROOT" ]]; then
@@ -337,7 +343,7 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       log_skip "外部 Skills 目录为空"
     fi
   else
-    log_err "外部 Skills 路径不存在: ${SKILLS_PATH}"
+    log_skip "外部 Skills 未配置或不存在，跳过"
   fi
 fi
 
@@ -370,7 +376,7 @@ if $PRUNE; then
           prune_link "$link" "${platform}: $(basename "$link")"
         fi
       # 外部 Skills（指向 prism-skills/）
-      elif [[ "$link_target" == "$SKILLS_PATH"* || "$link_target" == *prism-skills* ]]; then
+      elif [[ -n "$SKILLS_PATH" && "$link_target" == "$SKILLS_PATH"* ]] || [[ "$link_target" == *prism-skills* ]]; then
         if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
           prune_link "$link" "${platform}: $(basename "$link")"
         fi
