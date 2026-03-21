@@ -268,44 +268,77 @@ while IFS= read -r line; do
   fi
 done < "$CONFIG"
 
-# 3. 刷新 Skills 到 Agent/IDE 环境
-echo -e "\n${CYAN}[Skills Agent/IDE 映射]${NC}"
-if [[ -d "$SKILLS_PATH" ]]; then
-  # 自动探测可用平台目录。Prism 仅在目录已存在时注入，不主动创建平台目录。
-  PLATFORM_TARGETS=()
-  [[ -d "$HOME/.cursor/skills-cursor" ]] && PLATFORM_TARGETS+=("cursor|$HOME/.cursor/skills-cursor")
-  [[ -d "$HOME/.claude/skills" ]] && PLATFORM_TARGETS+=("claude|$HOME/.claude/skills")
-  [[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_TARGETS+=("claude-internal|$HOME/.claude-internal/skills")
-  [[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_TARGETS+=("codebuddy|$HOME/.codebuddy/skills")
-  [[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_TARGETS+=("codebuddy-cli|$HOME/.codebuddy/commands")
-  [[ -d "$HOME/.workbuddy/skills" ]] && PLATFORM_TARGETS+=("workbuddy|$HOME/.workbuddy/skills")
-  [[ -d "$HOME/.workbuddy/commands" ]] && PLATFORM_TARGETS+=("workbuddy-cli|$HOME/.workbuddy/commands")
+# 3. 探测可用 IDE 平台目录
+PLATFORM_TARGETS=()
+[[ -d "$HOME/.cursor/skills-cursor" ]] && PLATFORM_TARGETS+=("cursor|$HOME/.cursor/skills-cursor")
+[[ -d "$HOME/.claude/skills" ]] && PLATFORM_TARGETS+=("claude|$HOME/.claude/skills")
+[[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_TARGETS+=("claude-internal|$HOME/.claude-internal/skills")
+[[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_TARGETS+=("codebuddy|$HOME/.codebuddy/skills")
+[[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_TARGETS+=("codebuddy-cli|$HOME/.codebuddy/commands")
+[[ -d "$HOME/.workbuddy/skills" ]] && PLATFORM_TARGETS+=("workbuddy|$HOME/.workbuddy/skills")
+[[ -d "$HOME/.workbuddy/commands" ]] && PLATFORM_TARGETS+=("workbuddy-cli|$HOME/.workbuddy/commands")
 
-  if [[ ${#PLATFORM_TARGETS[@]} -eq 0 ]]; then
-    log_skip "未探测到可用平台目录，跳过 Skills 映射"
-  fi
+if [[ ${#PLATFORM_TARGETS[@]} -eq 0 ]]; then
+  echo -e "\n${CYAN}[Agent/IDE 映射]${NC}"
+  log_skip "未探测到可用平台目录，跳过所有 Skills 映射"
+fi
 
-  skill_count=0
-  for skill_dir in "$SKILLS_PATH"/*/; do
-    [[ -d "$skill_dir" ]] || continue
-    skill_name=$(basename "$skill_dir")
-    [[ "$skill_name" == ".git" ]] && continue
-    [[ ! -f "$skill_dir/SKILL.md" ]] && continue
-    ((skill_count++)) || true
+# 3a. SDK 内置技能分发（workflow-* / workspace-*）
+if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
+  echo -e "\n${CYAN}[SDK 内置技能 → Agent/IDE]${NC}"
+  sdk_skill_count=0
+  for category in workflow workspace; do
+    category_dir="$SDK_PATH/skills/${category}"
+    [[ -d "$category_dir" ]] || continue
+    for skill_dir in "$category_dir"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      skill_name=$(basename "$skill_dir")
+      [[ "$skill_name" == "shared" ]] && continue
+      [[ ! -f "$skill_dir/SKILL.md" ]] && continue
+      link_name="${category}-${skill_name}"
+      ((sdk_skill_count++)) || true
 
-    for target in "${PLATFORM_TARGETS[@]}"; do
-      platform="${target%%|*}"
-      root_dir="${target#*|}"
-      link_path="${root_dir}/${skill_name}"
-      ensure_link "$link_path" "$skill_dir" "${platform}: ${skill_name}"
+      for target in "${PLATFORM_TARGETS[@]}"; do
+        platform="${target%%|*}"
+        root_dir="${target#*|}"
+        link_path="${root_dir}/${link_name}"
+        ensure_link "$link_path" "$skill_dir" "${platform}: ${link_name}"
+      done
     done
   done
 
-  if [[ $skill_count -eq 0 ]]; then
-    log_skip "Skills 目录为空，跳过 Agent/IDE 映射"
+  if [[ $sdk_skill_count -eq 0 ]]; then
+    log_skip "SDK 内置技能目录为空"
   fi
-else
-  log_err "Skills 路径不存在: ${SKILLS_PATH}"
+fi
+
+# 3b. 外部 Skills 分发（prism-skills 仓库）
+if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
+  echo -e "\n${CYAN}[外部 Skills → Agent/IDE]${NC}"
+  if [[ -d "$SKILLS_PATH" ]]; then
+    skill_count=0
+    for skill_dir in "$SKILLS_PATH"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      skill_name=$(basename "$skill_dir")
+      [[ "$skill_name" == ".git" ]] && continue
+      [[ "$skill_name" == "shared" ]] && continue
+      [[ ! -f "$skill_dir/SKILL.md" ]] && continue
+      ((skill_count++)) || true
+
+      for target in "${PLATFORM_TARGETS[@]}"; do
+        platform="${target%%|*}"
+        root_dir="${target#*|}"
+        link_path="${root_dir}/${skill_name}"
+        ensure_link "$link_path" "$skill_dir" "${platform}: ${skill_name}"
+      done
+    done
+
+    if [[ $skill_count -eq 0 ]]; then
+      log_skip "外部 Skills 目录为空"
+    fi
+  else
+    log_err "外部 Skills 路径不存在: ${SKILLS_PATH}"
+  fi
 fi
 
 # 4. Prune: 清理陈旧软链接
@@ -324,7 +357,7 @@ if $PRUNE; then
     ((PRUNED++)) || true
   }
 
-  # 4a. IDE 平台目录：清理指向 SKILLS_PATH 下已不存在 skill 的链接
+  # 4a. IDE 平台目录：清理 Prism 管辖范围内的陈旧链接
   for target in ${PLATFORM_TARGETS[@]+"${PLATFORM_TARGETS[@]}"}; do
     platform="${target%%|*}"
     root_dir="${target#*|}"
@@ -332,8 +365,13 @@ if $PRUNE; then
       [[ -L "${link%/}" ]] || continue
       link="${link%/}"
       link_target=$(readlink "$link")
-      # 只处理 Prism Skills 管辖范围内的链接
-      if [[ "$link_target" == "$SKILLS_PATH"* || "$link_target" == *prism-skills* ]]; then
+      # SDK 内置技能（指向 prism/skills/）
+      if [[ "$link_target" == "$SDK_PATH/skills/"* ]]; then
+        if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
+          prune_link "$link" "${platform}: $(basename "$link")"
+        fi
+      # 外部 Skills（指向 prism-skills/）
+      elif [[ "$link_target" == "$SKILLS_PATH"* || "$link_target" == *prism-skills* ]]; then
         if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
           prune_link "$link" "${platform}: $(basename "$link")"
         fi
