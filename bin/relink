@@ -361,9 +361,8 @@ if $PRUNE; then
   for target in ${PLATFORM_TARGETS[@]+"${PLATFORM_TARGETS[@]}"}; do
     platform="${target%%|*}"
     root_dir="${target#*|}"
-    for link in "$root_dir"/*/; do
-      [[ -L "${link%/}" ]] || continue
-      link="${link%/}"
+    for link in "$root_dir"/*; do
+      [[ -L "$link" ]] || continue
       link_target=$(readlink "$link")
       # SDK 内置技能（指向 prism/skills/）
       if [[ "$link_target" == "$SDK_PATH/skills/"* ]]; then

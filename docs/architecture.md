@@ -220,15 +220,15 @@ prism/
 - [x] `prism-workflow-status` 巡检 skill（report-first, JSON + Markdown 双格式）
 - [x] `archive.py` 手动归档脚本 + status 弱提醒（d02 降级，不做独立 skill）
 
-**Phase 5 — Workflow SDK 收敛（009 专项）** 🔄
+**Phase 5 — Workflow SDK 收敛（009 专项）** ✅
 
 - [x] 5 workflow skills + shared 搬入 SDK `skills/workflow/`
 - [x] workspace-init 搬入 SDK `skills/workspace/`（吸收 migrate 能力）
 - [x] SKILL.md 统一命名 `workflow-{verb}` / `workspace-init`
 - [x] 双套 relink 实现（SDK 内置 + 外部个人）
 - [x] AGENT.md / architecture.md 全链路对齐
-- [ ] prism-skills 清理（删除已迁移技能 + 废弃个人变体）
-- [ ] v0.9.0 tag + smoke test
+- [x] prism-skills 清理（删除 9 个已迁移/废弃目录 + shared 转 SDK symlink）
+- [x] v0.9.0 tag 双仓库 + smoke test 通过
 
 **Phase 6 — 待推进**
 
