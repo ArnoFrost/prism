@@ -131,7 +131,7 @@ archive:
   trigger:
     status_done: true
     days_since_creation: 7
-    active_topic_limit: 20
+    active_topic_limit: 5
   structure: "archive/{NNN}_{topic-name}/"
   legacy: "archive/{YYYY-MM}/"
   topic_readme: "archive/{NNN}_{topic-name}/README.md"
@@ -139,5 +139,5 @@ archive:
 # Constraints
 constraints:
   doc_max_lines: 300
-  max_active_topics: 15
+  max_active_topics: 10
   archive_after_days: 7
