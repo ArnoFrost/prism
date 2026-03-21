@@ -205,7 +205,7 @@ prism/
 
 - [x] AGENT.md mandatory skill triggers（if/then 条件触发 + 可被用户否决）
 - [x] Routing-grade description（5 个 workflow skills 改写，≤ 80 tokens + Use when:）
-- [ ] 确定性脚本提取（scaffold.py + index-update.py → skill scripts/）
+- [x] 确定性脚本提取（scaffold.py + index_update.py → intake skill scripts/）
 - [ ] `prism-workflow-status` 巡检 skill
 - [ ] `prism-workflow-archive` 自动归档 skill
 
