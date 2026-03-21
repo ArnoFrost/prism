@@ -93,7 +93,7 @@ projects:
 | 字段 | 必填 | 说明 |
 |------|:----:|------|
 | `sdk_path` | ✅ | Prism SDK 仓库绝对路径 |
-| `skills_path` | ✅ | Skills 独立仓库绝对路径 |
+| `skills_path` | — | Skills 独立仓库绝对路径（可选，不配置则跳过外部技能分发） |
 | `vault_path` | ✅ | iCloud Obsidian vault 基础路径 |
 | `workspace_subdir` | ✅ | Vault 内 Workspace 子目录（相对路径） |
 | `projects` | — | 注册项目映射（CODE: 绝对路径），手动追加 |

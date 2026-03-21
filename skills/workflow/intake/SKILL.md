@@ -137,7 +137,7 @@ Phase 3 结束后必须：
 ## 目录结构
 
 ```
-prism-skills/
+skills/
 └── workflow/intake/
     ├── SKILL.md                      # 入口（本文件）
     ├── scripts/

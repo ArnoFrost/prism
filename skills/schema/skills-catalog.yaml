@@ -33,7 +33,7 @@ entries:
   - id: workspace-init
     visibility: dev
     stability: experimental
-    source_repo: prism-skills
+    source_repo: prism
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
@@ -41,7 +41,7 @@ entries:
   - id: workflow-intake
     visibility: dev
     stability: experimental
-    source_repo: prism-skills
+    source_repo: prism
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
@@ -49,7 +49,7 @@ entries:
   - id: workflow-review
     visibility: dev
     stability: experimental
-    source_repo: prism-skills
+    source_repo: prism
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
@@ -57,7 +57,7 @@ entries:
   - id: workflow-review-lite
     visibility: dev
     stability: experimental
-    source_repo: prism-skills
+    source_repo: prism
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
@@ -65,11 +65,19 @@ entries:
   - id: workflow-scope
     visibility: dev
     stability: experimental
-    source_repo: prism-skills
+    source_repo: prism
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
     rationale: "Scope SSOT maintenance — delta-based scope update + plan derivation."
+  - id: workflow-status
+    visibility: dev
+    stability: experimental
+    source_repo: prism
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-21"
+    rationale: "Topic health scanner — scope progress, stale detection, archive hints."
   - id: prism-dist
     visibility: dev
     stability: experimental

@@ -190,7 +190,7 @@ prism.local.yaml        # 本地配置
 
 Prism SDK 自包含核心工作流，不强制外部依赖：
 
-- **Prism SDK** 单独 clone 即可使用全部 workflow 技能，不要求配置 Skills 或 Env 仓库。
+- **Prism SDK** 单独 clone + `bin/setenv --init` 初始化后即可使用全部 workflow 技能，不要求配置 Skills 或 Env 仓库。
 - **Skills 仓库**（prism-skills）是**可选增强**——提供个人工具和 git 同步，可以独立运行。
 - **DotFiles 仓库**（ArnoDotFiles）可以在没有 Prism 的情况下独立运行。
 - **AI-TASK**（Obsidian vault）可以在没有 Prism 的情况下独立运行。

@@ -91,6 +91,7 @@ Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitigno
 | `workflow-scope` | `/workflow-scope` | 合同收敛 → plan 派生 |
 | `workflow-review` | `/workflow-review` | 多角色协作评审（总分总结构） |
 | `workflow-review-lite` | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
+| `workflow-status` | `/workflow-status` | 专项健康巡检 — scope 进度 + 过期检测 |
 
 `bin/relink` 自动将技能软链接到 IDE 目录（Cursor · Claude Code · CodeBuddy），无需手动配置。
 
