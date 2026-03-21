@@ -201,11 +201,18 @@ prism/
 - [x] dist 白名单对齐 workflow 命名 + 注释解析修复
 - [x] SDK 全文档统一到 workflow 命名
 
-**Phase 4 — 待推进**
+**Phase 4 — Agent Workflow Patterns（008 专项）** 🔄
+
+- [x] AGENT.md mandatory skill triggers（if/then 条件触发 + 可被用户否决）
+- [x] Routing-grade description（5 个 workflow skills 改写，≤ 80 tokens + Use when:）
+- [ ] 确定性脚本提取（scaffold.py + index-update.py → skill scripts/）
+- [ ] `prism-workflow-status` 巡检 skill
+- [ ] `prism-workflow-archive` 自动归档 skill
+
+**Phase 5 — 待推进**
 
 - [ ] 跨项目验证（第二个项目接入 workflow）
 - [ ] `yaml_get` 解析加固
 - [ ] Env 层去留决策（延后至 MVP 验证完成后）
 - [ ] 端到端新用户验证（干净环境 smoke test）
-- [ ] Archive 自动化 skill
 - [ ] Quick Topic 轻量入口

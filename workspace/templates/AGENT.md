@@ -29,6 +29,17 @@ workspace.{PROJECT_CODE_LOWER}.local/
 | 评审（轻量） | `/prism-workflow-review-lite` |
 | 查看任务 | `index.md` |
 
+## Mandatory skill usage
+
+> 以下规则为默认工作流指引，用户可随时否决（如"不用 intake，直接开始"）。Agent 应提醒但不强制。
+
+| 条件 | 动作 |
+|------|------|
+| 有新需求，或不确定该归入哪个专项 | 先执行 `/prism-workflow-intake` 路由 |
+| 接受了评审决策（dXX），需更新边界或派生 plan | 执行 `/prism-workflow-scope` 同步 |
+| 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/prism-workflow-review` |
+| 日常迭代、小改动确认、scope/plan 快速对齐 | 执行 `/prism-workflow-review-lite` |
+
 ## 决策记录约定
 
 对话中出现以下情况时，主动询问用户是否记录决策：
