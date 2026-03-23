@@ -13,6 +13,29 @@
 > - 短后缀规则：中英文均可，禁止空格。示例：`r01_任务内聚评审.md`、`d01_接受R1解耦路径.md`。
 > - 历史遗留的 `rXX.md` / `dXX.md`（无后缀）和子目录保留兼容，**新文件必须带短后缀**。
 
+### 遗留子目录格式迁移
+
+历史评审可能使用子目录格式（如 `reviews/r02_统一状态机/task_review.md`）。
+自动化工具（tidy / status / validate）默认只识别单文件格式。
+
+**迁移命令：**
+
+```bash
+python3 {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> [--dry-run]
+python3 {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> --fix
+```
+
+**迁移后的目录结构：**
+
+```
+reviews/r02_统一状态机.md          ← 主报告（从子目录提升）
+reviews/raw/r02-role-A.md          ← 角色报告（重命名）
+reviews/r02_统一状态机/.migrated   ← 原子目录保留标记
+```
+
+> 迁移是复制而非移动——原子目录保留并标记 `.migrated`，确保已有链接不断裂。
+> 自动化工具会对未迁移的子目录报 WARN（`legacy-subdir-format`）。
+
 ## cohesion 模式目录树（推荐）
 
 产物落入专项的 `reviews/` 子目录：
