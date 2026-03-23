@@ -1,0 +1,17 @@
+{
+  "description": "Prism workflow auto-tidy: 写入评审/决策产物后自动校验与对齐",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CODEBUDDY_PLUGIN_ROOT}/post_write_workflow.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

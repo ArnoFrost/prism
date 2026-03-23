@@ -233,6 +233,31 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 
 ---
 
+## CodeBuddy IDE Hook（可选）
+
+CodeBuddy IDE 支持 `PostToolUse` hook，可在 agent 写入文件后自动触发工作流脚本。
+
+Prism 在 `skills/workflow/shared/hooks/` 提供了开箱即用的 hook：
+
+| 文件 | 作用 |
+|------|------|
+| `hooks.json` | CodeBuddy hook 配置，匹配 Write/Edit/MultiEdit |
+| `post_write_workflow.py` | 检测 `reviews/` 或 `decisions/` 写入，自动执行 `tidy --fix` + `validate_product --fix` |
+
+### 安装方式
+
+将 `skills/workflow/shared/hooks/` 软链接到 CodeBuddy 插件目录：
+
+```bash
+ln -sf ~/prism/skills/workflow/shared/hooks ~/.codebuddy/plugins/prism-workflow-hooks
+```
+
+安装后，CodeBuddy agent 写入评审或决策产物时会自动触发对齐校验，无需手动执行。
+
+> 此 hook 仅在 CodeBuddy IDE 中生效。Cursor 用户无需配置——Cursor 通过 SKILL.md 指令引导 agent 手动执行脚本。
+
+---
+
 ## Mandatory skill usage
 
 > 以下规则为默认工作流指引，用户可随时否决（如"不用 intake，直接开始"）。Agent 应提醒但不强制。
