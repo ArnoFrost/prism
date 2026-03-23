@@ -52,21 +52,117 @@ def _find_prism_local_yaml(project_dir: str) -> str | None:
     return None
 
 
+def _strip_yaml_quotes(value: str) -> str:
+    """去除 YAML 值的引号包裹"""
+    if len(value) >= 2:
+        if (value[0] == '"' and value[-1] == '"') or \
+           (value[0] == "'" and value[-1] == "'"):
+            return value[1:-1]
+    return value
+
+
 def _read_vault_path_from_yaml(yaml_path: str) -> str | None:
     """从 prism.local.yaml 读取 vault_path（简单解析，不引入 PyYAML 依赖）"""
+    parsed = parse_prism_local_yaml(yaml_path)
+    return parsed.get("vault_path") if parsed else None
+
+
+def parse_prism_local_yaml(yaml_path: str) -> dict | None:
+    """解析 prism.local.yaml 顶层字段和 projects 块。
+
+    与 workspace-init/sniff.py 的同名函数对齐，零 PyYAML 依赖。
+    返回 dict 含: device_id, sdk_path, skills_path, vault_path,
+    workspace_subdir, projects (dict)。解析失败返回 None。
+    """
+    result = {
+        "device_id": None,
+        "sdk_path": None,
+        "skills_path": None,
+        "vault_path": None,
+        "workspace_subdir": None,
+        "projects": {},
+    }
+
     try:
         with open(yaml_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith("vault_path:"):
-                    value = line[len("vault_path:"):].strip()
-                    if (value.startswith('"') and value.endswith('"')) or \
-                       (value.startswith("'") and value.endswith("'")):
-                        value = value[1:-1]
-                    return value
+            lines = f.readlines()
     except OSError:
-        pass
-    return None
+        return None
+
+    in_projects = False
+    for line in lines:
+        stripped = line.rstrip()
+        if stripped.lstrip().startswith("#") or not stripped:
+            continue
+
+        if stripped == "projects:":
+            in_projects = True
+            continue
+
+        if in_projects:
+            if line[0] != " " and line[0] != "\t":
+                in_projects = False
+            else:
+                m = re.match(r"^\s+([\w-]+):\s*(.+)", stripped)
+                if m:
+                    result["projects"][m.group(1)] = _strip_yaml_quotes(m.group(2).strip())
+                continue
+
+        m = re.match(r"^(\w+):\s*(.+)", stripped)
+        if m:
+            key, val = m.group(1), _strip_yaml_quotes(m.group(2).strip())
+            if key in result and key != "projects":
+                result[key] = val
+
+    return result
+
+
+def find_prism_context(project_dir: str) -> dict | None:
+    """从 prism.local.yaml 构建完整的 Prism 上下文。
+
+    返回 dict 含:
+      device_id       - 当前设备标识
+      sdk_path        - SDK 路径
+      skills_path     - Skills 仓库路径
+      vault_path      - Vault 基础路径
+      workspace_subdir - Vault 内子目录
+      workspace_root  - 计算后的完整 Workspace 根路径
+      projects        - 已注册项目 {CODE: local_path}
+    找不到 prism.local.yaml 时返回 None。
+    """
+    yaml_path = _find_prism_local_yaml(project_dir)
+    if not yaml_path:
+        return None
+
+    parsed = parse_prism_local_yaml(yaml_path)
+    if not parsed:
+        return None
+
+    workspace_root = None
+    if parsed["vault_path"] and parsed["workspace_subdir"]:
+        workspace_root = os.path.join(parsed["vault_path"], parsed["workspace_subdir"])
+
+    return {
+        "device_id": parsed["device_id"],
+        "sdk_path": parsed["sdk_path"],
+        "skills_path": parsed["skills_path"],
+        "vault_path": parsed["vault_path"],
+        "workspace_subdir": parsed["workspace_subdir"],
+        "workspace_root": workspace_root,
+        "projects": parsed["projects"],
+    }
+
+
+def resolve_workspace_path(prism_context: dict, project_code: str) -> str | None:
+    """根据项目代号解析其 Workspace 目录的绝对路径。
+
+    路径 = {workspace_root}/{project_code}/
+    仅在目录实际存在时返回，否则返回 None。
+    """
+    if not prism_context or not prism_context.get("workspace_root"):
+        return None
+    ws_path = os.path.join(prism_context["workspace_root"], project_code)
+    return ws_path if os.path.isdir(ws_path) else None
 
 
 def find_obsidian(start_dir: str, project_dir: str | None = None) -> dict:
@@ -264,6 +360,75 @@ def detect_next_topic_number(workspace_path: str) -> int:
             if m:
                 max_num = max(max_num, int(m.group(1)))
     return max_num + 1
+
+
+def enumerate_reviews(reviews_dir: str) -> list[dict]:
+    """枚举 reviews/ 下所有评审产物，兼容单文件和子目录两种格式。
+
+    返回 list[dict]，每项含:
+      id        - rXX 编号 (如 "r02")
+      filename  - 主报告文件名 (如 "r02_范围收敛.md")
+      path      - 主报告相对路径 (如 "reviews/r02_范围收敛.md")
+      abs_path  - 主报告绝对路径
+      format    - "file" | "subdir" (子目录为遗留格式)
+    """
+    if not os.path.isdir(reviews_dir):
+        return []
+
+    seen_ids: dict[str, dict] = {}
+    entries = os.listdir(reviews_dir)
+
+    for entry in entries:
+        full = os.path.join(reviews_dir, entry)
+        if not (os.path.isfile(full) and entry.endswith(".md")):
+            continue
+        m = re.match(r"^(r\d{2})", entry)
+        if m and not entry.startswith("raw"):
+            rid = m.group(1)
+            seen_ids[rid] = {
+                "id": rid,
+                "filename": entry,
+                "path": f"reviews/{entry}",
+                "abs_path": os.path.abspath(full),
+                "format": "file",
+            }
+
+    for entry in entries:
+        full = os.path.join(reviews_dir, entry)
+        if not (os.path.isdir(full) and not entry.startswith("raw")):
+            continue
+        m = re.match(r"^(r\d{2})", entry)
+        if not m:
+            continue
+        rid = m.group(1)
+        if rid in seen_ids:
+            continue
+
+        main_report = None
+        candidates = ["task_review.md", f"{entry}.md"]
+        for c in candidates:
+            p = os.path.join(full, c)
+            if os.path.isfile(p):
+                main_report = p
+                break
+        if not main_report:
+            for f in sorted(os.listdir(full)):
+                if f.endswith(".md") and not f.startswith("reviewer"):
+                    fp = os.path.join(full, f)
+                    if os.path.isfile(fp):
+                        main_report = fp
+                        break
+        if main_report:
+            fname = os.path.basename(main_report)
+            seen_ids[rid] = {
+                "id": rid,
+                "filename": fname,
+                "path": f"reviews/{entry}/{fname}",
+                "abs_path": os.path.abspath(main_report),
+                "format": "subdir",
+            }
+
+    return sorted(seen_ids.values(), key=lambda r: r["id"])
 
 
 def check_writable(path: str) -> bool:

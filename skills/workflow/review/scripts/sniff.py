@@ -12,6 +12,7 @@
   project_dir       - 输入的项目目录（绝对路径）
   workspace         - Prism Workspace 信息（null 表示未找到）
   obsidian          - Obsidian 环境信息
+  prism             - Prism SDK 上下文（device_id / workspace_root / projects）
   output_dir        - 推荐的产物输出目录
   next_number       - 推荐的日期编号（如 "001"）
   writable          - output_dir 是否可写
@@ -29,6 +30,7 @@ import sys
 from sniff_lib import (
     find_workspace,
     find_obsidian,
+    find_prism_context,
     _find_topics_dir,
     determine_output_dir,
     detect_topic_affinity,
@@ -49,6 +51,8 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
     fmt = "ofm" if obsidian["detected"] else "standard"
     route = "deep" if workspace and writable else "short"
 
+    prism = find_prism_context(project_dir)
+
     topic_affinity = None
     if topic and workspace:
         topics_dir = _find_topics_dir(workspace["path"])
@@ -58,6 +62,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         "project_dir": project_dir,
         "workspace": workspace,
         "obsidian": obsidian,
+        "prism": prism,
         "output_dir": output_dir,
         "next_number": next_number,
         "writable": writable,

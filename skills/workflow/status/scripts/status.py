@@ -18,7 +18,7 @@ import re
 import sys
 from datetime import date, datetime
 
-from sniff_lib import find_workspace, _find_topics_dir
+from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
 
 
 def _file_mtime(path: str) -> str | None:
@@ -47,10 +47,7 @@ def _count_unchecked(path: str) -> tuple[int, int]:
 
 
 def _count_reviews(reviews_dir: str) -> int:
-    if not os.path.isdir(reviews_dir):
-        return 0
-    return len([f for f in os.listdir(reviews_dir)
-                if f.startswith("r") and f.endswith(".md") and not f.startswith("raw")])
+    return len(enumerate_reviews(reviews_dir))
 
 
 def _count_decisions(decisions_dir: str) -> int:

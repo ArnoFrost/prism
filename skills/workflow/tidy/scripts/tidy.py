@@ -17,7 +17,7 @@ import re
 import sys
 from datetime import date, datetime
 
-from sniff_lib import find_workspace, _find_topics_dir
+from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
 
 
 def _read(path: str) -> str | None:
@@ -39,7 +39,12 @@ def _file_mtime_date(path: str) -> str | None:
 
 
 def _latest_file(directory: str, prefix: str, suffix: str = ".md") -> str | None:
-    """扫描目录，返回匹配 prefix+suffix 的最新文件名（按名称排序取最大）"""
+    """扫描目录，返回匹配 prefix+suffix 的最新文件名（按名称排序取最大）。
+    对 reviews/ (prefix="r") 使用 enumerate_reviews 兼容子目录格式。
+    """
+    if prefix == "r" and os.path.basename(os.path.normpath(directory)) == "reviews":
+        reviews = enumerate_reviews(directory)
+        return reviews[-1]["filename"] if reviews else None
     if not os.path.isdir(directory):
         return None
     matches = sorted(
@@ -96,27 +101,39 @@ def _find_wikilinks(content: str) -> list[str]:
     return results
 
 
-def _scan_reviews_for_index(topic_dir: str) -> list[dict]:
-    """扫描 reviews/ 中的 rXX 文件，返回未在 review.index.md 中登记的条目"""
+def _scan_reviews_for_index(topic_dir: str) -> dict:
+    """扫描 reviews/ 与 review.index.md 做双向对账。
+
+    返回 dict:
+      missing  - 磁盘有但 index 未登记的评审
+      stale    - index 中提到但磁盘无对应文件的 rXX 编号
+      legacy   - 使用子目录格式的评审（建议迁移）
+    """
     reviews_dir = os.path.join(topic_dir, "reviews")
     index_path = os.path.join(topic_dir, "review.index.md")
 
+    result = {"missing": [], "stale": [], "legacy": []}
+
     if not os.path.isdir(reviews_dir):
-        return []
+        return result
 
-    review_files = sorted(
-        f for f in os.listdir(reviews_dir)
-        if re.match(r"^r\d{2}", f) and f.endswith(".md") and not f.startswith("raw")
-    )
-
+    all_reviews = enumerate_reviews(reviews_dir)
     index_content = _read(index_path) or ""
-    missing = []
-    for rf in review_files:
-        name_stem = os.path.splitext(rf)[0]
-        if name_stem not in index_content and rf not in index_content:
-            missing.append({"file": rf, "path": f"reviews/{rf}"})
 
-    return missing
+    disk_ids = set()
+    for rev in all_reviews:
+        disk_ids.add(rev["id"])
+        name_stem = os.path.splitext(rev["filename"])[0]
+        if name_stem not in index_content and rev["filename"] not in index_content:
+            result["missing"].append({"file": rev["filename"], "path": rev["path"]})
+        if rev["format"] == "subdir":
+            result["legacy"].append(rev["id"])
+
+    index_ids = set(re.findall(r"\b(r\d{2})\b", index_content))
+    for iid in sorted(index_ids - disk_ids):
+        result["stale"].append(iid)
+
+    return result
 
 
 def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
@@ -154,14 +171,14 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
 
         # 2. README latest review 指针
         reviews_dir = os.path.join(topic_dir, "reviews")
-        latest_review = _latest_file(reviews_dir, "r")
-        if latest_review:
+        all_reviews = enumerate_reviews(reviews_dir)
+        if all_reviews:
+            latest_rev = all_reviews[-1]
             current_review = _extract_readme_field(readme, "latest review")
-            review_stem = os.path.splitext(latest_review)[0]
-            title = re.sub(r"^r\d{2}_?", "", review_stem).replace("-", " ").replace("_", " ").strip()
-            new_value = f"[{review_stem}](./reviews/{latest_review})"
+            review_stem = os.path.splitext(latest_rev["filename"])[0]
+            new_value = f"[{review_stem}](./{latest_rev['path']})"
 
-            if current_review and latest_review not in (current_review or ""):
+            if current_review and latest_rev["filename"] not in (current_review or ""):
                 fixes.append({
                     "type": "readme_pointer",
                     "file": "README.md",
@@ -206,24 +223,40 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             _write(readme_path, readme)
             changes_made.append("README.md")
 
-    # 5. review.index.md 缺失条目
-    missing_reviews = _scan_reviews_for_index(topic_dir)
-    if missing_reviews:
+    # 5. review.index.md 双向对账
+    index_scan = _scan_reviews_for_index(topic_dir)
+    if index_scan["missing"]:
         index_path = os.path.join(topic_dir, "review.index.md")
         fixes.append({
             "type": "review_index_missing",
             "file": "review.index.md",
-            "missing": [m["file"] for m in missing_reviews],
+            "missing": [m["file"] for m in index_scan["missing"]],
         })
         if fix:
             index_content = _read(index_path)
             if index_content:
-                for m in missing_reviews:
+                for m in index_scan["missing"]:
                     stem = os.path.splitext(m["file"])[0]
                     new_row = f"| {stem} | [{m['file']}](./{m['path']}) | — | — |"
                     index_content = index_content.rstrip("\n") + "\n" + new_row + "\n"
                 _write(index_path, index_content)
                 changes_made.append("review.index.md")
+
+    if index_scan["stale"]:
+        reports.append({
+            "type": "review_index_stale",
+            "file": "review.index.md",
+            "stale_ids": index_scan["stale"],
+            "message": f"review.index 中有 {len(index_scan['stale'])} 个条目在磁盘上无对应文件",
+        })
+
+    if index_scan["legacy"]:
+        reports.append({
+            "type": "review_legacy_subdir",
+            "file": "reviews/",
+            "ids": index_scan["legacy"],
+            "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: python3 migrate_review.py <topic_dir>",
+        })
 
     # 6. frontmatter updated 日期（scope.md, plan.md）
     for fname in ("scope.md", "plan.md"):
@@ -402,6 +435,10 @@ def to_markdown(report: dict) -> str:
                     lines.append(f"- `scope.md` {r['unchecked_count']} 项未勾选 / {r['checked_count']} 项已勾选")
                 elif r["type"] == "plan_focus_done":
                     lines.append(f"- `plan.md` {r['message']}")
+                elif r["type"] == "review_index_stale":
+                    lines.append(f"- `review.index.md` 疑似过期条目：{', '.join(r['stale_ids'])}")
+                elif r["type"] == "review_legacy_subdir":
+                    lines.append(f"- `reviews/` {r['message']}")
             lines.append("")
 
         if t["changes_made"]:

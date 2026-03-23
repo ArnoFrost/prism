@@ -273,6 +273,16 @@ def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
                             "未找到综合报告（rXX_*.md）", False))
         return issues
 
+    subdir_reviews = sorted(
+        d for d in output_path.iterdir()
+        if d.is_dir() and re.match(r"^r\d{2}", d.name) and d.name != "raw"
+    )
+    for sd in subdir_reviews:
+        issues.append(Issue("WARN", sd.name, 0, "legacy-subdir-format",
+                            f"遗留子目录格式: {sd.name}/（新评审应使用单文件 rXX_描述.md + raw/）。"
+                            f"迁移命令: python3 migrate_review.py <topic_dir>",
+                            False))
+
     raw_dir = output_path / "raw"
     if raw_dir.is_dir():
         for rf in review_files:
