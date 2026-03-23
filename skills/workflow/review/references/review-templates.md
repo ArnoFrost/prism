@@ -1,6 +1,8 @@
 # Review 产物模板与命名规则
 
 > 被 SKILL.md Phase 3（Merge 落盘）按需引用。
+>
+> **路径变量**：本文中 `{skill_dir}` 指 SKILL.md 文件所在目录的绝对路径（Cursor skill 根 / CodeBuddy `{baseDir}`）。
 
 ## 产物命名硬性规则
 

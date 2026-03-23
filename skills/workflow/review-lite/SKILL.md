@@ -11,6 +11,8 @@ description: |
 >
 > 与 `review`（正式评审）的关系：review-lite 是同一管线的轻量入口，共享 topic 路由和产物目录，区别在于**不做多角色拆分和仲裁**。
 
+> **路径变量**：本文中 `{skill_dir}` 指**此 SKILL.md 文件所在目录**的绝对路径。在 Cursor 中对应 skill 根目录，在 CodeBuddy / Claude Code 中对应 `{baseDir}`。执行脚本时请自行替换为实际路径。
+
 ## 何时使用
 
 | 场景 | 用哪个 |

@@ -1,6 +1,8 @@
 # Review 技能维护者文档
 
 > 面向技能维护者，Agent 执行时不需要关注。
+>
+> **路径变量**：本文中 `{skill_dir}` 指 SKILL.md 文件所在目录的绝对路径（Cursor skill 根 / CodeBuddy `{baseDir}`）。
 
 ## 目录结构
 
