@@ -44,31 +44,47 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 
 ## 协作骨架：总分总 (Align → Explore → Merge)
 
+### 阶段门控（Structured Gates）
+
+每个 ⛔ 门控包含三元组 `{precondition, verify, fallback}`：
+
+| Gate | Precondition | Verify（通过条件） | Fallback（违反时） |
+|------|-------------|-------------------|-------------------|
+| ⛔ Align→Explore | sniff 已执行，output_dir + format + mode 已确定 | 当前上下文包含 `output_dir`、`format`、`mode` 三个字段值 | 重新执行 sniff；若 sniff 失败则请求用户手动指定 output_dir + format |
+| ⛔ Explore→Merge | 所有角色均已输出独立评审 | 角色报告数量 = 预定角色数，每份含 TL;DR + Findings | 检查缺失角色，补执行或说明跳过原因 |
+| ⛔ Merge→落盘 | 综合报告 + 角色报告 + review.index 全部写入 | validate_product.py 退出码 = 0（ERROR 计数 = 0） | 执行 `--fix` 自动修复；仍失败则列出未解决 ERROR 请用户确认 |
+| ⛔ 落盘→决策触发 | 产物已落盘且校验通过 | review.index.md 包含本轮记录 | 补更新 review.index.md |
+
+### 骨架图
+
 ```
 ┌─────────────────────────────────┐
-│  1. Align（对齐）                │  ← 必须执行 sniff + topic 路由 + 输出决策
-│  - sniff 探测 → output_dir, format │
-│  - topic_affinity 路由决策 ★     │
-│  - 确认评审对象、范围、角色      │
-│  - 输出 mode 决策及理由          │
-├────────────── ⛔ ────────────────┤  ← 必须进入 Explore，不得跳过
+│  1. Align（对齐）                │
+│  ① 执行 sniff → 获取 output_dir, format, next_review_number
+│  ② READ: review-templates.md → 提取命名规则
+│  ③ 若 format=ofm → READ: review-ofm.md → 提取 Callout 映射
+│  ④ topic_affinity 路由决策
+│  ⑤ 确认评审对象、范围、角色
+│  ⑥ 输出 mode 决策及理由
+│  ⑦ 输出「已加载 references」清单
+├────────── ⛔ Gate 1 ────────────┤
 │  2. Explore（独立评审）          │
 │  各角色独立输出评审章节          │
 │  角色之间禁止互相引用            │
-├────────────── ⛔ ────────────────┤  ← 必须进入 Merge，不得跳过
+├────────── ⛔ Gate 2 ────────────┤
 │  3. Merge（综合仲裁）            │
-│  - 合并去重、冲突仲裁            │
-│  - 独立发现率自检                │
-│  - 落盘产物到 output_dir    ⛔   │  ← 未落盘 = 未完成
-│  - Topic README 同步 ★          │  ← cohesion 模式必须
+│  ① 合并去重、冲突仲裁
+│  ② 独立发现率计算（公式见下方）
+│  ③ 输出统一行动计划
+│  ④ 落盘：综合报告 → 角色报告 → review.index.md
+│  ⑤ 执行 validate_product.py --fix
+├────────── ⛔ Gate 3 ────────────┤
+│  ⑥ 校验通过后 → README 同步
+├────────── ⛔ Gate 4 ────────────┤
+│  4. 决策触发                     │
+│  提示用户 Accept/Reject/Defer   │
 └─────────────────────────────────┘
 ```
-
-**阶段门控**（⛔ 标记处）：
-- Align → **必须**进 Explore（禁止直接输出结论）
-- Explore → **必须**进 Merge（禁止只输出单角色）
-- Merge → **必须**落盘到 `output_dir`（对话输出不算完成）
-- Align → **必须**先执行 `sniff.py`（或手动探测确定 output_dir）
 
 ## Topic 路由决策（Align 阶段）
 
@@ -87,29 +103,33 @@ sniff 返回 `topic_affinity` 后，按以下规则决定产物路径：
 topic_affinity.suggestion = cohesion
 → 内聚到已有专项 006_task-cohesion-evolution/
 → output: reviews/r03.md（综合报告）+ reviews/raw/（角色报告）
+→ 已加载 references: [review-templates.md, review-ofm.md]
 ```
 
 ## 默认角色（3 角色）
 
-用户可根据场景增减（上限 5 个）。自定义角色须包含 Identity / Scope / Anti-patterns 三字段。
+用户可根据场景增减（上限 5 个）。自定义角色须包含 Identity / Scope / Anti-patterns / Output-Format 四字段。
 
 ### 角色 A：结构与一致性评审员
 
 - **Identity**: 结构与一致性评审员
 - **Scope**: 目录结构、命名规范、入口文件完整性、引用一致性、Single Source of Truth
 - **Anti-patterns**: 不评价业务逻辑正确性，不讨论实现细节
+- **Output-Format**: 遵循 `{format}` 规范，必需字段：TL;DR / Findings(P0-P2) / Actions
 
 ### 角色 B：可执行性评审员
 
 - **Identity**: 可执行性评审员
 - **Scope**: 行动项可落地性、验收标准明确性、依赖识别、优先级合理性、MVP 边界
 - **Anti-patterns**: 不纠结格式细节，不做架构重设计
+- **Output-Format**: 遵循 `{format}` 规范，必需字段：TL;DR / Findings(P0-P2) / Actions
 
 ### 角色 C：风险与边界分析师
 
 - **Identity**: 风险与边界分析师
 - **Scope**: 安全风险、范围漂移、过度工程化、向后兼容、依赖风险、滥用可能
 - **Anti-patterns**: 不提改进方案（那是行动项的事），只识别风险和边界问题
+- **Output-Format**: 遵循 `{format}` 规范，必需字段：TL;DR / Findings(P0-P2) / Risks
 
 ## 输出契约
 
@@ -130,47 +150,71 @@ topic_affinity.suggestion = cohesion
 | **P1** | 重要 | 功能缺陷、设计不一致、用户体验显著影响 |
 | **P2** | 改善 | 规范对齐、体验优化、可延后处理 |
 
+### 独立发现率（操作化定义）
+
+```
+独立发现率 = |非重叠发现| / |总去重发现| × 100%
+
+其中：
+- 非重叠发现 = 仅由单个角色提出的发现
+- 总去重发现 = 合并后的唯一发现总数
+- 目标 >= 50%
+```
+
+Merge 报告中**必须**包含计算表格：
+
+| 角色 | 总发现 | 仅由该角色发现 | 独立项数 |
+|------|--------|--------------|---------|
+| A | X | ... | N |
+
 ## 输出格式化
 
 sniff 返回 `format` 字段决定 Markdown 风格：
 
-- **ofm**：读取 [review-ofm.md](references/review-ofm.md) 获取 Callout 映射和 Frontmatter 模板
+- **ofm**：Callout 映射和 Frontmatter 模板详见 [review-ofm.md](references/review-ofm.md)
 - **standard**：标准 Markdown，不使用 Obsidian 专属语法，Frontmatter 可选
-
-> mode=full 时，Align 阶段需将 review-ofm.md 中的 Callout 映射内联到子任务 prompt。
 
 ## 执行策略
 
 ### 策略一：并行子任务（推荐，mode=full）
 
-**Align（主 Agent）：**
+**Align（主 Agent）— 7 步：**
 1. 执行 sniff：`python3 {skill_dir}/scripts/sniff.py <project_dir> --topic <评审主题>`
-2. Topic 路由决策：确定最终 `output_dir`
-3. 确认评审对象、范围、角色
-4. 输出决策（必须显式）：`mode=?` + `topic_route=?`，附理由
-5. 为子任务准备 context：评审对象 + 角色定义 + 输出格式。format=ofm 时内联 Callout 映射
+2. **READ** `{skill_dir}/references/review-templates.md` → 提取命名规则
+3. 若 format=ofm → **READ** `{skill_dir}/references/review-ofm.md` → 提取 Callout 映射
+4. Topic 路由决策：确定最终 `output_dir`
+5. 确认评审对象、范围、角色
+6. 输出决策（必须显式）：`mode=?` + `topic_route=?`，附理由
+7. 输出「已加载 references」清单
+
+**⛔ Gate 1 校验**：上下文包含 output_dir + format + mode + 已加载 references 列表？→ 通过则进入 Explore
 
 **Explore（并行子任务）：**
-在同一轮响应中为每个角色发起独立子任务，prompt 包含角色定义 + 评审对象 + 输出契约 + 格式要求。
+在同一轮响应中为每个角色发起独立子任务，prompt 包含角色定义（含 Output-Format 字段）+ 评审对象 + 输出契约 + 格式要求（format=ofm 时内联 Callout 映射表）。
 
 > 并行调度规范详见 [parallel-execution.md](references/parallel-execution.md)。
+> 串行模式下须在每个角色输出前声明："以下仅基于原始材料，不参考前序角色的发现"。
 
-**Merge（主 Agent）：**
-1. 去重仲裁 + 独立发现率自检（目标 >= 50%）
+**⛔ Gate 2 校验**：角色报告数量 = 预定角色数？→ 通过则进入 Merge
+
+**Merge（主 Agent）— 6 步有序流程：**
+1. 去重仲裁 + 独立发现率计算（含计算表格）
 2. 输出统一行动计划
-3. **落盘产物**（命名规则见 [review-templates.md](references/review-templates.md)）。落盘清单——全部写入后才算完成：
-   - [ ] `reviews/rXX_{title}.md` — 综合报告
-   - [ ] `reviews/raw/rXX-role-{A,B,C…}.md` — 每个角色的独立报告（mode=full 必须，quick 也必须）
-   - [ ] `review.index.md` — 追加本轮记录行
-4. 产物校验：`python3 {skill_dir}/scripts/validate_product.py {output_dir} --format {format} --fix`
-5. **专项工件同步**（仅 cohesion 模式）：
-   - `review.index.md`：追加本轮记录
-   - `README.md`：更新"当前状态"
-   - ⚠️ **不直接更新 `plan.md`** — plan 由 scope 驱动：review → 决策(dXX) → scope 更新 → plan 派生
+3. **写入**综合报告 `reviews/rXX_{title}.md`
+4. **写入**角色报告 `reviews/raw/rXX-role-{A,B,C…}.md`
+5. **追加** `review.index.md` 记录行
+6. **执行** `python3 {skill_dir}/scripts/validate_product.py {output_dir} --format {format} --fix`
+
+**⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 README 同步
+
+7. **专项工件同步**（仅 cohesion 模式）：`README.md` 更新"当前状态"
+   ⚠️ **不直接更新 `plan.md`** — plan 由 scope 驱动：review → 决策(dXX) → scope 更新 → plan 派生
+
+**⛔ Gate 4 → 决策触发**
 
 ### 策略二：串行角色切换（mode=quick）
 
-单次会话中依次以不同角色输出，完成后执行 Merge。落盘要求与策略一相同——综合报告 + 各角色报告 + review.index.md 缺一不可。
+单次会话中依次以不同角色输出，完成后执行 Merge。落盘要求与策略一相同。
 
 ### 项目探测（Align 阶段）
 
@@ -179,6 +223,14 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 | `workspace.*.local/` | 读取 project.yaml、index.md、README.md 作为上下文 |
 | `ai-task.local/`（兼容） | 同上 |
 | 均不存在 | 按通用模式执行 |
+
+### sniff 失败处理
+
+| 场景 | Fallback |
+|------|----------|
+| sniff 执行报错 | 告知用户，请求手动指定 output_dir + format |
+| `writable = false` | 降级为对话输出模式，不落盘 |
+| `topic_affinity = null` | 按 `new_topic` 处理或用户指定 |
 
 ## 产物设计
 
@@ -194,13 +246,13 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 
 ## 反馈闭环
 
-1. **质量自检**：输出独立发现率指标
+1. **质量自检**：输出独立发现率指标（含计算过程）
 2. **Calibration 询问**：向用户确认发现价值
 3. **增量 Re-review**：支持 `--incremental` 只审查 diff 部分
 
-## 决策触发（Merge 完成后）
+## 决策触发（⛔ Gate 4 后）
 
-Merge 产物落盘后，**必须提示用户记录决策**：
+Merge 产物落盘且校验通过后，**必须提示用户记录决策**：
 
 ```
 评审完成，产物已写入 reviews/rXX.md。
@@ -213,7 +265,7 @@ Merge 产物落盘后，**必须提示用户记录决策**：
 决策模板见 workspace.schema.yaml → topic_artifacts.decision.template
 ```
 
-> 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化。
+> ⛔ 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化。
 
 ## 目录结构
 
@@ -221,7 +273,7 @@ Merge 产物落盘后，**必须提示用户记录决策**：
 workflow/review/
 ├── SKILL.md                      # 入口（本文件）
 ├── scripts/
-│   ├── sniff.py                  # 环境预探测 + topic_affinity
+│   ├── sniff.py                  # 环境预探测 + topic_affinity + next_review_number
 │   └── validate_product.py       # 产物校验
 └── references/
     ├── review-ofm.md             # 评审 OFM 格式规范
