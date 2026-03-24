@@ -1,7 +1,7 @@
 # Prism Workspace Schema
 # Defines the structure and constraints for workspace instances.
 
-version: "0.7.0"
+version: "1.0.0"
 
 # Workspace instance directory structure
 structure:

@@ -1,7 +1,7 @@
 # Prism Skills Catalog (SSOT)
 # Public injected skills must be declared here.
 
-version: "0.7.0"
+version: "1.0.0"
 
 policy:
   default_visibility: internal
@@ -78,6 +78,22 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-21"
     rationale: "Topic health scanner — scope progress, stale detection, archive hints."
+  - id: workflow-tidy
+    visibility: dev
+    stability: experimental
+    source_repo: prism
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-24"
+    rationale: "Mechanical artifact alignment — sync README pointers, review.index, frontmatter after review/decision."
+  - id: workflow-digest
+    visibility: dev
+    stability: experimental
+    source_repo: prism
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-03-24"
+    rationale: "Topic status digest — human-readable snapshot for stakeholder sync, not SSOT."
   - id: prism-dist
     visibility: dev
     stability: experimental

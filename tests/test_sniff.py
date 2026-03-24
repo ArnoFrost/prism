@@ -23,13 +23,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-# 将 sniff.py 所在目录加入 path
+# SDK 内置 workspace-init sniff.py（Phase 5 迁移后的标准路径）
 SNIFF_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "prism-skills", "prism-workspace-init", "scripts"
+    os.path.dirname(__file__), "..", "skills", "workspace", "init", "scripts"
 )
-# 兼容 CI 环境：也尝试从 skills_path 查找
+# 兼容外部 prism-skills 仓库（旧路径 fallback）
 if not os.path.isdir(SNIFF_DIR):
-    SNIFF_DIR = os.path.expanduser("~/prism-skills/prism-workspace-init/scripts")
+    SNIFF_DIR = os.path.join(
+        os.path.dirname(__file__), "..", "..", "prism-skills", "prism-workspace-init", "scripts"
+    )
 
 sys.path.insert(0, os.path.abspath(SNIFF_DIR))
 
@@ -219,12 +221,15 @@ class TestCheckGitignore(unittest.TestCase):
     """check_gitignore() 的测试。"""
 
     def test_no_gitignore(self):
-        """无 .gitignore 文件"""
+        """无 .gitignore 文件 — 全局 gitignore 可能覆盖"""
         with tempfile.TemporaryDirectory() as d:
             result = check_gitignore(d)
             self.assertFalse(result["exists"])
-            self.assertFalse(result["has_prism_patterns"])
-            self.assertGreater(len(result["missing_patterns"]), 0)
+            if result.get("covered_by_global"):
+                self.assertTrue(result["has_prism_patterns"])
+            else:
+                self.assertFalse(result["has_prism_patterns"])
+                self.assertGreater(len(result["missing_patterns"]), 0)
 
     def test_complete_gitignore(self):
         """完整的 .gitignore"""
@@ -242,15 +247,18 @@ class TestCheckGitignore(unittest.TestCase):
             self.assertEqual(len(result["missing_patterns"]), 0)
 
     def test_partial_gitignore(self):
-        """部分 .gitignore"""
+        """部分 .gitignore — 项目级不完整，但全局可能补齐"""
         with tempfile.TemporaryDirectory() as d:
             gi = os.path.join(d, ".gitignore")
             with open(gi, "w") as f:
                 f.write("workspace.*.local\n")
             result = check_gitignore(d)
             self.assertTrue(result["exists"])
-            self.assertFalse(result["has_prism_patterns"])
-            self.assertGreater(len(result["missing_patterns"]), 0)
+            if result.get("covered_by_global"):
+                self.assertTrue(result["has_prism_patterns"])
+            else:
+                self.assertFalse(result["has_prism_patterns"])
+                self.assertGreater(len(result["missing_patterns"]), 0)
 
 
 if __name__ == "__main__":
