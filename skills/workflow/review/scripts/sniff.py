@@ -34,12 +34,18 @@ from sniff_lib import (
     _find_topics_dir,
     determine_output_dir,
     detect_topic_affinity,
+    enumerate_reviews,
     check_writable,
 )
 
 
 def sniff(project_dir: str, topic: str | None = None) -> dict:
     project_dir = os.path.abspath(project_dir)
+
+    # 版本校验
+    import sniff_lib
+    if not hasattr(sniff_lib, "__version__"):
+        print("警告: sniff_lib.py 缺少 __version__，可能为过期副本", file=sys.stderr)
 
     workspace = find_workspace(project_dir)
     obsidian = find_obsidian(
@@ -58,6 +64,20 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         topics_dir = _find_topics_dir(workspace["path"])
         topic_affinity = detect_topic_affinity(topics_dir, topic)
 
+    # 自动计算下一个 review 编号
+    next_review_number = None
+    reviews_dir = os.path.join(project_dir, "reviews")
+    if os.path.isdir(reviews_dir):
+        existing = enumerate_reviews(reviews_dir)
+        if existing:
+            last_num = max(int(r["id"][1:]) for r in existing)
+            next_review_number = f"r{last_num + 1:02d}"
+        else:
+            next_review_number = "r01"
+    elif os.path.isdir(project_dir):
+        # 可能是 topic 目录但还没有 reviews/
+        next_review_number = "r01"
+
     return {
         "project_dir": project_dir,
         "workspace": workspace,
@@ -70,6 +90,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         "route": route,
         "topic": topic,
         "topic_affinity": topic_affinity,
+        "next_review_number": next_review_number,
     }
 
 

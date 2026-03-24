@@ -64,7 +64,7 @@ def run_git(repo_path: str, *args: str) -> tuple[int, str]:
         return -1, ""
 
 
-def sniff_repo(name: str, repo_def: dict) -> dict:
+def sniff_repo(name: str, repo_def: dict, do_fetch: bool = False) -> dict:
     path = repo_def["path"]
 
     if path is None:
@@ -95,7 +95,8 @@ def sniff_repo(name: str, repo_def: dict) -> dict:
     _, branch = run_git(path, "branch", "--show-current")
     _, remote = run_git(path, "remote", "get-url", "origin")
 
-    run_git(path, "fetch", "origin", "--quiet")
+    if do_fetch:
+        run_git(path, "fetch", "origin", "--quiet")
 
     _, status_porcelain = run_git(path, "status", "--porcelain")
     lines = [l for l in status_porcelain.splitlines() if l.strip()] if status_porcelain else []
@@ -163,20 +164,22 @@ def sniff_repo(name: str, repo_def: dict) -> dict:
 
 def main():
     targets = set()
+    do_fetch = False
     for arg in sys.argv[1:]:
-        arg = arg.lstrip("-")
-        if arg == "all":
+        clean = arg.lstrip("-")
+        if clean == "fetch":
+            do_fetch = True
+        elif clean == "all":
             targets = {"sdk", "skills", "env"}
-            break
-        elif arg in REPOS:
-            targets.add(arg)
+        elif clean in REPOS:
+            targets.add(clean)
 
     if not targets:
         targets = {"sdk", "skills", "env"}
 
     repos = {}
     for name in sorted(targets):
-        repos[name] = sniff_repo(name, REPOS[name])
+        repos[name] = sniff_repo(name, REPOS[name], do_fetch=do_fetch)
 
     actionable = [
         name for name, info in repos.items()
