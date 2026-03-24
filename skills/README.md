@@ -13,7 +13,7 @@ skills/
 │   └── dist-whitelist.yaml           # 分发白名单
 ├── templates/
 │   └── SKILL.template.md             # 技能编写模板
-├── workflow/                          # ★ 内置工作流技能（v0.9.0）
+├── workflow/                          # ★ 内置工作流技能（v1.0.0-alpha）
 │   ├── intake/
 │   ├── review/
 │   ├── review-lite/
@@ -33,7 +33,7 @@ skills/
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
-## Workflow 管线（v0.9.0）
+## Workflow 管线（v1.0.0-alpha）
 
 六个内置技能组成完整的人机协作管线：
 
