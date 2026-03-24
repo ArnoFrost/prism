@@ -7,6 +7,8 @@ prism-workflow-review/scripts/sniff.py 共同引用（通过软链接）。
 零外部依赖，纯 stdlib。
 """
 
+__version__ = "1.1.0"
+
 import os
 import re
 from datetime import date
@@ -202,7 +204,7 @@ def find_obsidian(start_dir: str, project_dir: str | None = None) -> dict:
         return result
 
     current = os.path.abspath(start_dir)
-    while True:
+    for _ in range(20):  # 与 detect_format 对齐，最多 20 层
         candidate = os.path.join(current, ".obsidian")
         if os.path.isdir(candidate):
             return {"detected": True, "vault_root": current}
@@ -270,10 +272,25 @@ def _strip_topic_prefix(name: str) -> str:
 
 
 def _extract_topic_keywords(topic: str) -> list[str]:
-    """从 topic 字符串中提取关键词（中文按字符切分，英文按单词切分，忽略短词）"""
+    """从 topic 字符串中提取关键词。
+
+    中文按 2-gram 拆分（如 "任务内聚" → ["任务", "内聚", "任务内聚"]），
+    英文按单词切分（忽略短词）。
+    """
     keywords = []
-    cn_chars = re.findall(r"[\u4e00-\u9fff]+", topic.lower())
-    keywords.extend(cn_chars)
+    # 中文：提取连续中文片段，对长度 > 2 的做 2-gram 拆分
+    cn_segments = re.findall(r"[\u4e00-\u9fff]+", topic.lower())
+    for seg in cn_segments:
+        if len(seg) <= 2:
+            keywords.append(seg)
+        else:
+            # 原始整词 + 2-gram 子串
+            keywords.append(seg)
+            for i in range(len(seg) - 1):
+                bigram = seg[i:i+2]
+                if bigram not in keywords:
+                    keywords.append(bigram)
+    # 英文
     en_words = re.findall(r"[a-zA-Z]{2,}", topic.lower())
     keywords.extend(en_words)
     return keywords
