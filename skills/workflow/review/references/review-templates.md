@@ -60,8 +60,8 @@ topics/{NNN}_{topic}/
 
 ## mode=full 产物
 
-- `reviews/rXX_简短描述.md` — Merge 综合报告
-- `reviews/raw/rXX-role-{A|B|C}.md` — 独立角色报告
+- `reviews/rXX_简短描述.md` — Merge 综合报告（**必须**）
+- `reviews/raw/rXX-role-{A|B|C}.md` — 独立角色报告（**可选**，合并报告已含全部发现，raw 为补充存档）
 - 自动追加 `review.index.md` 记录
 
 ## mode=quick 产物

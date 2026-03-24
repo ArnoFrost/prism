@@ -4,6 +4,7 @@
 import os
 import sys
 import tempfile
+from datetime import date
 
 import pytest
 
@@ -207,6 +208,48 @@ class TestEnumerateReviews:
     def test_nonexistent_dir(self):
         result = sniff_lib.enumerate_reviews("/nonexistent")
         assert result == []
+
+
+# ============================================================
+# check_review_density（密度告警）
+# ============================================================
+
+class TestCheckReviewDensity:
+    def test_below_threshold(self, tmp_path):
+        reviews_dir = tmp_path / "reviews"
+        reviews_dir.mkdir()
+        for i in range(1, 4):
+            (reviews_dir / f"r{i:02d}_test.md").write_text(f"# R{i:02d}")
+        result = sniff_lib.check_review_density(str(reviews_dir))
+        assert result is None  # < 5 轮，不告警
+
+    def test_above_threshold(self, tmp_path):
+        reviews_dir = tmp_path / "reviews"
+        reviews_dir.mkdir()
+        for i in range(1, 8):
+            (reviews_dir / f"r{i:02d}_test.md").write_text(f"# R{i:02d}")
+        # 7 轮 review，创建日期设为今天 → density = 7/1 = 7.0
+        result = sniff_lib.check_review_density(str(reviews_dir), topic_created=str(date.today()))
+        assert result is not None
+        assert result["count"] == 7
+        assert result["density"] > 1.0
+        assert "密度" in result["suggestion"]
+
+    def test_no_warning_with_old_topic(self, tmp_path):
+        reviews_dir = tmp_path / "reviews"
+        reviews_dir.mkdir()
+        for i in range(1, 6):
+            (reviews_dir / f"r{i:02d}_test.md").write_text(f"# R{i:02d}")
+        # 5 轮 review，但 topic 创建 30 天前 → density = 5/30 ≈ 0.17
+        old_date = str(date.today() - __import__("datetime").timedelta(days=30))
+        result = sniff_lib.check_review_density(str(reviews_dir), topic_created=old_date)
+        assert result is None
+
+    def test_empty_dir(self, tmp_path):
+        reviews_dir = tmp_path / "reviews"
+        reviews_dir.mkdir()
+        result = sniff_lib.check_review_density(str(reviews_dir))
+        assert result is None
 
 
 # ============================================================

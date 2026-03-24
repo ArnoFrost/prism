@@ -291,8 +291,9 @@ def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
             raw_files = [f.name for f in raw_dir.iterdir() if f.is_file()]
             for expected in expected_roles:
                 if expected not in raw_files:
-                    issues.append(Issue("ERROR", f"raw/{expected}", 0, "missing-raw-report",
-                                        f"缺少角色原始报告: {expected}", False))
+                    # raw 角色报告降级为 WARN（可选，合并报告已覆盖全部信息）
+                    issues.append(Issue("WARN", f"raw/{expected}", 0, "missing-raw-report",
+                                        f"缺少角色原始报告: {expected}（可选，合并报告已包含全部发现）", False))
 
     topic_dir = output_path.parent
     review_index = topic_dir / "review.index.md"

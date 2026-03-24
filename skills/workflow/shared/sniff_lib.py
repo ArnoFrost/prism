@@ -448,6 +448,53 @@ def enumerate_reviews(reviews_dir: str) -> list[dict]:
     return sorted(seen_ids.values(), key=lambda r: r["id"])
 
 
+def check_review_density(reviews_dir: str, topic_created: str | None = None) -> dict | None:
+    """检查 review 密度，超阈值时返回告警信息。
+
+    参数:
+      reviews_dir: reviews/ 目录路径
+      topic_created: topic 创建日期（YYYY-MM-DD），若为 None 则从最早 review 推断
+
+    返回:
+      None（无告警）或 dict（含 count, days, density, suggestion）
+    """
+    reviews = enumerate_reviews(reviews_dir)
+    if len(reviews) < 5:
+        return None
+
+    # 尝试从 topic_created 或最早 review 的 mtime 推算天数
+    if topic_created:
+        try:
+            created = date.fromisoformat(topic_created)
+        except ValueError:
+            created = None
+    else:
+        created = None
+
+    if not created:
+        # 用最早 review 文件的 mtime 作为起点
+        earliest = reviews[0]
+        if os.path.isfile(earliest["abs_path"]):
+            from datetime import datetime
+            mtime = os.path.getmtime(earliest["abs_path"])
+            created = datetime.fromtimestamp(mtime).date()
+
+    if not created:
+        return None
+
+    days = max((date.today() - created).days, 1)
+    density = len(reviews) / days
+
+    if density > 1.0:  # 日均 > 1 轮 review
+        return {
+            "count": len(reviews),
+            "days": days,
+            "density": round(density, 1),
+            "suggestion": "review 密度偏高（日均 > 1 轮），考虑拆分为子专项或合并低价值评审",
+        }
+    return None
+
+
 def check_writable(path: str) -> bool:
     """检查路径是否可写（检查最近的已存在祖先目录）"""
     check = path

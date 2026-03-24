@@ -160,3 +160,18 @@ class TestCheckReviewStructure:
         issues = vp.check_review_structure(str(tmp_path), "ofm")
         warnings = [i for i in issues if i.rule == "legacy-subdir-format"]
         assert len(warnings) == 1
+
+    def test_missing_raw_is_warn_not_error(self, tmp_path):
+        """raw 角色报告缺失应该是 WARN 而非 ERROR（可选产物）"""
+        (tmp_path / "r01_test.md").write_text("# R01")
+        raw = tmp_path / "raw"
+        raw.mkdir()
+        # 只放 role-A，缺 B 和 C
+        (raw / "r01-role-A.md").write_text("# A")
+
+        issues = vp.check_review_structure(str(tmp_path), "ofm")
+        raw_issues = [i for i in issues if i.rule == "missing-raw-report"]
+        assert len(raw_issues) == 2  # 缺 B 和 C
+        # 全部应该是 WARN，不是 ERROR
+        for issue in raw_issues:
+            assert issue.level == "WARN"

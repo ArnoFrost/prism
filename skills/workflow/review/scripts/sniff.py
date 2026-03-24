@@ -35,6 +35,7 @@ from sniff_lib import (
     determine_output_dir,
     detect_topic_affinity,
     enumerate_reviews,
+    check_review_density,
     check_writable,
 )
 
@@ -78,6 +79,11 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         # 可能是 topic 目录但还没有 reviews/
         next_review_number = "r01"
 
+    # review 密度告警
+    review_density_warning = None
+    if os.path.isdir(reviews_dir):
+        review_density_warning = check_review_density(reviews_dir)
+
     return {
         "project_dir": project_dir,
         "workspace": workspace,
@@ -91,6 +97,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         "topic": topic,
         "topic_affinity": topic_affinity,
         "next_review_number": next_review_number,
+        "review_density_warning": review_density_warning,
     }
 
 

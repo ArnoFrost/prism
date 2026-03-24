@@ -76,8 +76,8 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 │  ① 合并去重、冲突仲裁
 │  ② 独立发现率计算（公式见下方）
 │  ③ 输出统一行动计划
-│  ④ 落盘：综合报告 → 角色报告 → review.index.md
-│  ⑤ 执行 validate_product.py --fix
+│  ④ 落盘：综合报告 → [可选]角色报告 → review.index.md
+│  ⑤ 执行 prism pipeline <topic_dir>（tidy + validate + scope 提示）
 ├────────── ⛔ Gate 3 ────────────┤
 │  ⑥ 校验通过后 → README 同步
 ├────────── ⛔ Gate 4 ────────────┤
@@ -201,9 +201,9 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 1. 去重仲裁 + 独立发现率计算（含计算表格）
 2. 输出统一行动计划
 3. **写入**综合报告 `reviews/rXX_{title}.md`
-4. **写入**角色报告 `reviews/raw/rXX-role-{A,B,C…}.md`
+4. **[可选] 写入**角色报告 `reviews/raw/rXX-role-{A,B,C…}.md`（合并报告已含全部发现，raw 为补充存档）
 5. **追加** `review.index.md` 记录行
-6. **执行** `python3 {skill_dir}/scripts/validate_product.py {output_dir} --format {format} --fix`
+6. **执行** `python3 {skill_dir}/../shared/scripts/prism_cli.py pipeline <topic_dir>`（自动串联 tidy + validate + scope 提示）
 
 **⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 README 同步
 
