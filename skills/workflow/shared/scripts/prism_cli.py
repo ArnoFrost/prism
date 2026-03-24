@@ -9,6 +9,7 @@
   python3 prism_cli.py archive <workspace_path> <topic_dirname> [--dry-run]
   python3 prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
   python3 prism_cli.py sync [--sdk] [--skills] [--env] [--all] [--fetch]
+  python3 prism_cli.py pipeline <topic_dir> [--dry-run]
 
 零外部依赖，纯 stdlib。各子命令内部 dispatch 到现有脚本函数。
 """
@@ -115,6 +116,129 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pipeline(args: argparse.Namespace) -> int:
+    """Decision 后一键编排：tidy --fix → validate --fix → 提示 scope 更新。
+
+    用法: prism pipeline <topic_dir> [--dry-run]
+
+    执行流程：
+      1. tidy --fix（README 指针同步 + review.index 补全）
+      2. validate --fix（产物格式校验 + 自动修复）
+      3. 输出 scope 更新提示（需要人工确认）
+    """
+    topic_dir = os.path.abspath(args.topic_dir)
+    if not os.path.isdir(topic_dir):
+        print(f"错误: {topic_dir} 不是有效目录", file=sys.stderr)
+        return 1
+
+    dry_run = getattr(args, "dry_run", False)
+    steps = []
+    has_error = False
+
+    # ── Step 1: tidy ──
+    tidy_scripts = os.path.join(WORKFLOW_DIR, "tidy", "scripts")
+    _add_to_path(tidy_scripts)
+    _add_to_path(SHARED_DIR)
+
+    # tidy 需要 workspace 级别的 project_dir（topic 的父级的父级）
+    # topic_dir = .../workspace.xxx.local/topics/011_xxx/
+    # project_dir for tidy = .../workspace.xxx.local/ 或包含 workspace 的目录
+    # 但 tidy 内部会自己定位 workspace，所以传 topic_dir 即可让 sniff_lib 向上找
+    tidy_path = os.path.join(tidy_scripts, "tidy.py")
+    if os.path.isfile(tidy_path):
+        import subprocess
+        topic_name = os.path.basename(topic_dir)
+        # tidy 需要 project_dir（含 workspace 的目录），向上两级
+        ws_candidate = os.path.dirname(os.path.dirname(topic_dir))
+        tidy_cmd = ["python3", tidy_path, ws_candidate, "--topic", topic_name]
+        if not dry_run:
+            tidy_cmd.append("--fix")
+        tidy_cmd.extend(["--format", "json"])
+
+        result = subprocess.run(tidy_cmd, capture_output=True, text=True, timeout=30)
+        try:
+            tidy_result = json.loads(result.stdout) if result.stdout.strip() else {}
+        except json.JSONDecodeError:
+            tidy_result = {"raw_output": result.stdout, "stderr": result.stderr}
+
+        fix_count = 0
+        if "topics" in tidy_result:
+            for t in tidy_result["topics"]:
+                fix_count += t.get("fix_count", 0)
+
+        steps.append({
+            "step": "tidy",
+            "status": "ok" if result.returncode == 0 else "warn",
+            "fixes_applied": fix_count,
+            "dry_run": dry_run,
+        })
+    else:
+        steps.append({"step": "tidy", "status": "skipped", "reason": "tidy.py 未找到"})
+
+    # ── Step 2: validate ──
+    review_scripts = os.path.join(WORKFLOW_DIR, "review", "scripts")
+    validate_path = os.path.join(review_scripts, "validate_product.py")
+    if os.path.isfile(validate_path):
+        import subprocess
+        validate_cmd = ["python3", validate_path, topic_dir, "--format", "ofm"]
+        if not dry_run:
+            validate_cmd.append("--fix")
+
+        result = subprocess.run(validate_cmd, capture_output=True, text=True, timeout=30)
+        try:
+            validate_result = json.loads(result.stdout) if result.stdout.strip() else {}
+        except json.JSONDecodeError:
+            validate_result = {"raw_output": result.stdout}
+
+        error_count = len(validate_result.get("errors", []))
+        fix_count = len(validate_result.get("fixes_applied", []))
+
+        steps.append({
+            "step": "validate",
+            "status": "ok" if error_count == 0 else "error",
+            "errors": error_count,
+            "fixes_applied": fix_count,
+            "dry_run": dry_run,
+        })
+        if error_count > 0:
+            has_error = True
+    else:
+        steps.append({"step": "validate", "status": "skipped", "reason": "validate_product.py 未找到"})
+
+    # ── Step 3: scope 更新提示 ──
+    scope_path = os.path.join(topic_dir, "scope.md")
+    plan_path = os.path.join(topic_dir, "plan.md")
+    scope_hint = {
+        "step": "scope_hint",
+        "status": "info",
+        "message": "请确认是否需要更新 scope.md（review 结论是否改变了项目边界？）",
+        "scope_exists": os.path.isfile(scope_path),
+        "plan_exists": os.path.isfile(plan_path),
+    }
+
+    # 检查 scope 中的未勾选项
+    if os.path.isfile(scope_path):
+        with open(scope_path, "r", encoding="utf-8") as f:
+            scope_content = f.read()
+        import re
+        unchecked = len(re.findall(r"- \[ \]", scope_content))
+        checked = len(re.findall(r"- \[x\]", scope_content))
+        scope_hint["acceptance_progress"] = f"{checked}/{checked + unchecked}"
+
+    steps.append(scope_hint)
+
+    output = {
+        "topic": os.path.basename(topic_dir),
+        "mode": "dry-run" if dry_run else "fix",
+        "steps": steps,
+        "success": not has_error,
+        "next_action": "如需更新 scope，请执行 /workflow-scope" if not has_error else "请先解决 validate 错误",
+    }
+
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return 1 if has_error else 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     """嗅探 Prism 仓库 Git 状态（dispatch 到 shared/scripts/prism_sync_sniff.py）"""
     _add_to_path(SCRIPT_DIR)
@@ -190,6 +314,11 @@ def main():
     p_sync.add_argument("--all", action="store_true")
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
+    # pipeline
+    p_pipeline = subparsers.add_parser("pipeline", help="Decision 后一键编排：tidy → validate → scope 提示")
+    p_pipeline.add_argument("topic_dir", help="专项根目录")
+    p_pipeline.add_argument("--dry-run", action="store_true", help="只预览不修复")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -202,6 +331,7 @@ def main():
         "archive": cmd_archive,
         "migrate": cmd_migrate,
         "sync": cmd_sync,
+        "pipeline": cmd_pipeline,
     }
 
     return dispatch[args.command](args)

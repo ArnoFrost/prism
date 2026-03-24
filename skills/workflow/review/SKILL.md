@@ -258,7 +258,9 @@ Merge 产物落盘且校验通过后，**必须提示用户记录决策**：
 评审完成，产物已写入 reviews/rXX.md。
 
 请确认下一步：
-1. Accept → 记录 decisions/dXX.md，然后更新 plan.md
+1. Accept → 记录 decisions/dXX.md，然后执行 pipeline 一键收尾：
+   python3 {skill_dir}/../shared/scripts/prism_cli.py pipeline <topic_dir>
+   （自动串联 tidy --fix → validate --fix → scope 更新提示）
 2. Reject → 说明原因，重新 review 或调整 scope
 3. Defer → 标记为待决，不更新 plan
 
