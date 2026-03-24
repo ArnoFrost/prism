@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""prism-post-commit — git post-commit hook，检测 workflow 产物变更后自动执行 tidy + validate。
+
+安装方式（在项目根目录执行）：
+  # 方式一：符号链接（推荐）
+  ln -sf /path/to/prism/skills/workflow/shared/hooks/post-commit .git/hooks/post-commit
+
+  # 方式二：追加到已有 hook
+  echo 'python3 /path/to/prism/skills/workflow/shared/hooks/post-commit' >> .git/hooks/post-commit
+
+行为：
+  1. 检查最近一次 commit 是否涉及 reviews/ 或 decisions/ 文件
+  2. 若涉及，定位所属 topic 目录
+  3. 自动执行 tidy --fix + validate --fix（静默模式，仅输出摘要）
+  4. 若无 workflow 文件变更，静默退出（零开销）
+
+设计原则：
+  - 不阻塞 commit（post-commit，非 pre-commit）
+  - 仅对 workflow 产物触发，普通代码 commit 零开销
+  - 失败不影响 commit（退出码始终为 0）
+  - 零外部依赖
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+
+
+def run_git(*args: str) -> tuple[int, str]:
+    """执行 git 命令"""
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            capture_output=True, text=True, timeout=10,
+        )
+        return result.returncode, result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return -1, ""
+
+
+def find_script(script_name: str, search_paths: list[str]) -> str | None:
+    """在候选路径中查找脚本"""
+    for base in search_paths:
+        candidate = os.path.join(base, script_name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def find_topic_dir(changed_file: str, repo_root: str) -> str | None:
+    """从变更文件路径反推 topic 目录。
+
+    变更文件可能是：
+      .../topics/011_xxx/reviews/r01.md → topic_dir = .../topics/011_xxx/
+      .../topics/011_xxx/decisions/d01.md → topic_dir = .../topics/011_xxx/
+    """
+    full_path = os.path.join(repo_root, changed_file)
+    # 向上找到包含 reviews/ 或 decisions/ 的父目录
+    parts = changed_file.split(os.sep)
+    for i, part in enumerate(parts):
+        if part in ("reviews", "decisions"):
+            topic_rel = os.sep.join(parts[:i])
+            topic_abs = os.path.join(repo_root, topic_rel)
+            if os.path.isdir(topic_abs):
+                return topic_abs
+    return None
+
+
+def find_workspace_dir(topic_dir: str) -> str | None:
+    """从 topic 目录反推 workspace 目录（topics 的父目录）"""
+    parent = os.path.dirname(topic_dir)
+    if os.path.basename(parent) in ("topics", "tasks"):
+        return os.path.dirname(parent)
+    return None
+
+
+def main():
+    # 获取最近 commit 涉及的文件
+    rc, files_str = run_git("diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
+    if rc != 0 or not files_str:
+        return 0
+
+    changed_files = files_str.splitlines()
+
+    # 过滤 workflow 产物文件
+    workflow_pattern = re.compile(r"(reviews/|decisions/)")
+    workflow_files = [f for f in changed_files if workflow_pattern.search(f)]
+
+    if not workflow_files:
+        return 0  # 无 workflow 变更，静默退出
+
+    # 获取 repo 根目录
+    _, repo_root = run_git("rev-parse", "--show-toplevel")
+    if not repo_root:
+        return 0
+
+    # 收集涉及的 topic 目录（去重）
+    topic_dirs = set()
+    for f in workflow_files:
+        td = find_topic_dir(f, repo_root)
+        if td:
+            topic_dirs.add(td)
+
+    if not topic_dirs:
+        return 0
+
+    # 定位脚本路径
+    # 尝试从 prism.local.yaml 或常见路径找脚本
+    script_search_paths = [
+        os.path.expanduser("~/prism/skills/workflow/tidy/scripts"),
+        os.path.expanduser("~/prism/skills/workflow/review/scripts"),
+        os.path.expanduser("~/prism/skills/workflow/shared/scripts"),
+    ]
+
+    # 也检查环境变量
+    sdk_path = os.environ.get("PRISM_SDK_PATH")
+    if sdk_path:
+        script_search_paths.insert(0, os.path.join(sdk_path, "skills/workflow/tidy/scripts"))
+        script_search_paths.insert(1, os.path.join(sdk_path, "skills/workflow/review/scripts"))
+
+    tidy_script = find_script("tidy.py", script_search_paths)
+    validate_script = find_script("validate_product.py", script_search_paths)
+
+    summary = {"hook": "prism-post-commit", "topics": [], "workflow_files": len(workflow_files)}
+
+    for topic_dir in sorted(topic_dirs):
+        topic_name = os.path.basename(topic_dir)
+        topic_result = {"topic": topic_name, "tidy": None, "validate": None}
+
+        # Step 1: tidy --fix
+        if tidy_script:
+            ws_dir = find_workspace_dir(topic_dir)
+            if ws_dir:
+                try:
+                    result = subprocess.run(
+                        ["python3", tidy_script, ws_dir, "--topic", topic_name, "--fix", "--format", "json"],
+                        capture_output=True, text=True, timeout=15,
+                    )
+                    try:
+                        tidy_data = json.loads(result.stdout) if result.stdout.strip() else {}
+                        fix_count = sum(t.get("fix_count", 0) for t in tidy_data.get("topics", []))
+                        topic_result["tidy"] = {"status": "ok", "fixes": fix_count}
+                    except json.JSONDecodeError:
+                        topic_result["tidy"] = {"status": "ok", "raw": True}
+                except subprocess.TimeoutExpired:
+                    topic_result["tidy"] = {"status": "timeout"}
+
+        # Step 2: validate --fix
+        if validate_script:
+            try:
+                result = subprocess.run(
+                    ["python3", validate_script, topic_dir, "--format", "ofm", "--fix"],
+                    capture_output=True, text=True, timeout=15,
+                )
+                try:
+                    val_data = json.loads(result.stdout) if result.stdout.strip() else {}
+                    topic_result["validate"] = {
+                        "status": "ok" if not val_data.get("errors") else "warn",
+                        "errors": len(val_data.get("errors", [])),
+                        "fixes": len(val_data.get("fixes_applied", [])),
+                    }
+                except json.JSONDecodeError:
+                    topic_result["validate"] = {"status": "ok", "raw": True}
+            except subprocess.TimeoutExpired:
+                topic_result["validate"] = {"status": "timeout"}
+
+        summary["topics"].append(topic_result)
+
+    # 输出摘要到 stderr（不干扰 git 输出）
+    print(f"\n[Prism hook] 检测到 {len(workflow_files)} 个 workflow 文件变更", file=sys.stderr)
+    for t in summary["topics"]:
+        tidy_info = f"tidy: {t['tidy']['fixes']}fix" if t.get("tidy") and t["tidy"].get("fixes") is not None else "tidy: skip"
+        val_info = f"validate: {t['validate']['errors']}err/{t['validate']['fixes']}fix" if t.get("validate") and t["validate"].get("errors") is not None else "validate: skip"
+        print(f"  → {t['topic']}: {tidy_info}, {val_info}", file=sys.stderr)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
