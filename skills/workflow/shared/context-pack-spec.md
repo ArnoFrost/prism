@@ -7,7 +7,7 @@
 context-pack 是一个**约定**——定义每个 workflow skill 在启动时应该读取哪些 topic 工件、以什么顺序、提取什么字段。
 
 - **规范文档**（本文件）= SSOT，Agent 直接遵循
-- **context_pack.py**（`shared/context_pack.py`）= 可选加速器，支持 shell 的 IDE 可脚本调用，不支持的按本规范手动读取
+- **context_pack.py**（`shared/scripts/context_pack.py`）= 可选加速器，支持 shell 的 IDE 可脚本调用，不支持的按本规范手动读取
 
 ## 两档定义
 
@@ -138,7 +138,7 @@ light 模式下 `intake`、`review_index`、`decisions`、`reviews` 统一输出
 ### 方式一：脚本调用（推荐）
 
 ```bash
-python3 {shared_dir}/context_pack.py <topic_dir> --mode light|full
+python3 {shared_dir}/scripts/context_pack.py <topic_dir> --mode light|full
 ```
 
 输出 JSON 到 stdout，Agent 解析后作为上下文。

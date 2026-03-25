@@ -67,4 +67,5 @@ skills/workflow/
 | `scripts/archive.py` | 专项归档（移目录 + 更新索引） | workflow-status（hint 引用） |
 | `scripts/prism_sync_sniff.py` | Prism 仓库 Git 状态嗅探（dirty/ahead/behind） | prism-push, prism-pull |
 | `context-pack-spec.md` | topic 上下文装配规范（light/full 两档） | 全部 workflow skills |
+| `scripts/parse_utils.py` | 共享 Markdown 解析工具（read_file / extract_section / extract_field / count_checkboxes） | context_pack.py, collect.py |
 | `scripts/context_pack.py` | context-pack 规范的脚本实现 | 支持 shell 的 IDE 可调用 |

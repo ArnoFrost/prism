@@ -11,7 +11,7 @@ description: |
 |------|------|
 | **是什么** | 专项合同维护器：识别边界变更，原地更新 scope，派生 plan。scope 是 plan 的唯一上游 SSOT |
 | **不是什么** | 不做多视角评审、不记录 review findings、不创建 scope-v2.md、不让 plan 独立漂移、不跳过 human decision 直接改合同 |
-| **读取工件** | scope.md、plan.md、README.md、最近的决策/review 结论（decisions/dXX.md 或对话上下文） |
+| **读取工件** | topic 上下文按 [context-pack-spec](../../shared/context-pack-spec.md) light 档装配（scope.md / plan.md / README.md）；另读最近决策/review 结论（由调用者传入） |
 | **写入工件** | scope.md（原地更新）、plan.md（派生重写）、README.md（状态段更新） |
 | **结束建议** | → `workflow-review` 或 `workflow-review-lite`（验证变更）；或回到执行 |
 | **设计模式** | Pattern 1 — Sequential Workflow（读取→识别delta→更新scope→派生plan→同步README） + Pattern 5 — Domain-specific Intelligence（合同规则：scope 原地更新、plan 派生链不可绕过） |
