@@ -5,6 +5,19 @@ description: |
   Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review
 ---
 
+## 职责边界
+
+| 维度 | 说明 |
+|------|------|
+| **是什么** | topic 内的阶段性正式评审事件：多角色独立审查 → 合并仲裁 → 分级 findings → 落盘 → 触发人类决策 |
+| **不是什么** | 不直接改 scope、不直接改 plan、不隐式生成 decision、不替代人类裁决权、不是每轮对话都要重启的总入口 |
+| **读取工件** | topic 完整快照（README.md / scope.md / plan.md / review.index.md / 最近 review + decision）、review-templates.md、review-ofm.md |
+| **写入工件** | reviews/rXX_描述.md（新建）、reviews/raw/rXX-role-*.md（可选新建）、review.index.md（追加） |
+| **结束建议** | → 用户 Accept / Reject / Defer → `decisions/dXX.md` → `workflow-scope`（更新合同） |
+| **设计模式** | Pattern 3 — Iterative Refinement（多角色→合并→分级→收敛） + Pattern 5 — Domain-specific Intelligence（评审协议：角色 contract、findings 分级标准、独立发现率） |
+
+---
+
 # 面向专项的多角色协作评审 (Workflow Review)
 
 > 管线定位：`intake → (scope) → review → archive`
