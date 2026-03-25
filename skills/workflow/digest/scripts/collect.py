@@ -19,54 +19,8 @@ from datetime import date
 
 from sniff_lib import find_workspace, _find_topics_dir
 
-
-def _read(path: str, limit: int | None = None) -> str | None:
-    if not os.path.isfile(path):
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        if limit:
-            lines = []
-            for i, line in enumerate(f):
-                if i >= limit:
-                    break
-                lines.append(line)
-            return "".join(lines)
-        return f.read()
-
-
-def _extract_field(content: str, field: str) -> str | None:
-    m = re.search(rf"\*\*{re.escape(field)}\*\*\s*\|\s*(.+?)(?:\s*\||\s*$)",
-                  content, re.MULTILINE | re.IGNORECASE)
-    return m.group(1).strip() if m else None
-
-
-def _extract_section(content: str, heading: str, level: int = 2) -> str | None:
-    """提取指定标题下的内容段落（到下一个同级或更高级标题为止）"""
-    prefix = "#" * level
-    pattern = rf"^{prefix}\s+{re.escape(heading)}\s*$"
-    m = re.search(pattern, content, re.MULTILINE)
-    if not m:
-        pattern_fuzzy = rf"^{prefix}\s+.*{re.escape(heading)}.*$"
-        m = re.search(pattern_fuzzy, content, re.MULTILINE | re.IGNORECASE)
-    if not m:
-        return None
-
-    start = m.end()
-    next_heading = re.search(rf"^#{{{1},{level}}}\s+", content[start:], re.MULTILINE)
-    end = start + next_heading.start() if next_heading else len(content)
-    return content[start:end].strip()
-
-
-def _count_checkboxes(content: str) -> dict:
-    unchecked = re.findall(r"- \[ \] (.+)", content)
-    checked = re.findall(r"- \[x\] (.+)", content, re.IGNORECASE)
-    return {
-        "checked": len(checked),
-        "unchecked": len(unchecked),
-        "total": len(checked) + len(unchecked),
-        "checked_items": checked,
-        "unchecked_items": unchecked,
-    }
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'shared', 'scripts'))
+from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section, count_checkboxes as _count_checkboxes
 
 
 def _collect_readme(topic_dir: str) -> dict:

@@ -17,44 +17,7 @@ import re
 import sys
 from datetime import date
 
-
-def _read(path: str, limit: int | None = None) -> str | None:
-    if not os.path.isfile(path):
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        if limit:
-            lines = []
-            for i, line in enumerate(f):
-                if i >= limit:
-                    break
-                lines.append(line)
-            return "".join(lines)
-        return f.read()
-
-
-def _extract_field(content: str, field: str) -> str | None:
-    m = re.search(
-        rf"\*\*{re.escape(field)}\*\*\s*\|\s*(.+?)(?:\s*\||\s*$)",
-        content,
-        re.MULTILINE | re.IGNORECASE,
-    )
-    return m.group(1).strip() if m else None
-
-
-def _extract_section(content: str, heading: str, level: int = 2) -> str | None:
-    prefix = "#" * level
-    pattern = rf"^{prefix}\s+{re.escape(heading)}\s*$"
-    m = re.search(pattern, content, re.MULTILINE)
-    if not m:
-        pattern_fuzzy = rf"^{prefix}\s+.*{re.escape(heading)}.*$"
-        m = re.search(pattern_fuzzy, content, re.MULTILINE | re.IGNORECASE)
-    if not m:
-        return None
-
-    start = m.end()
-    next_heading = re.search(rf"^#{{{1},{level}}}\s+", content[start:], re.MULTILINE)
-    end = start + next_heading.start() if next_heading else len(content)
-    return content[start:end].strip()
+from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section
 
 
 def _count_acceptance(content: str) -> tuple[int, int, list[str]]:
