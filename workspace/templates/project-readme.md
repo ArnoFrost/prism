@@ -19,10 +19,10 @@
 ├── README.md               # 本文件
 ├── topics/
 │   ├── {NNN}_{topic}/      # 专项工作区
-│   │   ├── README.md       # 主线导航（created/updated/status）
+│   │   ├── README.md       # 主线导航（模板：topic-readme.md）
 │   │   ├── intake.md       # 输入整形
 │   │   ├── scope.md        # 合同收敛（目标/非目标/验收）
-│   │   ├── plan.md         # 总计划 + 当前焦点
+│   │   ├── plan.md         # 总计划 + 当前焦点（模板：topic-plan.md）
 │   │   ├── review.index.md # 评审索引
 │   │   ├── reviews/        # 评审轮次（rXX.md）
 │   │   ├── decisions/      # 决策记录
@@ -32,6 +32,31 @@
 ├── docs/
 └── archive/                # 已完成归档（{NNN}_{topic}/ 或 legacy YYYY-MM/）
 ```
+
+### topic README 必需段落
+
+| 段落 | 必需 | 说明 |
+|------|------|------|
+| 属性表 | ✅ | 编号 / created / updated / status |
+| 控制台 | ✅ | scope / plan / latest review / latest decision / next action |
+| 当前状态 | ✅ | 主线任务一句话 + 当前进展 |
+| 恢复指引 | 可选 | topic 暂停或跨 session 恢复时的快速上下文 |
+| 参考资料 | 可选 | 相关文档链接 |
+| 关键决策 | ✅ | 决策摘要表 |
+
+> 详见模板 `workspace/templates/topic-readme.md`。
+
+### topic plan 必需段落
+
+| 段落 | 必需 | 说明 |
+|------|------|------|
+| 当前焦点 | ✅ | 时间切片，必须含可执行 next action 或终态标记 |
+| 总计划 > 待执行 | ✅ | scope 未完成验收项映射 |
+| 总计划 > 留后续 | 可选 | 不在本轮推进的 Phase |
+| 总计划 > 已完成 | ✅ | 已完成项汇总 |
+| 明确不做 | ✅ | 映射 scope 非目标 |
+
+> 详见模板 `workspace/templates/topic-plan.md`，派生规则详见 `shared/plan-derive-spec.md`。
 
 ## 专项工作流
 

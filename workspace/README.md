@@ -18,6 +18,8 @@ workspace/
     ├── project.yaml                   # 项目元数据模板
     ├── project-index.md               # 项目入口模板
     ├── project-readme.md              # 项目协作规范模板
+    ├── topic-readme.md                # 专项 README 模板（段落规范 + next_action 语义）
+    ├── topic-plan.md                  # 专项 plan 模板（焦点段 + 总计划结构）
     └── AGENT.md                       # AI 协作入口模板
 ```
 
