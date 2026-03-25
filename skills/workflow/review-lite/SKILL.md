@@ -11,7 +11,7 @@ description: |
 |------|------|
 | **是什么** | 低摩擦、单视角轻量检查入口：快速扫描 → 输出 findings → 落盘 → 触发决策 |
 | **不是什么** | 不做多角色仲裁、不承担架构拍板、不伪装成 full review、不产出 raw/ 角色报告 |
-| **读取工件** | sniff 输出（topic 路由）、评审对象文件 |
+| **读取工件** | 路由按 [topic-sniff-spec](../shared/topic-sniff-spec.md)；评审对象文件 |
 | **写入工件** | reviews/rXX_描述.md（单文件，type: review-lite）、review.index.md（追加，标注 lite） |
 | **结束建议** | → 用户 Accept / Reject / Defer；发现 P0 时建议升级到 `workflow-review` |
 | **设计模式** | Pattern 1 — Sequential Workflow（sniff→scan→write→决策触发） |
