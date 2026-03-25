@@ -103,7 +103,7 @@ def scan_topic(topic_dir: str) -> dict:
         issues.append("无评审记录")
 
     if scope_unchecked == 0 and scope_checked > 0:
-        hints.append("scope 验收全部完成，可考虑归档（python3 shared/scripts/archive.py）")
+        hints.append("scope 验收全部完成，可考虑归档到 archive/YYYY-MM/topic/")
 
     health = "healthy" if not issues else ("warning" if len(issues) <= 2 else "attention")
 
@@ -138,22 +138,41 @@ def scan_workspace(project_dir: str) -> dict:
         return {"error": "未找到 Prism workspace", "topics": []}
 
     topics_dir = _find_topics_dir(workspace["path"])
-    if not os.path.isdir(topics_dir):
-        return {"workspace": workspace["path"], "topics": [], "summary": {"total": 0}}
+    archive_dir = os.path.join(workspace["path"], "archive")
 
     topics = []
-    for entry in sorted(os.listdir(topics_dir)):
-        entry_path = os.path.join(topics_dir, entry)
-        if not os.path.isdir(entry_path):
-            continue
-        if not re.match(r"^\d{3}_", entry):
-            continue
-        topics.append(scan_topic(entry_path))
+
+    # 1. 扫描 topics/ 热区（活跃 topic）
+    if os.path.isdir(topics_dir):
+        for entry in sorted(os.listdir(topics_dir)):
+            entry_path = os.path.join(topics_dir, entry)
+            if not os.path.isdir(entry_path):
+                continue
+            if not re.match(r"^\d{3}_", entry):
+                continue
+            t = scan_topic(entry_path)
+            t["location"] = "topics"
+            topics.append(t)
+
+    # 2. 扫描 archive/{NNN}_{topic-name}/ 扁平归档目录
+    if os.path.isdir(archive_dir):
+        for entry in sorted(os.listdir(archive_dir)):
+            entry_path = os.path.join(archive_dir, entry)
+            if not os.path.isdir(entry_path):
+                continue
+            if not re.match(r"^\d{3}_", entry):
+                continue
+            t = scan_topic(entry_path)
+            t["location"] = "archive"
+            topics.append(t)
 
     total = len(topics)
-    healthy = sum(1 for t in topics if t["health"] == "healthy")
-    warning = sum(1 for t in topics if t["health"] == "warning")
-    attention = sum(1 for t in topics if t["health"] == "attention")
+    # 区分活跃与已归档/废弃 topic
+    active_topics = [t for t in topics if t.get("location") == "topics"]
+    archived_topics = [t for t in topics if t.get("location") == "archive"]
+    healthy = sum(1 for t in active_topics if t["health"] == "healthy")
+    warning = sum(1 for t in active_topics if t["health"] == "warning")
+    attention = sum(1 for t in active_topics if t["health"] == "attention")
 
     return {
         "workspace": workspace["path"],
@@ -161,11 +180,44 @@ def scan_workspace(project_dir: str) -> dict:
         "topics": topics,
         "summary": {
             "total": total,
+            "active": len(active_topics),
+            "archived": len(archived_topics),
             "healthy": healthy,
             "warning": warning,
             "attention": attention,
         },
     }
+
+
+def _append_topic_block(lines: list[str], t: dict) -> None:
+    """将单个 topic 的详情追加到 lines 列表中"""
+    icon = {"healthy": "🟢", "warning": "🟡", "attention": "🔴"}.get(t["health"], "⚪")
+    lines.append(f"### {icon} {t['name']}")
+    lines.append(f"")
+    lines.append(f"| 维度 | 值 |")
+    lines.append(f"|------|------|")
+    lines.append(f"| status | {t.get('status', 'N/A')} |")
+    lines.append(f"| 位置 | {t.get('location', 'N/A')} |")
+    lines.append(f"| scope 进度 | {t['scope']['progress']} |")
+    lines.append(f"| plan 进度 | {t['plan']['progress']} |")
+    lines.append(f"| 评审轮次 | {t['review_count']} |")
+    lines.append(f"| 决策记录 | {t['decision_count']} |")
+    lines.append(f"")
+
+    if t["issues"]:
+        lines.append(f"**问题：**")
+        for issue in t["issues"]:
+            lines.append(f"- ⚠️ {issue}")
+        lines.append(f"")
+
+    if t.get("hints"):
+        for hint in t["hints"]:
+            lines.append(f"- 💡 {hint}")
+        lines.append(f"")
+
+    if t["skeleton_missing"]:
+        lines.append(f"**缺失文件：** {', '.join(t['skeleton_missing'])}")
+        lines.append(f"")
 
 
 def to_markdown(report: dict) -> str:
@@ -180,39 +232,29 @@ def to_markdown(report: dict) -> str:
     lines.append(f"")
     lines.append(f"| 指标 | 值 |")
     lines.append(f"|------|------|")
-    lines.append(f"| 活跃专项 | {s.get('total', 0)} |")
-    lines.append(f"| 健康 | {s.get('healthy', 0)} |")
-    lines.append(f"| 需注意 | {s.get('warning', 0)} |")
-    lines.append(f"| 需关注 | {s.get('attention', 0)} |")
+    lines.append(f"| 全部专项 | {s.get('total', 0)} |")
+    lines.append(f"| 活跃 | {s.get('active', 0)} |")
+    lines.append(f"| 已归档/废弃 | {s.get('archived', 0)} |")
+    lines.append(f"| 健康（活跃） | {s.get('healthy', 0)} |")
+    lines.append(f"| 需注意（活跃） | {s.get('warning', 0)} |")
+    lines.append(f"| 需关注（活跃） | {s.get('attention', 0)} |")
     lines.append(f"")
 
-    for t in report.get("topics", []):
-        icon = {"healthy": "🟢", "warning": "🟡", "attention": "🔴"}.get(t["health"], "⚪")
-        lines.append(f"## {icon} {t['name']}")
+    # 分组展示
+    active = [t for t in report.get("topics", []) if t.get("location") == "topics"]
+    archived = [t for t in report.get("topics", []) if t.get("location") == "archive"]
+
+    if active:
+        lines.append(f"## 🟢 活跃专项")
         lines.append(f"")
-        lines.append(f"| 维度 | 值 |")
-        lines.append(f"|------|------|")
-        lines.append(f"| status | {t.get('status', 'N/A')} |")
-        lines.append(f"| scope 进度 | {t['scope']['progress']} |")
-        lines.append(f"| plan 进度 | {t['plan']['progress']} |")
-        lines.append(f"| 评审轮次 | {t['review_count']} |")
-        lines.append(f"| 决策记录 | {t['decision_count']} |")
+        for t in active:
+            _append_topic_block(lines, t)
+
+    if archived:
+        lines.append(f"## 📦 已归档 / 已废弃")
         lines.append(f"")
-
-        if t["issues"]:
-            lines.append(f"**问题：**")
-            for issue in t["issues"]:
-                lines.append(f"- ⚠️ {issue}")
-            lines.append(f"")
-
-        if t.get("hints"):
-            for hint in t["hints"]:
-                lines.append(f"- 💡 {hint}")
-            lines.append(f"")
-
-        if t["skeleton_missing"]:
-            lines.append(f"**缺失文件：** {', '.join(t['skeleton_missing'])}")
-            lines.append(f"")
+        for t in archived:
+            _append_topic_block(lines, t)
 
     return "\n".join(lines)
 
