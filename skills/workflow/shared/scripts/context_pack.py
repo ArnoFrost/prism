@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""context_pack.py — 标准化 topic 上下文装配。
+
+用法:
+  python3 context_pack.py <topic_dir> --mode light|full
+
+输出 JSON，供 Agent 作为上下文消费。
+遵循 context-pack-spec.md 规范。
+
+零外部依赖，纯 stdlib。
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+from datetime import date
+
+
+def _read(path: str, limit: int | None = None) -> str | None:
+    if not os.path.isfile(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        if limit:
+            lines = []
+            for i, line in enumerate(f):
+                if i >= limit:
+                    break
+                lines.append(line)
+            return "".join(lines)
+        return f.read()
+
+
+def _extract_field(content: str, field: str) -> str | None:
+    m = re.search(
+        rf"\*\*{re.escape(field)}\*\*\s*\|\s*(.+?)(?:\s*\||\s*$)",
+        content,
+        re.MULTILINE | re.IGNORECASE,
+    )
+    return m.group(1).strip() if m else None
+
+
+def _extract_section(content: str, heading: str, level: int = 2) -> str | None:
+    prefix = "#" * level
+    pattern = rf"^{prefix}\s+{re.escape(heading)}\s*$"
+    m = re.search(pattern, content, re.MULTILINE)
+    if not m:
+        pattern_fuzzy = rf"^{prefix}\s+.*{re.escape(heading)}.*$"
+        m = re.search(pattern_fuzzy, content, re.MULTILINE | re.IGNORECASE)
+    if not m:
+        return None
+
+    start = m.end()
+    next_heading = re.search(rf"^#{{{1},{level}}}\s+", content[start:], re.MULTILINE)
+    end = start + next_heading.start() if next_heading else len(content)
+    return content[start:end].strip()
+
+
+def _count_acceptance(content: str) -> tuple[int, int, list[str]]:
+    """统计验收口径完成情况。返回 (completed, total, unchecked_ids)。"""
+    section = _extract_section(content, "验收口径")
+    if not section:
+        return 0, 0, []
+
+    completed = 0
+    total = 0
+    unchecked: list[str] = []
+
+    for line in section.splitlines():
+        m = re.match(r"\|\s*(V\d+)\s*\|", line)
+        if not m:
+            continue
+        vid = m.group(1)
+        total += 1
+        if "✅" in line:
+            completed += 1
+        else:
+            unchecked.append(vid)
+
+    return completed, total, unchecked
+
+
+def _extract_phase_lines(content: str, heading: str, level: int = 3) -> list[str]:
+    """提取 Phase 标题行（如 **Phase A — 标题** 或 ~~Phase A — 标题~~）。"""
+    section = _extract_section(content, heading, level)
+    if not section:
+        return []
+
+    results = []
+    for line in section.splitlines():
+        m = re.match(r"\*\*(.+?)\*\*", line.strip())
+        if m:
+            results.append(m.group(1).strip())
+            continue
+        m = re.match(r"[-*]\s+~~(.+?)~~", line.strip())
+        if m:
+            results.append(m.group(1).strip())
+    return results
+
+
+def _pack_readme(topic_dir: str) -> dict | None:
+    content = _read(os.path.join(topic_dir, "README.md"))
+    if not content:
+        return None
+
+    return {
+        "status": _extract_field(content, "status"),
+        "updated": _extract_field(content, "updated"),
+        "next_action": _extract_field(content, "next action"),
+        "current_state": _extract_section(content, "当前状态"),
+    }
+
+
+def _pack_scope(topic_dir: str) -> dict | None:
+    content = _read(os.path.join(topic_dir, "scope.md"))
+    if not content:
+        return None
+
+    completed, total, unchecked = _count_acceptance(content)
+
+    return {
+        "goals": _extract_section(content, "目标"),
+        "non_goals": _extract_section(content, "非目标"),
+        "acceptance_progress": f"{completed}/{total}",
+        "acceptance_unchecked": unchecked,
+        "constraints": _extract_section(content, "关键约束"),
+        "open_questions": _extract_section(content, "未决问题"),
+    }
+
+
+def _pack_plan(topic_dir: str) -> dict | None:
+    content = _read(os.path.join(topic_dir, "plan.md"))
+    if not content:
+        return None
+
+    return {
+        "current_focus": _extract_section(content, "当前焦点"),
+        "pending_summary": _extract_phase_lines(content, "待执行"),
+        "completed_summary": _extract_phase_lines(content, "已完成"),
+    }
+
+
+def _pack_intake(topic_dir: str) -> str | None:
+    content = _read(os.path.join(topic_dir, "intake.md"))
+    if not content:
+        return None
+
+    section = _extract_section(content, "需求摘要")
+    if not section:
+        sections = re.split(r"^##\s+", content, maxsplit=2, flags=re.MULTILINE)
+        if len(sections) > 1:
+            section = sections[1][:500]
+    return section[:500] if section else content[:500]
+
+
+def _pack_decisions(topic_dir: str, limit: int = 3) -> list[dict]:
+    decisions_dir = os.path.join(topic_dir, "decisions")
+    if not os.path.isdir(decisions_dir):
+        return []
+
+    files = sorted(
+        [f for f in os.listdir(decisions_dir) if f.endswith(".md")],
+        reverse=True,
+    )[:limit]
+
+    results = []
+    for f in files:
+        content = _read(os.path.join(decisions_dir, f), limit=15)
+        if not content:
+            continue
+
+        title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
+        title = title_match.group(1).strip() if title_match else f
+
+        conclusion = None
+        for pattern in [
+            r"结论[：:]\s*(.+)",
+            r"决策[：:]\s*(.+)",
+            r"\*\*结论\*\*[：:]*\s*(.+)",
+        ]:
+            m = re.search(pattern, content)
+            if m:
+                conclusion = m.group(1).strip()
+                break
+
+        results.append({"file": f, "title": title, "conclusion": conclusion})
+
+    return results
+
+
+def _pack_reviews(topic_dir: str, limit: int = 2) -> list[dict]:
+    reviews_dir = os.path.join(topic_dir, "reviews")
+    if not os.path.isdir(reviews_dir):
+        return []
+
+    files = sorted(
+        [
+            f
+            for f in os.listdir(reviews_dir)
+            if re.match(r"^r\d{2}", f) and f.endswith(".md")
+        ],
+        reverse=True,
+    )[:limit]
+
+    results = []
+    for f in files:
+        content = _read(os.path.join(reviews_dir, f), limit=30)
+        if not content:
+            continue
+
+        title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
+        title = title_match.group(1).strip() if title_match else f
+
+        tldr = None
+        tldr_match = re.search(
+            r"(?:TL;DR|tldr)[^\n]*\n(.+?)(?:\n\n|\n#)",
+            content,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if tldr_match:
+            tldr = tldr_match.group(1).strip()
+            tldr = re.sub(r"^>\s*", "", tldr, flags=re.MULTILINE).strip()
+
+        results.append({"file": f, "title": title, "tldr": tldr})
+
+    return results
+
+
+def _pack_review_index(topic_dir: str) -> str | None:
+    return _read(os.path.join(topic_dir, "review.index.md"))
+
+
+def pack(topic_dir: str, mode: str = "light") -> dict:
+    topic_dir = os.path.abspath(topic_dir)
+    name = os.path.basename(topic_dir)
+
+    readme_content = _read(os.path.join(topic_dir, "README.md"))
+    title = name
+    if readme_content:
+        m = re.search(r"^#\s+(.+)$", readme_content, re.MULTILINE)
+        if m:
+            title = m.group(1).strip()
+
+    result = {
+        "mode": mode,
+        "topic": name,
+        "title": title,
+        "collected_at": date.today().isoformat(),
+        "readme": _pack_readme(topic_dir),
+        "scope": _pack_scope(topic_dir),
+        "plan": _pack_plan(topic_dir),
+        "intake": None,
+        "review_index": None,
+        "decisions": [],
+        "reviews": [],
+    }
+
+    if mode == "full":
+        result["intake"] = _pack_intake(topic_dir)
+        result["review_index"] = _pack_review_index(topic_dir)
+        result["decisions"] = _pack_decisions(topic_dir)
+        result["reviews"] = _pack_reviews(topic_dir)
+
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Topic 上下文标准化装配（遵循 context-pack-spec.md）"
+    )
+    parser.add_argument("topic_dir", help="Topic 目录路径")
+    parser.add_argument(
+        "--mode",
+        choices=["light", "full"],
+        default="light",
+        help="装配档位（默认 light）",
+    )
+
+    args = parser.parse_args()
+
+    if not os.path.isdir(args.topic_dir):
+        print(f"错误: {args.topic_dir} 不是有效目录", file=sys.stderr)
+        sys.exit(1)
+
+    result = pack(args.topic_dir, args.mode)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()

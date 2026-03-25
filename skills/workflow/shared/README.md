@@ -66,3 +66,5 @@ skills/workflow/
 | `scripts/sniff_lib.py` | 环境嗅探公共库（workspace 探测、topic 扫描） | workflow-intake, workflow-status |
 | `scripts/archive.py` | 专项归档（移目录 + 更新索引） | workflow-status（hint 引用） |
 | `scripts/prism_sync_sniff.py` | Prism 仓库 Git 状态嗅探（dirty/ahead/behind） | prism-push, prism-pull |
+| `context-pack-spec.md` | topic 上下文装配规范（light/full 两档） | 全部 workflow skills |
+| `scripts/context_pack.py` | context-pack 规范的脚本实现 | 支持 shell 的 IDE 可调用 |
