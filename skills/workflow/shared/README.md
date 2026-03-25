@@ -69,3 +69,7 @@ skills/workflow/
 | `context-pack-spec.md` | topic 上下文装配规范（light/full 两档） | 全部 workflow skills |
 | `scripts/parse_utils.py` | 共享 Markdown 解析工具（read_file / extract_section / extract_field / count_checkboxes） | context_pack.py, collect.py |
 | `scripts/context_pack.py` | context-pack 规范的脚本实现 | 支持 shell 的 IDE 可调用 |
+| `plan-derive-spec.md` | scope → plan 派生规则 SSOT | workflow-scope Phase 3 |
+| `review-spec-skeleton.md` | ReviewSpec 7 字段最小骨架 | workflow-review, workflow-review-lite |
+| `review-merge-spec.md` | 多角色评审结果合并规范 | workflow-review Merge 阶段 |
+| `topic-sniff-spec.md` | topic 前门路由统一规范 | 全部 workflow skills sniff 阶段 |
