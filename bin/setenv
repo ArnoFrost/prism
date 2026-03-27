@@ -15,6 +15,8 @@
 #   PRISM_SKILLS_PATH  Skills 路径（默认 ~/prism-skills）
 #   PRISM_VAULT_PATH   Vault 路径（默认 iCloud AI Obsidian）
 #   PRISM_WS_SUBDIR    Workspace 子目录（默认 Prism/Workspace）
+#   PRISM_ENV_PATH     Env 层路径（可选）
+#   PRISM_OBS_PERSONAL 个人知识库 vault 路径（可选）
 
 set -euo pipefail
 
@@ -68,6 +70,14 @@ show_config() {
     echo -e "  Env 层路径:     ${GREEN}${env_p}${NC}"
   else
     echo -e "  Env 层路径:     ${DIM}(未配置，可选)${NC}"
+  fi
+
+  local obs_p
+  obs_p=$(yaml_get obs_vault_personal)
+  if [[ -n "$obs_p" ]]; then
+    echo -e "  个人知识库:     ${GREEN}${obs_p}${NC}"
+  else
+    echo -e "  个人知识库:     ${DIM}(未配置，可选)${NC}"
   fi
   echo ""
   echo -e "  ${CYAN}完整路径:${NC}"
@@ -132,6 +142,12 @@ do_export() {
   env_p=$(yaml_get env_path)
   if [[ -n "$env_p" ]]; then
     echo "export PRISM_ENV_PATH=\"${env_p}\""
+  fi
+
+  local obs_p
+  obs_p=$(yaml_get obs_vault_personal)
+  if [[ -n "$obs_p" ]]; then
+    echo "export PRISM_OBS_PERSONAL=\"${obs_p}\""
   fi
 }
 
@@ -207,6 +223,16 @@ do_validate() {
     fi
   fi
 
+  local obs_p
+  obs_p=$(yaml_get obs_vault_personal)
+  if [[ -n "$obs_p" ]]; then
+    if [[ -d "$obs_p" ]]; then
+      echo -e "  ${GREEN}✓${NC} 个人知识库: 可达"
+    else
+      echo -e "  ${YELLOW}⚠${NC} 个人知识库: 不可达 ${obs_p}（可选，不阻塞）"
+    fi
+  fi
+
   if [[ -n "$vault" && -n "$ws_sub" ]]; then
     local ws="${vault}/${ws_sub}"
     if [[ -d "$ws" ]]; then
@@ -258,7 +284,7 @@ do_validate() {
 }
 
 write_config() {
-  local sdk="$1" skills="$2" vault="$3" ws_sub="$4" env_p="${5:-}"
+  local sdk="$1" skills="$2" vault="$3" ws_sub="$4" env_p="${5:-}" obs_p="${6:-}"
   local device_id
   device_id=$(hostname -s)
   cat > "$CONFIG" << 'YAML_END'
@@ -288,6 +314,13 @@ CONFDATA
     cat >> "$CONFIG" << CONFDATA
 # 可选：env 层路径（如 ArnoDotFiles），存在则分发其 skills/ 下的技能
 env_path: ${env_p}
+
+CONFDATA
+  fi
+  if [[ -n "$obs_p" ]]; then
+    cat >> "$CONFIG" << CONFDATA
+# 可选：个人知识库路径（Obsidian vault，note/deposit/obsidian-doctor 目标）
+obs_vault_personal: ${obs_p}
 
 CONFDATA
   fi
@@ -328,14 +361,16 @@ do_init() {
     vault="${PRISM_VAULT_PATH:-$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian}"
     ws_sub="${PRISM_WS_SUBDIR:-Prism/Workspace}"
     env_p="${PRISM_ENV_PATH:-}"
+    obs_p="${PRISM_OBS_PERSONAL:-}"
 
     echo -e "  SDK:       ${sdk}"
     echo -e "  Skills:    ${skills}"
     echo -e "  Vault:     ${vault}"
     echo -e "  子目录:    ${ws_sub}"
     [[ -n "$env_p" ]] && echo -e "  Env:       ${env_p}"
+    [[ -n "$obs_p" ]] && echo -e "  个人知识库: ${obs_p}"
 
-    write_config "$sdk" "$skills" "$vault" "$ws_sub" "$env_p"
+    write_config "$sdk" "$skills" "$vault" "$ws_sub" "$env_p" "$obs_p"
     echo ""
     echo -e "${GREEN}✓ 已创建 prism.local.yaml（非交互模式）${NC}"
     echo -e "运行 ${CYAN}bin/setenv --validate${NC} 校验路径，${CYAN}bin/relink${NC} 刷新软链接。"
@@ -361,7 +396,13 @@ do_init() {
   read -r -p "Env 层路径 []: " env_p
   env_p="${env_p:-}"
 
-  write_config "$sdk" "$skills" "$vault" "$ws_sub" "$env_p"
+  echo ""
+  local default_obs="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Arno Obsidian"
+  echo -e "${DIM}可选：个人知识库路径（Obsidian vault，note/deposit 等技能目标），留空跳过${NC}"
+  read -r -p "个人知识库路径 []: " obs_p
+  obs_p="${obs_p:-}"
+
+  write_config "$sdk" "$skills" "$vault" "$ws_sub" "$env_p" "$obs_p"
 
   echo ""
   echo -e "${GREEN}✓ 已创建 prism.local.yaml${NC}"

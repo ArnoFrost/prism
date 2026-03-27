@@ -56,11 +56,18 @@ def _read_yaml_field(field: str) -> str | None:
 
 
 def _default_personal_vault() -> str:
-    """返回个人知识库的默认 iCloud 路径"""
+    """返回个人知识库的默认 iCloud 路径（通用，无硬编码个人 vault 名）"""
+    # 尝试从 iCloud Obsidian 基目录下找到第一个非 AI 开头的 vault
     base = os.path.expanduser(
         "~/Library/Mobile Documents/iCloud~md~obsidian/Documents"
     )
-    return os.path.join(base, "Arno Obsidian")
+    if os.path.isdir(base):
+        for entry in sorted(os.listdir(base)):
+            full = os.path.join(base, entry)
+            if os.path.isdir(full) and not entry.startswith(".") and not entry.startswith("AI"):
+                return full
+    # 无法自动发现时返回 base（让调用方报 missing）
+    return base
 
 
 def _default_ai_vault() -> str:

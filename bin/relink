@@ -98,8 +98,8 @@ ensure_link() {
       return
     fi
 
-    # 冲突检测：链接指向非 Prism 路径时警告
-    if [[ "$current" != *prism* && "$current" != "$SKILLS_PATH"* && "$current" != "$WS_ROOT"* ]]; then
+    # 冲突检测：链接指向非 Prism 路径时警告（含 env 层）
+    if [[ "$current" != *prism* && "$current" != "$SKILLS_PATH"* && "$current" != "$WS_ROOT"* && ( -z "$ENV_PATH" || "$current" != "$ENV_PATH"* ) ]]; then
       log_warn "${label}: 已有非 Prism 链接 ${DIM}${current}${NC}，跳过覆盖"
       return
     fi
