@@ -64,6 +64,7 @@ SDK_PATH=$(yaml_get sdk_path)
 SKILLS_PATH=$(yaml_get skills_path)
 VAULT_PATH=$(yaml_get vault_path)
 WS_SUBDIR=$(yaml_get workspace_subdir)
+ENV_PATH=$(yaml_get env_path)
 
 WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
 
@@ -347,6 +348,34 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
   fi
 fi
 
+# 3c. env 层 Skills 分发（可选，env_path/skills/ 存在时执行）
+if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
+  if [[ -n "$ENV_PATH" && -d "$ENV_PATH/skills" ]]; then
+    echo -e "\n${CYAN}[env 层 Skills → Agent/IDE]${NC}"
+    env_skill_count=0
+    for skill_dir in "$ENV_PATH/skills"/*/; do
+      [[ -d "$skill_dir" ]] || continue
+      skill_name=$(basename "$skill_dir")
+      [[ "$skill_name" == ".git" ]] && continue
+      [[ ! -f "$skill_dir/SKILL.md" ]] && continue
+      ((env_skill_count++)) || true
+
+      for target in "${PLATFORM_TARGETS[@]}"; do
+        platform="${target%%|*}"
+        root_dir="${target#*|}"
+        link_path="${root_dir}/${skill_name}"
+        ensure_link "$link_path" "$skill_dir" "${platform}: ${skill_name}"
+      done
+    done
+
+    if [[ $env_skill_count -eq 0 ]]; then
+      log_skip "env 层 Skills 目录为空"
+    fi
+  elif [[ -n "$ENV_PATH" ]]; then
+    log_skip "env 层路径不存在或无 skills/ 目录: ${ENV_PATH} ${DIM}(可选，跳过)${NC}"
+  fi
+fi
+
 # 4. Prune: 清理陈旧软链接
 PRUNED=0
 if $PRUNE; then
@@ -377,6 +406,11 @@ if $PRUNE; then
         fi
       # 外部 Skills（指向 prism-skills/）
       elif [[ -n "$SKILLS_PATH" && "$link_target" == "$SKILLS_PATH"* ]] || [[ "$link_target" == *prism-skills* ]]; then
+        if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
+          prune_link "$link" "${platform}: $(basename "$link")"
+        fi
+      # env 层 Skills（指向 env_path/skills/）
+      elif [[ -n "$ENV_PATH" && "$link_target" == "$ENV_PATH/skills/"* ]]; then
         if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
           prune_link "$link" "${platform}: $(basename "$link")"
         fi
