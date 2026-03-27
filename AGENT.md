@@ -258,6 +258,35 @@ ln -sf ~/prism/skills/workflow/shared/hooks ~/.codebuddy/plugins/prism-workflow-
 
 ---
 
+## ⚠️ 仓库操作陷阱（避免重复犯错）
+
+### `prism-skills/shared` 是指向本仓库的软链接
+
+```
+~/prism-skills/shared  →  ~/prism/skills/workflow/shared
+```
+
+**后果**：在 `prism-skills/` 目录下 `git add shared/...` 会报错 `beyond a symbolic link`。
+
+**正确做法**：`shared/` 下的所有文件在**本仓库**（`~/prism`）提交：
+
+```bash
+# 新增/修改共享脚本后，在 prism 仓库提交
+cd ~/prism
+git add skills/workflow/shared/scripts/your_script.py
+git commit -m "feat: 新增 xxx 脚本"
+```
+
+### `prism.local.yaml` 是 gitignore 文件
+
+本地路径配置不入版本控制。出现 `git add prism.local.yaml` 报 ignored 时，不要加 `-f` 强制提交。设备路径通过 `bin/setenv --init` 在各设备独立初始化。
+
+### `workspace.*.local` 软链接不入库
+
+各项目的桥接软链接（`workspace.arnodot.local` 等）由 `bin/relink` 管理，均在全局 `.gitignore_global` 中排除，不需要也不应该 `git add`。
+
+---
+
 ## Mandatory skill usage
 
 > 以下规则为默认工作流指引，用户可随时否决（如"不用 intake，直接开始"）。Agent 应提醒但不强制。
