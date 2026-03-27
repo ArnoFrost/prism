@@ -34,7 +34,7 @@ from pathlib import Path
 
 
 def _read_env_path() -> str | None:
-    """从 prism.local.yaml 读取 env_path 字段（可选）"""
+    """从 prism.local.yaml 读取 env_path 字段（可选），返回原始值不检查路径是否存在"""
     config = Path.home() / "prism" / "prism.local.yaml"
     if not config.exists():
         return None
@@ -42,7 +42,7 @@ def _read_env_path() -> str | None:
         for line in config.read_text().splitlines():
             if line.startswith("env_path:"):
                 val = line.split(":", 1)[1].strip()
-                return val if val and os.path.isdir(val) else None
+                return val if val else None
     except OSError:
         pass
     return None
