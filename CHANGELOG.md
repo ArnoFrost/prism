@@ -2,6 +2,31 @@
 
 All notable changes to Prism are documented in this file.
 
+## [v1.0.0-beta] — 2026-03-30
+
+Beta release. Internal testing on git.woa.com before public open source.
+
+### Phase 7 — Beta 验证与加固
+
+- R03 评审验收完成：P0/P1 问题修复
+- AGENT.md 补充仓库操作陷阱章节
+- 新增 `obs_sniff.py` + 修复 `prism_sync_sniff.py` env_path 检测
+- `setenv` 全面支持 env_path 字段
+- 支持可选 env 层，relink 自动分发 env skills
+- workspace 新增 topic README/plan 模板 + plan 焦点段规则（Phase H）
+- workflow skills 引用原子能力 spec
+- 新增 4 条原子能力 spec（Phase C+D+E）
+- 修正路径 SSOT + 3 个 skill 接入 context-pack 消费面
+- 抽取共享解析函数到 `parse_utils.py`
+- 新增 context-pack 规范与脚本实现
+- 5 个核心 skill 补充「职责边界」标准化段
+- 支持 archive 扁平目录扫描 + 活跃/归档分组展示
+- 新增 IDE 无关的 git post-commit hook 自动校验
+- 新增 pipeline 编排层，decision 后一键串联 tidy→validate→scope
+- review SKILL.md Gate 结构化升级 + 角色 Output-Format + 独立发现率公式
+
+---
+
 ## [v1.0.0-alpha] — 2026-03-24
 
 First alpha release. Prism has been validated across two projects (PRISM self-bootstrap + TVKMM cross-project) and three IDE environments (Cursor + CodeBuddy + Claude Code).
