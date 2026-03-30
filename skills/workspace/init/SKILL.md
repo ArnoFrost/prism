@@ -149,6 +149,13 @@ mkdir -p "$WS_ROOT/{CODE}/topics" "$WS_ROOT/{CODE}/docs" "$WS_ROOT/{CODE}/archiv
 | `project-readme.md` | `README.md` | 命名规范、目录结构、工作流、归档规则 |
 | `AGENT.md` | `AGENT.md` | AI 协作入口（vault 存储，后续软链接到工作仓库） |
 
+**Topic 级模板**（不在 init 时生成，由 workflow-intake 创建专项时使用）：
+
+| 模板 | 用途 | 消费方 |
+|------|------|--------|
+| `topic-readme.md` | 专项 README 段落规范（属性表/控制台/状态/恢复指引/决策表） | workflow-intake |
+| `topic-plan.md` | 专项 plan 段落规范（焦点/待执行/留后续/已完成/不做） | workflow-scope（派生） |
+
 **2.3 注册项目**
 
 若 Sniff 返回 `project_registered` = false，在 `prism.local.yaml` 的 `projects:` 段追加：

@@ -5,6 +5,19 @@ description: |
   Use when: 接受决策后同步、scope 偏移修正、边界收敛、plan 派生、workflow-scope
 ---
 
+## 职责边界
+
+| 维度 | 说明 |
+|------|------|
+| **是什么** | 专项合同维护器：识别边界变更，原地更新 scope，派生 plan。scope 是 plan 的唯一上游 SSOT |
+| **不是什么** | 不做多视角评审、不记录 review findings、不创建 scope-v2.md、不让 plan 独立漂移、不跳过 human decision 直接改合同 |
+| **读取工件** | topic 上下文按 [context-pack-spec](../../shared/context-pack-spec.md) light 档装配（scope.md / plan.md / README.md）；另读最近决策/review 结论（由调用者传入） |
+| **写入工件** | scope.md（原地更新）、plan.md（派生重写）、README.md（状态段更新） |
+| **结束建议** | → `workflow-review` 或 `workflow-review-lite`（验证变更）；或回到执行 |
+| **设计模式** | Pattern 1 — Sequential Workflow（读取→识别delta→更新scope→派生plan→同步README） + Pattern 5 — Domain-specific Intelligence（合同规则：scope 原地更新、plan 派生链不可绕过） |
+
+---
+
 # 专项边界收敛与合同维护 (Workflow Scope)
 
 > 管线定位：`intake → scope ←→ review → archive`
@@ -73,29 +86,9 @@ Phase 4  Sync（同步 README + 索引）
 
 ### Phase 3：更新文件
 
-**scope.md 更新**（原地修改，不追加文件）：
-- 目标：新增或标记完成
-- 非目标：新增排除项
-- 验收口径：新增条目或勾选已完成（`[x]`）
-- 关键约束：新增或修改
-- 未决问题：新增或标记已解决
-- **变更记录**：尾部追加一行（日期 / 触发决策 / 变更摘要），不改已有行
+按 [plan-derive-spec](../shared/plan-derive-spec.md) 执行 scope.md 更新 + plan.md 派生。
 
-**plan.md 派生**（从 scope 当前状态更新）：
-
-「总计划」段（全量重写）：
-- 待执行：从 scope 验收口径中未勾选的条目 + 未决问题
-- 已完成：从 scope 验收口径中已勾选的条目汇总
-
-「当前焦点」段（局部 reconcile）：
-- 移除已不在总计划中的条目
-- 保留仍有效的条目
-- 从新总计划中补充新焦点
-- 仅当用户显式要求时才全量清空
-
-「明确不做」段：直接映射 scope 非目标
-
-> plan.md 顶部保留标注：`本文件由 scope.md 驱动更新，review 不直接修改此处。`
+> 规范详见 `shared/plan-derive-spec.md`，此处不重复内联规则。
 
 ### Phase 4：同步
 

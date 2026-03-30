@@ -5,6 +5,19 @@ description: |
   Use when: 查看项目状态、健康检查、进度总览、骨架完整性检查、workflow-status
 ---
 
+## 职责边界
+
+| 维度 | 说明 |
+|------|------|
+| **是什么** | 只读健康度巡检工具：扫描全部活跃 topic 的骨架完整性、进度、活跃度，输出结构化报告 + 建议 |
+| **不是什么** | 不写关键工件、不自动发起 review、不重构 scope/plan、不自动执行修复（report-first） |
+| **读取工件** | workspace 全部 topic 按 [context-pack-spec](../../shared/context-pack-spec.md) light 档逐 topic 采集（README.md / scope.md / plan.md）；另统计 reviews/ + decisions/ 文件数 |
+| **写入工件** | 无（只读报告） |
+| **结束建议** | 根据问题类型建议 → `workflow-scope`（scope 过期）/ `workflow-review`（无评审）/ scaffold（骨架不完整） |
+| **设计模式** | Pattern 4 — Context-aware Tool Selection（根据健康度状态和问题类型建议不同的下一步 skill） |
+
+---
+
 # 专项健康度巡检 (Workflow Status)
 
 > 管线定位：辅助工具，可在任意阶段调用
