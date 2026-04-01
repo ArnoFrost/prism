@@ -72,7 +72,30 @@ TOTAL=0
 OK=0
 FIXED=0
 ERRORS=0
+SKIPPED_ARCHIVED=0
 PLATFORM_TARGETS=()
+
+# 解析 archived_skills 列表
+ARCHIVED_SKILLS=()
+_in_archived=false
+while IFS= read -r line; do
+  if [[ "$line" =~ ^archived_skills: ]]; then _in_archived=true; continue; fi
+  if $_in_archived; then
+    if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+(.*) ]]; then
+      ARCHIVED_SKILLS+=("${BASH_REMATCH[1]}")
+    elif [[ ! "$line" =~ ^[[:space:]] && ! "$line" =~ ^$ && ! "$line" =~ ^# ]]; then
+      break
+    fi
+  fi
+done < "$CONFIG"
+
+is_archived() {
+  local name="$1"
+  for a in "${ARCHIVED_SKILLS[@]+"${ARCHIVED_SKILLS[@]}"}"; do
+    [[ "$a" == "$name" ]] && return 0
+  done
+  return 1
+}
 
 log_ok()    { echo -e "  ${GREEN}✓${NC} $1"; ((OK++)) || true; ((TOTAL++)) || true; }
 log_fix()   { echo -e "  ${GREEN}⟳${NC} $1"; ((FIXED++)) || true; ((TOTAL++)) || true; }
@@ -304,6 +327,13 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       [[ "$skill_name" == "shared" ]] && continue
       [[ ! -f "$skill_dir/SKILL.md" ]] && continue
       link_name="${category}-${skill_name}"
+
+      if is_archived "$link_name"; then
+        log_skip "${link_name} ${DIM}(archived)${NC}"
+        ((SKIPPED_ARCHIVED++)) || true
+        continue
+      fi
+
       ((sdk_skill_count++)) || true
 
       for target in "${PLATFORM_TARGETS[@]}"; do
@@ -331,6 +361,13 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       [[ "$skill_name" == ".git" ]] && continue
       [[ "$skill_name" == "shared" ]] && continue
       [[ ! -f "$skill_dir/SKILL.md" ]] && continue
+
+      if is_archived "$skill_name"; then
+        log_skip "${skill_name} ${DIM}(archived)${NC}"
+        ((SKIPPED_ARCHIVED++)) || true
+        continue
+      fi
+
       ((skill_count++)) || true
 
       for target in "${PLATFORM_TARGETS[@]}"; do
@@ -359,6 +396,13 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       skill_name=$(basename "$skill_dir")
       [[ "$skill_name" == ".git" ]] && continue
       [[ ! -f "$skill_dir/SKILL.md" ]] && continue
+
+      if is_archived "$skill_name"; then
+        log_skip "${skill_name} ${DIM}(archived)${NC}"
+        ((SKIPPED_ARCHIVED++)) || true
+        continue
+      fi
+
       ((env_skill_count++)) || true
 
       for target in "${PLATFORM_TARGETS[@]}"; do
@@ -452,10 +496,13 @@ fi
 # 5. 汇总
 echo ""
 echo "─────────────────────────────────"
+ARCHIVE_LABEL=""
+[[ $SKIPPED_ARCHIVED -gt 0 ]] && ARCHIVE_LABEL="  ${DIM}归档跳过: ${SKIPPED_ARCHIVED}${NC}"
+
 if [[ $PRUNED -gt 0 ]]; then
-  echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${YELLOW}清理: ${PRUNED}${NC}  ${RED}错误: ${ERRORS}${NC}"
+  echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${YELLOW}清理: ${PRUNED}${NC}  ${RED}错误: ${ERRORS}${NC}${ARCHIVE_LABEL}"
 else
-  echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${RED}错误: ${ERRORS}${NC}"
+  echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${RED}错误: ${ERRORS}${NC}${ARCHIVE_LABEL}"
 fi
 
 if [[ $ERRORS -gt 0 ]]; then

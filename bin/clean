@@ -1,19 +1,12 @@
 #!/usr/bin/env bash
-# Prism clean — relink 的逆操作，清理 Prism 创建的所有软链接和配置。
+# Prism clean — 根据 prism.local.yaml 的 archived_skills 清理已分发的软链接。
 #
 # 用法:
-#   bin/clean              清理所有 Prism 软链接（IDE 映射 + 项目桥接）
-#   bin/clean --config     同上 + 删除 prism.local.yaml（备份后）
-#   bin/clean --dry-run    预览将要清理的内容，不实际删除
-#   bin/clean --project X  仅清理指定项目的桥接链接
-#
-# 安全边界:
-#   ✓ 删除 IDE 技能目录中指向 SKILLS_PATH 的软链接
-#   ✓ 删除项目中的 workspace.*.local / AGENT.local.md 软链接
-#   ✓ 删除 prism.local.yaml（仅 --config，自动备份）
-#   ✗ 绝不删除 Vault / Workspace 内容
-#   ✗ 绝不删除 Skills 源码目录
-#   ✗ 绝不删除 SDK 仓库本身
+#   bin/clean              清理所有 archived_skills 的软链接
+#   bin/clean --dry-run    预览要删除的链接，不实际执行
+#   bin/clean --list       仅列出 archived_skills 清单
+#   bin/clean --add NAME   向 archived_skills 追加一个技能并清理
+#   bin/clean --restore NAME  从 archived_skills 移除一个技能并 relink 恢复
 
 set -euo pipefail
 
@@ -29,183 +22,182 @@ DIM='\033[2m'
 NC='\033[0m'
 
 DRY_RUN=false
-CLEAN_CONFIG=false
-TARGET_PROJECT=""
+LIST_ONLY=false
+ADD_SKILL=""
+RESTORE_SKILL=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)  DRY_RUN=true; shift ;;
-    --config)   CLEAN_CONFIG=true; shift ;;
-    --project)
-      if [[ $# -lt 2 || -z "$2" ]]; then
-        echo -e "${RED}✗ --project 需要指定项目代号${NC}" >&2; exit 1
-      fi
-      TARGET_PROJECT="$2"; shift 2
-      ;;
+    --list)     LIST_ONLY=true; shift ;;
+    --add)
+      [[ $# -lt 2 || -z "$2" ]] && { echo -e "${RED}✗ --add 需要技能名${NC}" >&2; exit 1; }
+      ADD_SKILL="$2"; shift 2 ;;
+    --restore)
+      [[ $# -lt 2 || -z "$2" ]] && { echo -e "${RED}✗ --restore 需要技能名${NC}" >&2; exit 1; }
+      RESTORE_SKILL="$2"; shift 2 ;;
     --help|-h)
-      echo "用法: bin/clean [--dry-run|--config|--project CODE]"
-      echo ""
-      echo "  (无参数)     清理所有 Prism 软链接（IDE + 项目桥接）"
-      echo "  --config     同上 + 删除 prism.local.yaml（自动备份）"
-      echo "  --dry-run    预览将要清理的内容"
-      echo "  --project X  仅清理指定项目的桥接链接"
-      echo ""
-      echo "安全边界: 绝不删除 Vault/Workspace 内容、Skills 源码、SDK 仓库。"
-      exit 0
-      ;;
-    *) echo -e "${RED}未知参数: $1${NC}"; exit 1 ;;
+      echo "用法: bin/clean [--dry-run|--list|--add NAME|--restore NAME]"
+      echo "  (无参数)       清理所有 archived_skills 的软链接"
+      echo "  --dry-run      预览要删除的链接"
+      echo "  --list         列出当前 archived_skills"
+      echo "  --add NAME     归档一个技能（追加到 yaml + 清理链接）"
+      echo "  --restore NAME 恢复一个技能（从 yaml 移除 + relink）"
+      exit 0 ;;
+    *) echo "未知参数: $1"; exit 1 ;;
   esac
 done
 
-if [[ ! -f "$CONFIG" ]]; then
-  echo -e "${YELLOW}⚠ prism.local.yaml 不存在，无需清理。${NC}"
+[[ -f "$CONFIG" ]] || { echo -e "${RED}✗ prism.local.yaml 不存在${NC}"; exit 1; }
+
+# ── 解析 archived_skills ──
+parse_archived() {
+  local in_section=false
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^archived_skills: ]]; then
+      in_section=true; continue
+    fi
+    if $in_section; then
+      if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+(.*) ]]; then
+        echo "${BASH_REMATCH[1]}"
+      elif [[ ! "$line" =~ ^[[:space:]] && ! "$line" =~ ^$ && ! "$line" =~ ^# ]]; then
+        break
+      fi
+    fi
+  done < "$CONFIG"
+}
+
+ARCHIVED=()
+while IFS= read -r name; do
+  [[ -n "$name" ]] && ARCHIVED+=("$name")
+done < <(parse_archived)
+
+# ── --add: 追加技能到 archived_skills 并清理 ──
+if [[ -n "$ADD_SKILL" ]]; then
+  for existing in "${ARCHIVED[@]+"${ARCHIVED[@]}"}"; do
+    if [[ "$existing" == "$ADD_SKILL" ]]; then
+      echo -e "${YELLOW}⚠${NC} ${ADD_SKILL} 已在 archived_skills 中"
+      exit 0
+    fi
+  done
+
+  # 在 archived_skills 段末尾插入新条目
+  tmp="${CONFIG}.tmp.$$"
+  awk -v skill="$ADD_SKILL" '
+    /^archived_skills:/ { in_section=1; print; next }
+    in_section && /^[^ #]/ && !/^[[:space:]]/ {
+      print "  - " skill
+      in_section=0
+    }
+    { print }
+    END { if (in_section) print "  - " skill }
+  ' "$CONFIG" > "$tmp" && mv "$tmp" "$CONFIG"
+
+  echo -e "${GREEN}✓${NC} 已将 ${CYAN}${ADD_SKILL}${NC} 加入 archived_skills"
+  ARCHIVED+=("$ADD_SKILL")
+fi
+
+# ── --restore: 从 archived_skills 移除并 relink ──
+if [[ -n "$RESTORE_SKILL" ]]; then
+  found=false
+  for existing in "${ARCHIVED[@]+"${ARCHIVED[@]}"}"; do
+    [[ "$existing" == "$RESTORE_SKILL" ]] && found=true
+  done
+  if ! $found; then
+    echo -e "${YELLOW}⚠${NC} ${RESTORE_SKILL} 不在 archived_skills 中"
+    exit 0
+  fi
+
+  tmp="${CONFIG}.tmp.$$"
+  awk -v skill="$RESTORE_SKILL" '
+    /^[[:space:]]+-[[:space:]]+/ {
+      gsub(/^[[:space:]]+-[[:space:]]+/, "", $0)
+      if ($0 == skill) next
+    }
+    { print }
+  ' "$CONFIG" > "$tmp" && mv "$tmp" "$CONFIG"
+
+  echo -e "${GREEN}✓${NC} 已将 ${CYAN}${RESTORE_SKILL}${NC} 从 archived_skills 移除"
+  echo -e "${DIM}运行 bin/relink 恢复该技能的软链接...${NC}"
+  "$PRISM_DIR/bin/relink"
   exit 0
 fi
 
-yaml_get() {
-  grep "^${1}:" "$CONFIG" 2>/dev/null | sed "s/^${1}: *//"
-}
-
-SKILLS_PATH=$(yaml_get skills_path)
-REMOVED=0
-
-remove_link() {
-  local link="$1" label="$2"
-  if [[ ! -L "$link" ]]; then
-    return
-  fi
-  if $DRY_RUN; then
-    echo -e "  ${YELLOW}⌫${NC} ${label}: 将删除 ${DIM}$(readlink "$link")${NC}"
+# ── --list ──
+if $LIST_ONLY; then
+  echo -e "${CYAN}Archived Skills (${#ARCHIVED[@]})${NC}"
+  if [[ ${#ARCHIVED[@]} -eq 0 ]]; then
+    echo -e "  ${DIM}(空)${NC}"
   else
-    rm "$link"
-    echo -e "  ${YELLOW}⌫${NC} ${label}: 已删除"
+    for s in "${ARCHIVED[@]}"; do
+      echo -e "  ${DIM}⊘${NC} $s"
+    done
   fi
-  ((REMOVED++)) || true
-}
+  exit 0
+fi
 
+# ── 探测平台目录 ──
+PLATFORM_TARGETS=()
+[[ -d "$HOME/.cursor/skills-cursor" ]] && PLATFORM_TARGETS+=("cursor|$HOME/.cursor/skills-cursor")
+[[ -d "$HOME/.claude/skills" ]] && PLATFORM_TARGETS+=("claude|$HOME/.claude/skills")
+[[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_TARGETS+=("claude-internal|$HOME/.claude-internal/skills")
+[[ -d "$HOME/.codex/skills" ]] && PLATFORM_TARGETS+=("codex|$HOME/.codex/skills")
+[[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_TARGETS+=("codebuddy|$HOME/.codebuddy/skills")
+[[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_TARGETS+=("codebuddy-cli|$HOME/.codebuddy/commands")
+[[ -d "$HOME/.workbuddy/skills" ]] && PLATFORM_TARGETS+=("workbuddy|$HOME/.workbuddy/skills")
+[[ -d "$HOME/.workbuddy/commands" ]] && PLATFORM_TARGETS+=("workbuddy-cli|$HOME/.workbuddy/commands")
+
+if [[ ${#ARCHIVED[@]} -eq 0 ]]; then
+  echo -e "${GREEN}✓${NC} archived_skills 为空，无需清理"
+  exit 0
+fi
+
+# ── 执行清理 ──
 echo -e "${CYAN}Prism Clean${NC}"
 if $DRY_RUN; then
   echo -e "${DIM}模式: 预览（不实际删除）${NC}"
 fi
-if $CLEAN_CONFIG; then
-  echo -e "${DIM}含配置清理: prism.local.yaml 将被备份后删除${NC}"
-fi
 echo "─────────────────────────────────"
+echo -e "归档技能: ${YELLOW}${ARCHIVED[*]}${NC}"
+echo ""
 
-# === 1. 清理 IDE 技能映射 ===
-echo -e "\n${CYAN}[IDE 技能映射]${NC}"
+REMOVED=0
+SKIPPED=0
 
-if [[ -n "$TARGET_PROJECT" ]]; then
-  echo -e "  ${DIM}--project 模式，跳过 IDE 清理${NC}"
-else
-  PLATFORM_DIRS=()
-  [[ -d "$HOME/.cursor/skills-cursor" ]] && PLATFORM_DIRS+=("cursor|$HOME/.cursor/skills-cursor")
-  [[ -d "$HOME/.claude/skills" ]] && PLATFORM_DIRS+=("claude|$HOME/.claude/skills")
-  [[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_DIRS+=("claude-internal|$HOME/.claude-internal/skills")
-  [[ -d "$HOME/.codex/skills" ]] && PLATFORM_DIRS+=("codex|$HOME/.codex/skills")
-  [[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_DIRS+=("codebuddy|$HOME/.codebuddy/skills")
-  [[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_DIRS+=("codebuddy-cli|$HOME/.codebuddy/commands")
-  [[ -d "$HOME/.workbuddy/skills" ]] && PLATFORM_DIRS+=("workbuddy|$HOME/.workbuddy/skills")
-  [[ -d "$HOME/.workbuddy/commands" ]] && PLATFORM_DIRS+=("workbuddy-cli|$HOME/.workbuddy/commands")
+for skill_name in "${ARCHIVED[@]}"; do
+  echo -e "  ${CYAN}${skill_name}${NC}"
+  found_any=false
 
-  if [[ ${#PLATFORM_DIRS[@]} -eq 0 ]]; then
-    echo -e "  ${DIM}未探测到平台目录${NC}"
-  fi
+  for target in "${PLATFORM_TARGETS[@]}"; do
+    platform="${target%%|*}"
+    root_dir="${target#*|}"
+    link_path="${root_dir}/${skill_name}"
 
-  for entry in ${PLATFORM_DIRS[@]+"${PLATFORM_DIRS[@]}"}; do
-    platform="${entry%%|*}"
-    root_dir="${entry#*|}"
-    for link in "$root_dir"/*/; do
-      [[ -L "${link%/}" ]] || continue
-      link="${link%/}"
-      link_target=$(readlink "$link")
-      if [[ "$link_target" == "$PRISM_DIR/skills/"* ]]; then
-        remove_link "$link" "${platform}: $(basename "$link")"
-      elif [[ -n "$SKILLS_PATH" && "$link_target" == "$SKILLS_PATH"* ]] || [[ "$link_target" == *prism-skills* ]]; then
-        remove_link "$link" "${platform}: $(basename "$link")"
+    if [[ -L "$link_path" ]]; then
+      found_any=true
+      link_dest=$(readlink "$link_path")
+      if $DRY_RUN; then
+        echo -e "    ${YELLOW}⌫${NC} ${platform}: 将删除 ${DIM}→ ${link_dest}${NC}"
+      else
+        rm "$link_path"
+        echo -e "    ${YELLOW}⌫${NC} ${platform}: 已删除 ${DIM}→ ${link_dest}${NC}"
       fi
-    done
-  done
-fi
-
-# === 2. 清理项目桥接链接 ===
-echo -e "\n${CYAN}[项目桥接链接]${NC}"
-
-in_projects=false
-while IFS= read -r line; do
-  if [[ "$line" == "projects:" ]]; then
-    in_projects=true
-    continue
-  fi
-  if $in_projects; then
-    if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
-      code="${BASH_REMATCH[1]}"
-      local_path="${BASH_REMATCH[2]}"
-      code_lower=$(echo "$code" | tr '[:upper:]' '[:lower:]')
-
-      if [[ -n "$TARGET_PROJECT" && "$code" != "$TARGET_PROJECT" ]]; then
-        continue
-      fi
-
-      [[ -d "$local_path" ]] || continue
-
-      echo -e "  ${CYAN}${code}${NC} (${local_path})"
-
-      ws_link="${local_path}/workspace.${code_lower}.local"
-      remove_link "$ws_link" "    workspace.${code_lower}.local"
-
-      agent_link="${local_path}/AGENT.local.md"
-      remove_link "$agent_link" "    AGENT.local.md"
-
-    elif [[ ! "$line" =~ ^[[:space:]] ]]; then
-      break
-    fi
-  fi
-done < "$CONFIG"
-
-# === 3. 清理 SDK 内桥接链接 ===
-echo -e "\n${CYAN}[SDK 内桥接]${NC}"
-
-if [[ -z "$TARGET_PROJECT" ]]; then
-  for link in "$PRISM_DIR"/workspace.*.local; do
-    [[ -L "$link" ]] && remove_link "$link" "SDK: $(basename "$link")"
-  done
-  [[ -L "$PRISM_DIR/AGENT.local.md" ]] && remove_link "$PRISM_DIR/AGENT.local.md" "SDK: AGENT.local.md"
-  [[ -L "$PRISM_DIR/ai-task.local" ]] && remove_link "$PRISM_DIR/ai-task.local" "SDK: ai-task.local（兼容模式）"
-fi
-
-# === 4. 清理配置文件 ===
-if $CLEAN_CONFIG && [[ -z "$TARGET_PROJECT" ]]; then
-  echo -e "\n${CYAN}[配置文件]${NC}"
-  if [[ -f "$CONFIG" ]]; then
-    if $DRY_RUN; then
-      echo -e "  ${YELLOW}⌫${NC} prism.local.yaml: 将备份后删除"
+      ((REMOVED++)) || true
     else
-      BAK="${CONFIG}.bak.$(date +%Y%m%d%H%M%S)"
-      cp "$CONFIG" "$BAK"
-      rm "$CONFIG"
-      echo -e "  ${YELLOW}⌫${NC} prism.local.yaml: 已备份至 ${DIM}$(basename "$BAK")${NC} 后删除"
+      ((SKIPPED++)) || true
     fi
-    ((REMOVED++)) || true
-  fi
-fi
+  done
 
-# === 汇总 ===
+  if ! $found_any; then
+    echo -e "    ${DIM}(各平台均无链接)${NC}"
+  fi
+done
+
 echo ""
 echo "─────────────────────────────────"
-if [[ $REMOVED -eq 0 ]]; then
-  echo -e "  ${GREEN}✓${NC} 无需清理"
+if $DRY_RUN; then
+  echo -e "  预览: ${YELLOW}${REMOVED} 个链接待删除${NC}，${DIM}${SKIPPED} 个已不存在${NC}"
+  echo -e "  ${DIM}确认后去掉 --dry-run 执行${NC}"
 else
-  if $DRY_RUN; then
-    echo -e "  ${YELLOW}将清理 ${REMOVED} 项${NC}（dry-run，未实际执行）"
-    echo -e "  去掉 --dry-run 执行实际清理。"
-  else
-    echo -e "  ${GREEN}✓${NC} 已清理 ${REMOVED} 项"
-  fi
-fi
-
-echo ""
-echo -e "${DIM}安全边界: Vault/Workspace 内容、Skills 源码、SDK 仓库均未受影响。${NC}"
-if $CLEAN_CONFIG && [[ $REMOVED -gt 0 ]] && ! $DRY_RUN; then
-  echo -e "${DIM}恢复方法: bin/setenv --init 重新初始化，或从 .bak 文件恢复。${NC}"
+  echo -e "  已清理: ${GREEN}${REMOVED} 个链接${NC}，${DIM}${SKIPPED} 个已不存在${NC}"
 fi
