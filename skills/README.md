@@ -67,6 +67,9 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 ~/.cursor/skills-cursor/workflow-* -> ~/prism/skills/workflow/*/
 ~/.cursor/skills-cursor/workspace-* -> ~/prism/skills/workspace/*/
 ~/.cursor/skills-cursor/prism-*    -> ~/prism-skills/prism-*
+~/.codex/skills/workflow-*         -> ~/prism/skills/workflow/*/
+~/.codex/skills/workspace-*        -> ~/prism/skills/workspace/*/
+~/.codex/skills/prism-*            -> ~/prism-skills/prism-*
 ```
 
 ## SKILL.md 规范

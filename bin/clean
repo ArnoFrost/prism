@@ -102,6 +102,7 @@ else
   [[ -d "$HOME/.cursor/skills-cursor" ]] && PLATFORM_DIRS+=("cursor|$HOME/.cursor/skills-cursor")
   [[ -d "$HOME/.claude/skills" ]] && PLATFORM_DIRS+=("claude|$HOME/.claude/skills")
   [[ -d "$HOME/.claude-internal/skills" ]] && PLATFORM_DIRS+=("claude-internal|$HOME/.claude-internal/skills")
+  [[ -d "$HOME/.codex/skills" ]] && PLATFORM_DIRS+=("codex|$HOME/.codex/skills")
   [[ -d "$HOME/.codebuddy/skills" ]] && PLATFORM_DIRS+=("codebuddy|$HOME/.codebuddy/skills")
   [[ -d "$HOME/.codebuddy/commands" ]] && PLATFORM_DIRS+=("codebuddy-cli|$HOME/.codebuddy/commands")
   [[ -d "$HOME/.workbuddy/skills" ]] && PLATFORM_DIRS+=("workbuddy|$HOME/.workbuddy/skills")
@@ -118,7 +119,9 @@ else
       [[ -L "${link%/}" ]] || continue
       link="${link%/}"
       link_target=$(readlink "$link")
-      if [[ -n "$SKILLS_PATH" && "$link_target" == "$SKILLS_PATH"* ]] || [[ "$link_target" == *prism-skills* ]]; then
+      if [[ "$link_target" == "$PRISM_DIR/skills/"* ]]; then
+        remove_link "$link" "${platform}: $(basename "$link")"
+      elif [[ -n "$SKILLS_PATH" && "$link_target" == "$SKILLS_PATH"* ]] || [[ "$link_target" == *prism-skills* ]]; then
         remove_link "$link" "${platform}: $(basename "$link")"
       fi
     done

@@ -44,6 +44,7 @@ bin/relink --project X  # 仅刷新指定项目
 - Cursor: `~/.cursor/skills-cursor/`
 - Claude: `~/.claude/skills/`
 - Claude Internal: `~/.claude-internal/skills/`
+- Codex: `~/.codex/skills/`
 - CodeBuddy IDE: `~/.codebuddy/skills/`
 - CodeBuddy CLI: `~/.codebuddy/commands/`（若存在）
 

@@ -91,6 +91,7 @@ distribution:
     cursor: "~/.cursor/skills-cursor/{skill-name} -> ~/prism-skills/{skill-name}/"
     claude: "~/.claude/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
     claude_internal: "~/.claude-internal/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
+    codex: "~/.codex/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
     codebuddy: "~/.codebuddy/skills/{skill-name} -> ~/prism-skills/{skill-name}/"
     codebuddy_cli: "~/.codebuddy/commands/{skill-name} -> ~/prism-skills/{skill-name}/ (if directory exists)"
   mechanism: "bin/relink reads prism.local.yaml skills_path, auto-creates symlinks"
