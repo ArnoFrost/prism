@@ -12,7 +12,7 @@ description: |
 | **是什么** | topic 内的阶段性正式评审事件：多角色独立审查 → 合并仲裁 → 分级 findings → 落盘 → 触发人类决策 |
 | **不是什么** | 不直接改 scope、不直接改 plan、不隐式生成 decision、不替代人类裁决权、不是每轮对话都要重启的总入口 |
 | **读取工件** | 路由按 [topic-sniff-spec](../shared/topic-sniff-spec.md)；上下文按 [context-pack-spec](../shared/context-pack-spec.md) full 档装配；另读 review-templates.md、review-ofm.md。支持 shell 时可调用 `shared/scripts/context_pack.py --mode full` |
-| **写入工件** | reviews/rXX_描述.md（新建）、reviews/raw/rXX-role-*.md（可选新建）、review.index.md（追加） |
+| **写入工件** | reviews/rXX_描述.md（新建）、reviews/raw/rXX-role-*.md（条件落盘）、review.index.md（追加） |
 | **结束建议** | → 用户 Accept / Reject / Defer → `decisions/dXX.md` → `workflow-scope`（更新合同） |
 | **设计模式** | Pattern 3 — Iterative Refinement（多角色→合并→分级→收敛） + Pattern 5 — Domain-specific Intelligence（评审协议：角色 contract、findings 分级标准、独立发现率） |
 
@@ -65,7 +65,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 |------|-------------|-------------------|-------------------|
 | ⛔ Align→Explore | sniff 已执行，output_dir + format + mode 已确定 | 当前上下文包含 `output_dir`、`format`、`mode` 三个字段值 | 重新执行 sniff；若 sniff 失败则请求用户手动指定 output_dir + format |
 | ⛔ Explore→Merge | 所有角色均已输出独立评审 | 角色报告数量 = 预定角色数，每份含 TL;DR + Findings | 检查缺失角色，补执行或说明跳过原因 |
-| ⛔ Merge→落盘 | 综合报告 + 角色报告 + review.index 全部写入 | validate_product.py 退出码 = 0（ERROR 计数 = 0） | 执行 `--fix` 自动修复；仍失败则列出未解决 ERROR 请用户确认 |
+| ⛔ Merge→落盘 | 综合报告 + review.index 写入；角色报告按条件落盘 | validate_product.py 退出码 = 0（ERROR 计数 = 0） | 执行 `--fix` 自动修复；仍失败则列出未解决 ERROR 请用户确认 |
 | ⛔ 落盘→决策触发 | 产物已落盘且校验通过 | review.index.md 包含本轮记录 | 补更新 review.index.md |
 
 ### 骨架图
@@ -214,7 +214,11 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 1. 去重仲裁 + 独立发现率计算（含计算表格）
 2. 输出统一行动计划
 3. **写入**综合报告 `reviews/rXX_{title}.md`
-4. **[可选] 写入**角色报告 `reviews/raw/rXX-role-{A,B,C…}.md`（合并报告已含全部发现，raw 为补充存档）
+4. **[条件] 写入**角色报告 `reviews/raw/rXX-role-{A,B,C…}.md`（判定规则见下方「raw 落盘决策」）
+   **raw 落盘决策**：满足以下任一条件时落盘，否则跳过：
+   - 角色报告含合并时被裁剪的独立产物（改写示例、完整推导、分级表等）
+   - 独立发现率 ≥ 60%（角色视角差异大，raw 有独立参考价值）
+   - 用户显式要求保留
 5. **追加** `review.index.md` 记录行
 6. **执行** `python3 {skill_dir}/../shared/scripts/prism_cli.py pipeline <topic_dir>`（自动串联 tidy + validate + scope 提示）
 
