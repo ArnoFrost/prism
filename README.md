@@ -82,15 +82,39 @@ Prism 的核心使用路径只有四步：
 
 ### 三正交分离
 
-三个仓库正交独立，各自版控：
+四个仓库正交独立，各自版控：
 
-| 仓库 | 默认路径 | 职责 |
-|------|---------|------|
-| **SDK** | `~/prism` | 协议 + 模板 + 工具 |
-| **Skills** | `~/prism-skills` | 技能实现，软链接分发到 IDE |
-| **Workspace** | iCloud Vault | 项目状态（路书、评审、上下文） |
+| 仓库 | 默认路径 | 职责 | 典型内容 |
+|------|---------|------|---------|
+| **SDK** | `~/prism` | 协议 + 模板 + 工具 + 内置 workflow | `bin/relink`, `workflow-review`, `workspace-init` |
+| **Skills** | `~/prism-skills` | 可分享的通用技能 | `commit`, `digest`, `log-triage`, `learnnote` |
+| **Env** | `~/ArnoDotFiles`（可选） | 个人/设备专属配置与技能 | `sync-dot`, `codex-sync`, hooks |
+| **Workspace** | iCloud Vault | 项目状态（路书、评审、上下文） | `topics/`, `project.yaml` |
 
-三者通过 `prism.local.yaml` + `bin/relink` 桥接。没有 Skills 时 Prism 仍可用。
+四者通过 `prism.local.yaml` + `bin/relink` 桥接。Skills 和 Env 均可选。
+
+**什么放哪层？**
+
+| 场景 | 放哪层 | 理由 |
+|------|--------|------|
+| 跨项目通用，可分享给他人 | **Skills** | 版本独立，可独立分发 |
+| 个人习惯、设备专属、含私密配置 | **Env** | 不影响主干，按设备定制 |
+| 核心流程、协议定义、工具脚本 | **SDK** | 基础设施，慎重变更 |
+
+### 多设备同步
+
+```bash
+# 拉取所有仓库最新（自动 relink + 变更分析）
+/prism-pull --all
+
+# 推送本地变更到远程
+/prism-push --all
+
+# 环境健康检查
+bin/setup --check
+```
+
+`prism.local.yaml` 按设备独立维护（`device_id` 由 hostname 生成），不入版本控制。新设备执行 `bin/setup` 即可一键初始化。
 
 ### 软链接桥接
 
@@ -124,9 +148,12 @@ Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitigno
 
 | 命令 | 职责 |
 |------|------|
+| `bin/setup` | 一键初始化 / 健康检查（仓库→配置→relink→IDE→报告） |
 | `bin/setenv` | 管理 `prism.local.yaml` 配置 |
 | `bin/relink` | 刷新所有软链接 |
-| `bin/clean` | relink 逆操作（测试循环用） |
+| `bin/create-skill` | 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`） |
+| `bin/validate-skills` | 扫描全量 skill frontmatter 合规性 |
+| `bin/clean` | relink 逆操作（归档 skill 清理） |
 | `bin/rename-artifacts` | 批量重命名产物 |
 
 详见 [bin/README.md](bin/README.md)。

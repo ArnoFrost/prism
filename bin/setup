@@ -1,0 +1,268 @@
+#!/usr/bin/env bash
+# Prism setup — 一键初始化/健康检查 Prism 环境。
+#
+# 用法:
+#   bin/setup               完整初始化（探测 → 配置 → 链接 → IDE → 报告）
+#   bin/setup --check       仅检查健康度，不修改任何配置
+#   bin/setup --non-interactive  非交互模式（适合脚本调用）
+#
+# 在已配置的设备上重复执行是安全的（幂等）。
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG="$PRISM_DIR/prism.local.yaml"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+DIM='\033[2m'
+NC='\033[0m'
+
+CHECK_ONLY=false
+NON_INTERACTIVE=false
+ERRORS=0
+WARNINGS=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --check)            CHECK_ONLY=true; shift ;;
+    --non-interactive)  NON_INTERACTIVE=true; shift ;;
+    --help|-h)
+      sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+      exit 0 ;;
+    *) echo -e "${RED}✗ 未知参数: $1${NC}" >&2; exit 1 ;;
+  esac
+done
+
+yaml_get() {
+  (grep "^${1}:" "$CONFIG" 2>/dev/null || true) | tail -1 | sed "s/^${1}: *//"
+}
+
+log_ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
+log_warn() { echo -e "  ${YELLOW}⚠${NC} $1"; WARNINGS=$((WARNINGS + 1)); }
+log_err()  { echo -e "  ${RED}✗${NC} $1"; ERRORS=$((ERRORS + 1)); }
+log_info() { echo -e "  ${DIM}$1${NC}"; }
+
+# ══════════════════════════════════════
+echo -e "${CYAN}Prism Setup${NC}"
+echo "═══════════════════════════════════"
+
+# ── Step 1: 仓库探测 ─────────────────
+
+echo -e "\n${CYAN}[1/5 仓库探测]${NC}"
+
+# SDK
+if [[ -d "$PRISM_DIR/.git" ]]; then
+  SDK_REMOTE=$(cd "$PRISM_DIR" && git remote get-url origin 2>/dev/null || echo "无")
+  log_ok "SDK: $PRISM_DIR ${DIM}($SDK_REMOTE)${NC}"
+else
+  log_err "SDK 不是 Git 仓库: $PRISM_DIR"
+fi
+
+# Skills
+SKILLS_DEFAULT="$HOME/prism-skills"
+if [[ -f "$CONFIG" ]]; then
+  SKILLS_PATH=$(yaml_get skills_path)
+  [[ -z "$SKILLS_PATH" ]] && SKILLS_PATH="$SKILLS_DEFAULT"
+else
+  SKILLS_PATH="$SKILLS_DEFAULT"
+fi
+
+if [[ -d "$SKILLS_PATH/.git" ]]; then
+  SKILLS_REMOTE=$(cd "$SKILLS_PATH" && git remote get-url origin 2>/dev/null || echo "无")
+  log_ok "Skills: $SKILLS_PATH ${DIM}($SKILLS_REMOTE)${NC}"
+elif [[ -d "$SKILLS_PATH" ]]; then
+  log_warn "Skills 目录存在但非 Git 仓库: $SKILLS_PATH"
+else
+  log_warn "Skills 仓库不存在: $SKILLS_PATH"
+  log_info "建议: git clone <skills-repo> $SKILLS_PATH"
+fi
+
+# Env（可选）
+if [[ -f "$CONFIG" ]]; then
+  ENV_PATH=$(yaml_get env_path)
+else
+  ENV_PATH=""
+fi
+
+if [[ -n "$ENV_PATH" && -d "$ENV_PATH/.git" ]]; then
+  ENV_REMOTE=$(cd "$ENV_PATH" && git remote get-url origin 2>/dev/null || echo "无")
+  log_ok "Env: $ENV_PATH ${DIM}($ENV_REMOTE)${NC}"
+elif [[ -n "$ENV_PATH" && -d "$ENV_PATH" ]]; then
+  log_warn "Env 目录存在但非 Git 仓库: $ENV_PATH"
+elif [[ -n "$ENV_PATH" ]]; then
+  log_warn "Env 路径配置但不存在: $ENV_PATH"
+else
+  log_info "Env: 未配置（可选）"
+fi
+
+# ── Step 2: 配置检查/创建 ────────────
+
+echo -e "\n${CYAN}[2/5 配置]${NC}"
+
+if [[ -f "$CONFIG" ]]; then
+  log_ok "prism.local.yaml 存在"
+
+  # 校验必填字段
+  REQUIRED_FIELDS="device_id sdk_path skills_path vault_path workspace_subdir"
+  MISSING=""
+  for field in $REQUIRED_FIELDS; do
+    val=$(yaml_get "$field")
+    if [[ -z "$val" ]]; then
+      MISSING="$MISSING $field"
+    fi
+  done
+
+  if [[ -n "$MISSING" ]]; then
+    log_err "缺失必填字段:$MISSING"
+    if ! $CHECK_ONLY; then
+      log_info "建议运行: bin/setenv --init 补全配置"
+    fi
+  else
+    log_ok "必填字段完整: device_id, sdk_path, skills_path, vault_path, workspace_subdir"
+  fi
+
+  # 路径有效性
+  VAULT_PATH=$(yaml_get vault_path)
+  WS_SUBDIR=$(yaml_get workspace_subdir)
+  if [[ -n "$VAULT_PATH" && -d "$VAULT_PATH" ]]; then
+    log_ok "Vault 路径有效: ${DIM}$(basename "$VAULT_PATH")${NC}"
+  elif [[ -n "$VAULT_PATH" ]]; then
+    log_warn "Vault 路径不存在: $VAULT_PATH"
+  fi
+
+  if [[ -n "$VAULT_PATH" && -n "$WS_SUBDIR" && -d "$VAULT_PATH/$WS_SUBDIR" ]]; then
+    log_ok "Workspace 路径有效: ${DIM}${WS_SUBDIR}${NC}"
+  elif [[ -n "$VAULT_PATH" && -n "$WS_SUBDIR" ]]; then
+    log_warn "Workspace 路径不存在: $VAULT_PATH/$WS_SUBDIR"
+  fi
+
+else
+  if $CHECK_ONLY; then
+    log_err "prism.local.yaml 不存在"
+    log_info "运行 bin/setup（不带 --check）以创建配置"
+  else
+    log_warn "prism.local.yaml 不存在，正在创建..."
+    if $NON_INTERACTIVE; then
+      "$PRISM_DIR/bin/setenv" --init --non-interactive
+    else
+      "$PRISM_DIR/bin/setenv" --init
+    fi
+    if [[ -f "$CONFIG" ]]; then
+      log_ok "prism.local.yaml 已创建"
+    else
+      log_err "prism.local.yaml 创建失败"
+    fi
+  fi
+fi
+
+# ── Step 3: Relink ───────────────────
+
+echo -e "\n${CYAN}[3/5 Symlink 分发]${NC}"
+
+if $CHECK_ONLY; then
+  # 仅检查模式
+  RELINK_OUTPUT=$("$PRISM_DIR/bin/relink" --check 2>&1 || true)
+  SUMMARY=$(echo "$RELINK_OUTPUT" | grep "检查项:" || echo "")
+  if [[ -n "$SUMMARY" ]]; then
+    # 提取修复数
+    FIX_COUNT=$(echo "$SUMMARY" | grep -oE '修复: [0-9]+' | grep -oE '[0-9]+' || echo "0")
+    ERR_COUNT=$(echo "$SUMMARY" | grep -oE '错误: [0-9]+' | grep -oE '[0-9]+' || echo "0")
+    if [[ "$ERR_COUNT" -gt 0 ]]; then
+      log_err "relink 检查: $SUMMARY"
+    elif [[ "$FIX_COUNT" -gt 0 ]]; then
+      log_warn "relink 需要修复: $SUMMARY"
+      log_info "运行 bin/relink 修复"
+    else
+      log_ok "relink: $SUMMARY"
+    fi
+  else
+    log_warn "relink --check 无输出"
+  fi
+else
+  RELINK_OUTPUT=$("$PRISM_DIR/bin/relink" 2>&1 || true)
+  SUMMARY=$(echo "$RELINK_OUTPUT" | grep "检查项:" || echo "relink 完成")
+  ERR_COUNT=$(echo "$SUMMARY" | grep -oE '错误: [0-9]+' | grep -oE '[0-9]+' || echo "0")
+  if [[ "$ERR_COUNT" -gt 0 ]]; then
+    log_err "relink: $SUMMARY"
+  else
+    log_ok "relink: $SUMMARY"
+  fi
+fi
+
+# ── Step 4: IDE 平台探测 ─────────────
+
+echo -e "\n${CYAN}[4/5 IDE 平台]${NC}"
+
+IDE_COUNT=0
+
+check_ide() {
+  local name="$1" dir="$2"
+  if [[ -d "$dir" ]]; then
+    local skill_count
+    skill_count=$(find "$dir" -maxdepth 1 -type l 2>/dev/null | wc -l | tr -d ' ')
+    log_ok "${name}: ${skill_count} 个 skill 已分发 ${DIM}(${dir})${NC}"
+    IDE_COUNT=$((IDE_COUNT + 1))
+  else
+    log_info "${name}: 未安装 ${DIM}(${dir} 不存在)${NC}"
+  fi
+}
+
+check_ide "Claude Code"     "$HOME/.claude/skills"
+check_ide "Claude Internal" "$HOME/.claude-internal/skills"
+check_ide "Cursor"          "$HOME/.cursor/skills-cursor"
+check_ide "CodeBuddy"       "$HOME/.codebuddy/skills"
+check_ide "Codex"           "$HOME/.codex/skills"
+check_ide "WorkBuddy"       "$HOME/.workbuddy/skills"
+
+if [[ $IDE_COUNT -eq 0 ]]; then
+  log_warn "未检测到任何 IDE 平台"
+fi
+
+# ── Step 5: 状态报告 ─────────────────
+
+echo -e "\n${CYAN}[5/5 健康报告]${NC}"
+
+# 残留检查
+MY_CLAUDE_COUNT=0
+for dir in "$HOME/.claude" "$HOME/.claude-internal" "$HOME/.codebuddy" "$HOME/.cursor"; do
+  if [[ -d "$dir" ]]; then
+    count=$(find "$dir" -type l -exec readlink {} \; 2>/dev/null | grep -c "my-claude-skills" || true)
+    MY_CLAUDE_COUNT=$((MY_CLAUDE_COUNT + count))
+  fi
+done
+
+if [[ $MY_CLAUDE_COUNT -gt 0 ]]; then
+  log_warn "检测到 ${MY_CLAUDE_COUNT} 个旧 symlink 指向 my-claude-skills"
+  log_info "建议清理后运行 bin/relink"
+else
+  log_ok "零 my-claude-skills 残留"
+fi
+
+# 项目注册
+if [[ -f "$CONFIG" ]]; then
+  PROJECT_COUNT=$(grep -c "^  [A-Z]" "$CONFIG" 2>/dev/null || echo 0)
+  if [[ $PROJECT_COUNT -gt 0 ]]; then
+    log_ok "已注册 ${PROJECT_COUNT} 个项目"
+  else
+    log_info "无注册项目（可通过 bin/setenv --sync 同步）"
+  fi
+fi
+
+# ── 总结 ─────────────────────────────
+
+echo ""
+echo "═══════════════════════════════════"
+if [[ $ERRORS -gt 0 ]]; then
+  echo -e "${RED}✗ 健康检查: ${ERRORS} 个错误, ${WARNINGS} 个警告${NC}"
+  exit 1
+elif [[ $WARNINGS -gt 0 ]]; then
+  echo -e "${YELLOW}⚠ 健康检查: 0 个错误, ${WARNINGS} 个警告${NC}"
+  exit 0
+else
+  echo -e "${GREEN}✓ Prism 环境健康${NC} — ${IDE_COUNT} 个 IDE 平台就绪"
+  exit 0
+fi

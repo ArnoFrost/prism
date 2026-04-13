@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+# Prism validate-skills — 扫描三层所有 skill 的 frontmatter 合规性和引用完整性。
+#
+# 用法:
+#   bin/validate-skills              扫描并报告（不修改）
+#   bin/validate-skills --fix        自动修复机械性缺失（visibility/stability 默认值）
+#   bin/validate-skills --json       输出 JSON 格式报告
+#   bin/validate-skills --layer sdk  仅扫描 SDK 层
+#
+# 退出码:
+#   0  全部合规
+#   1  存在 ERROR
+
+set -eo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG="$PRISM_DIR/prism.local.yaml"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+DIM='\033[2m'
+NC='\033[0m'
+
+FIX=false
+JSON=false
+FILTER_LAYER=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --fix)    FIX=true; shift ;;
+    --json)   JSON=true; shift ;;
+    --layer)
+      [[ $# -lt 2 ]] && { echo -e "${RED}✗ --layer 需要参数${NC}" >&2; exit 1; }
+      FILTER_LAYER="$2"; shift 2 ;;
+    --help|-h)
+      sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+      exit 0 ;;
+    *) echo -e "${RED}✗ 未知参数: $1${NC}" >&2; exit 1 ;;
+  esac
+done
+
+yaml_get() {
+  (grep "^${1}:" "$CONFIG" 2>/dev/null || true) | tail -1 | sed "s/^${1}: *//"
+}
+
+# ── 收集所有 skill 路径 ──────────────
+
+SKILLS=()
+LABELS=()
+
+# SDK 内置
+if [[ -z "$FILTER_LAYER" || "$FILTER_LAYER" == "sdk" ]]; then
+  while IFS= read -r f; do
+    dir=$(dirname "$f")
+    SKILLS+=("$dir")
+    LABELS+=("sdk")
+  done < <(find "$PRISM_DIR/skills" -name "SKILL.md" -maxdepth 4 2>/dev/null | sort)
+fi
+
+# 外部 skills
+if [[ -z "$FILTER_LAYER" || "$FILTER_LAYER" == "skills" ]]; then
+  SKILLS_PATH=$(yaml_get skills_path)
+  if [[ -n "$SKILLS_PATH" && -d "$SKILLS_PATH" ]]; then
+    for d in "$SKILLS_PATH"/*/; do
+      [[ -f "$d/SKILL.md" ]] || continue
+      name=$(basename "$d")
+      [[ "$name" == _* || "$name" == docs || "$name" == shared ]] && continue
+      SKILLS+=("${d%/}")
+      LABELS+=("skills")
+    done
+  fi
+fi
+
+# Env 层
+if [[ -z "$FILTER_LAYER" || "$FILTER_LAYER" == "env" ]]; then
+  ENV_PATH=$(yaml_get env_path)
+  if [[ -n "$ENV_PATH" && -d "$ENV_PATH/skills" ]]; then
+    for d in "$ENV_PATH/skills"/*/; do
+      [[ -f "$d/SKILL.md" ]] || continue
+      SKILLS+=("${d%/}")
+      LABELS+=("env")
+    done
+  fi
+fi
+
+# ── frontmatter 解析函数 ─────────────
+
+# 从 SKILL.md 提取 frontmatter 中某字段的值
+fm_get() {
+  local file="$1" key="$2"
+  sed -n '2,/^---$/p' "$file" | grep "^${key}:" | head -1 | sed "s/^${key}: *//" | tr -d '"' | tr -d "'"
+}
+
+# 检查 description 是否包含 "Use when:"
+fm_has_use_when() {
+  local file="$1"
+  sed -n '2,/^---$/p' "$file" | grep -qi "use when:" && return 0 || return 1
+}
+
+# ── 校验逻辑 ─────────────────────────
+
+TOTAL=0
+ERRORS=0
+WARNINGS=0
+FIXED=0
+ERROR_SKILLS=()
+
+if ! $JSON; then
+  echo -e "${CYAN}Prism Validate-Skills${NC}"
+  echo "─────────────────────────────────"
+fi
+
+for i in "${!SKILLS[@]}"; do
+  set +e  # 循环内允许非零退出码（grep 无匹配返回 1）
+  dir="${SKILLS[$i]}"
+  layer="${LABELS[$i]}"
+  file="$dir/SKILL.md"
+  name=$(basename "$dir")
+  TOTAL=$((TOTAL + 1))
+
+  # 检查是否有 frontmatter（以 --- 开头）
+  if ! head -1 "$file" | grep -q '^---$'; then
+    if ! $JSON; then
+      echo -e "  ${DIM}⊘${NC} ${name} ${DIM}(${layer}) — 无 frontmatter，跳过${NC}"
+    fi
+    continue
+  fi
+
+  skill_errors=()
+  skill_warnings=()
+  skill_fixes=()
+
+  # 1. name 字段
+  fm_name=$(fm_get "$file" "name")
+  if [[ -z "$fm_name" ]]; then
+    skill_errors+=("缺失 name 字段")
+  elif ! echo "$fm_name" | grep -qE '^[a-z][a-z0-9-]*$' 2>/dev/null; then
+    skill_errors+=("name 格式错误: $fm_name（要求小写+连字符）")
+  fi
+
+  # 2. description 字段 + Use when
+  fm_desc=$(fm_get "$file" "description")
+  if [[ -z "$fm_desc" && "$fm_desc" != "|" ]]; then
+    # 检查多行 description
+    has_desc=$(sed -n '2,/^---$/p' "$file" | grep -c "^description:" || true)
+    if [[ "$has_desc" -eq 0 ]]; then
+      skill_errors+=("缺失 description 字段")
+    fi
+  fi
+  if ! fm_has_use_when "$file"; then
+    skill_warnings+=("description 中缺少 'Use when:' 关键词")
+  fi
+
+  # 3. visibility
+  fm_vis=$(fm_get "$file" "visibility")
+  if [[ -z "$fm_vis" ]]; then
+    skill_warnings+=("缺失 visibility（默认应为 internal）")
+    if $FIX; then
+      # 在 frontmatter 中 name: 行后插入
+      sed -i '' '/^stability:/i\
+visibility: internal' "$file" 2>/dev/null || \
+      sed -i '' '/^user_invocable:/i\
+visibility: internal' "$file" 2>/dev/null || \
+      sed -i '' '/^license:/i\
+visibility: internal' "$file" 2>/dev/null || true
+      # 验证是否成功
+      if fm_get "$file" "visibility" | grep -q "internal"; then
+        skill_fixes+=("已补充 visibility: internal")
+        FIXED=$((FIXED + 1))
+      fi
+    fi
+  elif [[ "$fm_vis" != "internal" && "$fm_vis" != "public" ]]; then
+    skill_errors+=("visibility 值非法: $fm_vis（应为 internal 或 public）")
+  fi
+
+  # 4. stability
+  fm_stab=$(fm_get "$file" "stability")
+  if [[ -z "$fm_stab" ]]; then
+    skill_warnings+=("缺失 stability（默认应为 experimental）")
+    if $FIX; then
+      sed -i '' '/^visibility:/a\
+stability: experimental' "$file" 2>/dev/null || \
+      sed -i '' '/^user_invocable:/i\
+stability: experimental' "$file" 2>/dev/null || true
+      if fm_get "$file" "stability" | grep -q "experimental"; then
+        skill_fixes+=("已补充 stability: experimental")
+        FIXED=$((FIXED + 1))
+      fi
+    fi
+  elif [[ "$fm_stab" != "experimental" && "$fm_stab" != "stable" ]]; then
+    skill_errors+=("stability 值非法: $fm_stab（应为 experimental 或 stable）")
+  fi
+
+  # 5. public skill 的 public_gate 检查
+  if [[ "$fm_vis" == "public" ]]; then
+    fm_reviewed=$(fm_get "$file" "reviewed")
+    has_gate=$(sed -n '2,/^---$/p' "$file" | grep -c "^public_gate:" || true)
+    if [[ "$has_gate" -eq 0 ]]; then
+      skill_warnings+=("public skill 缺少 public_gate 审计块")
+    fi
+  fi
+
+  # 6. 引用完整性：检查 scripts/ 和 references/ 下的 symlink
+  if [[ -d "$dir/scripts" ]]; then
+    for link in "$dir/scripts"/*; do
+      if [[ -L "$link" && ! -e "$link" ]]; then
+        skill_errors+=("断裂 symlink: scripts/$(basename "$link")")
+      fi
+    done
+  fi
+  if [[ -d "$dir/references" ]]; then
+    for link in "$dir/references"/*; do
+      if [[ -L "$link" && ! -e "$link" ]]; then
+        skill_errors+=("断裂 symlink: references/$(basename "$link")")
+      fi
+    done
+  fi
+
+  # ── 输出 ──
+
+  if ! $JSON; then
+    if [[ ${#skill_errors[@]} -gt 0 ]]; then
+      echo -e "  ${RED}✗${NC} ${name} ${DIM}(${layer})${NC}"
+      for e in "${skill_errors[@]}"; do echo -e "    ${RED}ERROR${NC}: $e"; done
+      for w in "${skill_warnings[@]}"; do echo -e "    ${YELLOW}WARN${NC}: $w"; done
+      for f in "${skill_fixes[@]}"; do echo -e "    ${GREEN}FIX${NC}: $f"; done
+      ERRORS=$((ERRORS + ${#skill_errors[@]}))
+      WARNINGS=$((WARNINGS + ${#skill_warnings[@]}))
+      ERROR_SKILLS+=("$name")
+    elif [[ ${#skill_warnings[@]} -gt 0 ]]; then
+      echo -e "  ${YELLOW}⚠${NC} ${name} ${DIM}(${layer})${NC}"
+      for w in "${skill_warnings[@]}"; do echo -e "    ${YELLOW}WARN${NC}: $w"; done
+      for f in "${skill_fixes[@]}"; do echo -e "    ${GREEN}FIX${NC}: $f"; done
+      WARNINGS=$((WARNINGS + ${#skill_warnings[@]}))
+    else
+      echo -e "  ${GREEN}✓${NC} ${name} ${DIM}(${layer})${NC}"
+    fi
+  fi
+done
+set -e  # 恢复严格模式
+
+# ── 汇总 ─────────────────────────────
+
+if $JSON; then
+  echo "{\"total\":$TOTAL,\"errors\":$ERRORS,\"warnings\":$WARNINGS,\"fixed\":$FIXED}"
+else
+  echo ""
+  echo "─────────────────────────────────"
+  echo -e "  扫描: ${TOTAL} 个 skill"
+  if [[ $ERRORS -gt 0 ]]; then
+    echo -e "  ${RED}ERROR: ${ERRORS}${NC}  ${YELLOW}WARN: ${WARNINGS}${NC}  ${GREEN}FIX: ${FIXED}${NC}"
+    echo ""
+    echo -e "  ${RED}不合规 skill: ${ERROR_SKILLS[*]}${NC}"
+  elif [[ $WARNINGS -gt 0 ]]; then
+    echo -e "  ${GREEN}ERROR: 0${NC}  ${YELLOW}WARN: ${WARNINGS}${NC}  ${GREEN}FIX: ${FIXED}${NC}"
+  else
+    echo -e "  ${GREEN}全部合规 ✓${NC}"
+  fi
+
+  if [[ $WARNINGS -gt 0 && ! $FIX ]]; then
+    echo ""
+    echo -e "  ${DIM}提示: 运行 bin/validate-skills --fix 自动修复可修复项${NC}"
+  fi
+fi
+
+[[ $ERRORS -gt 0 ]] && exit 1 || exit 0

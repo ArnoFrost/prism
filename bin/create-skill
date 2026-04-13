@@ -1,0 +1,266 @@
+#!/usr/bin/env bash
+# Prism create-skill — 从模板创建新 skill 骨架，自动 relink 分发。
+#
+# 用法:
+#   bin/create-skill --name my-skill                     在 prism-skills 创建
+#   bin/create-skill --name my-skill --layer skills      同上（显式指定）
+#   bin/create-skill --name my-skill --layer env         在 ArnoDotFiles/skills/ 创建
+#   bin/create-skill --name wf-new --layer sdk --category workflow  在 SDK 内置创建
+#   bin/create-skill --name my-skill --desc "一句话描述"  自定义描述
+#   bin/create-skill --name my-skill --no-relink         跳过自动 relink
+#
+# 选项:
+#   --name NAME         技能名称（必填，小写+连字符）
+#   --layer LAYER       目标层：sdk / skills / env（默认 skills）
+#   --category CAT      SDK 层分类目录（--layer sdk 时必填，如 workflow / workspace）
+#   --desc DESC         技能描述（可选，默认占位文本）
+#   --no-relink         创建后不自动执行 relink
+#   --dry-run           预览要创建的文件，不实际写入
+#   --help              显示帮助
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG="$PRISM_DIR/prism.local.yaml"
+TEMPLATE="$PRISM_DIR/skills/templates/SKILL.template.md"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+DIM='\033[2m'
+NC='\033[0m'
+
+# ── 参数解析 ──────────────────────────
+
+NAME=""
+LAYER="skills"
+CATEGORY=""
+DESC=""
+NO_RELINK=false
+DRY_RUN=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --name)
+      [[ $# -lt 2 || -z "$2" ]] && { echo -e "${RED}✗ --name 需要技能名称${NC}" >&2; exit 1; }
+      NAME="$2"; shift 2 ;;
+    --layer)
+      [[ $# -lt 2 || -z "$2" ]] && { echo -e "${RED}✗ --layer 需要目标层${NC}" >&2; exit 1; }
+      LAYER="$2"; shift 2 ;;
+    --category)
+      [[ $# -lt 2 || -z "$2" ]] && { echo -e "${RED}✗ --category 需要分类名${NC}" >&2; exit 1; }
+      CATEGORY="$2"; shift 2 ;;
+    --desc)
+      [[ $# -lt 2 || -z "$2" ]] && { echo -e "${RED}✗ --desc 需要描述文本${NC}" >&2; exit 1; }
+      DESC="$2"; shift 2 ;;
+    --no-relink)  NO_RELINK=true; shift ;;
+    --dry-run)    DRY_RUN=true; shift ;;
+    --help|-h)
+      sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+      exit 0 ;;
+    *) echo -e "${RED}✗ 未知参数: $1${NC}" >&2; exit 1 ;;
+  esac
+done
+
+# ── 校验 ──────────────────────────────
+
+if [[ -z "$NAME" ]]; then
+  echo -e "${RED}✗ 必须指定 --name${NC}" >&2
+  echo "用法: bin/create-skill --name <name> [--layer sdk|skills|env] [--desc <描述>]" >&2
+  exit 1
+fi
+
+# 校验 name 格式：小写字母、数字、连字符
+if ! echo "$NAME" | grep -qE '^[a-z][a-z0-9-]*$'; then
+  echo -e "${RED}✗ 技能名称格式错误: ${NAME}${NC}" >&2
+  echo "  要求：小写字母开头，仅含小写字母、数字、连字符" >&2
+  exit 1
+fi
+
+# 校验 layer
+case "$LAYER" in
+  sdk|skills|env) ;;
+  *) echo -e "${RED}✗ 无效 --layer: ${LAYER}（可选 sdk / skills / env）${NC}" >&2; exit 1 ;;
+esac
+
+# SDK 层必须指定 category
+if [[ "$LAYER" == "sdk" && -z "$CATEGORY" ]]; then
+  echo -e "${RED}✗ --layer sdk 必须同时指定 --category（如 workflow / workspace）${NC}" >&2
+  exit 1
+fi
+
+# 读取 prism.local.yaml
+yaml_get() {
+  (grep "^${1}:" "$CONFIG" 2>/dev/null || true) | tail -1 | sed "s/^${1}: *//"
+}
+
+# ── 确定目标路径 ──────────────────────
+
+case "$LAYER" in
+  sdk)
+    TARGET_DIR="$PRISM_DIR/skills/${CATEGORY}/${NAME}"
+    LAYER_LABEL="SDK 内置 (skills/${CATEGORY}/)"
+    ;;
+  skills)
+    SKILLS_PATH=$(yaml_get skills_path)
+    if [[ -z "$SKILLS_PATH" || ! -d "$SKILLS_PATH" ]]; then
+      echo -e "${RED}✗ skills_path 未配置或不存在: ${SKILLS_PATH:-<空>}${NC}" >&2
+      echo "  请检查 prism.local.yaml 或运行 bin/setenv --init" >&2
+      exit 1
+    fi
+    TARGET_DIR="${SKILLS_PATH}/${NAME}"
+    LAYER_LABEL="外部 Skills ($(basename "$SKILLS_PATH")/)"
+    ;;
+  env)
+    ENV_PATH=$(yaml_get env_path)
+    if [[ -z "$ENV_PATH" ]]; then
+      echo -e "${RED}✗ env_path 未配置${NC}" >&2
+      echo "  请在 prism.local.yaml 中添加 env_path 字段" >&2
+      exit 1
+    fi
+    if [[ ! -d "$ENV_PATH" ]]; then
+      echo -e "${RED}✗ env_path 路径不存在: ${ENV_PATH}${NC}" >&2
+      exit 1
+    fi
+    mkdir -p "${ENV_PATH}/skills"
+    TARGET_DIR="${ENV_PATH}/skills/${NAME}"
+    LAYER_LABEL="Env 层 ($(basename "$ENV_PATH")/skills/)"
+    ;;
+esac
+
+# 幂等检查
+if [[ -d "$TARGET_DIR" ]]; then
+  echo -e "${RED}✗ 目标目录已存在: ${TARGET_DIR}${NC}" >&2
+  echo "  如需覆盖请先手动删除" >&2
+  exit 1
+fi
+
+# ── 准备模板内容 ──────────────────────
+
+if [[ ! -f "$TEMPLATE" ]]; then
+  echo -e "${YELLOW}⚠ 模板文件不存在: ${TEMPLATE}${NC}" >&2
+  echo "  将使用最小模板" >&2
+  USE_MINIMAL=true
+else
+  USE_MINIMAL=false
+fi
+
+# 默认描述
+if [[ -z "$DESC" ]]; then
+  DESC="技能功能描述。\n  Use when: 触发词1、触发词2"
+fi
+
+AUTHOR=$(yaml_get device_id)
+[[ -z "$AUTHOR" ]] && AUTHOR="$(whoami)"
+DATE=$(date +%Y-%m-%d)
+
+# ── Dry-run 输出 ─────────────────────
+
+if $DRY_RUN; then
+  echo -e "${CYAN}Prism Create-Skill (dry-run)${NC}"
+  echo "─────────────────────────────────"
+  echo -e "  技能名称: ${GREEN}${NAME}${NC}"
+  echo -e "  目标层:   ${LAYER_LABEL}"
+  echo -e "  目标路径: ${DIM}${TARGET_DIR}${NC}"
+  echo ""
+  echo "  将创建："
+  echo -e "    ${GREEN}+${NC} ${NAME}/SKILL.md"
+  echo -e "    ${GREEN}+${NC} ${NAME}/scripts/  ${DIM}(空目录)${NC}"
+  echo ""
+  if ! $NO_RELINK; then
+    echo -e "  创建后将执行: ${DIM}bin/relink${NC}"
+  fi
+  exit 0
+fi
+
+# ── 创建文件 ─────────────────────────
+
+echo -e "${CYAN}Prism Create-Skill${NC}"
+echo "─────────────────────────────────"
+
+mkdir -p "${TARGET_DIR}/scripts"
+
+if $USE_MINIMAL; then
+  # 最小模板
+  cat > "${TARGET_DIR}/SKILL.md" <<SKILL_EOF
+---
+name: ${NAME}
+description: |
+  ${DESC}
+visibility: internal
+stability: experimental
+license: MIT
+metadata:
+  author: "${AUTHOR}"
+  version: "0.1.0"
+---
+
+# ${NAME}
+
+> 一句话描述技能的核心功能
+
+## 触发条件
+
+| 条件 | 示例 |
+|------|------|
+| 用户明确要求 | \`/${NAME}\` |
+
+## 执行流程
+
+1. **阶段一**：描述
+
+## 约束
+
+- 约束 1
+SKILL_EOF
+else
+  # 从模板生成：先读取模板，替换 description 整块和其他字段
+  # 用 awk 替换多行 description 块
+  awk -v name="$NAME" -v desc="$DESC" -v author="$AUTHOR" '
+    /^name: skill-name/ { print "name: " name; next }
+    /^description: \|/ {
+      print "description: |"
+      print "  " desc
+      # 跳过原始 description 缩进行
+      while ((getline line) > 0) {
+        if (line !~ /^  /) { print line; break }
+      }
+      next
+    }
+    /^  author: ""/ { print "  author: \"" author "\""; next }
+    /^  version: "1.0.0"/ { print "  version: \"0.1.0\""; next }
+    /^# 技能标题/ { print "# " name; next }
+    { print }
+  ' "$TEMPLATE" > "${TARGET_DIR}/SKILL.md"
+fi
+
+echo -e "  ${GREEN}✓${NC} ${LAYER_LABEL}"
+echo -e "    ${GREEN}+${NC} ${NAME}/SKILL.md"
+echo -e "    ${GREEN}+${NC} ${NAME}/scripts/  ${DIM}(空目录)${NC}"
+echo -e "    路径: ${DIM}${TARGET_DIR}${NC}"
+
+# ── Relink ───────────────────────────
+
+if ! $NO_RELINK; then
+  echo ""
+  echo -e "${CYAN}[Relink]${NC}"
+  # 静默执行 relink，只显示摘要行
+  RELINK_OUTPUT=$("$PRISM_DIR/bin/relink" 2>&1)
+  SUMMARY=$(echo "$RELINK_OUTPUT" | grep "检查项:" || echo "relink 完成")
+  echo -e "  ${GREEN}✓${NC} ${SUMMARY}"
+fi
+
+# ── 完成 ─────────────────────────────
+
+echo ""
+echo -e "─────────────────────────────────"
+echo -e "${GREEN}✓ 技能 ${NAME} 已创建${NC}"
+echo ""
+echo "下一步："
+echo "  1. 编辑 ${TARGET_DIR}/SKILL.md 完善技能逻辑"
+echo "  2. 按需在 scripts/ 添加辅助脚本"
+if [[ "$LAYER" != "sdk" ]]; then
+  echo "  3. 提交变更: cd $(dirname "$TARGET_DIR") && git add ${NAME}/ && git commit"
+fi

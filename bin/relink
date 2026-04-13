@@ -66,6 +66,27 @@ VAULT_PATH=$(yaml_get vault_path)
 WS_SUBDIR=$(yaml_get workspace_subdir)
 ENV_PATH=$(yaml_get env_path)
 
+# ── 必填字段校验（fail-fast）──────────
+_missing=""
+[[ -z "$DEVICE_ID" ]]  && _missing="$_missing device_id"
+[[ -z "$SDK_PATH" ]]   && _missing="$_missing sdk_path"
+[[ -z "$SKILLS_PATH" ]] && _missing="$_missing skills_path"
+[[ -z "$VAULT_PATH" ]] && _missing="$_missing vault_path"
+[[ -z "$WS_SUBDIR" ]]  && _missing="$_missing workspace_subdir"
+
+if [[ -n "$_missing" ]]; then
+  echo -e "${RED}✗ prism.local.yaml 缺少必填字段:${_missing}${NC}" >&2
+  echo -e "  请运行 ${CYAN}bin/setenv --init${NC} 补全配置" >&2
+  exit 1
+fi
+
+# 可选字段警告
+if [[ -z "$ENV_PATH" ]]; then
+  :  # env_path 可选，静默跳过
+elif [[ ! -d "$ENV_PATH" ]]; then
+  echo -e "${YELLOW}⚠ env_path 配置但路径不存在: ${ENV_PATH}${NC}" >&2
+fi
+
 WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
 
 TOTAL=0
