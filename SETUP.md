@@ -104,7 +104,7 @@ test -d "$HOME/prism-skills" && echo "SKILLS=$HOME/prism-skills" || echo "SKILLS
 VAULT="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"
 test -d "$VAULT" && echo "VAULT_FOUND=$VAULT" || echo "VAULT=not_found"
 echo "---"
-for d in "$HOME/.cursor/skills-cursor" "$HOME/.claude/skills" "$HOME/.claude-internal/skills" "$HOME/.codex/skills" "$HOME/.codebuddy/skills" "$HOME/.codebuddy/commands"; do
+for d in "$HOME/.cursor/skills-cursor" "$HOME/.claude/skills" "$HOME/.claude-internal/skills" "$HOME/.codex/skills" "$HOME/.codex-internal/skills" "$HOME/.codebuddy/skills" "$HOME/.codebuddy/commands"; do
   test -d "$d" && echo "IDE: $(basename "$(dirname "$d")")/$(basename "$d")"
 done
 echo "---"

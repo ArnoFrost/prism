@@ -3,6 +3,8 @@ name: workflow-review-lite
 description: |
   单视角轻量评审，直接输出结论 + 行动项，无多角色仲裁。适用于日常迭代、小改动确认、scope/plan 快速对齐。
   Use when: 日常迭代检查、小改动确认、快速对齐、轻量评审、workflow-review-lite
+visibility: dev
+stability: experimental
 ---
 
 ## 职责边界

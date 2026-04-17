@@ -138,9 +138,11 @@ Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitigno
 | `workflow-scope` | `/workflow-scope` | 合同收敛 → plan 派生 |
 | `workflow-review` | `/workflow-review` | 多角色协作评审（总分总结构） |
 | `workflow-review-lite` | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
+| `workflow-tidy` | `/workflow-tidy` | 工件机械对齐 — 自动同步产物状态 |
+| `workflow-digest` | `/workflow-digest` | 专项状态通报 — 面向协作者 |
 | `workflow-status` | `/workflow-status` | 专项健康巡检 — scope 进度 + 过期检测 |
 
-`bin/relink` 自动将技能软链接到 IDE 目录（Cursor · Claude Code · CodeBuddy），无需手动配置。
+`bin/relink` 自动将技能软链接到 IDE 目录（Cursor · Claude Code · CodeBuddy · Codex），无需手动配置。
 
 ---
 
@@ -153,7 +155,7 @@ Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitigno
 | `bin/relink` | 刷新所有软链接 |
 | `bin/create-skill` | 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`） |
 | `bin/validate-skills` | 扫描全量 skill frontmatter 合规性 |
-| `bin/clean` | relink 逆操作（归档 skill 清理） |
+| `bin/clean` | 归档技能管理（`--add/--restore/--list`） |
 | `bin/rename-artifacts` | 批量重命名产物 |
 
 详见 [bin/README.md](bin/README.md)。

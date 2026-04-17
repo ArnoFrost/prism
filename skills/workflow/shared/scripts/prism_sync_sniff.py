@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""prism-sync 预探测脚本 — 嗅探 Prism 各仓库的 Git 状态，输出 JSON 供 Agent 消费。
+"""prism-pull/push 预探测脚本 — 嗅探 Prism 各仓库的 Git 状态，输出 JSON 供 Agent 消费。
 
 用法: python3 sniff.py [--sdk] [--skills] [--env] [--all]
 

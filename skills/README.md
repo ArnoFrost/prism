@@ -13,12 +13,14 @@ skills/
 │   └── dist-whitelist.yaml           # 分发白名单
 ├── templates/
 │   └── SKILL.template.md             # 技能编写模板
-├── workflow/                          # ★ 内置工作流技能（v1.0.0-alpha）
+├── workflow/                          # ★ 内置工作流技能（v1.0.0-beta）
+│   ├── digest/
 │   ├── intake/
 │   ├── review/
 │   ├── review-lite/
 │   ├── scope/
 │   ├── status/
+│   ├── tidy/
 │   └── shared/                        # sniff_lib + scripts + references
 └── workspace/                         # ★ 工作区管理技能
     └── init/
@@ -28,17 +30,19 @@ skills/
 
 | 类别 | 位置 | 技能 |
 |------|------|------|
-| workflow | `skills/workflow/` | intake, review, review-lite, scope, status |
+| workflow | `skills/workflow/` | intake, review, review-lite, scope, status, tidy, digest |
 | workspace | `skills/workspace/` | init（含 migrate 能力） |
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
-## Workflow 管线（v1.0.0-alpha）
+## Workflow 管线（v1.0.0-beta）
 
-六个内置技能组成完整的人机协作管线：
+八个内置技能组成完整的人机协作管线：
 
 ```
 init（项目容器）→ intake（入料路由）→ scope（合同收敛）→ review（评审）→ decision（决策）→ scope（更新）→ ...
+                                                          └─ tidy（工件对齐，决策后自动触发）
+                                                          └─ digest（状态通报，任意阶段可用）
                                                           └─ status（健康巡检，任意阶段可用）
 ```
 
@@ -49,9 +53,13 @@ init（项目容器）→ intake（入料路由）→ scope（合同收敛）→
 | `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + plan.md 派生 |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
 | `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
+| `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |
+| `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
 | `workflow-status` | `/workflow-status` | 无 | 健康度 JSON + Markdown 报告 |
 
 共享依赖位于 `workflow/shared/`：`sniff_lib.py`、`obsidian-config.md`、`parallel-execution.md`、`scripts/archive.py`。
+
+> 注：`bin/relink` 覆盖的 IDE 目标：Cursor · Claude Code · CodeBuddy · Codex。
 
 ## SDK 与外部技能的关系
 
@@ -70,6 +78,9 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 ~/.codex/skills/workflow-*         -> ~/prism/skills/workflow/*/
 ~/.codex/skills/workspace-*        -> ~/prism/skills/workspace/*/
 ~/.codex/skills/prism-*            -> ~/prism-skills/prism-*
+~/.codex-internal/skills/workflow-* -> ~/prism/skills/workflow/*/
+~/.codex-internal/skills/workspace-* -> ~/prism/skills/workspace/*/
+~/.codex-internal/skills/prism-*   -> ~/prism-skills/prism-*
 ```
 
 ## SKILL.md 规范

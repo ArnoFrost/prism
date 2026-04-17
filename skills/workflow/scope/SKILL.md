@@ -3,6 +3,8 @@ name: workflow-scope
 description: |
   在决策后更新 scope.md 并派生 plan.md，确保合同面一致性。当接受评审决策或发现 scope 与执行偏移时触发。scope 是 plan 唯一上游。
   Use when: 接受决策后同步、scope 偏移修正、边界收敛、plan 派生、workflow-scope
+visibility: dev
+stability: experimental
 ---
 
 ## 职责边界

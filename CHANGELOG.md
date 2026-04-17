@@ -2,6 +2,17 @@
 
 All notable changes to Prism are documented in this file.
 
+## [Unreleased] — post v1.0.0-beta
+
+### Post-Beta 增量
+
+- **Codex 平台支持**: relink/clean 脚本、schema 同步添加 `~/.codex/skills/` 分发目标
+- **archived_skills 归档机制**: relink 解析 `prism.local.yaml` 的归档列表跳过分发；`bin/clean` 重构为归档管理工具（`--add/--restore/--list`）
+- **review 条件落盘**: raw 角色报告改为条件落盘策略，减少冗余文件产出
+- **README 双源仓库说明**: 补充 GitHub + 内部 Git 双仓库克隆指引
+
+---
+
 ## [v1.0.0-beta] — 2026-03-30
 
 Beta release. Internal testing on git.woa.com before public open source.

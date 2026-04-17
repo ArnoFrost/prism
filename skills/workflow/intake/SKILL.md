@@ -3,6 +3,8 @@ name: workflow-intake
 description: |
   接收新需求并路由到已有专项或创建新专项。当有新需求、不确定归属、或散落任务需聚合时触发。输出专项骨架 + index 更新。
   Use when: 新需求入料、创建专项、任务路由、散落任务聚合、workflow-intake
+visibility: dev
+stability: experimental
 ---
 
 ## 职责边界

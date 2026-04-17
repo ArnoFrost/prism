@@ -1,3 +1,17 @@
+---
+name: workflow-tidy
+description: |
+  工件机械对齐 — review/decision 后同步 README 指针、review.index、frontmatter。
+  Use when: 工件对齐、状态同步、review 后收尾、workflow-tidy
+visibility: dev
+stability: experimental
+user_invocable: true
+license: MIT
+metadata:
+  author: ArnoFrost
+  version: dev-01
+---
+
 # 工件机械对齐 (Workspace Tidy)
 
 > 管线定位：辅助工具，review/decision/执行 之后的收尾步骤
@@ -8,10 +22,10 @@
 
 | 场景 | 做法 |
 |------|------|
-| 完成了一轮工作，plan 状态需要同步 | `/workspace-tidy` |
-| review 落盘后，README 指针过时 | `/workspace-tidy` |
-| 归档前检查工件一致性 | `/workspace-tidy` |
-| 日常推进后随手对齐 | `/workspace-tidy --fix` |
+| 完成了一轮工作，plan 状态需要同步 | `/workflow-tidy` |
+| review 落盘后，README 指针过时 | `/workflow-tidy` |
+| 归档前检查工件一致性 | `/workflow-tidy` |
+| 日常推进后随手对齐 | `/workflow-tidy --fix` |
 
 ## 核心原则
 
@@ -80,7 +94,7 @@ python3 {skill_dir}/scripts/tidy.py <project_dir> --topic 011_prism-generalizati
 
 ## 与 code-simplifier 的对应关系
 
-| code-simplifier | workspace-tidy |
+| code-simplifier | workflow-tidy |
 |----------------|----------------|
 | 保持功能不变，只改写法 | 保持决策不变，只改状态 |
 | 消除冗余嵌套 | 消除过时指针 |

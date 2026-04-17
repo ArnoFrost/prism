@@ -3,6 +3,8 @@ name: workflow-status
 description: |
   扫描活跃专项的健康度，输出结构化报告。当需要了解项目进度、检查骨架完整性、或发现不规范产物时触发。report-first：只报告不修改。
   Use when: 查看项目状态、健康检查、进度总览、骨架完整性检查、workflow-status
+visibility: dev
+stability: experimental
 ---
 
 ## 职责边界

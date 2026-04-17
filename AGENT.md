@@ -228,7 +228,7 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-review | `/workflow-review` | 正式评审 — 多角色协作（总分总结构） |
 | workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
 | workflow-status | `/workflow-status` | 健康度巡检 — 活跃专项 report-first 扫描 |
-| workspace-tidy | `/workspace-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
+| workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
 | workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
 
 ---
