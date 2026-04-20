@@ -104,13 +104,13 @@ Prism 的核心使用路径只有四步：
 ### 多设备同步
 
 ```bash
-# 拉取所有仓库最新（自动 relink + 变更分析）
+# 拉取所有仓库最新（自动 relink + 变更扫描 + 影响分析）
 /prism-pull --all
 
 # 推送本地变更到远程
 /prism-push --all
 
-# 环境健康检查
+# 环境健康检查 / 重配置检测（仅检查，不修改）
 bin/setup --check
 ```
 
@@ -150,7 +150,7 @@ Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitigno
 
 | 命令 | 职责 |
 |------|------|
-| `bin/setup` | 一键初始化 / 健康检查（仓库→配置→relink→IDE→报告） |
+| `bin/setup` | 一键初始化 / 健康检查 / 重配置检测（仓库→配置→relink→IDE→报告，`--check` 仅检查，`--non-interactive` 脚本调用） |
 | `bin/setenv` | 管理 `prism.local.yaml` 配置 |
 | `bin/relink` | 刷新所有软链接 |
 | `bin/create-skill` | 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`） |

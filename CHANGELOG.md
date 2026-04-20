@@ -11,6 +11,15 @@ All notable changes to Prism are documented in this file.
 - **review 条件落盘**: raw 角色报告改为条件落盘策略，减少冗余文件产出
 - **README 双源仓库说明**: 补充 GitHub + 内部 Git 双仓库克隆指引
 
+### Phase 8 — 工具三件套 & Pull 增强
+
+- 新增 `bin/setup`: 一键初始化 / 健康检查 / 重配置检测（`--check` / `--non-interactive`）
+- 新增 `bin/create-skill`: 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`）
+- 新增 `bin/validate-skills`: 扫描全量 skill frontmatter 合规性
+- 新增 `skills/workflow/shared/scripts/prism_changelog_scan.py`: 变更分类与影响分析
+- `prism-pull` 升级到 v dev-02: 新增 Phase 1.5 变更扫描（Changelog Scan），增强汇总报告
+- `bin/relink`: relink 逻辑加固，新增 workbuddy 平台分发
+
 ---
 
 ## [v1.0.0-beta] — 2026-03-30
