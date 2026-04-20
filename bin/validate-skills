@@ -100,6 +100,22 @@ fm_has_use_when() {
   sed -n '2,/^---$/p' "$file" | grep -qi "use when:" && return 0 || return 1
 }
 
+# 在 frontmatter 尾部（第二个 `---` 之前）插入一行，兼容任何 frontmatter 布局。
+# 旧实现依赖 `stability:` / `user_invocable:` / `license:` 作为锚点，对极简
+# frontmatter（只有 name + disable）会静默失败。
+_insert_into_frontmatter() {
+  local file="$1"
+  local line_to_insert="$2"
+  # 定位第二个 `---` 的行号（frontmatter 结束）
+  local end_line
+  end_line=$(awk '/^---$/{c++; if(c==2){print NR; exit}}' "$file")
+  [[ -z "$end_line" ]] && return 1
+  # 在该行**之前**插入
+  sed -i '' "${end_line}i\\
+${line_to_insert}
+" "$file"
+}
+
 # ── 校验逻辑 ─────────────────────────
 
 TOTAL=0
@@ -159,21 +175,14 @@ for i in "${!SKILLS[@]}"; do
   if [[ -z "$fm_vis" ]]; then
     skill_warnings+=("缺失 visibility（默认应为 internal）")
     if $FIX; then
-      # 在 frontmatter 中 name: 行后插入
-      sed -i '' '/^stability:/i\
-visibility: internal' "$file" 2>/dev/null || \
-      sed -i '' '/^user_invocable:/i\
-visibility: internal' "$file" 2>/dev/null || \
-      sed -i '' '/^license:/i\
-visibility: internal' "$file" 2>/dev/null || true
-      # 验证是否成功
+      _insert_into_frontmatter "$file" "visibility: internal"
       if fm_get "$file" "visibility" | grep -q "internal"; then
         skill_fixes+=("已补充 visibility: internal")
         FIXED=$((FIXED + 1))
       fi
     fi
-  elif [[ "$fm_vis" != "internal" && "$fm_vis" != "public" ]]; then
-    skill_errors+=("visibility 值非法: $fm_vis（应为 internal 或 public）")
+  elif [[ "$fm_vis" != "internal" && "$fm_vis" != "public" && "$fm_vis" != "dev" ]]; then
+    skill_errors+=("visibility 值非法: $fm_vis（应为 dev / internal / public）")
   fi
 
   # 4. stability
@@ -181,10 +190,7 @@ visibility: internal' "$file" 2>/dev/null || true
   if [[ -z "$fm_stab" ]]; then
     skill_warnings+=("缺失 stability（默认应为 experimental）")
     if $FIX; then
-      sed -i '' '/^visibility:/a\
-stability: experimental' "$file" 2>/dev/null || \
-      sed -i '' '/^user_invocable:/i\
-stability: experimental' "$file" 2>/dev/null || true
+      _insert_into_frontmatter "$file" "stability: experimental"
       if fm_get "$file" "stability" | grep -q "experimental"; then
         skill_fixes+=("已补充 stability: experimental")
         FIXED=$((FIXED + 1))
@@ -221,20 +227,25 @@ stability: experimental' "$file" 2>/dev/null || true
 
   # ── 输出 ──
 
+  # 累加总数（JSON 模式也要统计）
+  if [[ ${#skill_errors[@]} -gt 0 ]]; then
+    ERRORS=$((ERRORS + ${#skill_errors[@]}))
+    WARNINGS=$((WARNINGS + ${#skill_warnings[@]}))
+    ERROR_SKILLS+=("$name")
+  elif [[ ${#skill_warnings[@]} -gt 0 ]]; then
+    WARNINGS=$((WARNINGS + ${#skill_warnings[@]}))
+  fi
+
   if ! $JSON; then
     if [[ ${#skill_errors[@]} -gt 0 ]]; then
       echo -e "  ${RED}✗${NC} ${name} ${DIM}(${layer})${NC}"
       for e in "${skill_errors[@]}"; do echo -e "    ${RED}ERROR${NC}: $e"; done
       for w in "${skill_warnings[@]}"; do echo -e "    ${YELLOW}WARN${NC}: $w"; done
       for f in "${skill_fixes[@]}"; do echo -e "    ${GREEN}FIX${NC}: $f"; done
-      ERRORS=$((ERRORS + ${#skill_errors[@]}))
-      WARNINGS=$((WARNINGS + ${#skill_warnings[@]}))
-      ERROR_SKILLS+=("$name")
     elif [[ ${#skill_warnings[@]} -gt 0 ]]; then
       echo -e "  ${YELLOW}⚠${NC} ${name} ${DIM}(${layer})${NC}"
       for w in "${skill_warnings[@]}"; do echo -e "    ${YELLOW}WARN${NC}: $w"; done
       for f in "${skill_fixes[@]}"; do echo -e "    ${GREEN}FIX${NC}: $f"; done
-      WARNINGS=$((WARNINGS + ${#skill_warnings[@]}))
     else
       echo -e "  ${GREEN}✓${NC} ${name} ${DIM}(${layer})${NC}"
     fi
