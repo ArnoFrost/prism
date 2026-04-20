@@ -67,7 +67,14 @@ REPOS = {
 
 
 def run_git(repo_path: str, *args: str) -> tuple[int, str]:
-    """在指定目录执行 git 命令，返回 (returncode, stdout)"""
+    """在指定目录执行 git 命令，返回 (returncode, stdout)
+
+    注意：这里只 rstrip 尾部换行，**不要 strip() 左侧**。
+    `git status --porcelain` 的 XY 状态列第 0 列可能是空格（例如 ` M foo` 表示
+    worktree modified 未暂存），左侧 strip 会吃掉这个空格，导致 xy 错位，
+    进而把 modified 错判成 staged、文件名首字符被截断（如 `CHANGELOG.md` → `HANGELOG.md`）。
+    其他子命令（branch、rev-parse、log 等）的 stdout 本身不含前导空格，rstrip 足够。
+    """
     try:
         result = subprocess.run(
             ["git", *args],
@@ -76,7 +83,7 @@ def run_git(repo_path: str, *args: str) -> tuple[int, str]:
             text=True,
             timeout=15,
         )
-        return result.returncode, result.stdout.strip()
+        return result.returncode, result.stdout.rstrip("\n")
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return -1, ""
 

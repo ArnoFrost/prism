@@ -81,42 +81,56 @@ def _detect_breaking(commits: list[str], repo_path: str, old_sha: str, new_sha: 
 
 def _categorize_files(changed_files: list[str], old_sha: str, new_sha: str, repo_path: str) -> dict:
     """按路径前缀分类变更文件"""
-    skills_new: list[str] = []
     skills_updated: list[str] = []
+    skills_new: list[str] = []
     templates_changed: list[str] = []
     bin_changed: list[str] = []
     config_schema_changed = False
 
-    # 收集 skill 目录级变更
-    skill_dirs: set[str] = set()
+    # 收集 skill 目录级变更：(skill_name, full_dir_path)
+    # full_dir_path 保留完整路径以便精确判断"旧版本是否有 SKILL.md"
+    skill_dirs: dict[str, str] = {}
+
+    _NON_SKILL_DIRS = {
+        "bin", "lib", "scripts", "templates", "docs", "tests", "skills",
+        ".github", ".git", "node_modules", "__pycache__", "shared",
+    }
 
     for f in changed_files:
         parts = f.split("/")
 
-        # Skills: 直接顶层目录含 SKILL.md（prism-skills 仓库模式）
-        # 或 skills/*/ 子目录（prism SDK 仓库模式）
+        # 模式 A：任意路径中含 SKILL.md → 该 SKILL.md 的父目录就是 skill 目录
+        # 例：prism-skills/excalidraw-enhance/SKILL.md → excalidraw-enhance
+        # 例：prism/skills/workflow/review/SKILL.md → review（full path: skills/workflow/review）
         if "SKILL.md" in parts:
             idx = parts.index("SKILL.md")
             if idx > 0:
                 skill_name = parts[idx - 1]
-                skill_dirs.add(skill_name)
+                full_dir = "/".join(parts[:idx])
+                skill_dirs.setdefault(skill_name, full_dir)
 
-        # SDK 仓库模式: skills/<category>/<skill_name>/<file>
-        # 需要至少 4 层（skills/workflow/review/SKILL.md）才确认是 skill
-        # 3 层的如 skills/schema/skill.schema.yaml 是公共文件，不是 skill
-        if len(parts) >= 4 and parts[0] == "skills":
-            # parts[1] 是分类（workflow/creative/...），parts[2] 是 skill 名
-            if parts[1] not in ("shared", "schema", "scripts", "__pycache__"):
-                skill_dirs.add(parts[2])
+        # 模式 B：SDK 仓库中 skills/<category>/<skill_name>/<subfile> 命中
+        # 例：skills/workflow/review/scripts/foo.py（无 SKILL.md 但确实属于 skill）
+        # 至少 4 层才算，且 parts[1] / parts[2] 都不能是共享目录
+        if (
+            len(parts) >= 4
+            and parts[0] == "skills"
+            and parts[1] not in _NON_SKILL_DIRS
+            and parts[2] not in _NON_SKILL_DIRS
+        ):
+            skill_name = parts[2]
+            full_dir = f"skills/{parts[1]}/{skill_name}"
+            skill_dirs.setdefault(skill_name, full_dir)
 
-        # 顶层目录也可能就是 skill（prism-skills 仓库中每个顶层目录就是一个 skill）
-        # 排除常见非 skill 目录名
-        _NON_SKILL_DIRS = {
-            "bin", "lib", "scripts", "templates", "docs", "tests", "skills",
-            ".github", ".git", "node_modules", "__pycache__", "shared",
-        }
-        if len(parts) >= 2 and not parts[0].startswith(".") and parts[0] not in _NON_SKILL_DIRS:
-            skill_dirs.add(parts[0])
+        # 模式 C：仓库顶层目录就是 skill（prism-skills 每个顶层目录=一个 skill）
+        # 即使没有 SKILL.md 也当 skill 处理，以便 scripts/*.py 也归属
+        if (
+            len(parts) >= 2
+            and not parts[0].startswith(".")
+            and parts[0] not in _NON_SKILL_DIRS
+            and parts[0] != "skills"  # 避免与模式 B 重复
+        ):
+            skill_dirs.setdefault(parts[0], parts[0])
 
         # templates
         if parts[0] == "templates" or "templates" in parts:
@@ -133,23 +147,32 @@ def _categorize_files(changed_files: list[str], old_sha: str, new_sha: str, repo
         ):
             config_schema_changed = True
 
-    # 判断 skill 是新增还是更新
-    for skill_name in skill_dirs:
-        # 检查这个 skill 在 old_sha 时是否存在
-        check = _run(
-            ["git", "ls-tree", "--name-only", old_sha, f"{skill_name}/"],
+    # 判断 skill 是新增还是更新：用 `git cat-file -e old_sha:{path}/SKILL.md`
+    # 比 ls-tree 更精确——目录可能在旧版本就存在但没有 SKILL.md（不算 skill），
+    # 或目录在旧版本不存在但本次变更也只是 scripts 修改（仍算更新）。
+    # 判定规则：旧版本里 {full_dir}/SKILL.md 是否存在。
+    for skill_name, full_dir in skill_dirs.items():
+        rc = subprocess.run(
+            ["git", "cat-file", "-e", f"{old_sha}:{full_dir}/SKILL.md"],
             cwd=repo_path,
-        )
-        if not check.strip():
-            # 再尝试 skills/ 前缀
-            check = _run(
-                ["git", "ls-tree", "--name-only", old_sha, f"skills/{skill_name}/"],
-                cwd=repo_path,
-            )
-        if not check.strip():
-            skills_new.append(skill_name)
-        else:
+            capture_output=True,
+            text=True,
+        ).returncode
+        if rc == 0:
             skills_updated.append(skill_name)
+        else:
+            # 退一步：若 SKILL.md 在旧版不存在，但目录在旧版存在（scripts 先落盘、
+            # SKILL.md 本次才加的情况），仍归更新；否则才是真新增。
+            rc2 = subprocess.run(
+                ["git", "ls-tree", "--name-only", old_sha, f"{full_dir}/"],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+            )
+            if rc2.returncode == 0 and rc2.stdout.strip():
+                skills_updated.append(skill_name)
+            else:
+                skills_new.append(skill_name)
 
     return {
         "skills_new": sorted(set(skills_new)),
