@@ -41,7 +41,7 @@ stability: experimental
 
 ```
 1. Sniff（topic 路由）
-   └─ 复用 review 的 sniff.py，确定 output_dir
+   └─ 复用 review 的 sniff.py，确定 output_dir 与 next_review_number
 2. Scan（单视角扫描）
    └─ 读取评审对象，以单一综合视角输出发现
 3. Write（落盘）
@@ -49,6 +49,15 @@ stability: experimental
 ```
 
 无 Explore/Merge 分离，无角色报告，无 raw/ 目录产物。
+
+> **编号契约**：lite 与 full review **共享** `reviews/rXX_*.md` 同一流水编号池。
+> 由 sniff.py 返回的 `next_review_number` 对两者口径一致，无独立计数。
+> lite 的区分是 frontmatter `type: review-lite` 和 review.index.md 里的 `lite` 说明，
+> **不要为 lite 另起一条 r01 序列**。
+>
+> sniff 返回的 `next_review_source` 指示编号来源的可信度：
+> - `affinity` / `topic_hint` / `project_dir`：可信直接用
+> - `none`：未定位到 topic，r01 只是占位默认值，**必须先确认 topic 再使用**
 
 ## 执行步骤
 

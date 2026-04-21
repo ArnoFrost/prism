@@ -37,6 +37,8 @@ from sniff_lib import (
     enumerate_reviews,
     check_review_density,
     check_writable,
+    next_review_number_for_topic,
+    resolve_topic_reviews_dir,
 )
 
 
@@ -66,23 +68,20 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         topic_affinity = detect_topic_affinity(topics_dir, topic)
 
     # 自动计算下一个 review 编号
-    next_review_number = None
-    reviews_dir = os.path.join(project_dir, "reviews")
-    if os.path.isdir(reviews_dir):
-        existing = enumerate_reviews(reviews_dir)
-        if existing:
-            last_num = max(int(r["id"][1:]) for r in existing)
-            next_review_number = f"r{last_num + 1:02d}"
-        else:
-            next_review_number = "r01"
-    elif os.path.isdir(project_dir):
-        # 可能是 topic 目录但还没有 reviews/
-        next_review_number = "r01"
+    # 修复: 旧实现用 `project_dir/reviews`，当 project_dir 是仓库根（而非 topic 子目录）时
+    # 会恒返回 r01，造成对已有 reviews/r03 的 topic 重复从 r01 起新。
+    # 新实现通过 topic_affinity.matched_topic 定位正确的 topic/reviews/ 目录。
+    next_review_number, next_review_source = next_review_number_for_topic(
+        project_dir, workspace, topic_affinity, topic_hint=topic
+    )
 
-    # review 密度告警
+    # review 密度告警：基于定位到的正确 reviews/ 目录
     review_density_warning = None
-    if os.path.isdir(reviews_dir):
-        review_density_warning = check_review_density(reviews_dir)
+    reviews_dir_resolved, _ = resolve_topic_reviews_dir(
+        project_dir, workspace, topic_affinity, topic_hint=topic
+    )
+    if reviews_dir_resolved:
+        review_density_warning = check_review_density(reviews_dir_resolved)
 
     return {
         "project_dir": project_dir,
@@ -97,6 +96,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         "topic": topic,
         "topic_affinity": topic_affinity,
         "next_review_number": next_review_number,
+        "next_review_source": next_review_source,  # "affinity" | "topic_hint" | "project_dir" | "none"
         "review_density_warning": review_density_warning,
     }
 

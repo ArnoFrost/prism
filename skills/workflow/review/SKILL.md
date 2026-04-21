@@ -75,13 +75,22 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 ```
 ┌─────────────────────────────────┐
 │  1. Align（对齐）                │
-│  ① 执行 sniff → 获取 output_dir, format, next_review_number
+│  ① 执行 sniff → 获取 output_dir, format, next_review_number, next_review_source
 │  ② READ: review-templates.md → 提取命名规则
 │  ③ 若 format=ofm → READ: review-ofm.md → 提取 Callout 映射
 │  ④ topic_affinity 路由决策
 │  ⑤ 确认评审对象、范围、角色
 │  ⑥ 输出 mode 决策及理由
 │  ⑦ 输出「已加载 references」清单
+│
+│  ⚠ next_review_number 契约:
+│    - source=affinity → 编号基于路由成功的 topic/reviews/ 计算，可信直接用
+│    - source=topic_hint → 基于用户显式 topic 的子串匹配，可信
+│    - source=project_dir → project_dir 本身就是 topic 目录，可信
+│    - source=none → 未定位到 topic reviews/，编号 r01 为占位默认值，
+│                    **必须先与用户确认 topic 再使用，否则会覆盖已有评审**
+│    - review 与 review-lite 共享同一编号池（reviews/rXX.md），lite 在 frontmatter
+│      标注 type: review-lite 区分，review.index.md 栏内标 `lite`
 ├────────── ⛔ Gate 1 ────────────┤
 │  2. Explore（独立评审）          │
 │  各角色独立输出评审章节          │

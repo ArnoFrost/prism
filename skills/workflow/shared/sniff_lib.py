@@ -448,6 +448,92 @@ def enumerate_reviews(reviews_dir: str) -> list[dict]:
     return sorted(seen_ids.values(), key=lambda r: r["id"])
 
 
+def resolve_topic_reviews_dir(
+    project_dir: str,
+    workspace: dict | None,
+    topic_affinity: dict | None,
+    topic_hint: str | None = None,
+) -> tuple[str | None, str]:
+    """按优先级查找某 topic 的 reviews/ 目录绝对路径。
+
+    返回 (reviews_dir, source) —— reviews_dir 可能为 None（未找到），
+    source 标识命中来源: "affinity" | "topic_hint" | "project_dir" | "none"
+
+    查找优先级：
+      1. topic_affinity.matched_topic：路由成功 → workspace/topics/{name}/reviews
+      2. topic_hint（调用方显式传的主题名）在 workspace/topics/ 下精确匹配
+      3. project_dir 本身就是 topic 目录 → project_dir/reviews
+      4. 都不命中 → None
+
+    这个函数是 `next_review_number_for_topic` 和 sniff 脚本的共享基础，
+    避免 review 和 review-lite 两处重复且各自写错的目录推导。
+    """
+    workspace_path = workspace.get("path") if isinstance(workspace, dict) else None
+
+    # 优先级 1: 亲和度路由成功
+    if (
+        isinstance(topic_affinity, dict)
+        and topic_affinity.get("matched_topic")
+        and workspace_path
+    ):
+        topics_dir = _find_topics_dir(workspace_path)
+        candidate = os.path.join(topics_dir, topic_affinity["matched_topic"], "reviews")
+        if os.path.isdir(candidate):
+            return candidate, "affinity"
+
+    # 优先级 2: 显式 topic_hint 精确匹配 workspace/topics/<NNN>_<slug>
+    if topic_hint and workspace_path:
+        topics_dir = _find_topics_dir(workspace_path)
+        if os.path.isdir(topics_dir):
+            for entry in os.listdir(topics_dir):
+                entry_path = os.path.join(topics_dir, entry)
+                if not os.path.isdir(entry_path):
+                    continue
+                # 匹配 topic_hint 作为 slug 子串（降低精确度要求但避免误伤）
+                if topic_hint.lower() in entry.lower():
+                    candidate = os.path.join(entry_path, "reviews")
+                    if os.path.isdir(candidate):
+                        return candidate, "topic_hint"
+
+    # 优先级 3: project_dir 本身就是 topic 目录
+    direct = os.path.join(project_dir, "reviews")
+    if os.path.isdir(direct):
+        return direct, "project_dir"
+
+    return None, "none"
+
+
+def next_review_number_for_topic(
+    project_dir: str,
+    workspace: dict | None,
+    topic_affinity: dict | None,
+    topic_hint: str | None = None,
+) -> tuple[str, str]:
+    """共享：计算下一个 review 编号（rXX 格式），供 review 与 review-lite 调用。
+
+    两者共享同一个 reviews/ 编号池（lite 产物命名 rXX_xxx.md + frontmatter
+    type: review-lite，主 review 同样用 rXX_xxx.md）。
+
+    返回 (next_review_id, source)：
+      next_review_id: "r04" 格式字符串
+      source: resolve_topic_reviews_dir 返回的 source（便于 Agent 在 UI 上报）
+    """
+    reviews_dir, source = resolve_topic_reviews_dir(
+        project_dir, workspace, topic_affinity, topic_hint
+    )
+
+    if reviews_dir is None:
+        # 没定位到任何 reviews/ 目录，沿用旧 fallback：r01
+        return "r01", source
+
+    existing = enumerate_reviews(reviews_dir)
+    if not existing:
+        return "r01", source
+
+    last_num = max(int(r["id"][1:]) for r in existing)
+    return f"r{last_num + 1:02d}", source
+
+
 def check_review_density(reviews_dir: str, topic_created: str | None = None) -> dict | None:
     """检查 review 密度，超阈值时返回告警信息。
 

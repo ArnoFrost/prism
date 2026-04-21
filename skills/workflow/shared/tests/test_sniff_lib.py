@@ -299,3 +299,225 @@ class TestCheckWritable:
 
     def test_nonexistent_but_parent_writable(self, tmp_path):
         assert sniff_lib.check_writable(str(tmp_path / "nonexistent")) is True
+
+
+# ============================================================
+# next_review_number_for_topic / resolve_topic_reviews_dir
+# ============================================================
+
+class TestNextReviewNumberForTopic:
+    """回归测试：修复前 next_review_number 恒返回 r01 的 bug。
+
+    问题场景：review sniff 传入 project_dir=仓库根（如 ~/prism），topic_affinity
+    成功路由到 topic 018，但旧实现查的是 {project_dir}/reviews，该目录在仓库根
+    下不存在 → 恒返回 r01，即使 topic 018 的 reviews/ 下已有 r03。
+    """
+
+    def _make_workspace(self, tmp_path, topic_name: str, existing_reviews: list[str]):
+        """在 tmp_path 下搭一个最小化 workspace 结构。"""
+        workspace = tmp_path / "workspace"
+        topics_dir = workspace / "topics"
+        topic_dir = topics_dir / topic_name
+        reviews_dir = topic_dir / "reviews"
+        reviews_dir.mkdir(parents=True)
+        for name in existing_reviews:
+            (reviews_dir / name).write_text("# stub\n")
+        return workspace, topic_dir
+
+    def test_affinity_match_increments_last_review(self, tmp_path):
+        """topic_affinity 路由成功 → 应返回 topic/reviews 的 max+1。"""
+        workspace, _ = self._make_workspace(
+            tmp_path,
+            "018_insights-driven-hardening",
+            ["r01_first.md", "r02_second.md", "r03_third.md"],
+        )
+        project_dir = tmp_path  # 项目根 ≠ topic 目录，正是 bug 触发场景
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "018_insights-driven-hardening"}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(project_dir), workspace_info, affinity
+        )
+        assert nxt == "r04"
+        assert source == "affinity"
+
+    def test_affinity_match_no_reviews_yet_returns_r01(self, tmp_path):
+        """topic 存在但 reviews/ 为空 → r01。"""
+        workspace, _ = self._make_workspace(tmp_path, "020_new-topic", [])
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "020_new-topic"}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, affinity
+        )
+        assert nxt == "r01"
+        assert source == "affinity"
+
+    def test_no_affinity_no_match_falls_back(self, tmp_path):
+        """无 affinity，无 topic_hint，project_dir 也没 reviews/ → r01 + source=none。"""
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), None, None
+        )
+        assert nxt == "r01"
+        assert source == "none"
+
+    def test_topic_hint_substring_match(self, tmp_path):
+        """affinity 未命中但 topic_hint 与 topic 目录 slug 子串匹配 → 走 topic_hint 路径。"""
+        workspace, _ = self._make_workspace(
+            tmp_path,
+            "017_internal-opensource-tracking",
+            ["r01_a.md", "r02_b.md"],
+        )
+        workspace_info = {"path": str(workspace)}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, None, topic_hint="opensource"
+        )
+        assert nxt == "r03"
+        assert source == "topic_hint"
+
+    def test_project_dir_is_topic_itself(self, tmp_path):
+        """调用方直接把 topic 目录作为 project_dir 传入 → 走 project_dir 路径。"""
+        reviews = tmp_path / "reviews"
+        reviews.mkdir()
+        (reviews / "r01_foo.md").write_text("# stub\n")
+        (reviews / "r02_bar.md").write_text("# stub\n")
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), None, None
+        )
+        assert nxt == "r03"
+        assert source == "project_dir"
+
+    def test_affinity_priority_over_project_dir(self, tmp_path):
+        """affinity 和 project_dir 都有 reviews 时，affinity 优先。
+        避免误用仓库根下的无关 reviews/ 目录。"""
+        workspace, _ = self._make_workspace(
+            tmp_path,
+            "018_x",
+            ["r01.md", "r02.md", "r03.md"],  # topic 里 3 个
+        )
+        # project_dir 本身也有个 reviews/（干扰项）
+        decoy = tmp_path / "reviews"
+        decoy.mkdir()
+        (decoy / "r09_decoy.md").write_text("# decoy\n")
+
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "018_x"}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, affinity
+        )
+        assert nxt == "r04", "必须以 topic affinity 下的 r03 为基准 + 1"
+        assert source == "affinity", "干扰的 project_dir/reviews 不应被使用"
+
+
+# ============================================================
+# next_review_number_for_topic / resolve_topic_reviews_dir
+# ============================================================
+
+class TestNextReviewNumberForTopic:
+    """回归测试：修复前 next_review_number 恒返回 r01 的 bug。
+
+    问题场景：review sniff 传入 project_dir=仓库根（如 ~/prism），topic_affinity
+    成功路由到 topic 018，但旧实现查的是 {project_dir}/reviews，该目录在仓库根
+    下不存在 → 恒返回 r01，即使 topic 018 的 reviews/ 下已有 r03。
+    """
+
+    def _make_workspace(self, tmp_path, topic_name: str, existing_reviews: list[str]):
+        """在 tmp_path 下搭一个最小化 workspace 结构。"""
+        workspace = tmp_path / "workspace"
+        topics_dir = workspace / "topics"
+        topic_dir = topics_dir / topic_name
+        reviews_dir = topic_dir / "reviews"
+        reviews_dir.mkdir(parents=True)
+        for name in existing_reviews:
+            (reviews_dir / name).write_text("# stub\n")
+        return workspace, topic_dir
+
+    def test_affinity_match_increments_last_review(self, tmp_path):
+        """topic_affinity 路由成功 → 应返回 topic/reviews 的 max+1。"""
+        workspace, _ = self._make_workspace(
+            tmp_path,
+            "018_insights-driven-hardening",
+            ["r01_first.md", "r02_second.md", "r03_third.md"],
+        )
+        project_dir = tmp_path  # 项目根 ≠ topic 目录，正是 bug 触发场景
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "018_insights-driven-hardening"}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(project_dir), workspace_info, affinity
+        )
+        assert nxt == "r04"
+        assert source == "affinity"
+
+    def test_affinity_match_no_reviews_yet_returns_r01(self, tmp_path):
+        """topic 存在但 reviews/ 为空 → r01。"""
+        workspace, _ = self._make_workspace(tmp_path, "020_new-topic", [])
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "020_new-topic"}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, affinity
+        )
+        assert nxt == "r01"
+        assert source == "affinity"
+
+    def test_no_affinity_no_match_falls_back(self, tmp_path):
+        """无 affinity，无 topic_hint，project_dir 也没 reviews/ → r01 + source=none。"""
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), None, None
+        )
+        assert nxt == "r01"
+        assert source == "none"
+
+    def test_topic_hint_substring_match(self, tmp_path):
+        """affinity 未命中但 topic_hint 与 topic 目录 slug 子串匹配 → 走 topic_hint 路径。"""
+        workspace, _ = self._make_workspace(
+            tmp_path,
+            "017_internal-opensource-tracking",
+            ["r01_a.md", "r02_b.md"],
+        )
+        workspace_info = {"path": str(workspace)}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, None, topic_hint="opensource"
+        )
+        assert nxt == "r03"
+        assert source == "topic_hint"
+
+    def test_project_dir_is_topic_itself(self, tmp_path):
+        """调用方直接把 topic 目录作为 project_dir 传入 → 走 project_dir 路径。"""
+        reviews = tmp_path / "reviews"
+        reviews.mkdir()
+        (reviews / "r01_foo.md").write_text("# stub\n")
+        (reviews / "r02_bar.md").write_text("# stub\n")
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), None, None
+        )
+        assert nxt == "r03"
+        assert source == "project_dir"
+
+    def test_affinity_priority_over_project_dir(self, tmp_path):
+        """affinity 和 project_dir 都有 reviews 时，affinity 优先。
+        避免误用仓库根下的无关 reviews/ 目录。"""
+        workspace, _ = self._make_workspace(
+            tmp_path,
+            "018_x",
+            ["r01.md", "r02.md", "r03.md"],  # topic 里 3 个
+        )
+        # project_dir 本身也有个 reviews/（干扰项）
+        decoy = tmp_path / "reviews"
+        decoy.mkdir()
+        (decoy / "r09_decoy.md").write_text("# decoy\n")
+
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "018_x"}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, affinity
+        )
+        assert nxt == "r04", "必须以 topic affinity 下的 r03 为基准 + 1"
+        assert source == "affinity", "干扰的 project_dir/reviews 不应被使用"
