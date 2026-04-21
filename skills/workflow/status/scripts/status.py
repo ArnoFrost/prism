@@ -65,8 +65,9 @@ def _check_skeleton(topic_dir: str) -> list[str]:
 def _extract_status(readme_path: str) -> str | None:
     if not os.path.isfile(readme_path):
         return None
+    # 读全文件：README 一般 < 10KB，不值得截断引入 bug
     with open(readme_path, "r", encoding="utf-8") as f:
-        content = f.read(1000)
+        content = f.read()
     m = re.search(r"\*\*status\*\*\s*\|\s*(\S+)", content, re.IGNORECASE)
     return m.group(1) if m else None
 

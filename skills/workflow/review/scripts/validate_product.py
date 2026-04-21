@@ -184,9 +184,9 @@ def check_frontmatter(lines: list[str], relpath: str) -> list[Issue]:
                             "缺少 YAML frontmatter（文件须以 --- 开头）", False))
         return issues
 
-    # 找 frontmatter 结束
+    # 找 frontmatter 结束（上限 200 行，兼容 tags/authors 列表展开）
     end_idx = -1
-    for i in range(1, min(len(lines), 30)):
+    for i in range(1, min(len(lines), 200)):
         if lines[i].strip() == "---":
             end_idx = i
             break

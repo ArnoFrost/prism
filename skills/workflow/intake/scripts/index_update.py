@@ -50,8 +50,16 @@ def _extract_block(content: str) -> tuple[str, str, str] | None:
 
 
 def _topic_line(number: int, topic_name: str, desc: str) -> str:
+    """生成与人工维护一致的列表行。
+
+    格式：`- [NNN — 描述](./topics/NNN_topic-name/) — 描述`
+    desc 为空时省略右侧 `— 描述` 部分。
+    """
     nnn = f"{number:03d}"
-    return f"**{nnn} — {desc}** → [专项入口](./topics/{nnn}_{topic_name}/)"
+    label_desc = desc or topic_name.replace("-", " ")
+    link = f"./topics/{nnn}_{topic_name}/"
+    suffix = f" — {desc}" if desc else ""
+    return f"- [{nnn} — {label_desc}]({link}){suffix}"
 
 
 def _archive_line(number: int, topic_name: str, desc: str) -> str:
