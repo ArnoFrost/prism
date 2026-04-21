@@ -378,6 +378,74 @@ grep -c "workspace\.\*\.local" "$GI_GLOBAL" && echo "✓ gitignore 已对齐"
 
 ---
 
+## 升级与回滚
+
+### 升级（从旧版本到新版本）
+
+**git clone 路径**：
+
+```bash
+cd "$HOME/prism"
+git pull origin main              # SDK
+cd "$HOME/prism-skills"
+git pull origin main              # Skills（双仓同 semver，需同步）
+
+cd "$HOME/prism"
+bin/doctor --scope release --quick    # 升级后体检
+bin/relink                        # 刷软链接（如果 relink 规则有变化）
+```
+
+**zip 分发路径**：参见 `INSTALL_INTERNAL.md` 的 Step 3a（mv-swap 模式，自动保留本地配置）。
+
+### 回滚（降回上一个稳定版本）
+
+**git clone 路径**：
+
+```bash
+cd "$HOME/prism"
+git fetch --tags
+git tag --list --sort=-v:refname | head -5   # 列出近期 tag
+git checkout v<target>            # e.g. v1.0.0-alpha
+cd "$HOME/prism-skills"
+git checkout v<target>            # 同版本回滚
+
+cd "$HOME/prism"
+bin/doctor --scope release        # 回滚后体检
+bin/relink                        # 重新分发软链接
+```
+
+**prism.local.yaml schema 变迁注意**：版本升级后若 schema 字段新增，旧配置不一定兼容新 SDK。回滚后若出现 `setenv --validate` 报错：
+
+```bash
+cp prism.local.yaml "prism.local.yaml.bak.$(date +%Y%m%d%H%M%S)"
+rm prism.local.yaml
+PRISM_SDK_PATH=... PRISM_SKILLS_PATH=... bin/setenv --init --non-interactive
+# 手动将旧 projects 段追加回新生成的配置
+```
+
+### 单个 skill 问题排查
+
+如果某个 skill 在升级后崩：
+
+```bash
+bin/clean --add <skill-name>      # 归档该 skill，不参与分发
+bin/relink                        # 刷新软链接排除它
+# 排查后如修复，bin/clean --restore <skill-name> 恢复
+```
+
+### 故障排查快查表
+
+| 症状 | 命令 | 说明 |
+|------|------|------|
+| `command not found: prism` | `bin/doctor --scope cli --fix` | 重建 PATH + symlink |
+| `setenv --validate` 报字段缺失 | `bin/doctor --scope config` | 查哪项字段缺 |
+| `relink` 报死链 | `bin/relink --prune` | 清理陈旧软链接 |
+| skill 未触发 | `bin/validate-skills <name>` | 查 frontmatter 合规 |
+| 远端不同步 | `bin/doctor --scope sync` | 看 ahead/behind |
+| 发布前全量体检 | `bin/doctor --scope release` | 聚合五类检查 |
+
+---
+
 ## 边界场景
 
 | 场景 | 处理 |

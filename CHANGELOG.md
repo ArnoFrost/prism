@@ -2,23 +2,70 @@
 
 All notable changes to Prism are documented in this file.
 
-## [Unreleased] — post v1.0.0-beta
+## [v1.0.0] — 2026-04-21
 
-### Post-Beta 增量
+**1.0 里程碑 · 内部分发版。** Prism 自 2025-09 启动以来七个月迭代到位：四层模型（Protocol/Workspace/Skills/Env）稳定，workflow 全管线闭环，跨五 IDE 分发，39 skills · 70 pytest · 0 validate error 全绿。
 
-- **Codex 平台支持**: relink/clean 脚本、schema 同步添加 `~/.codex/skills/` 分发目标
-- **archived_skills 归档机制**: relink 解析 `prism.local.yaml` 的归档列表跳过分发；`bin/clean` 重构为归档管理工具（`--add/--restore/--list`）
-- **review 条件落盘**: raw 角色报告改为条件落盘策略，减少冗余文件产出
-- **README 双源仓库说明**: 补充 GitHub + 内部 Git 双仓库克隆指引
+**版本策略（d01 D2 accepted）**：SDK + Skills 采用**双仓同 semver**，两仓始终打相同 tag 一起发布，用户看到 v1.0.0 即知双仓均为 v1.0.0。
 
-### Phase 8 — 工具三件套 & Pull 增强
+### 里程碑能力清单（全量）
 
-- 新增 `bin/setup`: 一键初始化 / 健康检查 / 重配置检测（`--check` / `--non-interactive`）
-- 新增 `bin/create-skill`: 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`）
-- 新增 `bin/validate-skills`: 扫描全量 skill frontmatter 合规性
-- 新增 `skills/workflow/shared/scripts/prism_changelog_scan.py`: 变更分类与影响分析
-- `prism-pull` 升级到 v dev-02: 新增 Phase 1.5 变更扫描（Changelog Scan），增强汇总报告
-- `bin/relink`: relink 逻辑加固，新增 workbuddy 平台分发
+#### 四层模型
+- Protocol 层：AGENT.md 协作契约 + 仓库操作陷阱段
+- Workspace 层：schema + 模板（project.yaml / index.md / topic README/plan）+ scope-SSOT 机制
+- Skills 层：schema + catalog + SKILL.md 模板 + 独立仓（prism-skills）
+- Env 层：可选 dotfiles 层，relink 自动分发 env skills
+
+#### 工具链（bin 九件套）
+- `bin/prism` · 单层 CLI 入口（verb 子命令：sniff / validate / archive / migrate / sync / pipeline）
+- `bin/setup` · 一键初始化 + 健康检查 + 重配置检测（`--check` / `--non-interactive`）
+- `bin/doctor` · 统一体检入口（scope：skills / workflow / sync / cli）
+- `bin/relink` · 跨 IDE 软链接分发（Cursor / CodeBuddy / Claude Code / Codex / WorkBuddy）
+- `bin/setenv` · prism.local.yaml 配置管理 + 多设备 device_id
+- `bin/validate-skills` · skill frontmatter 合规扫描 + `--fix` 幂等锚点修复
+- `bin/create-skill` · 从模板创建 skill 骨架（`--layer sdk/skills/env`）
+- `bin/clean` · 归档管理工具（`--add/--restore/--list`）
+- `bin/rename-artifacts` · 批量重命名工具
+
+#### Workflow 管线
+- 完整 skill：intake → scope → review → review-lite → pipeline / tidy / status / digest
+- Topic 内聚结构：`topics/{NNN}_{topic-name}/` 编号体系（共享空间 topics ↔ archive）
+- scope → plan 派生链：scope 为唯一上游 SSOT
+- Pipeline 编排：decision 后一键串联 tidy → validate → scope
+- 回归 harness：70 pytest 用例覆盖核心路径
+
+#### 分发能力
+- `prism-dist` skill：白名单 profile（mvp/full）+ 内容脱敏 + zip 打包 + 验证
+- `INSTALL_INTERNAL.md` 两轨并行入口：Agent 自包含安装引导
+- `SETUP.md`：git clone 路径的 Agent 引导
+
+### v1.0 专项交付（021 CLI 化）
+- 新增 `bin/prism` 单层 CLI 壳
+- 新增 `doctor_cli.py` 寻址体检 + 安装期 CLI 注入
+- 工作流 skill 文档切 `prism <verb>` 短形式
+- 修三处高频脚本边界 bug（index_update / validate_product frontmatter 扫描上限 / status README 截断）
+- 新增 22 pytest 回归用例
+
+### v1.0 专项交付（022 发布就绪闸门）
+- r01 三方评审：架构师 / SRE / 用户代言人独立发现率 100%
+- d01 决策：1.0 = 内部分发里程碑 + 双仓同 semver
+- 顺手修：pack.py 脱敏规则补裸 github.com 模式
+- 顺手修：pack.py `resolve_version` 支持 pre-release tag 排序
+
+### v1.0 新增 bin/doctor scope
+- `--scope release` · 聚合 skills + workflow + cli + sync + config 的一键发布就绪体检
+- `--scope config` · 验证 prism.local.yaml 字段完整性
+
+### v1.0 文档增强
+- SETUP.md 新增「升级与回滚」一节
+- README.md 新增「术语表」小节降低首次理解成本
+- log-triage 补齐 public_gate 审计块
+
+---
+
+## [Unreleased] — post v1.0.0
+
+> 1.1 规划：Env 可选性代码层统一 / 三套 sniff 内核合并 / workflow 心智模型图 / 性能回归基线 / 日志格式统一 / 开源筹备（README 白话重写、SETUP 外部验证、CONTRIBUTING）
 
 ---
 

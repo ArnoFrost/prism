@@ -129,6 +129,28 @@ Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitigno
 
 ---
 
+## 术语表
+
+Prism 部分关键词保留英文以保证语义精确，首次接触时可参照下表：
+
+| 术语 | 含义 | 类比 |
+|------|------|------|
+| **SDK** | `~/prism` 仓库；承载工具脚本、schema、模板 | 像 npm 包的核心代码 |
+| **Skills** | 独立仓 `~/prism-skills`，按技能（skill）组织的能力集合 | 像插件市场 |
+| **Env** | 可选 dotfiles 层，承载个人 shell/IDE 偏好 | 像 `.zshrc`/`.vimrc` |
+| **Vault** | Obsidian 笔记库路径（承载 Workspace 的物理位置） | 像"笔记本电脑的硬盘"之"笔记本" |
+| **Workspace** | Vault 下的 `Prism/Workspace/` 子目录，承载所有项目的工作台 | 像"笔记本中的项目章节" |
+| **Topic** | Workspace 中一个专项目录 `topics/{NNN}_{name}/`，有生命周期 | 像 GitHub Issue / 迭代单位 |
+| **Scope** | Topic 内的边界合同文件 `scope.md`，唯一上游 SSOT | 像 RFC / 需求书 |
+| **Plan** | 从 scope 派生的执行方案 `plan.md`，不可独立漂移 | 像任务拆解 |
+| **Review** | 多角色评审机制（架构师/SRE/用户代言人等） | 像 code review |
+| **Decision** | 对 review 结论的裁决记录 `dXX.md` | 像 ADR（架构决策记录）|
+| **Relink** | 把 Skills 分发到各 IDE 技能目录的软链接操作 | 像 `npm link` |
+| **Sniff** | 探测环境/亲和度/状态的统一语义 | 像 `git status` + `which` |
+| **SSOT** | Single Source of Truth，单一权威来源 | — |
+
+---
+
 ## Skills
 
 | 技能 | 触发 | 说明 |

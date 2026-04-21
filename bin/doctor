@@ -6,7 +6,15 @@
 #   bin/doctor --quick            快速模式，跳过访问远程的 sniff
 #   bin/doctor --fix              非破坏性自动修复（validate --fix + relink + cli 注入）
 #   bin/doctor --json             JSON 输出供其他 skill 消费
-#   bin/doctor --scope <name>     只跑指定范围：env / config / link / skill / sync / cli
+#   bin/doctor --scope <name>     只跑指定范围：env / config / link / skill / sync / cli / release
+#
+#   scope 说明:
+#     env       setup --check 的环境完整性
+#     skill     validate-skills 的 frontmatter 合规
+#     sync      prism_sync_sniff 的远端同步
+#     cli       doctor_cli 的 prism 寻址体检
+#     config    prism.local.yaml 必填字段 + 路径可达性
+#     release   聚合以上全部（1.0 发布就绪闸门）
 #
 # 退出码:
 #   0  完全健康
@@ -31,11 +39,11 @@ JSON=false
 SCOPE=""
 
 # 各阶段计数
-ERR_ENV=0;   WARN_ENV=0
-ERR_SKILL=0; WARN_SKILL=0; FIX_SKILL=0
-ERR_SYNC=0;  WARN_SYNC=0
-ERR_CLI=0;   WARN_CLI=0;   FIX_CLI=0
-ERR_CLI=0;   WARN_CLI=0;   FIX_CLI=0
+ERR_ENV=0;    WARN_ENV=0
+ERR_SKILL=0;  WARN_SKILL=0; FIX_SKILL=0
+ERR_SYNC=0;   WARN_SYNC=0
+ERR_CLI=0;    WARN_CLI=0;   FIX_CLI=0
+ERR_CONFIG=0; WARN_CONFIG=0
 
 # 解析参数
 while [[ $# -gt 0 ]]; do
@@ -54,17 +62,19 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ── 判定 scope 是否激活某阶段 ────────
+# release scope 聚合全部 5 个阶段；普通 scope 只激活同名阶段
 _in_scope() {
   [[ -z "$SCOPE" ]] && return 0
+  [[ "$SCOPE" == "release" ]] && return 0
   [[ "$SCOPE" == "$1" ]] && return 0
   return 1
 }
 
 # ── Stage 1: 环境 (setup --check) ────
 _stage_env() {
-  [[ -n "$SCOPE" && "$SCOPE" != "env" && "$SCOPE" != "config" && "$SCOPE" != "link" ]] && return 0
+  _in_scope env || return 0
 
-  ! $JSON && echo -e "\n${CYAN}[1/3 环境]${NC}"
+  ! $JSON && echo -e "\n${CYAN}[环境]${NC}"
   local out rc=0
   # setup 返回 0=全绿, 1=有错误, 其他视为错误
   out=$("$PRISM_DIR/bin/setup" --check 2>&1) || rc=$?
@@ -99,9 +109,9 @@ _stage_env() {
 
 # ── Stage 2: Skill 合规 (validate-skills) ─
 _stage_skill() {
-  [[ -n "$SCOPE" && "$SCOPE" != "skill" ]] && return 0
+  _in_scope skill || return 0
 
-  ! $JSON && echo -e "\n${CYAN}[2/3 Skill 合规]${NC}"
+  ! $JSON && echo -e "\n${CYAN}[Skill 合规]${NC}"
   local args=()
   $FIX && args+=("--fix")
   args+=("--json")
@@ -136,10 +146,10 @@ _stage_skill() {
 
 # ── Stage 3: 同步状态 (sniff --fetch) ──
 _stage_sync() {
-  [[ -n "$SCOPE" && "$SCOPE" != "sync" ]] && return 0
-  $QUICK && { ! $JSON && echo -e "\n${CYAN}[3/3 同步]${NC} ${DIM}(--quick 跳过，远程访问耗时)${NC}"; return 0; }
+  _in_scope sync || return 0
+  $QUICK && { ! $JSON && echo -e "\n${CYAN}[同步]${NC} ${DIM}(--quick 跳过，远程访问耗时)${NC}"; return 0; }
 
-  ! $JSON && echo -e "\n${CYAN}[3/3 同步]${NC}"
+  ! $JSON && echo -e "\n${CYAN}[同步]${NC}"
   local sniff_script="$PRISM_DIR/skills/workflow/shared/scripts/prism_sync_sniff.py"
   if [[ ! -f "$sniff_script" ]]; then
     ! $JSON && echo -e "  ${YELLOW}⚠${NC} sniff 脚本不存在: $sniff_script"
@@ -212,9 +222,9 @@ for l in d["lines"]:
 
 # ── Stage 4: CLI 寻址 (doctor_cli.py) ──
 _stage_cli() {
-  [[ -n "$SCOPE" && "$SCOPE" != "cli" ]] && return 0
+  _in_scope cli || return 0
 
-  ! $JSON && echo -e "\n${CYAN}[4/4 CLI 寻址]${NC}"
+  ! $JSON && echo -e "\n${CYAN}[CLI 寻址]${NC}"
   local cli_script="$PRISM_DIR/skills/workflow/shared/scripts/doctor_cli.py"
   if [[ ! -f "$cli_script" ]]; then
     ! $JSON && echo -e "  ${YELLOW}⚠${NC} doctor_cli.py 不存在"
@@ -276,6 +286,98 @@ except Exception:
   fi
 }
 
+# ── Stage 5: 配置完整性 (prism.local.yaml 必填字段 + 路径可达性) ──
+_stage_config() {
+  _in_scope config || return 0
+
+  ! $JSON && echo -e "\n${CYAN}[配置完整性]${NC}"
+  local config_path="$PRISM_DIR/prism.local.yaml"
+
+  if [[ ! -f "$config_path" ]]; then
+    ! $JSON && echo -e "  ${RED}✗${NC} prism.local.yaml 不存在：$config_path"
+    ERR_CONFIG=1
+    return 0
+  fi
+
+  # 用 python 解析 yaml，检验 4 个必填字段 + 路径可达性
+  local report
+  report=$(python3 - "$config_path" <<'PYEOF' 2>/dev/null || echo "parse_error"
+import json, os, sys
+
+path = sys.argv[1]
+try:
+    with open(path, "r", encoding="utf-8") as f:
+        raw = f.read()
+except OSError as e:
+    print(json.dumps({"err": 1, "warn": 0, "lines": [f"\u2717 \u8bfb\u53d6\u5931\u8d25: {e}"]}))
+    sys.exit(0)
+
+# 极简 YAML 解析：只处理顶层 key: value
+config = {}
+for line in raw.splitlines():
+    line = line.rstrip()
+    if not line or line.startswith("#") or line.startswith(" ") or line.startswith("-"):
+        continue
+    if ":" not in line:
+        continue
+    key, _, val = line.partition(":")
+    config[key.strip()] = val.strip().strip('"').strip("'")
+
+required = ["device_id", "sdk_path", "skills_path", "vault_path", "workspace_subdir"]
+err = 0
+warn = 0
+lines = []
+for field in required:
+    if field not in config or not config[field]:
+        lines.append(f"\u2717 \u7f3a\u5fc5\u586b\u5b57\u6bb5: {field}")
+        err += 1
+
+# 路径可达性
+path_fields = ["sdk_path", "skills_path", "vault_path"]
+for pf in path_fields:
+    if pf in config and config[pf]:
+        p = os.path.expanduser(config[pf])
+        if not p.startswith("/"):
+            lines.append(f"\u2717 {pf} \u975e\u7edd\u5bf9\u8def\u5f84: {p}")
+            err += 1
+        elif not os.path.isdir(p):
+            # vault_path 在 iCloud 未同步时可能暂时不可达，记 WARN
+            if pf == "vault_path":
+                lines.append(f"\u26a0 {pf} \u4e0d\u53ef\u8fbe (iCloud \u672a\u540c\u6b65?): {p}")
+                warn += 1
+            else:
+                lines.append(f"\u2717 {pf} \u76ee\u5f55\u4e0d\u5b58\u5728: {p}")
+                err += 1
+
+if err == 0 and warn == 0:
+    lines.append("\u2713 5 \u5fc5\u586b\u5b57\u6bb5\u9f50\u5907\uff0c\u8def\u5f84\u5747\u53ef\u8fbe")
+
+print(json.dumps({"err": err, "warn": warn, "lines": lines}, ensure_ascii=False))
+PYEOF
+)
+
+  if [[ "$report" == "parse_error" || -z "$report" ]]; then
+    ! $JSON && echo -e "  ${YELLOW}⚠${NC} 配置解析失败"
+    WARN_CONFIG=1
+    return 0
+  fi
+
+  ERR_CONFIG=$(echo "$report" | python3 -c 'import json,sys;print(json.loads(sys.stdin.read())["err"])' 2>/dev/null || echo 0)
+  WARN_CONFIG=$(echo "$report" | python3 -c 'import json,sys;print(json.loads(sys.stdin.read())["warn"])' 2>/dev/null || echo 0)
+  ERR_CONFIG=${ERR_CONFIG:-0}
+  WARN_CONFIG=${WARN_CONFIG:-0}
+
+  if ! $JSON; then
+    echo "$report" | python3 -c '
+import json, sys
+d = json.loads(sys.stdin.read())
+for l in d["lines"]:
+    print(f"  {l}")
+' 2>/dev/null || true
+    echo -e "  ${DIM}→ ${ERR_CONFIG} 错误, ${WARN_CONFIG} 警告${NC}"
+  fi
+}
+
 # ── 主流程 ───────────────────────────
 if ! $JSON; then
   echo -e "${CYAN}Prism Doctor${NC}"
@@ -286,15 +388,16 @@ _stage_env
 _stage_skill
 _stage_sync
 _stage_cli
+_stage_config
 
-TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_SYNC + ERR_CLI))
-TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_SYNC + WARN_CLI))
+TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_SYNC + ERR_CLI + ERR_CONFIG))
+TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_SYNC + WARN_CLI + WARN_CONFIG))
 TOTAL_FIX=$((FIX_SKILL + FIX_CLI))
 
 # ── 输出总结 ─────────────────────────
 if $JSON; then
   cat <<EOF
-{"errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI}}
+{"errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG}}
 EOF
 else
   echo ""
