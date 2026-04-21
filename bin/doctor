@@ -4,9 +4,9 @@
 # 用法:
 #   bin/doctor                    完整体检（仓库+配置+链接+skill+同步状态）
 #   bin/doctor --quick            快速模式，跳过访问远程的 sniff
-#   bin/doctor --fix              非破坏性自动修复（validate --fix + relink）
+#   bin/doctor --fix              非破坏性自动修复（validate --fix + relink + cli 注入）
 #   bin/doctor --json             JSON 输出供其他 skill 消费
-#   bin/doctor --scope <name>     只跑指定范围：env / config / link / skill / sync
+#   bin/doctor --scope <name>     只跑指定范围：env / config / link / skill / sync / cli
 #
 # 退出码:
 #   0  完全健康
@@ -34,6 +34,8 @@ SCOPE=""
 ERR_ENV=0;   WARN_ENV=0
 ERR_SKILL=0; WARN_SKILL=0; FIX_SKILL=0
 ERR_SYNC=0;  WARN_SYNC=0
+ERR_CLI=0;   WARN_CLI=0;   FIX_CLI=0
+ERR_CLI=0;   WARN_CLI=0;   FIX_CLI=0
 
 # 解析参数
 while [[ $# -gt 0 ]]; do
@@ -45,7 +47,7 @@ while [[ $# -gt 0 ]]; do
       [[ $# -lt 2 ]] && { echo -e "${RED}✗ --scope 需要参数${NC}" >&2; exit 1; }
       SCOPE="$2"; shift 2 ;;
     --help|-h)
-      sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+      awk 'NR==1 { next } /^$/ { exit } { sub(/^# ?/, ""); print }' "$0"
       exit 0 ;;
     *) echo -e "${RED}✗ 未知参数: $1${NC}" >&2; exit 1 ;;
   esac
@@ -208,6 +210,72 @@ for l in d["lines"]:
   fi
 }
 
+# ── Stage 4: CLI 寻址 (doctor_cli.py) ──
+_stage_cli() {
+  [[ -n "$SCOPE" && "$SCOPE" != "cli" ]] && return 0
+
+  ! $JSON && echo -e "\n${CYAN}[4/4 CLI 寻址]${NC}"
+  local cli_script="$PRISM_DIR/skills/workflow/shared/scripts/doctor_cli.py"
+  if [[ ! -f "$cli_script" ]]; then
+    ! $JSON && echo -e "  ${YELLOW}⚠${NC} doctor_cli.py 不存在"
+    WARN_CLI=$((WARN_CLI + 1))
+    return 0
+  fi
+
+  local args=()
+  $FIX && args+=("--fix")
+  local out rc=0
+  out=$(python3 "$cli_script" "${args[@]}" 2>&1) || rc=$?
+
+  # doctor_cli 退出码: 0=ok, 1=error, 2=warn
+  ERR_CLI=$(echo "$out" | python3 -c '
+import json, sys
+try:
+    d = json.loads(sys.stdin.read())
+    print(len(d.get("errors", [])))
+except Exception:
+    print(0)
+' 2>/dev/null || echo 0)
+  WARN_CLI=$(echo "$out" | python3 -c '
+import json, sys
+try:
+    d = json.loads(sys.stdin.read())
+    print(len(d.get("warnings", [])))
+except Exception:
+    print(0)
+' 2>/dev/null || echo 0)
+  FIX_CLI=$(echo "$out" | python3 -c '
+import json, sys
+try:
+    d = json.loads(sys.stdin.read())
+    print(len(d.get("fixes_applied", [])))
+except Exception:
+    print(0)
+' 2>/dev/null || echo 0)
+  ERR_CLI=${ERR_CLI:-0}
+  WARN_CLI=${WARN_CLI:-0}
+  FIX_CLI=${FIX_CLI:-0}
+
+  if ! $JSON; then
+    # 逐条打印 errors + warnings（用字面量 unicode 避免 f-string 反斜杠转义问题）
+    echo "$out" | python3 -c '
+import json, sys
+try:
+    d = json.loads(sys.stdin.read())
+    for e in d.get("errors", []):
+        print("  \u2717 [{0}] {1}".format(e.get("rule"), e.get("msg")))
+    for w in d.get("warnings", []):
+        print("  \u26a0 [{0}] {1}".format(w.get("rule"), w.get("msg")))
+    for f in d.get("fixes_applied", []):
+        print("  \u2713 \u5df2\u4fee\u590d [{0}] {1}".format(f.get("rule"), f.get("msg")))
+except Exception:
+    pass
+' 2>/dev/null || true
+    [[ $ERR_CLI -eq 0 && $WARN_CLI -eq 0 ]] && echo -e "  ${GREEN}✓${NC} 全部合规"
+    echo -e "  ${DIM}→ ${ERR_CLI} 错误, ${WARN_CLI} 警告, ${FIX_CLI} 已修${NC}"
+  fi
+}
+
 # ── 主流程 ───────────────────────────
 if ! $JSON; then
   echo -e "${CYAN}Prism Doctor${NC}"
@@ -217,14 +285,16 @@ fi
 _stage_env
 _stage_skill
 _stage_sync
+_stage_cli
 
-TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_SYNC))
-TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_SYNC))
+TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_SYNC + ERR_CLI))
+TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_SYNC + WARN_CLI))
+TOTAL_FIX=$((FIX_SKILL + FIX_CLI))
 
 # ── 输出总结 ─────────────────────────
 if $JSON; then
   cat <<EOF
-{"errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$FIX_SKILL,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC}}
+{"errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI}}
 EOF
 else
   echo ""

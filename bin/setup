@@ -193,6 +193,42 @@ else
   fi
 fi
 
+# ── Step 3.5: CLI 寻址注入 ──────────
+# bin/prism 在 SDK 仓内，需要让跨 IDE/GUI 环境都能寻址到。
+# 通过 doctor_cli.py 幂等写入 shell rc + 建立 ~/.local/bin/prism symlink。
+
+echo -e "\n${CYAN}[3.5/5 CLI 寻址]${NC}"
+
+CLI_DOCTOR="$PRISM_DIR/skills/workflow/shared/scripts/doctor_cli.py"
+if [[ ! -f "$CLI_DOCTOR" ]]; then
+  log_warn "doctor_cli.py 不存在，跳过 CLI 注入"
+elif $CHECK_ONLY; then
+  CLI_JSON=$(python3 "$CLI_DOCTOR" 2>/dev/null || true)
+  CLI_ERR=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("errors",[])))' 2>/dev/null || echo 0)
+  CLI_WARN=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("warnings",[])))' 2>/dev/null || echo 0)
+  if [[ "$CLI_ERR" -gt 0 ]]; then
+    log_err "CLI 寻址: $CLI_ERR 错误"
+  elif [[ "$CLI_WARN" -gt 0 ]]; then
+    log_warn "CLI 寻址: $CLI_WARN 警告（运行 bin/doctor --scope cli --fix 修复）"
+  else
+    log_ok "CLI 寻址已就绪"
+  fi
+else
+  CLI_JSON=$(python3 "$CLI_DOCTOR" --fix 2>/dev/null || true)
+  CLI_FIX=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("fixes_applied",[])))' 2>/dev/null || echo 0)
+  CLI_ERR=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("errors",[])))' 2>/dev/null || echo 0)
+  CLI_WARN=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("warnings",[])))' 2>/dev/null || echo 0)
+  if [[ "$CLI_ERR" -gt 0 ]]; then
+    log_err "CLI 寻址: $CLI_ERR 错误"
+  elif [[ "$CLI_FIX" -gt 0 ]]; then
+    log_ok "CLI 寻址: 已修复 $CLI_FIX 项（source ~/.zshrc 或开新 terminal 生效）"
+  elif [[ "$CLI_WARN" -gt 0 ]]; then
+    log_warn "CLI 寻址: $CLI_WARN 警告（通常是当前 shell 未 reload rc 的暂态）"
+  else
+    log_ok "CLI 寻址已就绪"
+  fi
+fi
+
 # ── Step 4: IDE 平台探测 ─────────────
 
 echo -e "\n${CYAN}[4/5 IDE 平台]${NC}"
