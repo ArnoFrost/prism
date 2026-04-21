@@ -61,11 +61,20 @@ All notable changes to Prism are documented in this file.
 - README.md 新增「术语表」小节降低首次理解成本
 - log-triage 补齐 public_gate 审计块
 
+### v1.0 CLI 契约层（021/r02 + d02 派生）
+- README.md 新增「CLI 稳定性承诺」段：明确 1.x 期间"新增稳定、改名走双 minor 保留"策略
+- README.md 工具入口改双层展示：`bin/` 仓库级 + `prism <verb>` workflow 级分开列表
+- 新增 `docs/cli-contract.md`：固化 `bin/` vs `prism` 分层判断树、稳定性分级（stable / experimental / deprecated / exempt）、"30 秒加 verb" 设计门槛、`prism sync` 永久豁免条款
+- bin/README.md 补齐 `bin/doctor` 与 `bin/prism` 用法章节
+
 ---
 
 ## [Unreleased] — post v1.0.0
 
-> 1.1 规划：Env 可选性代码层统一 / 三套 sniff 内核合并 / workflow 心智模型图 / 性能回归基线 / 日志格式统一 / 开源筹备（README 白话重写、SETUP 外部验证、CONTRIBUTING）
+> 1.1 规划：
+> - **022 cli-contract-hardening**（契约层硬化）：`prism --json` 统一 outer schema · `prism manifest --json` 元数据接口 · CLI 版本联动 SDK `VERSION`
+> - **023 cli-evolution**（语义+生态层）：noun/verb 结构决策 · tidy/status/digest 纳入 prism · `pipeline` 重命名为 `topic finalize` · `dispatch_to_skill_script` 重构 · `dist/RELEASE_HEALTH.json` · `bin/doctor --scope cli --rollback`
+> - Env 可选性代码层统一 / 三套 sniff 内核合并 / workflow 心智模型图 / 性能回归基线 / 日志格式统一 / 开源筹备（README 白话重写、SETUP 外部验证、CONTRIBUTING）
 
 ---
 

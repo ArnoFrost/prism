@@ -2,17 +2,21 @@
 
 Prism 的可执行工具入口。每个脚本可配合同名 Skill 使用，形成"脚本 + 自然语言"的双通道能力。
 
+> **命令面分层**：`bin/` 承载仓库/环境级动作；workflow/topic 级动作走 `bin/prism <verb>`。完整契约见 [docs/cli-contract.md](../docs/cli-contract.md)。
+
 ## 工具
 
 | 命令 | 职责 | 配对 Skill | 状态 |
 |------|------|-----------|------|
 | `setup` | 一键初始化 / 健康检查 / 重配置检测 | — | ✅ 可用 |
+| `doctor` | 统一体检入口（scope: env/skill/sync/cli/config/release） | — | ✅ 可用 |
 | `setenv` | 管理 prism.local.yaml 配置，导出环境变量 | — | ✅ 可用 |
 | `relink` | 基于配置刷新所有软链接（项目 + Skills） | workspace-init | ✅ 可用 |
 | `create-skill` | 从模板创建新 skill 骨架 | — | ✅ 可用 |
 | `validate-skills` | 扫描全量 skill frontmatter 合规性 | — | ✅ 可用 |
 | `clean` | relink 的逆操作，清理软链接和配置 | — | ✅ 可用 |
 | `rename-artifacts` | 批量重命名任务产物（task_plan → task_review） | aitask-to-prism | ✅ 可用 |
+| `prism` | workflow verb CLI 统一入口（sniff / validate / archive / migrate / sync / pipeline） | 所有 workflow skill | ✅ 可用 |
 
 ## 用法
 
@@ -93,6 +97,44 @@ bin/clean --project X  # 仅清理指定项目的桥接链接
 安全边界：**绝不删除** Vault/Workspace 内容、Skills 源码、SDK 仓库。仅移除 Prism 创建的软链接和配置文件。
 
 测试循环：`bin/clean --config` → `bin/setenv --init` → `bin/relink` 可反复执行验证开箱流程。
+
+### doctor — 统一体检入口
+
+```bash
+bin/doctor                        # 完整体检（env + skill + sync + cli）
+bin/doctor --quick                # 快速模式，跳过远程 sniff
+bin/doctor --fix                  # 非破坏性自动修复
+bin/doctor --json                 # JSON 输出供其他 skill 消费
+bin/doctor --scope <name>         # 只跑指定范围
+```
+
+`--scope` 可选值：
+
+| scope | 说明 |
+|-------|------|
+| `env` | setup --check 的环境完整性 |
+| `skill` | validate-skills 的 frontmatter 合规 |
+| `sync` | prism 三仓 Git 远端同步状态 |
+| `cli` | `prism` 寻址体检（PATH + symlink） |
+| `config` | `prism.local.yaml` 必填字段 + 路径可达性 |
+| `release` | 聚合以上全部（1.0 发布就绪闸门） |
+
+### prism — workflow verb CLI
+
+```bash
+prism --help                       # 列出所有子命令
+prism --version                    # 版本信息
+prism sniff <project_dir> --topic <主题> --kind review|intake
+prism validate <topic_dir> [--fix]
+prism archive <workspace_path> <topic_dirname> [--dry-run]
+prism migrate <topic_dir> [--fix]
+prism sync [--sdk] [--skills] [--env] [--all] [--fetch]
+prism pipeline <topic_dir> [--dry-run]
+```
+
+`bin/prism` 是 bash 壳，exec `skills/workflow/shared/scripts/prism_cli.py`。寻址问题走 `bin/doctor --scope cli --fix`（写 rc 锚点 + 建 `~/.local/bin/prism` symlink）。
+
+命令面契约、稳定性分级、破坏性变更策略见 [docs/cli-contract.md](../docs/cli-contract.md)。
 
 ### rename-artifacts — 产物重命名
 
