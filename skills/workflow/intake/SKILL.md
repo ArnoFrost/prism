@@ -63,8 +63,10 @@ Phase 3  Initialize（创建结构 + 更新索引）
 ### Phase 0：预探测 (Sniff)
 
 ```bash
-python3 {skill_dir}/scripts/sniff.py <project_dir> --topic <描述关键词>
+prism sniff --kind intake <project_dir> --topic <描述关键词>
 ```
+
+> 若 `prism` 命令不可用，运行 `bin/doctor --scope cli --fix` 自动修复寻址。
 
 消费 sniff 输出的关键字段：
 

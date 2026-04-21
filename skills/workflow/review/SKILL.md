@@ -203,7 +203,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 ### 策略一：并行子任务（推荐，mode=full）
 
 **Align（主 Agent）— 7 步：**
-1. 执行 sniff：`python3 {skill_dir}/scripts/sniff.py <project_dir> --topic <评审主题>`
+1. 执行 sniff：`prism sniff <project_dir> --topic <评审主题>`
 2. **READ** `{skill_dir}/references/review-templates.md` → 提取命名规则
 3. 若 format=ofm → **READ** `{skill_dir}/references/review-ofm.md` → 提取 Callout 映射
 4. Topic 路由决策：确定最终 `output_dir`
@@ -231,7 +231,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
    - 独立发现率 ≥ 60%（角色视角差异大，raw 有独立参考价值）
    - 用户显式要求保留
 5. **追加** `review.index.md` 记录行
-6. **执行** `python3 {skill_dir}/../shared/scripts/prism_cli.py pipeline <topic_dir>`（自动串联 tidy + validate + scope 提示）
+6. **执行** `prism pipeline <topic_dir>`（自动串联 tidy + validate + scope 提示）
 
 **⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 README 同步
 
@@ -285,7 +285,7 @@ Merge 产物落盘且校验通过后，**必须提示用户记录决策**：
 
 请确认下一步：
 1. Accept → 记录 decisions/dXX.md，然后执行 pipeline 一键收尾：
-   python3 {skill_dir}/../shared/scripts/prism_cli.py pipeline <topic_dir>
+   prism pipeline <topic_dir>
    （自动串联 tidy --fix → validate --fix → scope 更新提示）
 2. Reject → 说明原因，重新 review 或调整 scope
 3. Defer → 标记为待决，不更新 plan

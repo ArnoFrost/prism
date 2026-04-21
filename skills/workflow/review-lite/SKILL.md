@@ -64,7 +64,7 @@ stability: experimental
 ### 1. Sniff
 
 ```bash
-python3 {skill_dir}/scripts/sniff.py <project_dir> --topic <评审主题>
+prism sniff <project_dir> --topic <评审主题>
 ```
 
 与正式 review 共享 sniff 逻辑（`sniff_lib.py`），确定 topic 路由和 output_dir。
