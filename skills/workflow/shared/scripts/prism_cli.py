@@ -4,7 +4,7 @@
 将分散的脚本整合为一个命令入口，降低心智负担。
 
 用法:
-  python3 prism_cli.py sniff <project_dir> [--topic <主题>]
+  python3 prism_cli.py sniff <project_dir> [--topic <主题>] [--kind review|intake]
   python3 prism_cli.py validate <output_dir> [--format ofm|standard] [--fix]
   python3 prism_cli.py archive <workspace_path> <topic_dirname> [--dry-run]
   python3 prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
@@ -42,25 +42,39 @@ def _add_to_path(directory: str) -> None:
 # ============================================================
 
 def cmd_sniff(args: argparse.Namespace) -> int:
-    """嗅探项目环境（dispatch 到 review/scripts/sniff.py）"""
-    review_scripts = os.path.join(WORKFLOW_DIR, "review", "scripts")
-    _add_to_path(review_scripts)
+    """嗅探项目环境（按 --kind 分派到 review / intake sniff）"""
+    kind = getattr(args, "kind", "review") or "review"
+
+    sub_dir = {
+        "review": "review",
+        "intake": "intake",
+    }.get(kind)
+    if sub_dir is None:
+        print(f"错误: 未知 --kind '{kind}'，支持: review | intake", file=sys.stderr)
+        return 1
+
+    sniff_scripts = os.path.join(WORKFLOW_DIR, sub_dir, "scripts")
+    _add_to_path(sniff_scripts)
     _add_to_path(SHARED_DIR)
 
     from sniff_lib import __version__
-    # 延迟导入 review sniff
-    sys.path.insert(0, review_scripts)
-    spec = importlib.util.spec_from_file_location(
-        "review_sniff", os.path.join(review_scripts, "sniff.py"))
-    review_sniff = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(review_sniff)
+
+    sniff_path = os.path.join(sniff_scripts, "sniff.py")
+    if not os.path.isfile(sniff_path):
+        print(f"错误: 找不到 {kind} sniff 脚本: {sniff_path}", file=sys.stderr)
+        return 1
+
+    spec = importlib.util.spec_from_file_location(f"{kind}_sniff", sniff_path)
+    sniff_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sniff_mod)
 
     if not os.path.isdir(args.project_dir):
         print(f"错误: {args.project_dir} 不是有效目录", file=sys.stderr)
         return 1
 
-    result = review_sniff.sniff(args.project_dir, topic=args.topic)
+    result = sniff_mod.sniff(args.project_dir, topic=args.topic)
     result["sniff_lib_version"] = __version__
+    result["sniff_kind"] = kind
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
@@ -287,6 +301,12 @@ def main():
     p_sniff = subparsers.add_parser("sniff", help="嗅探项目环境")
     p_sniff.add_argument("project_dir", help="项目根目录")
     p_sniff.add_argument("--topic", default=None, help="评审/入料主题")
+    p_sniff.add_argument(
+        "--kind",
+        choices=["review", "intake"],
+        default="review",
+        help="sniff 类型：review（默认，含 next_review_number/topic_affinity）或 intake（含 next_topic_number）",
+    )
 
     # validate
     p_validate = subparsers.add_parser("validate", help="校验产物格式")

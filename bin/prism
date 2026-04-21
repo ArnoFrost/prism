@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Prism — workflow 统一 CLI 入口，转发到 shared/scripts/prism_cli.py。
+#
+# 用法:
+#   prism <verb> [args...]       运行指定子命令
+#   prism --help                 列出所有子命令
+#   prism --version              打印版本
+#
+# 可用子命令:
+#   sniff     嗅探项目环境（topic affinity / next_review_number）
+#   validate  校验产物格式（frontmatter / 命名规范）
+#   archive   归档 topic 到 archive/
+#   migrate   迁移子目录评审格式
+#   sync      嗅探 Prism 三仓 Git 状态
+#   pipeline  Decision 后一键 tidy + validate + scope 提示
+#
+# 退出码: 透传子命令的退出码
+#
+# 注：本脚本是 prism_cli.py 的 bash 壳，核心实现在：
+#   $PRISM_SDK/skills/workflow/shared/scripts/prism_cli.py
+
+set -o pipefail
+
+# 跟随 symlink 解析真实路径（macOS BSD readlink 不支持 -f，手动 loop）
+_resolve() {
+  local target="$1"
+  while [ -L "$target" ]; do
+    local link
+    link="$(readlink "$target")"
+    case "$link" in
+      /*) target="$link" ;;
+      *)  target="$(cd "$(dirname "$target")" && pwd)/$link" ;;
+    esac
+  done
+  echo "$target"
+}
+
+REAL_SCRIPT="$(_resolve "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$REAL_SCRIPT")" && pwd)"
+PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_SCRIPT="$PRISM_DIR/skills/workflow/shared/scripts/prism_cli.py"
+
+RED='\033[0;31m'
+DIM='\033[2m'
+NC='\033[0m'
+
+# ── --help/-h: 从文件头注释提取 ─────────
+if [[ "$1" == "--help" || "$1" == "-h" || -z "$1" ]]; then
+  awk 'NR==1 { next } /^$/ { exit } { sub(/^# ?/, ""); print }' "$0"
+  # 无参数时附加可用性检查（用户自检入口）
+  if [[ -z "$1" ]]; then
+    echo ""
+    echo "未指定子命令。运行 'prism --help' 查看完整用法。"
+    exit 1
+  fi
+  exit 0
+fi
+
+# ── --version ───────────────────────────
+if [[ "$1" == "--version" || "$1" == "-V" ]]; then
+  exec python3 "$CLI_SCRIPT" --version
+fi
+
+# ── 前置检查：CLI 脚本必须存在 ──────────
+if [[ ! -f "$CLI_SCRIPT" ]]; then
+  echo -e "${RED}✗ prism_cli.py 未找到${NC}" >&2
+  echo -e "  ${DIM}期望路径: $CLI_SCRIPT${NC}" >&2
+  echo -e "  ${DIM}运行 bin/doctor --scope cli 诊断${NC}" >&2
+  exit 127
+fi
+
+# ── 转发到 Python 实现 ──────────────────
+exec python3 "$CLI_SCRIPT" "$@"
