@@ -118,6 +118,16 @@ is_archived() {
   return 1
 }
 
+is_platform_blocked() {
+  local skill_dir="$1"
+  local platform="$2"
+  local blacklist_file="$skill_dir/.blacklist"
+  
+  [[ -f "$blacklist_file" ]] || return 1
+  
+  grep -q "^${platform}$" "$blacklist_file"
+}
+
 log_ok()    { echo -e "  ${GREEN}✓${NC} $1"; ((OK++)) || true; ((TOTAL++)) || true; }
 log_fix()   { echo -e "  ${GREEN}⟳${NC} $1"; ((FIXED++)) || true; ((TOTAL++)) || true; }
 log_skip()  { echo -e "  ${DIM}⊘${NC} $1"; ((TOTAL++)) || true; }
@@ -360,6 +370,13 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       for target in "${PLATFORM_TARGETS[@]}"; do
         platform="${target%%|*}"
         root_dir="${target#*|}"
+        
+        # 检查平台黑名单
+        if is_platform_blocked "$skill_dir" "$platform"; then
+          log_skip "${link_name} ${DIM}(平台 ${platform} 黑名单)${NC}"
+          continue
+        fi
+        
         link_path="${root_dir}/${link_name}"
         ensure_link "$link_path" "$skill_dir" "${platform}: ${link_name}"
       done
@@ -394,6 +411,13 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       for target in "${PLATFORM_TARGETS[@]}"; do
         platform="${target%%|*}"
         root_dir="${target#*|}"
+        
+        # 检查平台黑名单
+        if is_platform_blocked "$skill_dir" "$platform"; then
+          log_skip "${skill_name} ${DIM}(平台 ${platform} 黑名单)${NC}"
+          continue
+        fi
+        
         link_path="${root_dir}/${skill_name}"
         ensure_link "$link_path" "$skill_dir" "${platform}: ${skill_name}"
       done
@@ -428,7 +452,14 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
 
       for target in "${PLATFORM_TARGETS[@]}"; do
         platform="${target%%|*}"
-        root_dir="${target#*|}"
+        root_dir="${target#*|}/"
+        
+        # 检查平台黑名单
+        if is_platform_blocked "$skill_dir" "$platform"; then
+          log_skip "${skill_name} ${DIM}(平台 ${platform} 黑名单)${NC}"
+          continue
+        fi
+        
         link_path="${root_dir}/${skill_name}"
         ensure_link "$link_path" "$skill_dir" "${platform}: ${skill_name}"
       done
