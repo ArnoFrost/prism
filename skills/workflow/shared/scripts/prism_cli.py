@@ -26,15 +26,79 @@ import sys
 # ============================================================
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# shared/scripts/ → shared/ → workflow/
+# shared/scripts/ → shared/ → workflow/ → skills/ → <SDK 根>
 SHARED_DIR = os.path.dirname(SCRIPT_DIR)
 WORKFLOW_DIR = os.path.dirname(SHARED_DIR)
+SKILLS_DIR = os.path.dirname(WORKFLOW_DIR)
+SDK_ROOT = os.path.dirname(SKILLS_DIR)
+VERSION_FILE = os.path.join(SDK_ROOT, "VERSION")
+
+# 回退字面量：VERSION 文件缺失/不可读时使用（023 scope T3.c）
+_VERSION_FALLBACK = "prism-cli (unknown)"
 
 
 def _add_to_path(directory: str) -> None:
     """将目录加入 sys.path（如果不存在）"""
     if directory not in sys.path:
         sys.path.insert(0, directory)
+
+
+# ============================================================
+# 版本解析（023 / d01 D3 + scope T3）
+# ============================================================
+
+def _resolve_version(version_file: str = VERSION_FILE):
+    """读取 SDK VERSION 文件作为 `prism --version` 的真源。
+
+    锚定策略：VERSION_FILE 以 prism_cli.py 自身 __file__ 为锚（非 CWD）。
+    回退策略：文件缺失或读取异常时返回 (_VERSION_FALLBACK, warn_msg)，
+    供调用方将 warn_msg 打到 stderr。成功时 warn_msg 为 None。
+
+    返回：(version_str, warn_msg_or_none)
+    """
+    try:
+        with open(version_file, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+        if not content:
+            return _VERSION_FALLBACK, f"WARN: {version_file} 为空，使用回退字面量"
+        return content, None
+    except FileNotFoundError:
+        return _VERSION_FALLBACK, f"WARN: {version_file} 不存在，使用回退字面量"
+    except OSError as e:
+        return _VERSION_FALLBACK, f"WARN: 读取 {version_file} 失败 ({e})，使用回退字面量"
+
+
+class _VersionAction(argparse.Action):
+    """自定义 --version action，支持 stderr WARN + stdout 版本字符串分流。
+
+    argparse 内置的 `action='version'` 仅支持静态字符串，无法在 VERSION 缺失时
+    单独走 stderr 通道。自定义 action 以维持 023 scope T3.c 的契约：
+    - stdout：VERSION 文件内容（正常）/ 回退字面量（异常）
+    - stderr：WARN 提示（仅异常时）
+    - 退出码：0（不阻塞）
+    """
+
+    def __init__(
+        self,
+        option_strings,
+        dest=argparse.SUPPRESS,
+        default=argparse.SUPPRESS,
+        help="显示 CLI 版本（联动 SDK VERSION 文件）并退出",
+    ):
+        super().__init__(
+            option_strings=option_strings,
+            dest=dest,
+            default=default,
+            nargs=0,
+            help=help,
+        )
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        version, warn = _resolve_version()
+        if warn:
+            print(warn, file=sys.stderr)
+        print(version)
+        parser.exit(0)
 
 
 # ============================================================
@@ -294,7 +358,7 @@ def main():
         prog="prism",
         description="Prism workflow 统一 CLI 入口",
     )
-    parser.add_argument("--version", action="version", version="prism-cli 1.0.0")
+    parser.add_argument("--version", "-V", action=_VersionAction)
     subparsers = parser.add_subparsers(dest="command", help="子命令")
 
     # sniff

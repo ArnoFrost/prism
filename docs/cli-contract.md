@@ -100,7 +100,7 @@ N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 
 为 Agent 友好性做的机器可读接口走"**单向附加**"原则——加了不改变现有使用方式。
 
-计划在 022-cli-contract-hardening 专项落地：
+计划在 [023-cli-contract-hardening](../workspace.prism.local/topics/023_cli-contract-hardening/) 专项落地（编号位移说明：d02 原文称 022，因 022 已被 `022_prism-v1-release-gate` 占用）：
 
 | 接口 | 形式 | 承诺 |
 |------|------|------|

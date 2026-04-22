@@ -19,7 +19,9 @@ SHARED_SCRIPTS = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "scripts"))
 sys.path.insert(0, SHARED_SCRIPTS)
 
 CLI_PATH = os.path.join(SHARED_SCRIPTS, "prism_cli.py")
-BIN_PRISM = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "bin", "prism"))
+SDK_ROOT = os.path.normpath(os.path.join(SCRIPT_DIR, "..", "..", "..", ".."))
+BIN_PRISM = os.path.join(SDK_ROOT, "bin", "prism")
+VERSION_FILE = os.path.join(SDK_ROOT, "VERSION")
 
 
 # ============================================================
@@ -39,14 +41,95 @@ class TestBinPrismShell:
         assert "validate" in result.stdout
 
     def test_shell_version(self):
+        """`prism --version` stdout 必须等于 SDK VERSION 文件内容（023/d01 D3 · scope T3.a）。"""
         result = subprocess.run([BIN_PRISM, "--version"], capture_output=True, text=True, timeout=5)
         assert result.returncode == 0
-        assert "prism-cli" in result.stdout
+        expected = open(VERSION_FILE, "r", encoding="utf-8").read().strip()
+        assert result.stdout.strip() == expected, (
+            f"`prism --version` stdout={result.stdout!r} 与 VERSION={expected!r} 不一致"
+        )
 
     def test_shell_no_args(self):
         result = subprocess.run([BIN_PRISM], capture_output=True, text=True, timeout=5)
         assert result.returncode == 1
         assert "未指定子命令" in result.stdout
+
+
+# ============================================================
+# 023 M0 · `prism --version` 联动 SDK VERSION 契约回归
+# ============================================================
+
+class TestVersionSdkLinkage:
+    """固化 023 d01/D3 + scope T3 的验收：CLI 版本联动 SDK VERSION 文件。
+
+    契约：
+    - stdout = `Path(<SDK根>/VERSION).read_text().strip()` 严格一致
+    - 路径以 `prism_cli.py` 自身 __file__ 为锚，与 CWD 无关
+    - VERSION 缺失时：stderr WARN + stdout `prism-cli (unknown)` + 退出码 0（不阻塞）
+    - 同时支持 `--version` 与 `-V` 两种写法
+    """
+
+    def test_version_matches_sdk_version_file(self):
+        """核心契约：`bin/prism --version` stdout == VERSION 文件内容。"""
+        result = subprocess.run([BIN_PRISM, "--version"], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0
+        expected = open(VERSION_FILE, "r", encoding="utf-8").read().strip()
+        assert result.stdout.strip() == expected
+        # 不应出现历史硬编码遗留
+        assert result.stdout.strip() != "prism-cli 1.0.0"
+
+    def test_short_flag_equivalent(self):
+        """短选项 `-V` 必须与 `--version` 等价。"""
+        long_ = subprocess.run([BIN_PRISM, "--version"], capture_output=True, text=True, timeout=5)
+        short = subprocess.run([BIN_PRISM, "-V"], capture_output=True, text=True, timeout=5)
+        assert long_.returncode == 0 and short.returncode == 0
+        assert long_.stdout == short.stdout
+
+    def test_path_anchored_by_file_not_cwd(self, tmp_path):
+        """切到任意目录运行，结果仍锚定 SDK 根 VERSION，与 CWD 无关。"""
+        result = subprocess.run(
+            [BIN_PRISM, "--version"],
+            capture_output=True, text=True, timeout=5,
+            cwd=str(tmp_path),  # 切到完全无关的临时目录
+        )
+        assert result.returncode == 0
+        expected = open(VERSION_FILE, "r", encoding="utf-8").read().strip()
+        assert result.stdout.strip() == expected
+
+    def test_fallback_when_version_missing(self, tmp_path, monkeypatch):
+        """VERSION 缺失时走回退字面量 + stderr WARN，退出码仍为 0。
+
+        通过直接调用 `_resolve_version(version_file=<不存在路径>)` 避开磁盘状态。
+        """
+        sys.path.insert(0, SHARED_SCRIPTS)
+        from prism_cli import _resolve_version, _VERSION_FALLBACK
+
+        ghost = str(tmp_path / "NO_SUCH_VERSION")
+        assert not os.path.exists(ghost)
+        version, warn = _resolve_version(version_file=ghost)
+        assert version == _VERSION_FALLBACK
+        assert warn is not None and "不存在" in warn
+
+    def test_fallback_when_version_empty(self, tmp_path):
+        """VERSION 存在但内容为空时也走回退（防止 stdout 空字符串污染）。"""
+        sys.path.insert(0, SHARED_SCRIPTS)
+        from prism_cli import _resolve_version, _VERSION_FALLBACK
+
+        empty = tmp_path / "VERSION"
+        empty.write_text("", encoding="utf-8")
+        version, warn = _resolve_version(version_file=str(empty))
+        assert version == _VERSION_FALLBACK
+        assert warn is not None and "为空" in warn
+
+    def test_version_appears_in_cli_help(self):
+        """argparse --help 仍应提示 --version 选项（不得因升级丢失可发现性）。"""
+        result = subprocess.run(
+            ["python3", CLI_PATH, "--help"],
+            capture_output=True, text=True, timeout=5,
+        )
+        assert result.returncode == 0
+        assert "--version" in result.stdout
+        assert "-V" in result.stdout
 
 
 # ============================================================
