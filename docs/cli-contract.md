@@ -150,14 +150,18 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 
 ### 5.2 `prism <verb>` 一览
 
-| Verb | 稳定性 | 用途 |
-|------|-------|------|
-| `prism sniff` | stable | 探测 topic_affinity / next_review_number（`--kind review\|intake`） |
-| `prism validate` | stable | 校验产物格式（frontmatter / 命名规范） |
-| `prism archive` | stable | 归档 topic 到 archive/ |
-| `prism migrate` | experimental | 迁移 review 子目录格式（1.2 如无新用例将降为过渡期工具） |
-| `prism sync` | **exempt** | 嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免） |
-| `prism pipeline` | experimental | Decision 后一键 tidy + validate + scope 提示（1.1 拟重命名为 `topic finalize`） |
+> `JSON` 列：✅ = 已迁移到 outer schema（`--json` 合规）；⬜ = 未迁移，沿用旧 payload（024 或后续 minor 收敛）
+> **本表由 `prism manifest --json` 反向守（见 `tests/test_cli_contract_sync.py`），任何人工修改需同步 `VERB_REGISTRY`。**
+
+| Verb | 稳定性 | JSON | 用途 |
+|------|-------|------|------|
+| `prism sniff` | stable | ✅ | 探测 topic_affinity / next_review_number（`--kind review\|intake`） |
+| `prism validate` | stable | ✅ | 校验产物格式（frontmatter / 命名规范） |
+| `prism archive` | stable | ⬜ | 归档 topic 到 archive/ |
+| `prism migrate` | experimental | ⬜ | 迁移 review 子目录格式（1.2 如无新用例将降为过渡期工具） |
+| `prism sync` | **exempt** | ⬜ | 嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免） |
+| `prism pipeline` | experimental | ⬜ | Decision 后一键 tidy + validate + scope 提示（1.1 拟重命名为 `topic finalize`） |
+| `prism manifest` | experimental | ✅ | 导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |
 
 ---
 
@@ -166,3 +170,6 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | 日期 | 版本 | 变更 | 依据 |
 |------|------|------|------|
 | 2026-04-21 | v1.0 | 初版；固化 `bin/` vs `prism` 分层、稳定性承诺、30 秒门槛、豁免条款 | [021/d02](../workspace.prism.local/topics/021_workflow-cli-consolidation/decisions/d02_cli-v1.0升级三级门控.md) |
+| 2026-04-22 | v1.1-M0 | §4 旧编号 022 → 023 + `prism --version` 联动 SDK VERSION 承诺写入 | [023/d01 D3](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
+| 2026-04-22 | v1.1-M1 | §4 加 cli-json-schema.json 反向引用；新增 §4.1 双层语义 + §4.2 Issue item 约定；承诺表述从"1.1 起 stable"改为弹性演进 | [023/d01 D1](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
+| 2026-04-22 | v1.1-M2 | §5.2 加 `JSON` 列 + 新增 `prism manifest` 行；表格改由 `VERB_REGISTRY` 反向守（pytest + pre-commit hook 示例） | [023/d01 D2 D4](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |

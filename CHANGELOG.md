@@ -106,13 +106,26 @@ All notable changes to Prism are documented in this file.
 - **回归**：87 passed / 3 skipped（原 76 + 新 11 pass + 3 可选 skip）
 - **ref**：[023 d01 D1/D3](workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) · [plan.md M1](workspace.prism.local/topics/023_cli-contract-hardening/plan.md)
 
+#### M2 · `prism manifest` + 契约防漂移闸门（2026-04-22）
+
+- **feat(cli)**：`prism_cli.py` 新增 `VERB_REGISTRY` 代码注册表，7 verb（sniff/validate/archive/migrate/sync/pipeline/manifest）每条带 `{stability, schema_compliant, description}`；作为 manifest 输出与 md §5.2 的**唯一真源**（d01/D4）
+- **feat(cli)**：新增 `prism manifest` verb（experimental，schema_compliant=true），遍历 `VERB_REGISTRY` 输出 outer schema；`data.verbs[]` 每项含 4 字段 + `data.verb_count` / `data.schema_compliant_count` 聚合（d01/D2 · scope T2.a）
+- **feat(docs)**：`cli-contract.md §5.2` 表格加 `JSON` 列（✅/⬜），新增 `prism manifest` 行；表格声明"由 `prism manifest --json` 反向守"
+- **feat(bin)**：`bin/prism` bash 壳 help 同步加 `--json` 全局选项 + `manifest` 子命令可发现性；`bin/README.md` prism 用法段补全新增选项 + pre-commit hook 启用说明
+- **feat(防漂移闸门)**：新增独立脚本 `skills/workflow/shared/scripts/check_cli_contract_sync.py`（pre-commit hook 可调用，纯 stdlib；`--verbose` 打印双侧明细，退出码 0/1/2 分别表示对齐/不一致/解析失败）
+- **test**：新增 `test_cli_contract_sync.py` 12 条
+  - `TestManifestCommand` 5 条：outer schema 结构 / data.verbs 字段 / item 字段类型 / 7 verb 齐备 / M1+M2 compliant 名单
+  - `TestContractSync` 7 条：md 解析 / manifest 拉取 / 完全对齐 / 独立脚本 exit 0 / 故意漂移三类（stability / schema_compliant / 缺 verb）全被识别
+- **回归**：99 passed / 3 skipped（原 87 + 新 12；0 失败）
+- **ref**：[023 d01 D2+D4](workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) · [plan.md M2](workspace.prism.local/topics/023_cli-contract-hardening/plan.md) · scope T2.a/b/c
+
 #### 1.1 规划（d01 接受）
 
 > 编号位移：d02 原文称 022/023，因 022 编号被 release-gate 占用，实际编号为 023/024。
 
-- **023 cli-contract-hardening**（契约层硬化，M0+M1 已交付；M2/M3 进行中）
+- **023 cli-contract-hardening**（契约层硬化，M0+M1+M2 已交付；M3 收尾中）
   - [d01](workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) 锁定：outer schema = `{ok, command, version, data, warnings, errors}` · manifest per-verb 暴露 `schema_compliant` · 本轮引入全局 `--json` flag · manifest SSOT = 代码注册表 + pytest 反向守 md · doctor `--scope cli` 延 024
-  - 剩余里程碑：M2 manifest 命令 + contract-sync 测试 + pre-commit hook · M3 回归收尾 + v1.1.0 release notes
+  - 剩余里程碑：M3 回归收尾 + v1.1.0 release notes + hooks.json 可选条目
 - **024 cli-evolution**（语义+生态层，2026-04-22 立骨架，启动条件 023 完成）：noun/verb 结构决策 · tidy/status/digest 纳入 prism · `pipeline` 重命名为 `topic finalize` · `dispatch_to_skill_script` 重构 · `dist/RELEASE_HEALTH.json` · `bin/doctor --scope cli --rollback`
 - Env 可选性代码层统一 / 三套 sniff 内核合并 / workflow 心智模型图 / 性能回归基线 / 日志格式统一 / 开源筹备（README 白话重写、SETUP 外部验证、CONTRIBUTING）
 

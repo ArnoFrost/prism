@@ -10,6 +10,12 @@
   python3 prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
   python3 prism_cli.py sync [--sdk] [--skills] [--env] [--all] [--fetch]
   python3 prism_cli.py pipeline <topic_dir> [--dry-run]
+  python3 prism_cli.py manifest            # 023 M2 · verb 元数据清单
+
+顶层选项:
+  --version / -V          显示 CLI 版本（联动 SDK VERSION 文件）
+  --json                  以 outer schema 输出 JSON（见 docs/cli-json-schema.json）
+                          M1/M2 覆盖 sniff / validate / manifest，其他 verb 沿用旧 payload
 
 零外部依赖，纯 stdlib。各子命令内部 dispatch 到现有脚本函数。
 """
@@ -66,6 +72,63 @@ def _resolve_version(version_file: str = VERSION_FILE):
         return _VERSION_FALLBACK, f"WARN: {version_file} 不存在，使用回退字面量"
     except OSError as e:
         return _VERSION_FALLBACK, f"WARN: 读取 {version_file} 失败 ({e})，使用回退字面量"
+
+
+# ============================================================
+# Verb 元数据注册表（023 M2 · d01/D4 · scope T2.c）
+# ============================================================
+#
+# 这是 manifest 的 **唯一真源**（Single Source of Truth）。
+# `cmd_manifest` 遍历此表输出；`test_cli_contract_sync` 反向校验
+# `docs/cli-contract.md §5.2` 与本表一致；任何偏移会让 pytest 红。
+#
+# 稳定性级别语义见 docs/cli-contract.md §2.1：
+#   stable / experimental / deprecated / exempt
+#
+# schema_compliant 含义：该 verb 在 `--json` 模式下输出是否经 outer schema 校验
+#   - True：已迁移到 outer schema（M1 覆盖 sniff/validate；M2 新增 manifest）
+#   - False：尚未迁移，沿用旧 payload（024 范围会继续收敛）
+#
+# 30 秒门槛（docs/cli-contract.md §3）：加新 verb 只需在此字典加一行 + 写
+# cmd_<name> + 在 main() 加 subparser，无需手动维护 md 表格（md 由 pytest 反向守）。
+
+VERB_REGISTRY = {
+    "sniff": {
+        "stability": "stable",
+        "schema_compliant": True,
+        "description": "探测 topic_affinity / next_review_number（--kind review|intake）",
+    },
+    "validate": {
+        "stability": "stable",
+        "schema_compliant": True,
+        "description": "校验产物格式（frontmatter / 命名规范）",
+    },
+    "archive": {
+        "stability": "stable",
+        "schema_compliant": False,
+        "description": "归档 topic 到 archive/",
+    },
+    "migrate": {
+        "stability": "experimental",
+        "schema_compliant": False,
+        "description": "迁移 review 子目录格式（1.2 如无新用例将降为过渡期工具）",
+    },
+    "sync": {
+        "stability": "exempt",
+        "schema_compliant": False,
+        "description": "嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免，见 §1 豁免条款）",
+    },
+    "pipeline": {
+        "stability": "experimental",
+        "schema_compliant": False,
+        "description": "Decision 后一键 tidy + validate + scope 提示（1.1 拟重命名为 topic finalize）",
+    },
+    "manifest": {
+        "stability": "experimental",
+        "schema_compliant": True,
+        "description": "导出 verb 元数据（稳定性 + schema 合规度）；参数级 schema 延 024",
+    },
+}
 
 
 # ============================================================
@@ -397,6 +460,37 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
     return 1 if has_error else 0
 
 
+def cmd_manifest(args: argparse.Namespace) -> int:
+    """输出 verb 元数据清单（023 M2 · scope T2.a · d01/D2 D4）。
+
+    设计约束：
+    - 真源：`VERB_REGISTRY` 代码字典（不解析 Markdown）
+    - 输出：始终遵循 outer schema；`data.verbs` 数组每项 {verb, stability, schema_compliant, description}
+    - verb 排序：按注册表插入顺序（Python 3.7+ dict 保序），保证输出稳定可 diff
+
+    `--json` flag 对本 verb 无语义差异（永远输出 outer schema），但为与全局 flag 保持兼容、
+    便于 contract-sync 测试区分模式，仍识别之。
+    """
+    verbs = [
+        {
+            "verb": name,
+            "stability": meta["stability"],
+            "schema_compliant": meta["schema_compliant"],
+            "description": meta["description"],
+        }
+        for name, meta in VERB_REGISTRY.items()
+    ]
+
+    data = {
+        "verbs": verbs,
+        "verb_count": len(verbs),
+        "schema_compliant_count": sum(1 for v in verbs if v["schema_compliant"]),
+    }
+
+    _print_outer(_outer_envelope(command="manifest", data=data))
+    return 0
+
+
 def cmd_sync(args: argparse.Namespace) -> int:
     """嗅探 Prism 仓库 Git 状态（dispatch 到 shared/scripts/prism_sync_sniff.py）"""
     _add_to_path(SCRIPT_DIR)
@@ -490,6 +584,13 @@ def main():
     p_pipeline.add_argument("topic_dir", help="专项根目录")
     p_pipeline.add_argument("--dry-run", action="store_true", help="只预览不修复")
 
+    # manifest（023 M2 · d01/D2）
+    p_manifest = subparsers.add_parser(
+        "manifest",
+        help="导出 verb 元数据清单（stability + schema_compliant），供 Agent / 工具链消费",
+    )
+    # manifest 永远输出 outer schema，--json 可选（但兼容全局 flag）
+
     args = parser.parse_args()
 
     if not args.command:
@@ -514,6 +615,7 @@ def main():
         "migrate": cmd_migrate,
         "sync": cmd_sync,
         "pipeline": cmd_pipeline,
+        "manifest": cmd_manifest,
     }
 
     # ── 顶层异常处理器（023 M1 · scope T1.b）──

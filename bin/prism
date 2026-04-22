@@ -4,7 +4,12 @@
 # 用法:
 #   prism <verb> [args...]       运行指定子命令
 #   prism --help                 列出所有子命令
-#   prism --version              打印版本
+#   prism --version              打印版本（联动 SDK VERSION 文件）
+#
+# 全局选项:
+#   --version, -V                显示版本后退出
+#   --json                       以 outer schema 输出 JSON（见 docs/cli-json-schema.json）
+#                                当前覆盖: sniff / validate / manifest
 #
 # 可用子命令:
 #   sniff     嗅探项目环境（topic affinity / next_review_number）
@@ -13,6 +18,7 @@
 #   migrate   迁移子目录评审格式
 #   sync      嗅探 Prism 三仓 Git 状态
 #   pipeline  Decision 后一键 tidy + validate + scope 提示
+#   manifest  导出 verb 元数据（stability + schema_compliant）
 #
 # 退出码: 透传子命令的退出码
 #
