@@ -104,9 +104,31 @@ N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 
 | 接口 | 形式 | 承诺 |
 |------|------|------|
-| `prism --json` 外层 schema | `{ok, command, version, data, warnings, errors}` 所有 verb 统一 | 1.1 起 stable |
-| `prism manifest --json` | 导出 verb 元数据 + 稳定性分级 + I/O schema 线索 | 1.1 起 experimental，1.2 升 stable |
-| `prism --version` | 联动 SDK `VERSION` 文件（不再独立标注） | 1.1 起 stable |
+| `prism --json` 外层 schema | `{ok, command, version, data, warnings, errors}` 所有 verb 统一（完整定义见 [cli-json-schema.json](./cli-json-schema.json)） | 自首个 minor 全 verb 合规弹性演进：合规 verb 从 `schema_compliant=true` 名单逐步扩展至 100%，合规即视为 stable |
+| `prism manifest --json` | 导出 verb 元数据（`verb` / `stability` / `schema_compliant` / `description`）；参数级 schema 延 024 | 1.1 起 experimental，全 verb `schema_compliant=true` 后升 stable |
+| `prism --version` | 联动 SDK `VERSION` 文件（不再独立标注），VERSION 缺失时 stderr WARN + stdout 回退 `prism-cli (unknown)` | 1.1 起 stable |
+
+### 4.1 outer schema 字段分层语义
+
+`warnings` / `errors` 字段存在**双层语义**，消费方需严格区分：
+
+| 层 | 触发条件 | 示例 |
+|----|---------|------|
+| **outer `errors[]`**（CLI 级） | CLI 调用本身失败：参数非法、未捕获异常、dispatch 失败 | `{code: "INVALID_ARG", message: "/x 不是目录"}` |
+| **outer `warnings[]`**（CLI 级） | CLI 调用成功但有旁路事件 | `{code: "VERSION_MISSING", message: "..."}` |
+| **`data.errors[]`**（业务级） | verb 业务逻辑发现的 ERROR（如 validate 发现 frontmatter 违规） | 各 verb 自定义 |
+| **`data.warnings[]`**（业务级） | verb 业务逻辑发现的 WARN | 各 verb 自定义 |
+
+判据：**`ok=true` 时 outer `errors` 必为空数组**（即便 `data.errors` 非空，仍算 CLI 调用成功）；**`ok=false` 时 outer `errors` 必含至少一条**。
+
+### 4.2 `Issue` item 约定
+
+outer `warnings[]` / `errors[]` 的每一项结构：
+
+- **`code`**（必填）：稳定的错误/警告码，`UPPER_SNAKE_CASE`，供消费方分派
+- **`message`**（必填）：人类可读说明
+- **`hint`**（可选）：修复建议
+- **未来字段**：`path` / `severity` / `context` 等延后按需扩；消费方须容忍未知字段（schema `additionalProperties: true`）
 
 ---
 

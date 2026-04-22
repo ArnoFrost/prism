@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ArnoFrost/prism/blob/main/docs/cli-json-schema.json",
+  "title": "Prism CLI Outer Schema",
+  "description": "Prism `prism <verb> --json` 统一外层响应结构（023-cli-contract-hardening 落地；d01/D1 锁定）。所有标记 schema_compliant=true 的 verb 在 --json 模式下必须通过此 schema 校验。data 字段内部结构由各 verb 自定义（本文件不约束）。",
+  "type": "object",
+  "required": ["ok", "command", "version", "data", "warnings", "errors"],
+  "additionalProperties": false,
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "description": "CLI 级调用是否成功。true 表示命令正常执行完毕（包括业务级发现问题的情况）；false 仅在 CLI 自身异常、参数错误、未捕获异常时出现。"
+    },
+    "command": {
+      "type": "string",
+      "description": "被调用的 verb 名（如 'sniff' / 'validate' / 'manifest'）。未知命令场景为 'unknown'。",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "CLI 版本字符串，联动 SDK VERSION 文件。VERSION 缺失时回退为 'prism-cli (unknown)'。",
+      "minLength": 1
+    },
+    "data": {
+      "description": "verb 业务数据。各 verb 自行定义 schema；outer 层不约束结构（null 也合法，表示此次调用无数据负载）。",
+      "type": ["object", "array", "null"]
+    },
+    "warnings": {
+      "type": "array",
+      "description": "CLI 级警告（非致命）。例如 VERSION 文件缺失走回退、可选依赖未安装等。注意：这是 CLI 级警告，与 data.warnings（业务级，如 validate 发现的 WARN issues）语义隔离。",
+      "items": { "$ref": "#/definitions/Issue" }
+    },
+    "errors": {
+      "type": "array",
+      "description": "CLI 级错误。ok=true 时必为空数组；ok=false 时必含至少一条。注意：这是 CLI 级错误（参数错、异常、dispatch 失败），与 data.errors（业务级，如 validate 发现的 ERROR issues）语义隔离。",
+      "items": { "$ref": "#/definitions/Issue" }
+    }
+  },
+  "definitions": {
+    "Issue": {
+      "type": "object",
+      "description": "outer warnings/errors 数组的单条目。additive 演化：本版本仅 code + message 必填，hint 可选；未来可能新增 path/severity/context 等字段，使用方需容忍未知字段（additionalProperties: true）。",
+      "required": ["code", "message"],
+      "additionalProperties": true,
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "稳定的错误/警告码，供消费方分派（如 'INVALID_ARG' / 'VERSION_MISSING' / 'DISPATCH_FAILED' / 'UNEXPECTED_EXCEPTION'）。命名约定：UPPER_SNAKE_CASE。",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "description": "人类可读的中文或英文说明。",
+          "minLength": 1
+        },
+        "hint": {
+          "type": "string",
+          "description": "可选修复建议（如 '检查 VERSION 文件是否存在' / '确认参数 --format 值合法'）。"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "ok": true,
+      "command": "sniff",
+      "version": "v1.0.0",
+      "data": {
+        "project_dir": "/Users/xuxin/prism",
+        "workspace": { "path": "/Users/xuxin/prism/workspace.prism.local" }
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "ok": false,
+      "command": "validate",
+      "version": "v1.0.0",
+      "data": null,
+      "warnings": [],
+      "errors": [
+        {
+          "code": "INVALID_ARG",
+          "message": "/nonexistent 不是有效目录",
+          "hint": "确认 output_dir 路径存在且可读"
+        }
+      ]
+    }
+  ]
+}

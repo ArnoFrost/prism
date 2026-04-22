@@ -68,6 +68,45 @@ def _resolve_version(version_file: str = VERSION_FILE):
         return _VERSION_FALLBACK, f"WARN: 读取 {version_file} 失败 ({e})，使用回退字面量"
 
 
+# ============================================================
+# Outer schema 辅助（023 M1 · scope T1 / d01 D1）
+# ============================================================
+#
+# 统一 `prism <verb> --json` 外层响应结构：
+#   {ok, command, version, data, warnings, errors}
+# 详见 docs/cli-json-schema.json 与 docs/cli-contract.md §4.1 / §4.2
+#
+# 语义分层（重要）：
+# - outer `errors` / `warnings` 仅表示 CLI 级事件（参数错、异常、VERSION 缺失等）
+# - 业务 payload 内部的 errors/warnings（如 validate 的 issues）属于 data 内部结构
+#   不向 outer 上浮，避免键名冲突 + 保持 `ok=true` 语义单一
+
+def _outer_envelope(command, data=None, warnings=None, errors=None):
+    """构造 outer schema 响应字典。
+
+    约定：
+    - ok 由 errors 是否为空自动派生（ok=true 当且仅当 errors 为空）
+    - version 始终读 SDK VERSION（回退字面量由 _resolve_version 处理）
+    - warnings/errors item 遵循 {code, message, hint?} 结构
+    """
+    errs = list(errors or [])
+    warns = list(warnings or [])
+    version, _ = _resolve_version()
+    return {
+        "ok": len(errs) == 0,
+        "command": command,
+        "version": version,
+        "data": data,
+        "warnings": warns,
+        "errors": errs,
+    }
+
+
+def _print_outer(envelope):
+    """把 outer envelope 序列化为 JSON 并写入 stdout（两格缩进保持可读性）。"""
+    print(json.dumps(envelope, ensure_ascii=False, indent=2))
+
+
 class _VersionAction(argparse.Action):
     """自定义 --version action，支持 stderr WARN + stdout 版本字符串分流。
 
@@ -108,13 +147,21 @@ class _VersionAction(argparse.Action):
 def cmd_sniff(args: argparse.Namespace) -> int:
     """嗅探项目环境（按 --kind 分派到 review / intake sniff）"""
     kind = getattr(args, "kind", "review") or "review"
+    json_mode = getattr(args, "json_mode", False)
 
     sub_dir = {
         "review": "review",
         "intake": "intake",
     }.get(kind)
     if sub_dir is None:
-        print(f"错误: 未知 --kind '{kind}'，支持: review | intake", file=sys.stderr)
+        msg = f"未知 --kind '{kind}'，支持: review | intake"
+        if json_mode:
+            _print_outer(_outer_envelope(
+                command="sniff",
+                errors=[{"code": "INVALID_ARG", "message": msg, "hint": "使用 --kind review 或 --kind intake"}],
+            ))
+        else:
+            print(f"错误: {msg}", file=sys.stderr)
         return 1
 
     sniff_scripts = os.path.join(WORKFLOW_DIR, sub_dir, "scripts")
@@ -125,7 +172,14 @@ def cmd_sniff(args: argparse.Namespace) -> int:
 
     sniff_path = os.path.join(sniff_scripts, "sniff.py")
     if not os.path.isfile(sniff_path):
-        print(f"错误: 找不到 {kind} sniff 脚本: {sniff_path}", file=sys.stderr)
+        msg = f"找不到 {kind} sniff 脚本: {sniff_path}"
+        if json_mode:
+            _print_outer(_outer_envelope(
+                command="sniff",
+                errors=[{"code": "DISPATCH_FAILED", "message": msg}],
+            ))
+        else:
+            print(f"错误: {msg}", file=sys.stderr)
         return 1
 
     spec = importlib.util.spec_from_file_location(f"{kind}_sniff", sniff_path)
@@ -133,18 +187,31 @@ def cmd_sniff(args: argparse.Namespace) -> int:
     spec.loader.exec_module(sniff_mod)
 
     if not os.path.isdir(args.project_dir):
-        print(f"错误: {args.project_dir} 不是有效目录", file=sys.stderr)
+        msg = f"{args.project_dir} 不是有效目录"
+        if json_mode:
+            _print_outer(_outer_envelope(
+                command="sniff",
+                errors=[{"code": "INVALID_ARG", "message": msg, "hint": "确认 project_dir 路径存在"}],
+            ))
+        else:
+            print(f"错误: {msg}", file=sys.stderr)
         return 1
 
     result = sniff_mod.sniff(args.project_dir, topic=args.topic)
     result["sniff_lib_version"] = __version__
     result["sniff_kind"] = kind
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    if json_mode:
+        _print_outer(_outer_envelope(command="sniff", data=result))
+    else:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
     """校验产物（dispatch 到 review/scripts/validate_product.py）"""
+    json_mode = getattr(args, "json_mode", False)
+
     review_scripts = os.path.join(WORKFLOW_DIR, "review", "scripts")
     _add_to_path(review_scripts)
 
@@ -155,12 +222,25 @@ def cmd_validate(args: argparse.Namespace) -> int:
     spec.loader.exec_module(vp)
 
     if not os.path.isdir(args.output_dir):
-        print(f"错误: {args.output_dir} 不是有效目录", file=sys.stderr)
+        msg = f"{args.output_dir} 不是有效目录"
+        if json_mode:
+            _print_outer(_outer_envelope(
+                command="validate",
+                errors=[{"code": "INVALID_ARG", "message": msg, "hint": "确认 output_dir 路径存在且可读"}],
+            ))
+        else:
+            print(f"错误: {msg}", file=sys.stderr)
         return 1
 
     fmt = args.format or vp.detect_format(args.output_dir)
     result = vp.validate_dir(args.output_dir, fmt, do_fix=args.fix)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+    # CLI 调用成功（validate 跑完了），业务级 issues 留在 data 内部
+    # outer errors 始终为空；退出码仍按业务 errors 派生（退出码是 POSIX 约定，不是 outer schema 字段）
+    if json_mode:
+        _print_outer(_outer_envelope(command="validate", data=result))
+    else:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
     return 1 if result["errors"] else 0
 
 
@@ -359,6 +439,13 @@ def main():
         description="Prism workflow 统一 CLI 入口",
     )
     parser.add_argument("--version", "-V", action=_VersionAction)
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_mode",
+        help="以统一 outer schema 输出 JSON（见 docs/cli-json-schema.json）；"
+             "M1 覆盖 sniff/validate/manifest，其他 verb 沿用现有输出直至 schema_compliant=true",
+    )
     subparsers = parser.add_subparsers(dest="command", help="子命令")
 
     # sniff
@@ -406,6 +493,17 @@ def main():
     args = parser.parse_args()
 
     if not args.command:
+        # 无子命令：--json 模式也要给出 outer 错误，不打印 help 混入 stdout
+        if getattr(args, "json_mode", False):
+            _print_outer(_outer_envelope(
+                command="(none)",
+                errors=[{
+                    "code": "NO_COMMAND",
+                    "message": "未指定子命令",
+                    "hint": "运行 `prism --help` 查看可用 verb",
+                }],
+            ))
+            return 1
         parser.print_help()
         return 1
 
@@ -417,6 +515,26 @@ def main():
         "sync": cmd_sync,
         "pipeline": cmd_pipeline,
     }
+
+    # ── 顶层异常处理器（023 M1 · scope T1.b）──
+    # --json 模式下任何未捕获异常统一走 outer error，stdout 保持 schema 整洁
+    # 非 --json 模式保持原行为（Python traceback 直接抛出，便于交互调试）
+    if getattr(args, "json_mode", False):
+        try:
+            return dispatch[args.command](args)
+        except SystemExit:
+            # argparse / parser.exit 主动退出，不拦截
+            raise
+        except Exception as e:  # noqa: BLE001 - 顶层兜底
+            _print_outer(_outer_envelope(
+                command=args.command,
+                errors=[{
+                    "code": "UNEXPECTED_EXCEPTION",
+                    "message": f"{type(e).__name__}: {e}",
+                    "hint": "移除 --json 可查看完整 traceback；或提交 issue 附带命令参数",
+                }],
+            ))
+            return 1
 
     return dispatch[args.command](args)
 

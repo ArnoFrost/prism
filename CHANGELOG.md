@@ -87,13 +87,32 @@ All notable changes to Prism are documented in this file.
   - 回归：76/76 pytest 全绿（原 70 + 新 6）
 - **ref**：[023 r01 P1-4 + d01 D3](workspace.prism.local/topics/023_cli-contract-hardening/) · [plan.md M0](workspace.prism.local/topics/023_cli-contract-hardening/plan.md)
 
+#### M1 · `prism --json` outer schema 落地（2026-04-22）
+
+- **feat(cli)**：`docs/cli-json-schema.json` 落库（JSON Schema draft-07），顶层六字段 `{ok, command, version, data, warnings, errors}` 严格锁定；`cli-contract.md §4` 加反向引用 + 新增 §4.1（outer/业务级 errors 双层语义）§4.2（Issue item 约定）
+- **feat(cli)**：`prism_cli.py` 顶层 argparse 加全局 `--json` flag（所有 verb 共享）+ 顶层未捕获异常处理器（`--json` 模式下输出 `{ok:false, errors:[{code:UNEXPECTED_EXCEPTION,...}]}`，stdout 不泄漏 Python traceback）
+- **feat(cli)**：`cmd_sniff` / `cmd_validate` 改造为 outer schema 输出（`--json` 模式）
+  - 业务 payload 完整进 `data`；无 `--json` 时保持旧 payload 直出（兼容性零退步）
+  - 参数非法路径返回 `{ok:false, errors:[{code:INVALID_ARG, ...}]}` 或 `DISPATCH_FAILED`
+  - 双层语义隔离：`ok=true` 时 outer.errors 必空，即便 `data.errors` 非空（如 validate 发现业务级 issue）
+- **feat(cli)**：无子命令 + `--json` 返回 `{ok:false, errors:[{code:NO_COMMAND,...}]}`，不再把 help 文本混入 stdout
+- **test**：新增 `test_cli_outer_schema.py` 14 条用例
+  - `TestSchemaFile` 3 条：schema 文件存在性 / 字段集严格 / Issue 定义完整
+  - `TestOuterSchemaHappyPath` 4 条：sniff 结构 / version 联动 / validate 结构 / 双层 errors 隔离
+  - `TestOuterSchemaErrorPath` 2 条：INVALID_ARG + traceback 不泄漏
+  - `TestBackwardCompatibility` 2 条：无 --json 保持旧行为 / --version 与 --json 共存
+  - `TestJsonSchemaConformance` 3 条：严格 `jsonschema.validate`（可选依赖，未装时自动 skip，手工结构检查永远兜底）
+- **test**：`jsonschema` 可选策略 — `pytest.importorskip` 按需启用严格校验，SDK 主体保持零外部依赖（符合 scope "零新依赖"约束）；CI/本地已用 venv 验证 schema 文件自身合法
+- **回归**：87 passed / 3 skipped（原 76 + 新 11 pass + 3 可选 skip）
+- **ref**：[023 d01 D1/D3](workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) · [plan.md M1](workspace.prism.local/topics/023_cli-contract-hardening/plan.md)
+
 #### 1.1 规划（d01 接受）
 
 > 编号位移：d02 原文称 022/023，因 022 编号被 release-gate 占用，实际编号为 023/024。
 
-- **023 cli-contract-hardening**（契约层硬化，M0 已交付；M1/M2 进行中）
+- **023 cli-contract-hardening**（契约层硬化，M0+M1 已交付；M2/M3 进行中）
   - [d01](workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) 锁定：outer schema = `{ok, command, version, data, warnings, errors}` · manifest per-verb 暴露 `schema_compliant` · 本轮引入全局 `--json` flag · manifest SSOT = 代码注册表 + pytest 反向守 md · doctor `--scope cli` 延 024
-  - 剩余里程碑：M1 schema 文件 + `--json` flag + sniff/validate 迁移 · M2 manifest 命令 + contract-sync 测试 + pre-commit hook · M3 回归收尾
+  - 剩余里程碑：M2 manifest 命令 + contract-sync 测试 + pre-commit hook · M3 回归收尾 + v1.1.0 release notes
 - **024 cli-evolution**（语义+生态层，2026-04-22 立骨架，启动条件 023 完成）：noun/verb 结构决策 · tidy/status/digest 纳入 prism · `pipeline` 重命名为 `topic finalize` · `dispatch_to_skill_script` 重构 · `dist/RELEASE_HEALTH.json` · `bin/doctor --scope cli --rollback`
 - Env 可选性代码层统一 / 三套 sniff 内核合并 / workflow 心智模型图 / 性能回归基线 / 日志格式统一 / 开源筹备（README 白话重写、SETUP 外部验证、CONTRIBUTING）
 
