@@ -2,6 +2,29 @@
 
 All notable changes to Prism are documented in this file.
 
+## [Unreleased]
+
+### Added — CLI 语义层演进（024 T2/T3）
+
+- `prism finalize <topic_dir>` — Decision 后一键编排（原 `pipeline` 重命名）
+- `prism tidy <project_dir>` — 工件机械对齐（README 指针 / review.index / frontmatter）
+- `prism status <project_dir>` — Workspace 活跃 topic 健康度扫描
+- `prism digest <project_dir> --topic <name>` — Topic 工件采集（供 Agent 生成摘要）
+
+### Added — CLI 生态层演进（024 T4/T5/T6）
+
+- `_dispatch_subprocess()` 辅助函数 — 消除 cmd_tidy/cmd_status/cmd_digest 的 subprocess 重复代码
+- `bin/doctor --output <path>` — JSON 结果写入文件（自动启用 --json）
+- `bin/doctor --scope release --json` 输出增加 `version` / `timestamp` / `sdk_root` 字段
+- `dist/RELEASE_HEALTH.json` — `bin/doctor --scope release --output dist/RELEASE_HEALTH.json` 一键生成
+- `bin/doctor --rollback` — 回滚 --fix 修改（删除 rc 锚点块 + symlink）
+- `doctor_cli.py --rollback` — 同上，Python 级 API
+
+### Changed
+
+- `prism pipeline` → deprecated alias，调用时输出 WARN 指向 `finalize`，1.2 移除
+- `bin/doctor --json` 输出增加 `version` / `timestamp` / `sdk_root` 三个顶层字段
+
 ## [v1.0.0] — 2026-04-21
 
 **1.0 里程碑 · 内部分发版。** Prism 自 2025-09 启动以来七个月迭代到位：四层模型（Protocol/Workspace/Skills/Env）稳定，workflow 全管线闭环，跨五 IDE 分发，39 skills · 70 pytest · 0 validate error 全绿。
@@ -149,7 +172,7 @@ All notable changes to Prism are documented in this file.
 
 - **feat(cli)**：`prism_cli.py` 新增 `VERB_REGISTRY` 代码注册表，7 verb（sniff/validate/archive/migrate/sync/pipeline/manifest）每条带 `{stability, schema_compliant, description}`；作为 manifest 输出与 md §5.2 的**唯一真源**（d01/D4）
 - **feat(cli)**：新增 `prism manifest` verb（experimental，schema_compliant=true），遍历 `VERB_REGISTRY` 输出 outer schema；`data.verbs[]` 每项含 4 字段 + `data.verb_count` / `data.schema_compliant_count` 聚合（d01/D2 · scope T2.a）
-- **feat(docs)**：`cli-contract.md §5.2` 表格加 `JSON` 列（✅/⬜），新增 `prism manifest` 行；表格声明"由 `prism manifest --json` 反向守"
+- **feat(docs)**：`cli-contract.md §5.2` 表格加 `JSON` 列（✅/⬜），新增 `prism manifest` 行；表格声明"由 `prism --json manifest` 反向守"
 - **feat(bin)**：`bin/prism` bash 壳 help 同步加 `--json` 全局选项 + `manifest` 子命令可发现性；`bin/README.md` prism 用法段补全新增选项 + pre-commit hook 启用说明
 - **feat(防漂移闸门)**：新增独立脚本 `skills/workflow/shared/scripts/check_cli_contract_sync.py`（pre-commit hook 可调用，纯 stdlib；`--verbose` 打印双侧明细，退出码 0/1/2 分别表示对齐/不一致/解析失败）
 - **test**：新增 `test_cli_contract_sync.py` 12 条

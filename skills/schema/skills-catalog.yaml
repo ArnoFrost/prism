@@ -118,11 +118,11 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-19"
     rationale: "Maintainer repo sync — pull remote updates."
-  - id: aitask-to-prism
+  - id: update-marketplaces
     visibility: dev
     stability: experimental
     source_repo: prism-skills
     inject_default: false
     reviewed_by: ArnoFrost
-    reviewed_at: "2026-03-19"
-    rationale: "Legacy migration tool, always_exclude from dist."
+    reviewed_at: "2026-04-23"
+    rationale: "Unified plugin marketplace updater — Claude Code git repos + CodeBuddy zip markets. Replaces ArnoDotFiles legacy skill."

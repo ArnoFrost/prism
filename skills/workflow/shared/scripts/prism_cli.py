@@ -9,8 +9,12 @@
   python3 prism_cli.py archive <workspace_path> <topic_dirname> [--dry-run]
   python3 prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
   python3 prism_cli.py sync [--sdk] [--skills] [--env] [--all] [--fetch]
-  python3 prism_cli.py pipeline <topic_dir> [--dry-run]
-  python3 prism_cli.py manifest            # 023 M2 · verb 元数据清单
+  python3 prism_cli.py finalize <topic_dir> [--dry-run]
+  python3 prism_cli.py tidy <project_dir> [--fix] [--topic <主题>]
+  python3 prism_cli.py status <project_dir> [--format json|markdown]
+  python3 prism_cli.py digest <project_dir> --topic <主题>
+  python3 prism_cli.py pipeline <topic_dir> [--dry-run]  # deprecated → finalize
+  python3 prism_cli.py manifest            # verb 元数据清单
 
 顶层选项:
   --version / -V          显示 CLI 版本（联动 SDK VERSION 文件）
@@ -118,10 +122,30 @@ VERB_REGISTRY = {
         "schema_compliant": False,
         "description": "嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免，见 §1 豁免条款）",
     },
-    "pipeline": {
+    "finalize": {
         "stability": "experimental",
         "schema_compliant": False,
-        "description": "Decision 后一键 tidy + validate + scope 提示（1.1 拟重命名为 topic finalize）",
+        "description": "Decision 后一键 tidy + validate + scope 提示",
+    },
+    "tidy": {
+        "stability": "experimental",
+        "schema_compliant": False,
+        "description": "工件机械对齐（README 指针 / review.index / frontmatter）",
+    },
+    "status": {
+        "stability": "experimental",
+        "schema_compliant": False,
+        "description": "Workspace 活跃 topic 健康度扫描",
+    },
+    "digest": {
+        "stability": "experimental",
+        "schema_compliant": False,
+        "description": "Topic 工件采集（供 Agent 生成摘要）",
+    },
+    "pipeline": {
+        "stability": "deprecated",
+        "schema_compliant": False,
+        "description": "已重命名为 finalize（1.2 移除此别名）",
     },
     "manifest": {
         "stability": "experimental",
@@ -201,6 +225,38 @@ class _VersionAction(argparse.Action):
             print(warn, file=sys.stderr)
         print(version)
         parser.exit(0)
+
+
+# ============================================================
+# Dispatch 辅助（024 T4 · 最小修复）
+# ============================================================
+
+def _dispatch_subprocess(skill: str, script: str, cmd_args: list[str]) -> int:
+    """统一 subprocess dispatch：路径拼接 + 文件检查 + 执行 + 输出。
+
+    Args:
+        skill: skill 目录名（如 "tidy"）
+        script: 脚本文件名（如 "tidy.py"）
+        cmd_args: 传给脚本的参数列表
+
+    Returns: 进程退出码
+    """
+    import subprocess
+
+    script_path = os.path.join(WORKFLOW_DIR, skill, "scripts", script)
+    if not os.path.isfile(script_path):
+        print(f"错误: {skill} 脚本不存在: {script_path}", file=sys.stderr)
+        return 1
+
+    result = subprocess.run(
+        ["python3", script_path] + cmd_args,
+        capture_output=True, text=True, timeout=30,
+    )
+    if result.stdout.strip():
+        print(result.stdout)
+    if result.returncode != 0 and result.stderr.strip():
+        print(result.stderr, file=sys.stderr)
+    return result.returncode
 
 
 # ============================================================
@@ -337,10 +393,10 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_pipeline(args: argparse.Namespace) -> int:
+def cmd_finalize(args: argparse.Namespace) -> int:
     """Decision 后一键编排：tidy --fix → validate --fix → 提示 scope 更新。
 
-    用法: prism pipeline <topic_dir> [--dry-run]
+    用法: prism finalize <topic_dir> [--dry-run]
 
     执行流程：
       1. tidy --fix（README 指针同步 + review.index 补全）
@@ -458,6 +514,32 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
 
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 1 if has_error else 0
+
+
+def cmd_pipeline(args: argparse.Namespace) -> int:
+    """已弃用别名：转发到 cmd_finalize，并输出 WARN。"""
+    print("WARN: `prism pipeline` 已重命名为 `prism finalize`（1.2 移除此别名）", file=sys.stderr)
+    return cmd_finalize(args)
+
+
+def cmd_tidy(args: argparse.Namespace) -> int:
+    """工件机械对齐（dispatch 到 tidy/scripts/tidy.py）。"""
+    cmd_args = [args.project_dir, "--format", "json"]
+    if args.fix:
+        cmd_args.append("--fix")
+    if args.topic:
+        cmd_args.extend(["--topic", args.topic])
+    return _dispatch_subprocess("tidy", "tidy.py", cmd_args)
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    """Workspace 活跃 topic 健康度扫描（dispatch 到 status/scripts/status.py）。"""
+    return _dispatch_subprocess("status", "status.py", [args.project_dir, "--format", args.format])
+
+
+def cmd_digest(args: argparse.Namespace) -> int:
+    """Topic 工件采集（dispatch 到 digest/scripts/collect.py）。"""
+    return _dispatch_subprocess("digest", "collect.py", [args.project_dir, "--topic", args.topic])
 
 
 def cmd_manifest(args: argparse.Namespace) -> int:
@@ -579,10 +661,31 @@ def main():
     p_sync.add_argument("--all", action="store_true")
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
-    # pipeline
-    p_pipeline = subparsers.add_parser("pipeline", help="Decision 后一键编排：tidy → validate → scope 提示")
+    # finalize（024 T3 · 原 pipeline）
+    p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → scope 提示")
+    p_finalize.add_argument("topic_dir", help="专项根目录")
+    p_finalize.add_argument("--dry-run", action="store_true", help="只预览不修复")
+
+    # pipeline（deprecated alias → finalize，1.2 移除）
+    p_pipeline = subparsers.add_parser("pipeline", help="[已弃用] 请使用 finalize")
     p_pipeline.add_argument("topic_dir", help="专项根目录")
     p_pipeline.add_argument("--dry-run", action="store_true", help="只预览不修复")
+
+    # tidy（024 T2）
+    p_tidy = subparsers.add_parser("tidy", help="工件机械对齐（README 指针 / review.index / frontmatter）")
+    p_tidy.add_argument("project_dir", help="项目根目录")
+    p_tidy.add_argument("--fix", action="store_true", help="执行自动修复（默认只预览）")
+    p_tidy.add_argument("--topic", default=None, help="只扫描指定 topic")
+
+    # status（024 T2）
+    p_status = subparsers.add_parser("status", help="Workspace 活跃 topic 健康度扫描")
+    p_status.add_argument("project_dir", help="项目根目录")
+    p_status.add_argument("--format", choices=["json", "markdown"], default="json", help="输出格式")
+
+    # digest（024 T2）
+    p_digest = subparsers.add_parser("digest", help="Topic 工件采集（供 Agent 生成摘要）")
+    p_digest.add_argument("project_dir", help="项目根目录")
+    p_digest.add_argument("--topic", required=True, help="Topic 目录名")
 
     # manifest（023 M2 · d01/D2）
     p_manifest = subparsers.add_parser(
@@ -614,6 +717,10 @@ def main():
         "archive": cmd_archive,
         "migrate": cmd_migrate,
         "sync": cmd_sync,
+        "finalize": cmd_finalize,
+        "tidy": cmd_tidy,
+        "status": cmd_status,
+        "digest": cmd_digest,
         "pipeline": cmd_pipeline,
         "manifest": cmd_manifest,
     }

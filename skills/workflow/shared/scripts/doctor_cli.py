@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""prism-cli 环境体检 — 检查 bin/prism 是否可寻址，可选幂等修复。
+"""prism-cli 环境体检 — 检查 bin/prism 是否可寻址，可选幂等修复或回滚。
 
 用法:
   python3 doctor_cli.py            # 只报告（JSON 到 stdout）
   python3 doctor_cli.py --fix      # 非破坏性修复：写 rc 锚点 + 建 symlink
+  python3 doctor_cli.py --rollback # 回滚：删除 rc 锚点 + 删除 symlink
   python3 doctor_cli.py --json     # JSON 输出（默认也是 JSON，显式兼容 bin/doctor）
 
 检查项：
@@ -16,6 +17,10 @@
 --fix 动作（幂等）：
   - 往 ~/.zshrc、~/.bashrc 插入锚点块（已存在则跳过）
   - ln -sf $PRISM_SDK/bin/prism ~/.local/bin/prism
+
+--rollback 动作（024 T6）：
+  - 从 ~/.zshrc、~/.bashrc 移除锚点块
+  - 删除 ~/.local/bin/prism symlink（仅删除指向当前 SDK 的）
 
 退出码: 0=全绿，1=有 ERROR，2=只有 WARN
 """
@@ -94,6 +99,81 @@ def _ensure_symlink(sdk_root: Path) -> tuple[bool, str]:
         return False, f"已存在非 symlink 文件：{link}"
     link.symlink_to(target)
     return True, f"已建立 symlink → {target}"
+
+
+def _remove_rc_anchor(rc_path: Path) -> tuple[bool, str]:
+    """从 rc 文件中移除锚点块。返回 (是否实际改动, 说明)"""
+    if not rc_path.is_file():
+        return False, "文件不存在"
+    try:
+        content = rc_path.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        return False, f"读取失败：{e}"
+
+    if ANCHOR_BEGIN not in content or ANCHOR_END not in content:
+        return False, "无锚点块"
+
+    lines = content.split("\n")
+    new_lines = []
+    inside = False
+    for line in lines:
+        if ANCHOR_BEGIN in line:
+            inside = True
+            continue
+        if ANCHOR_END in line:
+            inside = False
+            continue
+        if inside:
+            continue
+        new_lines.append(line)
+
+    result = "\n".join(new_lines)
+    # 清理末尾空行（不超过 2 个连续空行）
+    while result.endswith("\n\n\n"):
+        result = result[:-1]
+
+    try:
+        rc_path.write_text(result, encoding="utf-8")
+    except OSError as e:
+        return False, f"写入失败：{e}"
+    return True, "已移除锚点块"
+
+
+def _remove_symlink(sdk_root: Path) -> tuple[bool, str]:
+    """删除 ~/.local/bin/prism symlink（仅删除指向当前 SDK 的）。"""
+    link = USER_LOCAL_BIN / "prism"
+    if not link.is_symlink():
+        return False, "非 symlink 或不存在"
+    current = os.readlink(link)
+    target = sdk_root / "bin" / "prism"
+    if Path(current).resolve() != target.resolve():
+        return False, f"symlink 指向其他位置: {current}，不删除"
+    link.unlink()
+    return True, f"已删除 symlink {link}"
+
+
+def rollback() -> dict:
+    """回滚 --fix 的所有修改（024 T6）。"""
+    sdk_root = _prism_sdk_root()
+    actions = []
+
+    # 移除 rc 锚点
+    for rc in SHELL_RC_FILES:
+        changed, note = _remove_rc_anchor(rc)
+        if changed or "无锚点" not in note:
+            actions.append({"action": "remove-rc-anchor", "target": str(rc), "changed": changed, "note": note})
+
+    # 删除 symlink
+    changed, note = _remove_symlink(sdk_root)
+    actions.append({"action": "remove-symlink", "target": str(USER_LOCAL_BIN / "prism"), "changed": changed, "note": note})
+
+    changed_count = sum(1 for a in actions if a["changed"])
+    return {
+        "status": "rolled_back" if changed_count > 0 else "nothing_to_rollback",
+        "sdk_root": str(sdk_root),
+        "actions": actions,
+        "changed_count": changed_count,
+    }
 
 
 def check(do_fix: bool = False) -> dict:
@@ -190,8 +270,14 @@ def check(do_fix: bool = False) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="prism-cli 环境体检")
     parser.add_argument("--fix", action="store_true", help="幂等修复（rc 锚点 + symlink）")
+    parser.add_argument("--rollback", action="store_true", help="回滚修复（删除 rc 锚点 + symlink）")
     parser.add_argument("--json", action="store_true", help="输出 JSON（默认即 JSON）")
     args = parser.parse_args()
+
+    if args.rollback:
+        result = rollback()
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0)
 
     result = check(do_fix=args.fix)
     print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -32,7 +32,6 @@ always_exclude:
   - prism-dist                     # [dev] 分发工具自身不入包
   - prism-push                     # [dev] 维护者工具
   - prism-pull                     # [dev] 维护者工具
-  - aitask-to-prism                # [dev] 历史迁移工具
   - prism-review-arno              # [personal]
   # - prism-workspace-init-arno    # [deprecated] 个人固化版已弃用
   - cursor-insights                # [dev] 内部分析工具

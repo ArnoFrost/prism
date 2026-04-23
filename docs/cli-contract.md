@@ -45,7 +45,7 @@ Prism 的命令面分两层，职责正交：
 
 ### 2.1 稳定性分级
 
-每个 verb / bin 命令在 `prism manifest --json`（1.1+）或本文档 §6 清单中标注稳定性：
+每个 verb / bin 命令在 `prism --json manifest`（1.1+）或本文档 §6 清单中标注稳定性：
 
 | 级别 | 含义 | 变更策略 |
 |------|------|---------|
@@ -64,8 +64,8 @@ N+1（下一个 minor）：引入新命令；原命令仍可用但调用时打 W
 N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 ```
 
-**例**：若 1.1 决定把 `prism pipeline` 重命名为 `prism topic finalize`：
-- 1.1 同时保留 `prism pipeline`（WARN）+ 新增 `prism topic finalize`
+**例**：若 1.1 把 `prism pipeline` 重命名为 `prism finalize`：
+- 1.1 同时保留 `prism pipeline`（WARN）+ 新增 `prism finalize`
 - 1.2 移除 `prism pipeline`
 
 ### 2.3 不属于破坏性变更的调整
@@ -105,7 +105,7 @@ N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 | 接口 | 形式 | 承诺 |
 |------|------|------|
 | `prism --json` 外层 schema | `{ok, command, version, data, warnings, errors}` 所有 verb 统一（完整定义见 [cli-json-schema.json](./cli-json-schema.json)） | 自首个 minor 全 verb 合规弹性演进：合规 verb 从 `schema_compliant=true` 名单逐步扩展至 100%，合规即视为 stable |
-| `prism manifest --json` | 导出 verb 元数据（`verb` / `stability` / `schema_compliant` / `description`）；参数级 schema 延 024 | 1.1 起 experimental，全 verb `schema_compliant=true` 后升 stable |
+| `prism --json manifest` | 导出 verb 元数据（`verb` / `stability` / `schema_compliant` / `description`）；参数级 schema 延 024 | 1.1 起 experimental，全 verb `schema_compliant=true` 后升 stable |
 | `prism --version` | 联动 SDK `VERSION` 文件（不再独立标注），VERSION 缺失时 stderr WARN + stdout 回退 `prism-cli (unknown)` | 1.1 起 stable |
 
 ### 4.1 outer schema 字段分层语义
@@ -139,7 +139,7 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | 命令 | 稳定性 | 用途 |
 |------|-------|------|
 | `bin/setup` | stable | 一键初始化 / 健康检查 / 重配置检测 |
-| `bin/doctor` | stable | 统一体检入口（scope: env / skill / sync / cli / config / release） |
+| `bin/doctor` | stable | 统一体检入口（scope: env / skill / sync / cli / config / release）；`--rollback` 回滚 `--fix` 修改；`--output <path>` 写入文件 |
 | `bin/relink` | stable | 跨 IDE 软链接分发 |
 | `bin/setenv` | stable | `prism.local.yaml` 配置管理 |
 | `bin/validate-skills` | stable | skill frontmatter 合规扫描 |
@@ -151,7 +151,7 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 ### 5.2 `prism <verb>` 一览
 
 > `JSON` 列：✅ = 已迁移到 outer schema（`--json` 合规）；⬜ = 未迁移，沿用旧 payload（024 或后续 minor 收敛）
-> **本表由 `prism manifest --json` 反向守（见 `tests/test_cli_contract_sync.py`），任何人工修改需同步 `VERB_REGISTRY`。**
+> **本表由 `prism --json manifest` 反向守（见 `tests/test_cli_contract_sync.py`），任何人工修改需同步 `VERB_REGISTRY`。**
 
 | Verb | 稳定性 | JSON | 用途 |
 |------|-------|------|------|
@@ -160,7 +160,11 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | `prism archive` | stable | ⬜ | 归档 topic 到 archive/ |
 | `prism migrate` | experimental | ⬜ | 迁移 review 子目录格式（1.2 如无新用例将降为过渡期工具） |
 | `prism sync` | **exempt** | ⬜ | 嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免） |
-| `prism pipeline` | experimental | ⬜ | Decision 后一键 tidy + validate + scope 提示（1.1 拟重命名为 `topic finalize`） |
+| `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + scope 提示 |
+| `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
+| `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |
+| `prism digest` | experimental | ⬜ | Topic 工件采集（供 Agent 生成摘要） |
+| `prism pipeline` | **deprecated** | ⬜ | 已重命名为 finalize（1.2 移除此别名） |
 | `prism manifest` | experimental | ✅ | 导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |
 
 ---
@@ -173,3 +177,5 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | 2026-04-22 | v1.1-M0 | §4 旧编号 022 → 023 + `prism --version` 联动 SDK VERSION 承诺写入 | [023/d01 D3](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
 | 2026-04-22 | v1.1-M1 | §4 加 cli-json-schema.json 反向引用；新增 §4.1 双层语义 + §4.2 Issue item 约定；承诺表述从"1.1 起 stable"改为弹性演进 | [023/d01 D1](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
 | 2026-04-22 | v1.1-M2 | §5.2 加 `JSON` 列 + 新增 `prism manifest` 行；表格改由 `VERB_REGISTRY` 反向守（pytest + pre-commit hook 示例） | [023/d01 D2 D4](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
+| 2026-04-23 | v1.1-M3 | §5.2 新增 finalize/tidy/status/digest 四行；`pipeline` stability 改 deprecated；§2.2 示例更新 | [024/d01](../workspace.prism.local/topics/024_cli-evolution/decisions/d01_cli命令结构裁决-单层vs-noun-verb.md) |
+| 2026-04-23 | v1.1-M4 | T4 `_dispatch_subprocess` 辅助函数；T5 `RELEASE_HEALTH.json` + `--output`；T6 `--rollback`；§6.1 bin/doctor 更新 | [024/plan](../workspace.prism.local/topics/024_cli-evolution/plan.md) |

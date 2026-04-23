@@ -68,8 +68,13 @@ def _extract_status(readme_path: str) -> str | None:
     # 读全文件：README 一般 < 10KB，不值得截断引入 bug
     with open(readme_path, "r", encoding="utf-8") as f:
         content = f.read()
-    m = re.search(r"\*\*status\*\*\s*\|\s*(\S+)", content, re.IGNORECASE)
-    return m.group(1) if m else None
+    for line in content.splitlines():
+        if "**status**" not in line.lower():
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) >= 3 and parts[1].lower() == "**status**":
+            return parts[2]
+    return None
 
 
 def scan_topic(topic_dir: str) -> dict:

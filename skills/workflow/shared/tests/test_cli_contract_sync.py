@@ -76,14 +76,14 @@ class TestManifestCommand:
             assert isinstance(verb["description"], str) and verb["description"]
 
     def test_manifest_contains_core_verbs(self):
-        """注册表不能漏掉当前 6 个业务 verb + manifest 自己（共 7 条）。"""
+        """注册表不能漏掉当前 10 个业务 verb + manifest 自己（共 11 条）。"""
         result = subprocess.run(
             [str(BIN_PRISM), "--json", "manifest"],
             capture_output=True, text=True, timeout=10,
         )
         envelope = json.loads(result.stdout)
         verb_names = {v["verb"] for v in envelope["data"]["verbs"]}
-        expected = {"sniff", "validate", "archive", "migrate", "sync", "pipeline", "manifest"}
+        expected = {"sniff", "validate", "archive", "migrate", "sync", "finalize", "tidy", "status", "digest", "pipeline", "manifest"}
         assert expected.issubset(verb_names), f"缺失: {expected - verb_names}"
 
     def test_schema_compliant_includes_m1_m2_verbs(self):
