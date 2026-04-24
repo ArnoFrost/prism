@@ -18,6 +18,10 @@
     .breaking_commits - 含 BREAKING CHANGE 的 commit 消息列表
   commit_summaries    - commit 一行摘要列表
   action_hints        - 建议操作列表（如 "运行 /inject-skill"）
+  apply_required      - 更新后是否仍需手动 apply
+  apply_level         - apply 级别（light / heavy / null）
+  apply_command       - 推荐执行的 apply 命令
+  apply_reason        - 触发 apply 的原因列表
 """
 
 import json
@@ -198,6 +202,57 @@ def _generate_hints(categories: dict) -> list[str]:
     return hints
 
 
+def _detect_apply_contract(repo_name: str, changed_files: list[str]) -> dict:
+    """根据 repo + 变更文件推导 post-update apply contract。
+
+    Phase 1 先只对 env 仓库给出正式 apply 判定；其他仓库默认不要求额外 apply。
+    """
+    if repo_name != "env":
+        return {
+            "apply_required": False,
+            "apply_level": None,
+            "apply_command": None,
+            "apply_reason": [],
+        }
+
+    heavy_files = {"setup.sh", "zshrc", "tmux/tmux.conf"}
+    light_exact_files = {"scripts/ag"}
+    light_prefixes = ("zsh/",)
+
+    heavy_reasons: list[str] = []
+    light_reasons: list[str] = []
+
+    for path in changed_files:
+        if path in heavy_files:
+            heavy_reasons.append(path)
+            continue
+        if path in light_exact_files or path.startswith(light_prefixes):
+            light_reasons.append(path)
+
+    if heavy_reasons:
+        return {
+            "apply_required": True,
+            "apply_level": "heavy",
+            "apply_command": "adot install",
+            "apply_reason": sorted(set(heavy_reasons)),
+        }
+
+    if light_reasons:
+        return {
+            "apply_required": True,
+            "apply_level": "light",
+            "apply_command": "adot apply",
+            "apply_reason": sorted(set(light_reasons)),
+        }
+
+    return {
+        "apply_required": False,
+        "apply_level": None,
+        "apply_command": None,
+        "apply_reason": [],
+    }
+
+
 def scan(repo_path: str, old_sha: str, new_sha: str, repo_name: str = "unknown") -> dict:
     """执行完整变更扫描，返回结构化 JSON"""
     commits = _get_commits(repo_path, old_sha, new_sha)
@@ -206,6 +261,12 @@ def scan(repo_path: str, old_sha: str, new_sha: str, repo_name: str = "unknown")
     categories = _categorize_files(changed_files, old_sha, new_sha, repo_path)
     categories["breaking_commits"] = breaking
     hints = _generate_hints(categories)
+    apply_contract = _detect_apply_contract(repo_name, changed_files)
+
+    if apply_contract["apply_required"]:
+        hints.append(
+            f"{repo_name} 更新后仍需 {apply_contract['apply_level']} apply → 运行 {apply_contract['apply_command']}"
+        )
 
     return {
         "repo": repo_name,
@@ -216,6 +277,10 @@ def scan(repo_path: str, old_sha: str, new_sha: str, repo_name: str = "unknown")
         "categories": categories,
         "commit_summaries": commits,
         "action_hints": hints,
+        "apply_required": apply_contract["apply_required"],
+        "apply_level": apply_contract["apply_level"],
+        "apply_command": apply_contract["apply_command"],
+        "apply_reason": apply_contract["apply_reason"],
     }
 
 
