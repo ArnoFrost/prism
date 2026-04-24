@@ -2,7 +2,7 @@
 
 > 本文件由 [021 workflow-cli-consolidation / d02](../workspace.prism.local/topics/021_workflow-cli-consolidation/decisions/d02_cli-v1.0升级三级门控.md) 固化。
 > 所有对 `bin/` 与 `prism <verb>` 的新增、改名、删除必须引用本文作为依据。
-> 版本：v1.0（随 SDK `VERSION` 同步升级）
+> 版本：v1.1（随 SDK `VERSION` 同步升级）
 
 ---
 
@@ -132,7 +132,7 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 
 ---
 
-## 5 当前 CLI 清单（v1.0）
+## 5 当前 CLI 清单（v1.1）
 
 ### 5.1 `bin/` 一览
 
@@ -179,3 +179,4 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | 2026-04-22 | v1.1-M2 | §5.2 加 `JSON` 列 + 新增 `prism manifest` 行；表格改由 `VERB_REGISTRY` 反向守（pytest + pre-commit hook 示例） | [023/d01 D2 D4](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
 | 2026-04-23 | v1.1-M3 | §5.2 新增 finalize/tidy/status/digest 四行；`pipeline` stability 改 deprecated；§2.2 示例更新 | [024/d01](../workspace.prism.local/topics/024_cli-evolution/decisions/d01_cli命令结构裁决-单层vs-noun-verb.md) |
 | 2026-04-23 | v1.1-M4 | T4 `_dispatch_subprocess` 辅助函数；T5 `RELEASE_HEALTH.json` + `--output`；T6 `--rollback`；§6.1 bin/doctor 更新 | [024/plan](../workspace.prism.local/topics/024_cli-evolution/plan.md) |
+| 2026-04-24 | v1.1.0 | VERSION / README / CHANGELOG / schema 示例口径统一到 `v1.1.0`；将 023/024/025/026 视为已纳入当前阶段版本 | 当前阶段对齐 |

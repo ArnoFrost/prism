@@ -1,29 +1,46 @@
-# Changelog
-
-All notable changes to Prism are documented in this file.
-
 ## [Unreleased]
 
-### Added — CLI 语义层演进（024 T2/T3）
+## [v1.1.0] — 2026-04-24
+
+**1.1 阶段版 · 在 `v1.0.0` 基础上继续做 CLI 语义、文档叙事与跨层 update/apply 机制收敛。** 这个版本的目标不是宣布一次全新架构，而是把 023 / 024 / 025 / 026 这几轮增强统一收束成一个更顺手、更可自省、也更适合继续日常观察使用的阶段性基线。
+
+### Added — CLI 契约与可机器校验能力（023）
+
+- 新增全局 `--json` 外层 schema：`{ok, command, version, data, warnings, errors}`
+- 新增 `prism manifest` 与 `prism --json manifest`，可导出 verb 元数据
+- `prism --version` 联动 SDK `VERSION` 文件
+- 新增 CLI contract sync gate 与对应 pytest，用于防止命令面文档漂移
+
+### Added — CLI 语义层演进（024）
 
 - `prism finalize <topic_dir>` — Decision 后一键编排（原 `pipeline` 重命名）
 - `prism tidy <project_dir>` — 工件机械对齐（README 指针 / review.index / frontmatter）
 - `prism status <project_dir>` — Workspace 活跃 topic 健康度扫描
 - `prism digest <project_dir> --topic <name>` — Topic 工件采集（供 Agent 生成摘要）
-
-### Added — CLI 生态层演进（024 T4/T5/T6）
-
 - `_dispatch_subprocess()` 辅助函数 — 消除 cmd_tidy/cmd_status/cmd_digest 的 subprocess 重复代码
 - `bin/doctor --output <path>` — JSON 结果写入文件（自动启用 --json）
 - `bin/doctor --scope release --json` 输出增加 `version` / `timestamp` / `sdk_root` 字段
 - `dist/RELEASE_HEALTH.json` — `bin/doctor --scope release --output dist/RELEASE_HEALTH.json` 一键生成
-- `bin/doctor --rollback` — 回滚 --fix 修改（删除 rc 锚点块 + symlink）
-- `doctor_cli.py --rollback` — 同上，Python 级 API
+- `bin/doctor --rollback` / `doctor_cli.py --rollback` — 回滚 --fix 修改（删除 rc 锚点块 + symlink）
 
-### Changed
+### Changed — 文档叙事与版本口径（025）
 
-- `prism pipeline` → deprecated alias，调用时输出 WARN 指向 `finalize`，1.2 移除
-- `bin/doctor --json` 输出增加 `version` / `timestamp` / `sdk_root` 三个顶层字段
+- README / architecture / bin README 已升级到 Prism 1.0+ 的真实能力面，不再停留在旧 `pipeline` 叙事
+- 新增 `docs/prism-1.0.md` 作为定位说明稿
+- 当前对外版本口径统一为 `v1.1.0`，用于承接 `v1.0.0` 之后的收敛阶段
+
+### Added — 跨层 update/apply 机制最小闭环（026）
+
+- Prism 侧 changelog scan 新增 `apply_required / apply_level / apply_command / apply_reason`
+- Env 侧新增轻量 `adot apply` 入口，`adot pull` 改为完成后推荐 `adot apply`
+- `prism-pull` skill 已对齐 apply contract 说明
+- 当前 Phase 1 已形成最小闭环：Prism 判断 apply，Env 承担轻量生效
+
+### Compatibility & Notes
+
+- `prism pipeline` 继续作为 deprecated alias 保留，1.2 再考虑移除
+- `adot apply` 当前刻意保持轻量，不吸收 `install` / bootstrap 语义
+- `v1.1.0` 目前作为**阶段性统一口径**，后续将继续通过真实日常使用观察顺手度与边界稳定性
 
 ## [v1.0.0] — 2026-04-21
 

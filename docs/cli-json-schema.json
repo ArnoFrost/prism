@@ -64,7 +64,7 @@
     {
       "ok": true,
       "command": "sniff",
-      "version": "v1.0.0",
+      "version": "v1.1.0",
       "data": {
         "project_dir": "/Users/xuxin/prism",
         "workspace": { "path": "/Users/xuxin/prism/workspace.prism.local" }
@@ -75,7 +75,7 @@
     {
       "ok": false,
       "command": "validate",
-      "version": "v1.0.0",
+      "version": "v1.1.0",
       "data": null,
       "warnings": [],
       "errors": [
