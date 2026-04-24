@@ -4,9 +4,13 @@
 
 # Prism
 
-Prism 是一套**本地优先、无侵入**的个人 AI 协作基座。通过软链接桥接将共享规则折射进本地工作区——不接管目录结构，不污染版本历史。
+Prism 是一套**本地优先、无侵入**的个人 AI 工作流管线。它把共享规则、CLI、技能分发与项目状态容器组合成一个可长期运转的个人协作系统；通过软链接桥接将共享规则折射进本地工作区——不接管目录结构，不污染版本历史。
 
 > 共享规则，本地状态，清晰边界。
+
+当前 `v1.0.0` 已完成 SDK 主干、CLI 收敛、Env/Skills 分层与 Workspace 工作流骨架；当前重点已从“能否成立”转向“文档叙事补齐 + 观察使用期”。
+
+如果你想先快速判断“Prism 现在到底是什么、为什么已经成立、还差什么”，可直接阅读 [docs/prism-1.0.md](docs/prism-1.0.md)。
 
 ---
 
@@ -83,17 +87,17 @@ Prism 的核心使用路径只有四步：
 
 ## 核心概念
 
-### 三正交分离
+### 四层分离
 
-四个仓库正交独立，各自版控：
+Prism 当前以四个正交载体协同工作，各自独立版控：
 
 
 | 仓库            | 默认路径                 | 职责                         | 典型内容                                              |
 | ------------- | -------------------- | -------------------------- | ------------------------------------------------- |
-| **SDK**       | `~/prism`            | 协议 + 模板 + 工具 + 内置 workflow | `bin/relink`, `workflow-review`, `workspace-init` |
-| **Skills**    | `~/prism-skills`     | 可分享的通用技能                   | `commit`, `digest`, `log-triage`, `learnnote`     |
-| **Env**       | `~/ArnoDotFiles`（可选） | 个人/设备专属配置与技能               | `sync-dot`, `codex-sync`, hooks                   |
-| **Workspace** | iCloud Vault         | 项目状态（路书、评审、上下文）            | `topics/`, `project.yaml`                         |
+| **SDK**       | `~/prism`               | 协议 + 模板 + CLI + 内置 workflow | `bin/relink`, `bin/doctor`, `prism finalize` |
+| **Skills**    | `~/prism-skills`        | 可分享的通用技能                | `commit`, `digest`, `log-triage`, `learnnote` |
+| **Env**       | `~/ArnoDotFiles`（可选）    | 个人/设备专属配置与技能            | `sync-dot`, `codex-sync`, hooks |
+| **Workspace** | iCloud Vault / 本地 Vault | 项目状态（topic、评审、上下文）     | `topics/`, `project.yaml` |
 
 
 四者通过 `prism.local.yaml` + `bin/relink` 桥接。Skills 和 Env 均可选。
@@ -203,15 +207,26 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 
 | 命令               | 职责                                                |
 | ---------------- | ------------------------------------------------- |
-| `prism sniff`    | 探测 topic_affinity / 下一轮编号（`--kind review|intake`） |
-| `prism validate` | 校验 topic 产物格式（frontmatter / 命名规范，`--fix` 自动修复）    |
-| `prism archive`  | 归档 topic 到 `archive/`                             |
-| `prism migrate`  | 迁移历史 review 子目录格式                                 |
-| `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态                   |
-| `prism pipeline` | Decision 后一键串联 tidy → validate → scope 提示         |
+| `prism sniff`    | 探测 topic_affinity / 下一轮编号（`--kind review\|intake`） |
+| `prism validate` | 校验 topic 产物格式（frontmatter / 命名规范，`--fix` 自动修复） |
+| `prism archive`  | 归档 topic 到 `archive/` |
+| `prism migrate`  | 迁移历史 review 子目录格式 |
+| `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态 |
+| `prism finalize` | Decision 后一键串联 tidy → validate → scope 提示 |
+| `prism tidy`     | 工件机械对齐（README 指针 / review.index / frontmatter） |
+| `prism status`   | Workspace 活跃 topic 健康度扫描 |
+| `prism digest`   | Topic 工件采集，供摘要/汇报生成 |
+| `prism manifest` | 导出 verb registry 元数据 |
+| `prism pipeline` | `finalize` 的 deprecated alias，迁移期保留 |
 
 
 详见 [bin/README.md](bin/README.md)。
+
+如需查看当前 CLI 能力面的机器可见真源，优先运行：
+
+```bash
+prism --json manifest
+```
 
 ---
 
@@ -221,7 +236,8 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 
 - **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
-- **experimental 标记**：标注为 experimental 的 verb（当前：`prism migrate` / `prism pipeline`）可能在下一个 minor 改名或改参数
+- **experimental 标记**：标注为 experimental 的 verb（当前：`prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism manifest`）可能在下一个 minor 改名或改参数
+- **deprecated 标记**：`prism pipeline` 已进入迁移期，当前仅作为 `finalize` 别名保留
 - **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 
 > 完整命令面契约、分层判断树、稳定性分级与破坏性变更策略见 [docs/cli-contract.md](docs/cli-contract.md)。
