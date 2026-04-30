@@ -12,7 +12,7 @@
 #
 # --non-interactive 环境变量：
 #   PRISM_SDK_PATH     SDK 路径（默认当前 Prism 目录）
-#   PRISM_SKILLS_PATH  Skills 路径（默认 ~/prism-skills）
+#   PRISM_SKILLS_PATH  外部 Skills 路径（可选，留空跳过）
 #   PRISM_VAULT_PATH   Vault 路径（默认 iCloud AI Obsidian）
 #   PRISM_WS_SUBDIR    Workspace 子目录（默认 Prism/Workspace）
 #   PRISM_ENV_PATH     Env 层路径（可选）
@@ -33,7 +33,7 @@ NC='\033[0m'
 
 yaml_get() {
   local key="$1"
-  grep "^${key}:" "$CONFIG" 2>/dev/null | sed "s/^${key}: *//"
+  (grep "^${key}:" "$CONFIG" 2>/dev/null || true) | sed "s/^${key}: *//"
 }
 
 show_config() {
@@ -59,7 +59,11 @@ show_config() {
     echo -e "  设备 ID:       ${YELLOW}未设置（运行 bin/setenv --sync 补充）${NC}"
   fi
   echo -e "  SDK 路径:       ${GREEN}${sdk}${NC}"
-  echo -e "  Skills 路径:    ${GREEN}${skills}${NC}"
+  if [[ -n "$skills" ]]; then
+    echo -e "  外部 Skills:    ${GREEN}${skills}${NC}"
+  else
+    echo -e "  外部 Skills:    ${DIM}(未配置，可选)${NC}"
+  fi
   echo -e "  Vault 路径:     ${GREEN}${vault}${NC}"
   echo -e "  Workspace 子目录: ${ws_sub}"
   echo ""
@@ -82,7 +86,9 @@ show_config() {
   echo ""
   echo -e "  ${CYAN}完整路径:${NC}"
   echo -e "    Workspace: ${vault}/${ws_sub}"
-  echo -e "    Skills:    ${skills}"
+  if [[ -n "$skills" ]]; then
+    echo -e "    Skills:    ${skills}"
+  fi
   if [[ -n "$env_p" ]]; then
     echo -e "    Env:       ${env_p}"
   fi
@@ -109,7 +115,11 @@ show_config() {
   echo ""
   echo -e "  ${CYAN}路径状态:${NC}"
   [[ -d "$sdk" ]] && echo -e "    SDK:       ${GREEN}✓${NC}" || echo -e "    SDK:       ${RED}✗ 不存在${NC}"
-  [[ -d "$skills" ]] && echo -e "    Skills:    ${GREEN}✓${NC}" || echo -e "    Skills:    ${RED}✗ 不存在${NC}"
+  if [[ -n "$skills" ]]; then
+    [[ -d "$skills" ]] && echo -e "    Skills:    ${GREEN}✓${NC}" || echo -e "    Skills:    ${YELLOW}⚠ 不存在（可选扩展）${NC}"
+  else
+    echo -e "    Skills:    ${DIM}⊘ 未配置（可选）${NC}"
+  fi
   [[ -d "$vault" ]] && echo -e "    Vault:     ${GREEN}✓${NC}" || echo -e "    Vault:     ${RED}✗ 不存在${NC}"
   [[ -d "${vault}/${ws_sub}" ]] && echo -e "    Workspace: ${GREEN}✓${NC}" || echo -e "    Workspace: ${YELLOW}⚠ 不存在${NC}"
   if [[ -n "$env_p" ]]; then
@@ -134,7 +144,9 @@ do_export() {
 
   echo "export PRISM_DEVICE_ID=\"${device_id}\""
   echo "export PRISM_DIR=\"${sdk}\""
-  echo "export PRISM_SKILLS=\"${skills}\""
+  if [[ -n "$skills" ]]; then
+    echo "export PRISM_SKILLS=\"${skills}\""
+  fi
   echo "export PRISM_VAULT=\"${vault}\""
   echo "export PRISM_WORKSPACE=\"${vault}/${ws_sub}\""
 
@@ -171,7 +183,7 @@ do_validate() {
     echo -e "  ${GREEN}✓${NC} device_id: ${did}"
   fi
 
-  local required_keys=("sdk_path" "skills_path" "vault_path" "workspace_subdir")
+  local required_keys=("sdk_path" "vault_path" "workspace_subdir")
 
   for key in "${required_keys[@]}"; do
     local val
@@ -183,6 +195,15 @@ do_validate() {
       echo -e "  ${GREEN}✓${NC} ${key}: ${val}"
     fi
   done
+
+  # skills_path 可选：配置了就检查，未配置不阻塞 core / mini。
+  local skills_optional
+  skills_optional=$(yaml_get skills_path)
+  if [[ -n "$skills_optional" ]]; then
+    echo -e "  ${GREEN}✓${NC} skills_path: ${skills_optional} ${DIM}(可选扩展)${NC}"
+  else
+    echo -e "  ${DIM}⊘${NC} skills_path: 未配置（可选扩展）"
+  fi
 
   # env_path 可选字段检查
   local env_p
@@ -202,7 +223,7 @@ do_validate() {
   vault=$(yaml_get vault_path)
   ws_sub=$(yaml_get workspace_subdir)
 
-  for pair in "SDK:${sdk}" "Skills:${skills}" "Vault:${vault}"; do
+  for pair in "SDK:${sdk}" "Vault:${vault}"; do
     local label="${pair%%:*}"
     local p="${pair#*:}"
     if [[ -z "$p" ]]; then
@@ -214,6 +235,26 @@ do_validate() {
       ((errors++)) || true
     fi
   done
+
+  if [[ -n "$skills" ]]; then
+    if [[ -d "$skills" ]]; then
+      echo -e "  ${GREEN}✓${NC} Skills: 可达（可选扩展）"
+    else
+      echo -e "  ${YELLOW}⚠${NC} Skills: 不可达 ${skills}（可选扩展，不阻塞 core）"
+    fi
+  else
+    echo -e "  ${DIM}⊘${NC} Skills: 未配置（可选扩展）"
+  fi
+
+  echo ""
+  echo -e "  ${CYAN}运行时:${NC}"
+  if command -v uv >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✓${NC} uv: $(uv --version 2>/dev/null || echo 可用)"
+  else
+    echo -e "  ${RED}✗${NC} uv: 未安装（core / mini 必需）"
+    echo -e "    ${DIM}手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
+    ((errors++)) || true
+  fi
 
   if [[ -n "$env_p" ]]; then
     if [[ -d "$env_p" ]]; then
@@ -300,9 +341,6 @@ device_id: ${device_id}
 # SDK 路径（Prism 仓库位置）
 sdk_path: ${sdk}
 
-# Skills 路径（独立 Git 仓库）
-skills_path: ${skills}
-
 # Vault 基础路径（iCloud Obsidian vault，仅承载 Workspace）
 vault_path: ${vault}
 
@@ -310,6 +348,13 @@ vault_path: ${vault}
 workspace_subdir: ${ws_sub}
 
 CONFDATA
+  if [[ -n "$skills" ]]; then
+    cat >> "$CONFIG" << CONFDATA
+# 可选：外部 Skills 扩展仓库路径（未配置则仅使用 SDK 内置 workflow）
+skills_path: ${skills}
+
+CONFDATA
+  fi
   if [[ -n "$env_p" ]]; then
     cat >> "$CONFIG" << CONFDATA
 # 可选：env 层路径（如 ArnoDotFiles），存在则分发其 skills/ 下的技能
@@ -357,14 +402,14 @@ do_init() {
 
   if $NON_INTERACTIVE; then
     sdk="${PRISM_SDK_PATH:-$PRISM_DIR}"
-    skills="${PRISM_SKILLS_PATH:-$HOME/prism-skills}"
+    skills="${PRISM_SKILLS_PATH:-}"
     vault="${PRISM_VAULT_PATH:-$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian}"
     ws_sub="${PRISM_WS_SUBDIR:-Prism/Workspace}"
     env_p="${PRISM_ENV_PATH:-}"
     obs_p="${PRISM_OBS_PERSONAL:-}"
 
     echo -e "  SDK:       ${sdk}"
-    echo -e "  Skills:    ${skills}"
+    [[ -n "$skills" ]] && echo -e "  Skills:    ${skills}" || echo -e "  Skills:    (未配置，可选)"
     echo -e "  Vault:     ${vault}"
     echo -e "  子目录:    ${ws_sub}"
     [[ -n "$env_p" ]] && echo -e "  Env:       ${env_p}"
@@ -380,9 +425,15 @@ do_init() {
   read -r -p "SDK 路径 [${PRISM_DIR}]: " sdk
   sdk="${sdk:-$PRISM_DIR}"
 
-  local default_skills="$HOME/prism-skills"
-  read -r -p "Skills 路径 [${default_skills}]: " skills
-  skills="${skills:-$default_skills}"
+  local default_skills=""
+  [[ -d "$HOME/prism-skills" ]] && default_skills="$HOME/prism-skills"
+  if [[ -n "$default_skills" ]]; then
+    read -r -p "外部 Skills 路径（可选，留空跳过） [${default_skills}]: " skills
+    skills="${skills:-$default_skills}"
+  else
+    read -r -p "外部 Skills 路径（可选，留空跳过） []: " skills
+    skills="${skills:-}"
+  fi
 
   local default_vault="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"
   read -r -p "Vault 路径 [${default_vault}]: " vault

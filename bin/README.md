@@ -28,7 +28,7 @@ bin/setup --check       # 仅检查健康度，不修改任何配置
 bin/setup --non-interactive  # 非交互模式（适合脚本调用）
 ```
 
-在已配置的设备上重复执行是安全的（幂等）。`--check` 模式会检测路径有效性、字段完整性、软链接状态和 IDE 分发情况，适合用于重配置检测。
+在已配置的设备上重复执行是安全的（幂等）。`--check` 模式会检测 `uv` 运行时、路径有效性、字段完整性、软链接状态和 IDE 分发情况，适合用于重配置检测；正常 `bin/setup` 会在缺少 `uv` 时尝试自动安装。
 
 ### setenv — 配置管理
 
@@ -43,7 +43,8 @@ bin/setenv --export                 # 输出 export 语句
 source <(bin/setenv --export)
 
 # 非交互模式环境变量
-# PRISM_SDK_PATH / PRISM_SKILLS_PATH / PRISM_VAULT_PATH / PRISM_WS_SUBDIR
+# PRISM_SDK_PATH / PRISM_VAULT_PATH / PRISM_WS_SUBDIR
+# PRISM_SKILLS_PATH 可选；留空时仅使用 SDK 内置 workflow/workspace 能力
 ```
 
 ### relink — 软链接刷新
@@ -201,9 +202,11 @@ bin/rename-artifacts <path>       # 直接扫描指定目录（无需 prism.loca
 
 ```yaml
 sdk_path: /Users/xuxin/prism
-skills_path: /Users/xuxin/prism-skills
 vault_path: /Users/xuxin/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian
 workspace_subdir: Prism/Workspace
+
+# 可选：外部 Skills 扩展仓库
+skills_path: /Users/xuxin/prism-skills
 
 projects:
   PRISM: /Users/xuxin/prism

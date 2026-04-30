@@ -249,7 +249,7 @@ def _dispatch_subprocess(skill: str, script: str, cmd_args: list[str]) -> int:
         return 1
 
     result = subprocess.run(
-        ["python3", script_path] + cmd_args,
+        [sys.executable, script_path] + cmd_args,
         capture_output=True, text=True, timeout=30,
     )
     if result.stdout.strip():
@@ -427,7 +427,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         topic_name = os.path.basename(topic_dir)
         # tidy 需要 project_dir（含 workspace 的目录），向上两级
         ws_candidate = os.path.dirname(os.path.dirname(topic_dir))
-        tidy_cmd = ["python3", tidy_path, ws_candidate, "--topic", topic_name]
+        tidy_cmd = [sys.executable, tidy_path, ws_candidate, "--topic", topic_name]
         if not dry_run:
             tidy_cmd.append("--fix")
         tidy_cmd.extend(["--format", "json"])
@@ -457,7 +457,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     validate_path = os.path.join(review_scripts, "validate_product.py")
     if os.path.isfile(validate_path):
         import subprocess
-        validate_cmd = ["python3", validate_path, topic_dir, "--format", "ofm"]
+        validate_cmd = [sys.executable, validate_path, topic_dir, "--format", "ofm"]
         if not dry_run:
             validate_cmd.append("--fix")
 

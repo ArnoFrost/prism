@@ -85,8 +85,12 @@ _stage_env() {
 
   ! $JSON && echo -e "\n${CYAN}[环境]${NC}"
   local out rc=0
-  # setup 返回 0=全绿, 1=有错误, 其他视为错误
-  out=$("$PRISM_DIR/bin/setup" --check 2>&1) || rc=$?
+  # setup 返回 0=全绿, 1=有错误, 其他视为错误；--fix 时允许 setup 执行非破坏性修复（含 uv 自动安装）。
+  if $FIX; then
+    out=$("$PRISM_DIR/bin/setup" 2>&1) || rc=$?
+  else
+    out=$("$PRISM_DIR/bin/setup" --check 2>&1) || rc=$?
+  fi
 
   # 显示非绿色行（日志里的 ✗ 或 ⚠ 开头项）
   if ! $JSON; then
@@ -309,10 +313,10 @@ _stage_config() {
     return 0
   fi
 
-  # 用 python 解析 yaml，检验 4 个必填字段 + 路径可达性
+  # 用 python 解析 yaml，检验 core 必填字段、可选扩展路径与 uv 运行时
   local report
   report=$(python3 - "$config_path" <<'PYEOF' 2>/dev/null || echo "parse_error"
-import json, os, sys
+import json, os, shutil, sys
 
 path = sys.argv[1]
 try:
@@ -333,7 +337,7 @@ for line in raw.splitlines():
     key, _, val = line.partition(":")
     config[key.strip()] = val.strip().strip('"').strip("'")
 
-required = ["device_id", "sdk_path", "skills_path", "vault_path", "workspace_subdir"]
+required = ["device_id", "sdk_path", "vault_path", "workspace_subdir"]
 err = 0
 warn = 0
 lines = []
@@ -343,7 +347,7 @@ for field in required:
         err += 1
 
 # 路径可达性
-path_fields = ["sdk_path", "skills_path", "vault_path"]
+path_fields = ["sdk_path", "vault_path"]
 for pf in path_fields:
     if pf in config and config[pf]:
         p = os.path.expanduser(config[pf])
@@ -359,8 +363,22 @@ for pf in path_fields:
                 lines.append(f"\u2717 {pf} \u76ee\u5f55\u4e0d\u5b58\u5728: {p}")
                 err += 1
 
+skills_path = config.get("skills_path", "")
+if skills_path:
+    p = os.path.expanduser(skills_path)
+    if not p.startswith("/"):
+        lines.append(f"\u26a0 skills_path \u975e\u7edd\u5bf9\u8def\u5f84\uff08\u53ef\u9009\u6269\u5c55\uff09: {p}")
+        warn += 1
+    elif not os.path.isdir(p):
+        lines.append(f"\u26a0 skills_path \u76ee\u5f55\u4e0d\u5b58\u5728\uff08\u53ef\u9009\u6269\u5c55\uff09: {p}")
+        warn += 1
+
+if shutil.which("uv") is None:
+    lines.append("\u2717 uv \u672a\u5b89\u88c5\uff08core / mini \u5fc5\u9700\uff09")
+    err += 1
+
 if err == 0 and warn == 0:
-    lines.append("\u2713 5 \u5fc5\u586b\u5b57\u6bb5\u9f50\u5907\uff0c\u8def\u5f84\u5747\u53ef\u8fbe")
+    lines.append("\u2713 core \u5fc5\u586b\u5b57\u6bb5\u9f50\u5907\uff0c\u8def\u5f84\u4e0e uv \u5747\u53ef\u7528")
 
 print(json.dumps({"err": err, "warn": warn, "lines": lines}, ensure_ascii=False))
 PYEOF

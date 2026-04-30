@@ -50,6 +50,15 @@ RED='\033[0;31m'
 DIM='\033[2m'
 NC='\033[0m'
 
+_run_python() {
+  if ! command -v uv >/dev/null 2>&1; then
+    echo -e "${RED}✗ uv 未安装，Prism core / mini 需要 uv 作为 Python 运行时${NC}" >&2
+    echo -e "  ${DIM}可运行 bin/setup 自动安装，或手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}" >&2
+    exit 127
+  fi
+  exec uv run python "$@"
+}
+
 # ── --help/-h: 从文件头注释提取 ─────────
 if [[ "$1" == "--help" || "$1" == "-h" || -z "$1" ]]; then
   awk 'NR==1 { next } /^$/ { exit } { sub(/^# ?/, ""); print }' "$0"
@@ -64,7 +73,7 @@ fi
 
 # ── --version ───────────────────────────
 if [[ "$1" == "--version" || "$1" == "-V" ]]; then
-  exec python3 "$CLI_SCRIPT" --version
+  _run_python "$CLI_SCRIPT" --version
 fi
 
 # ── 前置检查：CLI 脚本必须存在 ──────────
@@ -76,4 +85,4 @@ if [[ ! -f "$CLI_SCRIPT" ]]; then
 fi
 
 # ── 转发到 Python 实现 ──────────────────
-exec python3 "$CLI_SCRIPT" "$@"
+_run_python "$CLI_SCRIPT" "$@"

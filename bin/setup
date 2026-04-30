@@ -46,6 +46,43 @@ log_warn() { echo -e "  ${YELLOW}⚠${NC} $1"; WARNINGS=$((WARNINGS + 1)); }
 log_err()  { echo -e "  ${RED}✗${NC} $1"; ERRORS=$((ERRORS + 1)); }
 log_info() { echo -e "  ${DIM}$1${NC}"; }
 
+install_uv() {
+  if command -v uv >/dev/null 2>&1; then
+    log_ok "uv: $(uv --version 2>/dev/null || echo 可用)"
+    return 0
+  fi
+
+  if $CHECK_ONLY; then
+    log_err "uv 未安装（core / mini 必需）"
+    log_info "手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    return 1
+  fi
+
+  echo -e "  ${YELLOW}⚠${NC} uv 未安装，尝试自动安装"
+  if ! command -v curl >/dev/null 2>&1; then
+    log_err "无法自动安装 uv：curl 不可用"
+    log_info "请手动安装 uv: https://docs.astral.sh/uv/getting-started/installation/"
+    return 1
+  fi
+
+  if curl -LsSf https://astral.sh/uv/install.sh | sh; then
+    if [[ -x "$HOME/.local/bin/uv" ]]; then
+      export PATH="$HOME/.local/bin:$PATH"
+    fi
+    if command -v uv >/dev/null 2>&1; then
+      log_ok "uv 已安装: $(uv --version 2>/dev/null || echo 可用)"
+      return 0
+    fi
+    log_err "uv 安装脚本已执行，但当前 shell 尚未找到 uv"
+    log_info "请打开新终端或手动执行: export PATH=\"$HOME/.local/bin:\$PATH\""
+    return 1
+  fi
+
+  log_err "uv 自动安装失败"
+  log_info "请手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh"
+  return 1
+}
+
 # ══════════════════════════════════════
 echo -e "${CYAN}Prism Setup${NC}"
 echo "═══════════════════════════════════"
@@ -62,23 +99,26 @@ else
   log_err "SDK 不是 Git 仓库: $PRISM_DIR"
 fi
 
+# Runtime
+install_uv || true
+
 # Skills
-SKILLS_DEFAULT="$HOME/prism-skills"
 if [[ -f "$CONFIG" ]]; then
   SKILLS_PATH=$(yaml_get skills_path)
-  [[ -z "$SKILLS_PATH" ]] && SKILLS_PATH="$SKILLS_DEFAULT"
 else
-  SKILLS_PATH="$SKILLS_DEFAULT"
+  SKILLS_PATH=""
 fi
 
-if [[ -d "$SKILLS_PATH/.git" ]]; then
+if [[ -z "$SKILLS_PATH" ]]; then
+  log_info "外部 Skills: 未配置（可选，mini 不需要）"
+elif [[ -d "$SKILLS_PATH/.git" ]]; then
   SKILLS_REMOTE=$(cd "$SKILLS_PATH" && git remote get-url origin 2>/dev/null || echo "无")
   log_ok "Skills: $SKILLS_PATH ${DIM}($SKILLS_REMOTE)${NC}"
 elif [[ -d "$SKILLS_PATH" ]]; then
   log_warn "Skills 目录存在但非 Git 仓库: $SKILLS_PATH"
 else
-  log_warn "Skills 仓库不存在: $SKILLS_PATH"
-  log_info "建议: git clone <skills-repo> $SKILLS_PATH"
+  log_warn "外部 Skills 配置但不存在: $SKILLS_PATH"
+  log_info "如需扩展技能，可 clone 后写入 skills_path；mini 可跳过"
 fi
 
 # Env（可选）
@@ -107,7 +147,7 @@ if [[ -f "$CONFIG" ]]; then
   log_ok "prism.local.yaml 存在"
 
   # 校验必填字段
-  REQUIRED_FIELDS="device_id sdk_path skills_path vault_path workspace_subdir"
+  REQUIRED_FIELDS="device_id sdk_path vault_path workspace_subdir"
   MISSING=""
   for field in $REQUIRED_FIELDS; do
     val=$(yaml_get "$field")
@@ -122,7 +162,7 @@ if [[ -f "$CONFIG" ]]; then
       log_info "建议运行: bin/setenv --init 补全配置"
     fi
   else
-    log_ok "必填字段完整: device_id, sdk_path, skills_path, vault_path, workspace_subdir"
+    log_ok "core 必填字段完整: device_id, sdk_path, vault_path, workspace_subdir"
   fi
 
   # 路径有效性

@@ -28,13 +28,13 @@ fields:
 
   skills_path:
     type: string
-    required: true
-    description: "Skills 实现仓库的绝对路径（独立 Git 仓库）"
+    required: false
+    description: "外部 Skills 扩展仓库的绝对路径（独立 Git 仓库）；mini/core 可不配置"
     example: "/Users/xuxin/prism-skills"
     validation:
-      - "必须是绝对路径"
-      - "目录必须存在"
-      - "目录内应包含至少一个含 SKILL.md 的子目录"
+      - "配置时必须是绝对路径"
+      - "配置时目录建议存在"
+      - "缺省时跳过外部技能分发，仅使用 SDK 内置 workflow/workspace 能力"
 
   vault_path:
     type: string
@@ -95,3 +95,12 @@ tool_integration:
   setenv_validate: "校验配置文件是否符合此 schema（必填字段 + 路径可达性 + 项目注册）"
   setenv_export: "读取配置并输出 shell export 语句"
   relink: "读取配置刷新所有软链接，成功后回写 project.yaml paths"
+
+runtime:
+  uv:
+    required: true
+    description: "core / mini 统一 Python 脚本运行时依赖"
+    setup_behavior:
+      - "bin/setup --check 只检测并显式报错"
+      - "bin/setup 正常初始化会尝试通过官方安装脚本自动安装"
+      - "自动安装失败时提示用户手动安装"
