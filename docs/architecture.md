@@ -9,7 +9,7 @@
 | 层 | 职责 | 必需 | SDK 内对应 |
 |----|------|:----:|-----------|
 | **Protocol** | 人与 AI 的协作契约 | 是 | `AGENT.md` |
-| **Env** | 运行环境与终端基座 | 可选 | 由外部 DotFiles 承担，MVP 阶段保留 |
+| **Env** | 运行环境与终端基座 | 可选 | 由外部 DotFiles 承担，作为可选扩展保留 |
 | **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（schema + 模板 + 内置技能） |
 | **Workspace** | 项目级 AI 协作状态容器 | 是 | `workspace/`（schema + 模板） |
 

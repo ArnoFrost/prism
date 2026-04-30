@@ -75,7 +75,7 @@
 - 回归 harness：70 pytest 用例覆盖核心路径
 
 #### 分发能力
-- `prism-dist` skill：白名单 profile（mvp/full）+ 内容脱敏 + zip 打包 + 验证
+- `prism-dist` skill：白名单 profile（mini/full）+ 内容脱敏 + zip 打包 + 验证
 - `INSTALL_INTERNAL.md` 两轨并行入口：Agent 自包含安装引导
 - `SETUP.md`：git clone 路径的 Agent 引导
 

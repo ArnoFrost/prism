@@ -144,7 +144,7 @@ topic_affinity.suggestion = cohesion
 ### 角色 B：可执行性评审员
 
 - **Identity**: 可执行性评审员
-- **Scope**: 行动项可落地性、验收标准明确性、依赖识别、优先级合理性、MVP 边界
+- **Scope**: 行动项可落地性、验收标准明确性、依赖识别、优先级合理性、最小可交付边界
 - **Anti-patterns**: 不纠结格式细节，不做架构重设计
 - **Output-Format**: 遵循 `{format}` 规范，必需字段：TL;DR / Findings(P0-P2) / Actions
 

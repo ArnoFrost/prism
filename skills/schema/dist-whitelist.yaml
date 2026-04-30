@@ -2,25 +2,33 @@
 # 控制 prism-dist 打包时包含哪些 skills
 # 策略与机制分离：修改此文件即可调整分发范围，无需改脚本
 
-version: "0.7.0"
+version: "0.8.0"
 
 profiles:
-  mvp:
-    description: "MVP 0.7.x 内部测试版 — workflow 核心 + common"
+  mini:
+    description: "mini 轻量分发 — SDK 内置 workflow/workspace 完整闭环，不要求外部 Skills"
     skills:
-      - workspace-init             # [dev] 项目初始化（含迁移）
-      - workflow-review            # [dev] 多角色评审
-      - commit                     # [common]
-    include_shared: true
+      - workspace-init             # [core] 项目初始化（含迁移）
+      - workflow-intake            # [core] 入料路由
+      - workflow-scope             # [core] 合同收敛
+      - workflow-review            # [core] 多角色评审
+      - workflow-review-lite       # [core] 轻量评审
+      - workflow-tidy              # [core] 工件对齐
+      - workflow-digest            # [core] 状态摘要
+      - workflow-status            # [core] 健康状态
+    include_shared: false
 
   full:
-    description: "完整版 — workflow 全管线 + common"
+    description: "完整版 — mini core + 外部 common / devops 扩展"
     skills:
-      - workspace-init             # [dev] 项目初始化（含迁移）
-      - workflow-intake            # [dev] 入料路由
-      - workflow-scope             # [dev] 合同收敛
-      - workflow-review            # [dev] 多角色评审
-      - workflow-review-lite       # [dev] 轻量评审
+      - workspace-init             # [core] 项目初始化（含迁移）
+      - workflow-intake            # [core] 入料路由
+      - workflow-scope             # [core] 合同收敛
+      - workflow-review            # [core] 多角色评审
+      - workflow-review-lite       # [core] 轻量评审
+      - workflow-tidy              # [core] 工件对齐
+      - workflow-digest            # [core] 状态摘要
+      - workflow-status            # [core] 健康状态
       - commit                     # [common]
       - digest                     # [common]
       - humanizer                  # [common]

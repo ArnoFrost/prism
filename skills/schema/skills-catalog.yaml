@@ -101,7 +101,7 @@ entries:
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-18"
-    rationale: "MVP internal distribution tool."
+    rationale: "Mini/full distribution tool."
   - id: prism-push
     visibility: dev
     stability: stable

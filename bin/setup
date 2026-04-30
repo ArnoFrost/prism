@@ -103,6 +103,8 @@ echo -e "\n${CYAN}[1/5 仓库探测]${NC}"
 if [[ -d "$PRISM_DIR/.git" ]]; then
   SDK_REMOTE=$(cd "$PRISM_DIR" && git remote get-url origin 2>/dev/null || echo "无")
   log_ok "SDK: $PRISM_DIR ${DIM}($SDK_REMOTE)${NC}"
+elif [[ -f "$PRISM_DIR/VERSION" ]]; then
+  log_ok "SDK: $PRISM_DIR ${DIM}(zip package)${NC}"
 else
   log_err "SDK 不是 Git 仓库: $PRISM_DIR"
 fi
@@ -339,7 +341,8 @@ fi
 
 # 项目注册
 if [[ -f "$CONFIG" ]]; then
-  PROJECT_COUNT=$(grep -c "^  [A-Z]" "$CONFIG" 2>/dev/null || echo 0)
+  PROJECT_COUNT=$(grep -c "^  [A-Z]" "$CONFIG" 2>/dev/null || true)
+  PROJECT_COUNT="${PROJECT_COUNT:-0}"
   if [[ $PROJECT_COUNT -gt 0 ]]; then
     log_ok "已注册 ${PROJECT_COUNT} 个项目"
   else

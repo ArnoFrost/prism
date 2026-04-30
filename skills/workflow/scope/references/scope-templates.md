@@ -51,7 +51,7 @@ scope.md 尾部维护 `## 变更记录` 段落，让覆盖写入的 scope 也能
 
 - [x] workspace.schema.yaml 定义 topic.structure
 - [x] intake SKILL.md Phase 3 生成完整骨架
-- [ ] scope 技能创建并通过 MVP 验证      ← 新增条目
+- [ ] scope 技能创建并通过最小闭环验证      ← 新增条目
 ```
 
 ## plan.md 派生规则
