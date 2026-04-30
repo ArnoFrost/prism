@@ -13,9 +13,21 @@
 | **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（schema + 模板 + 内置技能） |
 | **Workspace** | 项目级 AI 协作状态容器 | 是 | `workspace/`（schema + 模板） |
 
-Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和 Env 是**可选的能力扩展层**——Prism 最小可用集合是 Protocol + Workspace。
+Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和 Env 是**可选的能力扩展层**。Prism 的 **core contract** 是：SDK 内置 workflow/workspace + Vault Workspace + `uv` 运行时。
 
 为了开箱即用，SDK 在 `skills/workflow/` 内置了一套工作流最佳实践，这是便利性设计，不改变 Skills 层可选的架构定位。
+
+---
+
+## 交付术语
+
+| 术语 | 定义 | 维护方式 |
+|------|------|----------|
+| **core contract** | 最小运行合同：SDK 内置 workflow/workspace、Vault Workspace、`uv` 运行时 | 主干架构合同，不是分支 |
+| **mini profile / package** | 基于 core contract 的默认轻量交付形态，不要求外部 Skills / Env | 用户侧可见的 profile / zip package |
+| **full profile** | core contract + 外部 Skills / Env / 个人 vault 等扩展组合 | 进阶用户或维护者组合 |
+
+三者是交付范围关系，不是三套并行代码线。`core` 回答“最小能跑需要什么”，`mini` 回答“如何轻量交付”，`full` 回答“如何组合扩展能力”。
 
 ---
 
@@ -25,11 +37,11 @@ Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和
 
 | 位置 | 含义 | 必需 | 对应层 |
 |------|------|:----:|--------|
-| **SDK 仓库** | 协议 + schema + 内置 workflow | 是 | Protocol + Skills(内置) + Workspace(模板) |
+| **SDK 仓库** | 协议 + schema + 内置 workflow/workspace + bin 工具 | 是 | Protocol + Skills(内置) + Workspace(模板) |
 | **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
-| **Vault** (iCloud) | 项目状态、评审记录 | 是 | Workspace(实例) |
+| **Vault** (iCloud 或本地目录) | 项目状态、评审记录 | 是 | Workspace(实例) |
 
-SDK 内置 workflow 是开箱即用的最佳实践。外部技能仓库按需创建，提供个人工具和 git 同步能力。两者通过各自 `bin/relink` 独立分发到 IDE。
+SDK 内置 workflow/workspace 是 core contract 的一部分。外部技能仓库按需创建，提供个人工具和 git 同步能力；Env 层按设备/个人配置扩展。它们通过 `bin/relink` 参与 IDE 分发，但缺失时不阻塞 core contract。
 
 ---
 

@@ -29,7 +29,7 @@ fields:
   skills_path:
     type: string
     required: false
-    description: "外部 Skills 扩展仓库的绝对路径（独立 Git 仓库）；mini/core 可不配置"
+    description: "外部 Skills 扩展仓库的绝对路径（独立 Git 仓库）；core contract 与 mini profile/package 均可不配置"
     example: "/Users/xuxin/prism-skills"
     validation:
       - "配置时必须是绝对路径"
@@ -99,7 +99,7 @@ tool_integration:
 runtime:
   uv:
     required: true
-    description: "core / mini 统一 Python 脚本运行时依赖"
+    description: "core contract 的统一 Python 脚本运行时依赖，mini profile/package 继承该要求"
     setup_behavior:
       - "bin/setup --check 只检测并显式报错"
       - "bin/setup 正常初始化会尝试通过官方安装脚本自动安装"
