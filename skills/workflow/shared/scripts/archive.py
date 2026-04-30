@@ -2,7 +2,7 @@
 """archive.py — 手动归档一个活跃 topic 到 archive/。
 
 用法:
-  python3 archive.py <workspace_path> <topic_dirname> [--dry-run]
+  uv run python archive.py <workspace_path> <topic_dirname> [--dry-run]
 
 动作（幂等）：
 1. topics/{dirname} → archive/{dirname}（移目录）

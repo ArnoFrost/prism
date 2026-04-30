@@ -118,7 +118,7 @@ GI_GLOBAL=$(git config --global core.excludesfile 2>/dev/null)
 GI_GLOBAL="${GI_GLOBAL/#\~/$HOME}"
 echo "GITIGNORE_GLOBAL=${GI_GLOBAL:-not_configured}"
 if [ -f "$GI_GLOBAL" ]; then
-  for pat in "workspace.*.local" "prism.local.yaml"; do
+  for pat in "AGENT.local.md" "AGENT.*.local.md" "workspace.*.local" "workspace.*.local/" "prism.local.yaml"; do
     grep -qF "$pat" "$GI_GLOBAL" 2>/dev/null && echo "GI_HAS: $pat" || echo "GI_MISS: $pat"
   done
 fi
@@ -328,7 +328,7 @@ bin/relink --check
 
 ## Step 4.5: 全局 Gitignore 对齐
 
-Prism 使用 `.local` 后缀约定标识不入库的本地桥接文件。推荐将这些模式配置在全局 gitignore 中，接入项目无需修改自身 `.gitignore`。
+Prism 使用 `.local` 后缀约定标识不入库的本地桥接文件。`bin/setup` 和 `bin/doctor --scope config --fix` 会幂等补齐这些全局 gitignore 模式，接入项目无需修改自身 `.gitignore`。
 
 检查 Step 1 探测结果中的 `GI_MISS` 行。如果有缺失：
 
@@ -362,7 +362,9 @@ prism.local.yaml
 追加后验证：
 
 ```bash
-grep -c "workspace\.\*\.local" "$GI_GLOBAL" && echo "✓ gitignore 已对齐"
+for pat in "AGENT.local.md" "AGENT.*.local.md" "workspace.*.local" "workspace.*.local/" "prism.local.yaml"; do
+  grep -qF "$pat" "$GI_GLOBAL" && echo "✓ $pat"
+done
 ```
 
 > **为什么放全局？** 全局配置一次，所有项目自动生效——真正的零侵入。

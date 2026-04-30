@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """prism-pull 变更扫描脚本 — 分析两个 commit 之间的变更，分类输出 JSON 供 Agent 消费。
 
-用法: python3 prism_changelog_scan.py --repo <path> --old <sha> --new <sha> [--name <repo_name>]
+用法: uv run python prism_changelog_scan.py --repo <path> --old <sha> --new <sha> [--name <repo_name>]
 
 输出 JSON 字段:
   repo                - 仓库名标识（sdk / skills / env）

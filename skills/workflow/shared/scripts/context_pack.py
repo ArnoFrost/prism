@@ -2,7 +2,7 @@
 """context_pack.py — 标准化 topic 上下文装配。
 
 用法:
-  python3 context_pack.py <topic_dir> --mode light|full
+  uv run python context_pack.py <topic_dir> --mode light|full
 
 输出 JSON，供 Agent 作为上下文消费。
 遵循 context-pack-spec.md 规范。

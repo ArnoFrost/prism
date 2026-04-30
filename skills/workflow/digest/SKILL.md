@@ -76,7 +76,7 @@ Phase 3  落盘（覆写 topic 根目录的 digest.md）
 确认目标 topic：
 
 ```bash
-python3 {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirname>
+uv run python {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirname>
 ```
 
 如果用户未指定 topic，从当前活跃专项中选择（如只有一个活跃专项，直接使用）。

@@ -2,7 +2,7 @@
 """collect.py — 从 topic 目录中采集结构化摘要输入，供 Agent 生成 digest。
 
 用法:
-  python3 collect.py <project_dir> --topic <topic_dirname>
+  uv run python collect.py <project_dir> --topic <topic_dirname>
 
 输出 JSON，包含 topic 各工件的关键信息。
 脚本只做采集，不做生成（遵循"脚本做确定性、模型做解读"原则）。

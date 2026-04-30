@@ -138,7 +138,7 @@ light 模式下 `intake`、`review_index`、`decisions`、`reviews` 统一输出
 ### 方式一：脚本调用（推荐）
 
 ```bash
-python3 {shared_dir}/scripts/context_pack.py <topic_dir> --mode light|full
+uv run python {shared_dir}/scripts/context_pack.py <topic_dir> --mode light|full
 ```
 
 输出 JSON 到 stdout，Agent 解析后作为上下文。

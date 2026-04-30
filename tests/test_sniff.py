@@ -220,20 +220,27 @@ class TestFindExistingWorkspace(unittest.TestCase):
 class TestCheckGitignore(unittest.TestCase):
     """check_gitignore() 的测试。"""
 
+    def _with_global_gitignore(self, path):
+        original = check_gitignore.__globals__["_get_global_gitignore_path"]
+        check_gitignore.__globals__["_get_global_gitignore_path"] = lambda: path
+        self.addCleanup(lambda: check_gitignore.__globals__.__setitem__("_get_global_gitignore_path", original))
+
     def test_no_gitignore(self):
         """无 .gitignore 文件 — 全局 gitignore 可能覆盖"""
         with tempfile.TemporaryDirectory() as d:
+            self._with_global_gitignore(os.path.join(d, "missing_global_gitignore"))
             result = check_gitignore(d)
             self.assertFalse(result["exists"])
-            if result.get("covered_by_global"):
-                self.assertTrue(result["has_prism_patterns"])
-            else:
-                self.assertFalse(result["has_prism_patterns"])
-                self.assertGreater(len(result["missing_patterns"]), 0)
+            self.assertFalse(result["covered_by_global"])
+            self.assertFalse(result["has_prism_patterns"])
+            self.assertGreater(len(result["missing_patterns"]), 0)
+            self.assertEqual(result["missing_patterns"], result["missing_effective_patterns"])
+            self.assertEqual(result["missing_global_patterns"], result["missing_patterns"])
 
     def test_complete_gitignore(self):
         """完整的 .gitignore"""
         with tempfile.TemporaryDirectory() as d:
+            self._with_global_gitignore(os.path.join(d, "missing_global_gitignore"))
             gi = os.path.join(d, ".gitignore")
             with open(gi, "w") as f:
                 f.write("workspace.*.local\n")
@@ -245,20 +252,22 @@ class TestCheckGitignore(unittest.TestCase):
             self.assertTrue(result["exists"])
             self.assertTrue(result["has_prism_patterns"])
             self.assertEqual(len(result["missing_patterns"]), 0)
+            self.assertFalse(result["covered_by_global"])
+            self.assertGreater(len(result["missing_global_patterns"]), 0)
 
     def test_partial_gitignore(self):
         """部分 .gitignore — 项目级不完整，但全局可能补齐"""
         with tempfile.TemporaryDirectory() as d:
+            self._with_global_gitignore(os.path.join(d, "missing_global_gitignore"))
             gi = os.path.join(d, ".gitignore")
             with open(gi, "w") as f:
                 f.write("workspace.*.local\n")
             result = check_gitignore(d)
             self.assertTrue(result["exists"])
-            if result.get("covered_by_global"):
-                self.assertTrue(result["has_prism_patterns"])
-            else:
-                self.assertFalse(result["has_prism_patterns"])
-                self.assertGreater(len(result["missing_patterns"]), 0)
+            self.assertFalse(result["covered_by_global"])
+            self.assertFalse(result["has_prism_patterns"])
+            self.assertGreater(len(result["missing_patterns"]), 0)
+            self.assertGreater(len(result["missing_global_patterns"]), len(result["missing_patterns"]) - 1)
 
 
 if __name__ == "__main__":

@@ -2,9 +2,9 @@
 """index_update.py — 自动在 index.md 的锚点区块内插入/更新专项引用。
 
 用法:
-  python3 index_update.py <workspace_path> add <number> <topic_name> [--desc <描述>]
-  python3 index_update.py <workspace_path> archive <number> <topic_name> [--desc <描述>]
-  python3 index_update.py <workspace_path> remove <number>
+  uv run python index_update.py <workspace_path> add <number> <topic_name> [--desc <描述>]
+  uv run python index_update.py <workspace_path> archive <number> <topic_name> [--desc <描述>]
+  uv run python index_update.py <workspace_path> remove <number>
 
 锚点区块格式（index.md 中必须存在）：
   <!-- prism:topics:start -->

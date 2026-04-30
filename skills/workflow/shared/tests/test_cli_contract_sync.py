@@ -108,7 +108,7 @@ class TestContractSync:
 
     解耦策略：
     - 本测试 import check_cli_contract_sync 的 parse_md_table / get_manifest_data / diff_sync
-    - 独立脚本也能 python3 直接跑（pre-commit hook 场景，不依赖 pytest）
+    - 独立脚本也能用当前 Python 解释器直接跑（pre-commit hook 场景，不依赖 pytest）
     """
 
     def test_md_entries_parse_ok(self):
@@ -132,7 +132,7 @@ class TestContractSync:
     def test_script_exits_zero_on_current_repo(self):
         """独立脚本在当前仓库必须退出 0（pre-commit hook 正常放行）。"""
         result = subprocess.run(
-            ["python3", CHECK_SCRIPT],
+            [sys.executable, CHECK_SCRIPT],
             capture_output=True, text=True, timeout=10,
         )
         assert result.returncode == 0, (

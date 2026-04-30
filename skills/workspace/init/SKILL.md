@@ -75,6 +75,7 @@ uv run python <skill_dir>/scripts/sniff.py <project_dir> [project_code]
     "exists": true,
     "has_prism_patterns": false,
     "missing_patterns": ["workspace.*.local", "AGENT.local.md"],
+    "missing_global_patterns": ["workspace.*.local", "AGENT.local.md"],
     "global_gitignore": "/Users/.../.gitignore_global",
     "covered_by_global": true
   },
@@ -93,7 +94,7 @@ uv run python <skill_dir>/scripts/sniff.py <project_dir> [project_code]
 | `existing_workspace` 非 null | 已有工作区 → 进入对齐/更新模式，而非全新创建 |
 | `project_registered` = true | 已注册 → 跳过注册步骤 |
 | `gitignore.covered_by_global` = true | 全局 gitignore 已覆盖 → 跳过项目级注入 |
-| `gitignore.covered_by_global` = false 且 `missing_patterns` 非空 | 全局未覆盖 → 建议用户添加到全局 gitignore（而非注入项目） |
+| `gitignore.missing_global_patterns` 非空 | 全局未覆盖 → 建议运行 `bin/setup` 或 `bin/doctor --scope config --fix` 补齐全局 gitignore（而非注入项目） |
 | `writable` = false | 无写入权限 → 输出命令清单供用户手动执行 |
 
 > Sniff 失败（prism = null）时不继续执行。提示用户：`cd ~/prism && bin/setenv --init && bin/relink`
@@ -182,13 +183,13 @@ cd "{sdk_path}" && bin/relink --project {CODE}
 
 Prism 采用全局 gitignore 策略，初始化时**不向项目 `.gitignore` 注入规则**。
 
-Sniff 会同时检查全局 gitignore 和项目级 `.gitignore` 的覆盖情况：
+Sniff 会同时检查全局 gitignore 和项目级 `.gitignore` 的覆盖情况。Agent 决策以 `missing_global_patterns` 为准；`missing_patterns` 只表示“全局 + 项目级合并后的有效覆盖”。
 
-| `covered_by_global` | `missing_patterns` | 行为 |
-|:-------------------:|:------------------:|------|
-| true | 空 | 全局已覆盖，无需任何操作 |
-| true | 非空 | 部分由全局覆盖，提示用户补齐全局 |
-| false | 非空 | 全局未覆盖，**建议用户将以下模式添加到全局 gitignore**（不自动注入项目） |
+| `missing_global_patterns` | `missing_patterns` | 行为 |
+|:--------------------------:|:------------------:|------|
+| 空 | 空 | 全局已覆盖，无需任何操作 |
+| 非空 | 空 | 项目级可能已覆盖，但全局仍缺失；建议运行 `bin/setup` 或 `bin/doctor --scope config --fix` |
+| 非空 | 非空 | 全局和有效覆盖均缺失；先补齐全局 gitignore |
 
 建议添加到全局 gitignore 的 Prism 模式：
 

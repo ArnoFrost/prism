@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """scaffold.py — 在 workspace 的 topics/ 下一键创建完整专项骨架。
 
-用法: python3 scaffold.py <workspace_path> <number> <topic_name> [--title <标题>] [--tag <tag>] [--dry-run]
+用法: uv run python scaffold.py <workspace_path> <number> <topic_name> [--title <标题>] [--tag <tag>] [--dry-run]
 
 幂等：已存在的文件/目录跳过，只创建缺失的部分。
 输出 JSON：{ created: [...], skipped: [...], topic_dir: "..." }
@@ -229,7 +229,7 @@ def scaffold(workspace_path: str, number: int, topic_name: str,
 def main():
     parser = argparse.ArgumentParser(
         description="创建完整专项骨架（幂等）",
-        usage="python3 scaffold.py <workspace_path> <number> <topic_name> [options]",
+        usage="uv run python scaffold.py <workspace_path> <number> <topic_name> [options]",
     )
     parser.add_argument("workspace_path", help="Workspace 根目录")
     parser.add_argument("number", type=int, help="专项编号（如 8）")

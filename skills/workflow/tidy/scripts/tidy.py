@@ -2,7 +2,7 @@
 """tidy.py — 工件机械对齐：不改 what，只改 how。
 
 用法:
-  python3 tidy.py <project_dir> [--fix] [--topic <topic_dirname>]
+  uv run python tidy.py <project_dir> [--fix] [--topic <topic_dirname>]
 
 默认 dry-run（只报告），--fix 时自动修复安全项。
 语义变更项（scope checkbox、plan 条目移动）始终仅报告。
@@ -255,7 +255,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "type": "review_legacy_subdir",
             "file": "reviews/",
             "ids": index_scan["legacy"],
-            "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: python3 migrate_review.py <topic_dir>",
+            "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: uv run python migrate_review.py <topic_dir>",
         })
 
     # 6. frontmatter updated 日期（scope.md, plan.md）

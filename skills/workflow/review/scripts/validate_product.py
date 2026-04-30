@@ -2,7 +2,7 @@
 """prism-review 产物校验脚本 — 嗅探感知，有 Obsidian 走 OFM 校验，否则走轻量纯 Markdown。
 
 用法:
-  python3 validate_product.py <output_dir> [--format ofm|standard] [--fix]
+  uv run python validate_product.py <output_dir> [--format ofm|standard] [--fix]
 
 参数:
   output_dir          产物目录（含 task_review.md / reviewer_*.md 等）
@@ -280,7 +280,7 @@ def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
     for sd in subdir_reviews:
         issues.append(Issue("WARN", sd.name, 0, "legacy-subdir-format",
                             f"遗留子目录格式: {sd.name}/（新评审应使用单文件 rXX_描述.md + raw/）。"
-                            f"迁移命令: python3 migrate_review.py <topic_dir>",
+                            f"迁移命令: uv run python migrate_review.py <topic_dir>",
                             False))
 
     raw_dir = output_path / "raw"
@@ -469,7 +469,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="prism-review 产物校验（嗅探感知：ofm / standard）",
-        usage="python3 validate_product.py <output_dir> [--format ofm|standard] [--fix]",
+        usage="uv run python validate_product.py <output_dir> [--format ofm|standard] [--fix]",
     )
     parser.add_argument("output_dir", help="产物目录")
     parser.add_argument("--format", choices=["ofm", "standard"], default=None,

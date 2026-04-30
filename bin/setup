@@ -91,6 +91,69 @@ install_uv() {
   return 1
 }
 
+run_python() {
+  if command -v uv >/dev/null 2>&1; then
+    uv run python "$@"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 "$@"
+  else
+    return 127
+  fi
+}
+
+PRISM_GITIGNORE_PATTERNS=(
+  "AGENT.local.md"
+  "AGENT.*.local.md"
+  "workspace.*.local"
+  "workspace.*.local/"
+  "prism.local.yaml"
+)
+
+resolve_global_gitignore() {
+  local configured
+  configured=$(git config --global core.excludesfile 2>/dev/null || true)
+  if [[ -n "$configured" ]]; then
+    echo "${configured/#\~/$HOME}"
+    return 0
+  fi
+  echo "$HOME/.gitignore_global"
+}
+
+ensure_global_gitignore() {
+  local path missing=() pat
+  path=$(resolve_global_gitignore)
+
+  for pat in "${PRISM_GITIGNORE_PATTERNS[@]}"; do
+    if ! grep -qxF "$pat" "$path" 2>/dev/null; then
+      missing+=("$pat")
+    fi
+  done
+
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    log_ok "全局 gitignore 已覆盖 Prism 本地状态"
+    return 0
+  fi
+
+  if $CHECK_ONLY; then
+    log_warn "全局 gitignore 缺失 Prism 模式: ${missing[*]}"
+    log_info "运行 bin/setup 或 bin/doctor --scope config --fix 自动补齐"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$path")"
+  if ! git config --global core.excludesfile >/dev/null 2>&1; then
+    git config --global core.excludesfile "$path"
+  fi
+  {
+    echo ""
+    echo "# Prism — local workspace and agent state"
+    for pat in "${missing[@]}"; do
+      echo "$pat"
+    done
+  } >> "$path"
+  log_ok "全局 gitignore 已补齐 Prism 模式: ${missing[*]}"
+}
+
 # ══════════════════════════════════════
 echo -e "${CYAN}Prism Setup${NC}"
 echo "═══════════════════════════════════"
@@ -220,6 +283,11 @@ else
   fi
 fi
 
+# ── Step 2.5: 全局 gitignore ──────────
+
+echo -e "\n${CYAN}[2.5/5 全局 Gitignore]${NC}"
+ensure_global_gitignore
+
 # ── Step 3: Relink ───────────────────
 
 echo -e "\n${CYAN}[3/5 Symlink 分发]${NC}"
@@ -264,9 +332,9 @@ CLI_DOCTOR="$PRISM_DIR/skills/workflow/shared/scripts/doctor_cli.py"
 if [[ ! -f "$CLI_DOCTOR" ]]; then
   log_warn "doctor_cli.py 不存在，跳过 CLI 注入"
 elif $CHECK_ONLY; then
-  CLI_JSON=$(python3 "$CLI_DOCTOR" 2>/dev/null || true)
-  CLI_ERR=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("errors",[])))' 2>/dev/null || echo 0)
-  CLI_WARN=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("warnings",[])))' 2>/dev/null || echo 0)
+  CLI_JSON=$(run_python "$CLI_DOCTOR" 2>/dev/null || true)
+  CLI_ERR=$(echo "$CLI_JSON" | run_python -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("errors",[])))' 2>/dev/null || echo 0)
+  CLI_WARN=$(echo "$CLI_JSON" | run_python -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("warnings",[])))' 2>/dev/null || echo 0)
   if [[ "$CLI_ERR" -gt 0 ]]; then
     log_err "CLI 寻址: $CLI_ERR 错误"
   elif [[ "$CLI_WARN" -gt 0 ]]; then
@@ -275,10 +343,10 @@ elif $CHECK_ONLY; then
     log_ok "CLI 寻址已就绪"
   fi
 else
-  CLI_JSON=$(python3 "$CLI_DOCTOR" --fix 2>/dev/null || true)
-  CLI_FIX=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("fixes_applied",[])))' 2>/dev/null || echo 0)
-  CLI_ERR=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("errors",[])))' 2>/dev/null || echo 0)
-  CLI_WARN=$(echo "$CLI_JSON" | python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("warnings",[])))' 2>/dev/null || echo 0)
+  CLI_JSON=$(run_python "$CLI_DOCTOR" --fix 2>/dev/null || true)
+  CLI_FIX=$(echo "$CLI_JSON" | run_python -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("fixes_applied",[])))' 2>/dev/null || echo 0)
+  CLI_ERR=$(echo "$CLI_JSON" | run_python -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("errors",[])))' 2>/dev/null || echo 0)
+  CLI_WARN=$(echo "$CLI_JSON" | run_python -c 'import json,sys;d=json.loads(sys.stdin.read());print(len(d.get("warnings",[])))' 2>/dev/null || echo 0)
   if [[ "$CLI_ERR" -gt 0 ]]; then
     log_err "CLI 寻址: $CLI_ERR 错误"
   elif [[ "$CLI_FIX" -gt 0 ]]; then

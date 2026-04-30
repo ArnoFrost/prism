@@ -9,6 +9,7 @@ stdout 输出 JSON（可含 systemMessage 注入 agent 上下文）。
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -54,9 +55,10 @@ def _run_script(script_path: str, args: list[str], timeout: int = 10) -> str | N
     """运行脚本，返回 stdout 或 None。"""
     if not os.path.isfile(script_path):
         return None
+    runner = ["uv", "run", "python"] if shutil.which("uv") else ["python3"]
     try:
         result = subprocess.run(
-            ["python3", script_path] + args,
+            runner + [script_path] + args,
             capture_output=True, text=True, timeout=timeout,
         )
         return result.stdout.strip() if result.returncode == 0 else None

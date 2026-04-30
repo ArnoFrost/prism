@@ -2,7 +2,7 @@
 """check_cli_contract_sync — 校验 `docs/cli-contract.md §5.2` 与 `VERB_REGISTRY` 一致。
 
 用途（023 M2 · scope T2.b / d01 D4 · "防漂移闸门"）：
-- pre-commit hook 调用：`python3 check_cli_contract_sync.py` → 非零退出表示不一致
+- pre-commit hook 调用：`uv run python check_cli_contract_sync.py` → 非零退出表示不一致
 - pytest 复用：`from check_cli_contract_sync import parse_md_table, get_manifest_data`
 - 零外部依赖：只用 stdlib（re / json / subprocess / pathlib）
 

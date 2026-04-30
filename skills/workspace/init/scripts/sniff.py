@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """prism-workflow-init 预探测脚本 — 嗅探项目环境和 Prism SDK 状态，输出 JSON 供 Agent 消费。
 
-用法: python3 sniff.py <project_dir> [project_code]
+用法: uv run python sniff.py <project_dir> [project_code]
 
 输出 JSON 字段:
   project_dir       - 输入的项目目录（绝对路径）
@@ -23,8 +23,9 @@
     .files          - 可用模板文件列表
   gitignore         - .gitignore 状态
     .exists         - 是否存在
-    .has_prism_patterns - 是否已包含 Prism 排除规则
-    .missing_patterns   - 缺失的 Prism 模式列表
+    .has_prism_patterns - 全局 + 项目级是否已有效覆盖 Prism 排除规则
+    .missing_patterns   - 有效覆盖仍缺失的 Prism 模式列表
+    .missing_global_patterns - 全局 gitignore 缺失的 Prism 模式列表
   project_registered - 项目代号是否已注册到 prism.local.yaml（仅在传入 project_code 时有值）
   writable          - 项目目录是否可写
 """
@@ -171,7 +172,8 @@ def check_gitignore(project_dir: str) -> dict:
     project_lines = _read_gitignore_lines(gi_path)
 
     all_lines = global_lines | project_lines
-    missing = [p for p in PRISM_GITIGNORE_PATTERNS if p not in all_lines]
+    missing_effective = [p for p in PRISM_GITIGNORE_PATTERNS if p not in all_lines]
+    missing_global = [p for p in PRISM_GITIGNORE_PATTERNS if p not in global_lines]
 
     covered_by_global = all(
         p in global_lines for p in PRISM_GITIGNORE_PATTERNS
@@ -179,8 +181,10 @@ def check_gitignore(project_dir: str) -> dict:
 
     return {
         "exists": os.path.isfile(gi_path),
-        "has_prism_patterns": len(missing) == 0,
-        "missing_patterns": missing,
+        "has_prism_patterns": len(missing_effective) == 0,
+        "missing_patterns": missing_effective,
+        "missing_effective_patterns": missing_effective,
+        "missing_global_patterns": missing_global,
         "global_gitignore": global_path,
         "covered_by_global": covered_by_global,
     }
@@ -229,7 +233,7 @@ def sniff(project_dir: str, project_code: str | None = None) -> dict:
 
 def main():
     if len(sys.argv) < 2:
-        print(f"用法: python3 {sys.argv[0]} <project_dir> [project_code]", file=sys.stderr)
+        print(f"用法: uv run python {sys.argv[0]} <project_dir> [project_code]", file=sys.stderr)
         sys.exit(1)
 
     project_dir = sys.argv[1]

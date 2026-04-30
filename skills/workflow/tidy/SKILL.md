@@ -59,13 +59,13 @@ Phase 3  执行（--fix 模式下应用修改）
 
 ```bash
 # 扫描所有活跃 topic（默认 dry-run）
-python3 {skill_dir}/scripts/tidy.py <project_dir>
+uv run python {skill_dir}/scripts/tidy.py <project_dir>
 
 # 扫描并自动修复
-python3 {skill_dir}/scripts/tidy.py <project_dir> --fix
+uv run python {skill_dir}/scripts/tidy.py <project_dir> --fix
 
 # 只扫描指定 topic
-python3 {skill_dir}/scripts/tidy.py <project_dir> --topic 011_prism-generalization-fieldtest
+uv run python {skill_dir}/scripts/tidy.py <project_dir> --topic 011_prism-generalization-fieldtest
 ```
 
 ### Phase 1-2：扫描与报告

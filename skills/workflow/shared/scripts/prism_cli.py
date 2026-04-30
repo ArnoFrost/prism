@@ -4,17 +4,17 @@
 将分散的脚本整合为一个命令入口，降低心智负担。
 
 用法:
-  python3 prism_cli.py sniff <project_dir> [--topic <主题>] [--kind review|intake]
-  python3 prism_cli.py validate <output_dir> [--format ofm|standard] [--fix]
-  python3 prism_cli.py archive <workspace_path> <topic_dirname> [--dry-run]
-  python3 prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
-  python3 prism_cli.py sync [--sdk] [--skills] [--env] [--all] [--fetch]
-  python3 prism_cli.py finalize <topic_dir> [--dry-run]
-  python3 prism_cli.py tidy <project_dir> [--fix] [--topic <主题>]
-  python3 prism_cli.py status <project_dir> [--format json|markdown]
-  python3 prism_cli.py digest <project_dir> --topic <主题>
-  python3 prism_cli.py pipeline <topic_dir> [--dry-run]  # deprecated → finalize
-  python3 prism_cli.py manifest            # verb 元数据清单
+  uv run python prism_cli.py sniff <project_dir> [--topic <主题>] [--kind review|intake]
+  uv run python prism_cli.py validate <output_dir> [--format ofm|standard] [--fix]
+  uv run python prism_cli.py archive <workspace_path> <topic_dirname> [--dry-run]
+  uv run python prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
+  uv run python prism_cli.py sync [--sdk] [--skills] [--env] [--all] [--fetch]
+  uv run python prism_cli.py finalize <topic_dir> [--dry-run]
+  uv run python prism_cli.py tidy <project_dir> [--fix] [--topic <主题>]
+  uv run python prism_cli.py status <project_dir> [--format json|markdown]
+  uv run python prism_cli.py digest <project_dir> --topic <主题>
+  uv run python prism_cli.py pipeline <topic_dir> [--dry-run]  # deprecated → finalize
+  uv run python prism_cli.py manifest            # verb 元数据清单
 
 顶层选项:
   --version / -V          显示 CLI 版本（联动 SDK VERSION 文件）

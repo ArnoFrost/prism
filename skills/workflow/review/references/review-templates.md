@@ -23,8 +23,8 @@
 **迁移命令：**
 
 ```bash
-python3 {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> [--dry-run]
-python3 {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> --fix
+uv run python {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> [--dry-run]
+uv run python {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> --fix
 ```
 
 **迁移后的目录结构：**

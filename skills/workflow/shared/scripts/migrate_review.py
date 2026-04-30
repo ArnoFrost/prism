@@ -2,7 +2,7 @@
 """migrate_review.py — 将子目录格式评审迁移为单文件+raw/ 格式。
 
 用法:
-  python3 migrate_review.py <topic_dir> [--review rXX] [--dry-run]
+  uv run python migrate_review.py <topic_dir> [--review rXX] [--dry-run]
 
 动作 (以 r02_统一状态机/ 为例):
   1. r02_统一状态机/task_review.md → reviews/r02_统一状态机.md

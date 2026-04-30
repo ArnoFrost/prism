@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CODEBUDDY_PLUGIN_ROOT}/post_write_workflow.py",
+            "command": "uv run python ${CODEBUDDY_PLUGIN_ROOT}/post_write_workflow.py",
             "timeout": 15
           }
         ]

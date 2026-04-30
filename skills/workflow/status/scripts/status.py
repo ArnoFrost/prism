@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """status.py — 扫描 workspace 活跃 topic 的健康度，输出结构化 JSON 报告。
 
-用法: python3 status.py <project_dir> [--format markdown|json]
+用法: uv run python status.py <project_dir> [--format markdown|json]
 
 指标设计原则（008 scope 约束）：
 - 绑定真实存在的工件（scope/plan/README/reviews）

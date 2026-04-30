@@ -3,9 +3,9 @@
 输出结构化 JSON 供 note / deposit / obsidian-doctor / learnnote 等技能消费。
 
 用法:
-  python3 obs_sniff.py              # 输出所有 vault 信息
-  python3 obs_sniff.py --personal   # 只输出个人知识库
-  python3 obs_sniff.py --ai         # 只输出 AI/Prism vault
+  uv run python obs_sniff.py              # 输出所有 vault 信息
+  uv run python obs_sniff.py --personal   # 只输出个人知识库
+  uv run python obs_sniff.py --ai         # 只输出 AI/Prism vault
 
 输出 JSON 字段:
   vaults

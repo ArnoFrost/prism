@@ -40,7 +40,7 @@ class TestTopicLineFormat:
 
     def _run_add(self, ws, number, name, desc):
         result = subprocess.run(
-            ["python3", SCRIPT, str(ws), "add", str(number), name, "--desc", desc],
+            [sys.executable, SCRIPT, str(ws), "add", str(number), name, "--desc", desc],
             capture_output=True, text=True, timeout=5,
         )
         assert result.returncode == 0, result.stderr

@@ -38,7 +38,7 @@ if [ -L "$HOOK_DST" ]; then
     fi
 elif [ -f "$HOOK_DST" ]; then
     echo "⚠ post-commit hook 已存在（非符号链接）"
-    echo "  可手动追加: echo 'python3 $HOOK_SRC' >> $HOOK_DST"
+    echo "  可手动追加: echo 'uv run python $HOOK_SRC' >> $HOOK_DST"
     exit 1
 fi
 

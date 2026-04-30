@@ -2,10 +2,10 @@
 """prism-cli 环境体检 — 检查 bin/prism 是否可寻址，可选幂等修复或回滚。
 
 用法:
-  python3 doctor_cli.py            # 只报告（JSON 到 stdout）
-  python3 doctor_cli.py --fix      # 非破坏性修复：写 rc 锚点 + 建 symlink
-  python3 doctor_cli.py --rollback # 回滚：删除 rc 锚点 + 删除 symlink
-  python3 doctor_cli.py --json     # JSON 输出（默认也是 JSON，显式兼容 bin/doctor）
+  uv run python doctor_cli.py            # 只报告（JSON 到 stdout）
+  uv run python doctor_cli.py --fix      # 非破坏性修复：写 rc 锚点 + 建 symlink
+  uv run python doctor_cli.py --rollback # 回滚：删除 rc 锚点 + 删除 symlink
+  uv run python doctor_cli.py --json     # JSON 输出（默认也是 JSON，显式兼容 bin/doctor）
 
 检查项：
   1. PRISM_SDK env 已导出

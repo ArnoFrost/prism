@@ -53,7 +53,7 @@ Phase 3  建议（可选：针对问题给出修复建议）
 使用共享 `sniff_lib.py` 定位 workspace：
 
 ```bash
-python3 {skill_dir}/scripts/status.py <project_dir> --format markdown
+uv run python {skill_dir}/scripts/status.py <project_dir> --format markdown
 ```
 
 ### Phase 1-2：扫描与报告

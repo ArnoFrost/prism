@@ -124,7 +124,7 @@ class TestVersionSdkLinkage:
     def test_version_appears_in_cli_help(self):
         """argparse --help 仍应提示 --version 选项（不得因升级丢失可发现性）。"""
         result = subprocess.run(
-            ["python3", CLI_PATH, "--help"],
+            [sys.executable, CLI_PATH, "--help"],
             capture_output=True, text=True, timeout=5,
         )
         assert result.returncode == 0
@@ -140,7 +140,7 @@ class TestCliHelp:
     @pytest.mark.parametrize("subcmd", ["sniff", "validate", "archive", "migrate", "sync", "finalize", "tidy", "status", "digest", "pipeline", "manifest"])
     def test_subcmd_help(self, subcmd):
         result = subprocess.run(
-            ["python3", CLI_PATH, subcmd, "--help"],
+            [sys.executable, CLI_PATH, subcmd, "--help"],
             capture_output=True, text=True, timeout=5,
         )
         assert result.returncode == 0, f"{subcmd} --help failed: {result.stderr}"
