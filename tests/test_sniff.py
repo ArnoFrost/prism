@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """prism-workspace-init/sniff.py 健壮性测试套件。
 
-发布前运行: python3 -m pytest tests/test_sniff.py -v
-或直接运行: python3 tests/test_sniff.py
+发布前运行: uv run --with pytest pytest tests/test_sniff.py -v
+兼容运行: python3 -m pytest tests/test_sniff.py -v
 
 覆盖场景:
   1. device_id 正常提取

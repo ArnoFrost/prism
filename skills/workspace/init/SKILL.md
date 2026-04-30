@@ -44,7 +44,7 @@ Phase 3  Link（软链接 + gitignore）
 运行嗅探脚本，一次性获取 SDK 状态和项目环境信息。
 
 ```bash
-python3 <skill_dir>/scripts/sniff.py <project_dir> [project_code]
+uv run python <skill_dir>/scripts/sniff.py <project_dir> [project_code]
 ```
 
 `<skill_dir>` 为本 SKILL.md 所在目录。`project_code` 可选，传入后会额外检查项目是否已注册。

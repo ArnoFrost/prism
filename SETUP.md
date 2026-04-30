@@ -99,7 +99,11 @@ echo "=== Prism Environment Probe ==="
 echo "SDK_DIR=$(pwd)"
 command -v uv >/dev/null 2>&1 && echo "UV=$(uv --version)" || echo "UV=missing"
 test -f prism.local.yaml && echo "CONFIG=exists" || echo "CONFIG=missing"
-[ -f prism.local.yaml ] && cat prism.local.yaml
+if [ -f prism.local.yaml ]; then
+  for key in device_id sdk_path vault_path workspace_subdir skills_path env_path; do
+    grep -q "^${key}:" prism.local.yaml 2>/dev/null && echo "CONFIG_HAS: $key" || echo "CONFIG_MISS: $key"
+  done
+fi
 echo "---"
 test -d "$HOME/prism-skills" && echo "SKILLS=$HOME/prism-skills" || echo "SKILLS=not_found"
 VAULT="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian"

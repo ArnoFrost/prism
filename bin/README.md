@@ -166,8 +166,8 @@ prism --json manifest
 `docs/cli-contract.md §5.2` 的 verb 表格由 `skills/workflow/shared/scripts/prism_cli.py` 的 `VERB_REGISTRY` 反向守，以防改了一侧忘了另一侧：
 
 ```bash
-python3 skills/workflow/shared/scripts/check_cli_contract_sync.py           # 干跑校验
-python3 skills/workflow/shared/scripts/check_cli_contract_sync.py --verbose # 查看两侧明细
+uv run python skills/workflow/shared/scripts/check_cli_contract_sync.py           # 干跑校验
+uv run python skills/workflow/shared/scripts/check_cli_contract_sync.py --verbose # 查看两侧明细
 ```
 
 - **退出码 0**：md ↔ registry 完全对齐
@@ -179,7 +179,7 @@ python3 skills/workflow/shared/scripts/check_cli_contract_sync.py --verbose # �
 ```bash
 cat > .git/hooks/pre-commit <<'EOF'
 #!/usr/bin/env bash
-python3 "$(git rev-parse --show-toplevel)/skills/workflow/shared/scripts/check_cli_contract_sync.py" || exit 1
+uv run python "$(git rev-parse --show-toplevel)/skills/workflow/shared/scripts/check_cli_contract_sync.py" || exit 1
 EOF
 chmod +x .git/hooks/pre-commit
 ```
