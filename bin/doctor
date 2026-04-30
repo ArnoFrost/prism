@@ -374,7 +374,7 @@ if skills_path:
         warn += 1
 
 if shutil.which("uv") is None:
-    lines.append("\u2717 uv \u672a\u5b89\u88c5\uff08core / mini \u5fc5\u9700\uff09")
+    lines.append("\u2717 uv \u672a\u5b89\u88c5\uff08core contract \u5fc5\u9700\uff0cmini profile/package \u7ee7\u627f\uff09")
     err += 1
 
 if err == 0 and warn == 0:

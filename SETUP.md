@@ -129,6 +129,8 @@ echo "=== Probe Done ==="
 
 ### 场景 A: 首次安装（CONFIG=missing）
 
+先用 `bin/setenv --example` 展示 core contract 配置样例，确认用户理解只有 `sdk_path`、`vault_path`、`workspace_subdir` 是初始化必填项；外部 Skills / Env / 个人知识库都属于可选扩展。
+
 #### 模式 A 交互（Cursor — 结构化选择）
 
 使用 AskQuestion 工具同时收集所有路径确认：
@@ -229,6 +231,12 @@ bin/setenv --init --non-interactive
 ```
 
 如果用户选择接入外部 Skills，再额外传入 `PRISM_SKILLS_PATH="{确认的 Skills 路径}"`；留空时仍满足 core contract。mini profile / package 默认只依赖 SDK 内置 workflow/workspace 能力。
+
+如果用户需要先看完整配置形态，执行：
+
+```bash
+bin/setenv --example
+```
 
 然后立即刷新软链接：
 

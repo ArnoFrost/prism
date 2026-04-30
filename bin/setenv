@@ -8,6 +8,7 @@
 #   bin/setenv --export     输出 export 语句（可 source）
 #   bin/setenv --validate   校验 prism.local.yaml 路径是否有效
 #   bin/setenv --sync       从 Workspace project.yaml 同步项目注册
+#   bin/setenv --example    输出 core contract 配置样例
 #   source <(bin/setenv --export)   注入环境变量到当前 shell
 #
 # --non-interactive 环境变量：
@@ -196,7 +197,7 @@ do_validate() {
     fi
   done
 
-  # skills_path 可选：配置了就检查，未配置不阻塞 core / mini。
+  # skills_path 可选：配置了就检查，未配置不阻塞 core contract / mini profile。
   local skills_optional
   skills_optional=$(yaml_get skills_path)
   if [[ -n "$skills_optional" ]]; then
@@ -251,7 +252,7 @@ do_validate() {
   if command -v uv >/dev/null 2>&1; then
     echo -e "  ${GREEN}✓${NC} uv: $(uv --version 2>/dev/null || echo 可用)"
   else
-    echo -e "  ${RED}✗${NC} uv: 未安装（core / mini 必需）"
+    echo -e "  ${RED}✗${NC} uv: 未安装（core contract 必需，mini profile/package 继承）"
     echo -e "    ${DIM}手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
     ((errors++)) || true
   fi
@@ -322,6 +323,37 @@ do_validate() {
   else
     echo -e "  ${GREEN}✓ 校验通过${NC}"
   fi
+}
+
+do_example() {
+  cat <<EOF
+# Prism Local Configuration — core contract example
+# 保存为 prism.local.yaml；本地路径状态，不入版本控制。
+
+# 设备标识（hostname -s 自动生成，跨设备路径解析用）
+device_id: $(hostname -s)
+
+# SDK 路径（Prism 仓库位置）
+sdk_path: ${PRISM_DIR}
+
+# Vault 基础路径（可用 iCloud Obsidian，也可换成本地目录）
+vault_path: ${HOME}/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian
+
+# Vault 内 Workspace 子目录（相对于 vault_path）
+workspace_subdir: Prism/Workspace
+
+# 可选：外部 Skills 扩展仓库路径（mini profile/package 不要求）
+# skills_path: ${HOME}/prism-skills
+
+# 可选：env 层路径（如 ArnoDotFiles）
+# env_path: ${HOME}/ArnoDotFiles
+
+# 可选：个人知识库路径
+# obs_vault_personal: ${HOME}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Arno Obsidian
+
+# 注册项目（CODE: 本地路径）
+projects:
+EOF
 }
 
 write_config() {
@@ -740,15 +772,17 @@ ACTION=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --init)             ACTION="init"; shift ;;
+    --example)          ACTION="example"; shift ;;
     --export)           ACTION="export"; shift ;;
     --validate)         ACTION="validate"; shift ;;
     --sync)             ACTION="sync"; shift ;;
     --non-interactive)  NON_INTERACTIVE=true; shift ;;
     --help|-h)
-      echo "用法: bin/setenv [--init [--non-interactive]|--export|--validate|--sync|--help]"
+      echo "用法: bin/setenv [--init [--non-interactive]|--example|--export|--validate|--sync|--help]"
       echo "  (无参数)          显示当前配置"
       echo "  --init            交互式创建 prism.local.yaml"
       echo "  --init --non-interactive  从环境变量读取路径创建配置"
+      echo "  --example         输出 core contract 配置样例"
       echo "  --export          输出 export 语句（配合 source 使用）"
       echo "  --validate        校验 prism.local.yaml 字段与路径"
       echo "  --sync            从 Workspace project.yaml 同步项目注册"
@@ -760,6 +794,7 @@ done
 
 case "${ACTION:-show}" in
   init)     do_init ;;
+  example)  do_example ;;
   export)   do_export ;;
   validate) do_validate ;;
   sync)     do_sync ;;

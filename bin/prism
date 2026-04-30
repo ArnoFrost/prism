@@ -52,7 +52,7 @@ NC='\033[0m'
 
 _run_python() {
   if ! command -v uv >/dev/null 2>&1; then
-    echo -e "${RED}✗ uv 未安装，Prism core / mini 需要 uv 作为 Python 运行时${NC}" >&2
+    echo -e "${RED}✗ uv 未安装，Prism core contract 需要 uv 作为 Python 运行时${NC}" >&2
     echo -e "  ${DIM}可运行 bin/setup 自动安装，或手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}" >&2
     exit 127
   fi

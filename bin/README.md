@@ -36,6 +36,7 @@ bin/setup --non-interactive  # 非交互模式（适合脚本调用）
 bin/setenv                          # 显示当前配置和路径状态
 bin/setenv --init                   # 交互式创建 prism.local.yaml
 bin/setenv --init --non-interactive # 从环境变量读取路径（CI/脚本友好）
+bin/setenv --example                # 输出 core contract 配置样例
 bin/setenv --validate               # 校验必填字段 + 路径可达性
 bin/setenv --export                 # 输出 export 语句
 
