@@ -114,6 +114,15 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 | `new_topic` | 创建新专项 | 候选展示 + 编号 + 用户确认名称（首项即「全新专题（默认推荐）」） |
 | `null` | 无 workspace | 降级处理，见 [intake-fallback.md](references/intake-fallback.md) |
 
+> [!warning]
+> **过渡期守则（Phase 2 T8 `affinity_strength` 落地前）**
+>
+> 当前 `sniff_lib.detect_topic_affinity` 在 `score < 2 + 有候选` 弱信号下仍会回填 `matched_topic`（r11 [F-B02] 待修）。在 T8 落地前，Agent 必须执行**额外一次主动判断**：
+>
+> - 如果 sniff 给的 `matched_topic` 与用户语境**关键词意图明显冲突**（如用户描述的是「分发链路自检」、`matched_topic` 是「cross-layer-sync-hardening」），不要按表中默认动作沿用；改为强制 `AskQuestion` 让用户裁决。
+> - 判定标准：`matched_topic` 名词与用户原文核心动词/对象**无语义重合**，或两者 score 差 ≤ 1 且 `score ≤ 2` 时。
+> - 该守则在 T8 落地后由 `affinity_strength=high` 字段自动判定，届时本段移除。
+
 #### 2.2 AskQuestion 候选构造规则
 
 向用户展示候选清单时遵循以下规则：
@@ -124,7 +133,6 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 | 候选数 K ≤ 4 | 第 2 ~ 5 项取自 `topic_affinity.candidates` 前 K 个 |
 | 上限 6 项 | 首项 + K 个候选 + 「都不是 / 让我自己起名」收尾项 ≤ 6 |
 | 标注 matched_topic | 候选中若包含 `matched_topic`，必须显式标注「sniff 最高匹配（非默认）」，避免被理解为默认值 |
-| 候选拼装代码 | 详见 [intake-templates.md](references/intake-templates.md) |
 
 **模板示例**：
 
