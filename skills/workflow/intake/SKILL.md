@@ -68,13 +68,17 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 
 > 若 `prism` 命令不可用，运行 `bin/doctor --scope cli --fix` 自动修复寻址。
 
+> **无 `--topic` 时的默认行为**：intake 默认走 `new_topic` 路径（保护机制）。
+> 仅当用户**显式**通过 `--topic <关键词>` 或在自然语言中触发 §2.3 严格双层守卫时，才走 sniff 四态路由。
+> 单独的 `prism sniff --kind intake <project_dir>`（无 `--topic`）只用作环境探测，不进入 Phase 2 路由决策。
+
 消费 sniff 输出的关键字段：
 
 | 字段 | 用途 |
 |------|------|
 | `workspace.path` | 确定 topics/ 和 archive/ 位置 |
 | `topic_affinity.suggestion` | 路由决策依据 |
-| `topic_affinity.matched_topic` | 匹配到的已有专项 |
+| `topic_affinity.matched_topic` | 匹配到的已有专项（**仅作 sniff 最高匹配展示，绝非默认落盘目标**） |
 | `topic_affinity.candidates` | 多候选时展示列表 |
 | `next_topic_number` | 新建专项时的编号（全局递增） |
 | `format` | 产物格式（ofm / standard） |
@@ -93,22 +97,93 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 
 ### Phase 2：路由决策 (Route)
 
-基于 sniff 的 `topic_affinity` 结果：
+> [!important]
+> **频率论（Frequency-Driven Defaults）**
+> intake 是**低频启动事件**（新需求、不确定归属、跨周），默认偏 `new_topic` + 强制 AskQuestion 是**保护机制**——保护用户不被 sniff 的弱信号匹配「温柔默认聚合」掉。
+> review 是**高频持续事件**（同一专项内多次评审），默认偏 `cohesion` + 轻确认是**顺滑机制**。
+> 两者**消费同一 sniff 输出但走相反默认**，是有意识的设计差异，不是待对齐的不一致。详见 [topic-sniff-spec](../shared/topic-sniff-spec.md) 顶部「展示视图协议 + 频率论」声明。
 
-| suggestion | 行为 | 用户交互 |
-|------------|------|---------|
-| `cohesion` | 内聚到已有专项 | 告知用户并确认 |
-| `ask_user` | 展示候选列表 | 用户选择目标专项或新建 |
-| `new_topic` | 无匹配 → 新建专项 | 用户确认专项名称 |
-| `null` | 无 workspace | 降级处理（见 fallback） |
+> **核心原则**：**未收到用户对 AskQuestion 的明确响应之前，禁止把 `topic_affinity.matched_topic` 或路由表第 1 项作为已确认目标进行任何写盘动作。**
 
-**路由决策必须显式输出**，例如：
+#### 2.1 路由判定矩阵（基于 `topic_affinity.suggestion`）
+
+| suggestion | 默认行为 | 是否触发 AskQuestion |
+|---|---|---|
+| `cohesion` | **不直接落盘**——展示候选清单等待用户确认 | ✅ 必须，除非用户原文显式触发跳过条件（见 §2.3 严格双层守卫） |
+| `ask_user` | 展示候选列表 | ✅ 必须 |
+| `new_topic` | 创建新专项 | 候选展示 + 编号 + 用户确认名称（首项即「全新专题（默认推荐）」） |
+| `null` | 无 workspace | 降级处理，见 [intake-fallback.md](references/intake-fallback.md) |
+
+#### 2.2 AskQuestion 候选构造规则
+
+向用户展示候选清单时遵循以下规则：
+
+| 规则 | 说明 |
+|---|---|
+| 首项固定 | 第 1 项必须为「全新专题：{next_topic_number}_xxx (默认推荐)」 |
+| 候选数 K ≤ 4 | 第 2 ~ 5 项取自 `topic_affinity.candidates` 前 K 个 |
+| 上限 6 项 | 首项 + K 个候选 + 「都不是 / 让我自己起名」收尾项 ≤ 6 |
+| 标注 matched_topic | 候选中若包含 `matched_topic`，必须显式标注「sniff 最高匹配（非默认）」，避免被理解为默认值 |
+| 候选拼装代码 | 详见 [intake-templates.md](references/intake-templates.md) |
+
+**模板示例**：
+
+```
+sniff 检测到本次 intake 与已有 topic 有亲和（score=2）。
+
+请选择路由方式：
+  [1] 全新专题：027_xxx（默认推荐）
+  [2] 聚合到 026_yyy（sniff 最高匹配，非默认）
+  [3] 聚合到 025_zzz（候选）
+  [4] 都不是，让我自己起名
+
+请回复编号或选项内容。
+```
+
+无 `AskQuestion` 原语时的等价 fallback 详见 SSOT [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md)（intake 路由门使用 §4.1 模板）。
+
+#### 2.3 显式意图跳过 AskQuestion 的严格双层守卫
+
+仅当**两个条件同时满足**时，才允许跳过 AskQuestion 直接路由（沿用户显式意图）：
+
+1. **关键词命中**：用户原文匹配以下任一关键词
+   - 中文：`聚合到` / `合并到` / `归入` / `放进` / `内聚到`
+   - 英文：`merge into` / `add to existing` / `cohere to`
+2. **可审计目标紧随关键词**：上述关键词后紧跟任一可审计标识
+   - 具体编号：`027` / `#27` / `第 027`
+   - 完整目录 slug：`027_mini-core-delivery-contract`
+   - `@topic` 引用形式：`@027` / `@027_mini-core-delivery-contract`
+
+> **反例（一律 Ask，不跳过）**：
+> - "内聚一下" — 关键词命中，但无目标
+> - "聚合到之前那个专项" — 关键词命中，目标不可审计（"之前那个"无编号 / 无 slug）
+> - "合并下" — 关键词不在白名单，且无目标
+> - "027 这个东西继续做" — 有编号但无关键词，不构成显式聚合意图
+>
+> **正例（允许跳过 Ask 直接路由）**：
+> - "聚合到 027"
+> - "合并到 027_mini-core-delivery-contract"
+> - "merge into @027"
+
+口语化「内聚」/「合并」常被用来指代 Git 操作而非 topic 路由，因此即使关键词命中也必须叠加可审计目标才能跳过 Ask，避免误绑定（r11 [F-C06] 风险）。
+
+#### 2.4 路由日志输出
+
+路由决策最终走向必须显式输出（无论是否触发 AskQuestion），例如：
 
 ```
 topic_affinity.suggestion = new_topic
 → 无匹配专项，建议创建新专项 007_push-frequency-control
 → 用户确认后执行
 ```
+
+```
+topic_affinity.suggestion = cohesion (score=2)
+→ 已展示候选 AskQuestion → 用户选择 [2] 聚合到 026_yyy
+→ 进入 Phase 3 内聚分支
+```
+
+> 路由结果改变了专项 scope 或方向时（如「创建新专项」/「迁移到专项」），应进一步走「路由决策记录」流程记录 `decisions/dXX.md`（见下文）。常规内聚不需要记录决策。
 
 ### Phase 3：初始化结构 (Initialize)
 

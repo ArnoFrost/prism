@@ -2,6 +2,33 @@
 
 > 统一前门路由逻辑。所有 workflow skill 的 sniff 阶段按此规范决定产物落点。
 
+## 0. 展示视图协议（SSOT）
+
+> [!important]
+> **本文件是 sniff 路由意图与评分规则的单一事实来源（Single Source of Truth）。**
+>
+> 所有 skill SKILL.md 中关于 `topic_affinity.suggestion` 的入口表都是**只读摘要**：
+> - **禁止**复制本文件中的评分阈值（如 `score ≥ 2`）到 SKILL.md
+> - SKILL.md 仅描述「该 skill 在收到 suggestion=X 时的默认动作」，阈值 / 字段语义需链回本文件
+> - 若实现（`sniff_lib.detect_topic_affinity`）与本文件描述偏离，以**实现为准**，需同步反向修正本文件，不得让 SKILL.md 复制错误阈值
+
+### 0.1 频率决定默认行为（Frequency-Driven Defaults）
+
+不同 skill 对**同一 `topic_affinity.suggestion`** 可有不同默认动作，由该 skill 的频率特征决定。这是有意为之的设计差异，不是待对齐的不一致：
+
+| Skill | 频率 | 默认 cohesion 行为 | 默认 ask_user 行为 | 默认 new_topic 行为 |
+|---|---|---|---|---|
+| **intake** | 低频启动事件 | **不直接落盘**——展示 AskQuestion 候选 | 必须 AskQuestion | 候选首项「全新专题（默认推荐）」 |
+| **review** | 高频持续事件 | 直接落盘到 matched_topic（轻确认） | 必须 AskQuestion | 沿 sniff 推荐 |
+| **review-lite** | 高频持续事件 | 同 review | 必须 AskQuestion | 沿 sniff 推荐 |
+| **scope / status / digest** | 视触发场景 | 沿 review 默认（同一 topic 内累计动作） | 必须 AskQuestion | 通常不进入新建分支 |
+
+> **设计立意**：
+> - **路由门**（高频）按上表分化默认行为；intake 偏 Ask（保护机制）、review 偏 cohesion（顺滑机制）
+> - **决策门**（低频锚点，如 review Gate 4 Accept/Reject/Defer）所有 skill 统一改用 `AskQuestion` 三选一模板，详见 SSOT [shared/references/askquestion-fallback.md](references/askquestion-fallback.md)
+>
+> 详细动机与裁决见 027 topic 决策 d09 / d09a。
+
 ## 概述
 
 topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心问题：**这次操作应该落在哪个 topic 目录下？**

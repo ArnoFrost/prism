@@ -92,7 +92,43 @@ prism sniff <project_dir> --topic <评审主题>
 
 ### 4. 决策触发
 
-与正式 review 相同——落盘后提示用户 Accept / Reject / Defer。
+落盘且校验通过后，与 `workflow-review` 一样**必须**触发结构化决策门 (`AskQuestion` 三选一：Accept / Reject / Defer)。
+
+> **决策门定位**：每次 review-lite 仅触发 1 次，是评审产物归宿的低频锚点。lite 与 full review 共用同一决策门契约（仅在产物 frontmatter `type` 上区分）。
+> 跨 skill 决策门约定见 SSOT [shared/topic-sniff-spec.md](../shared/topic-sniff-spec.md) §0.1 频率论。
+
+### Gate 4 触发模板（AskQuestion）
+
+调用 `AskQuestion` 工具传入以下结构化问题（一次只一个问题，三选一）：
+
+```yaml
+question:
+  id: review_lite_decision_gate
+  prompt: |
+    轻量评审已完成，产物已写入 reviews/rXX_描述.md（type: review-lite）。
+    请确认下一步：
+  options:
+    - id: accept
+      label: "Accept — 记录 decisions/dXX.md，执行 prism pipeline <topic_dir> 一键收尾"
+    - id: reject
+      label: "Reject — 说明原因后重新 review-lite 或升级到 workflow-review"
+    - id: defer
+      label: "Defer — 标记为待决，不立即更新 plan"
+```
+
+### 决策路径
+
+| 选择 | 后续动作 |
+|---|---|
+| `accept` | 立即写入 `decisions/dXX.md`，调用 `prism pipeline <topic_dir>` 串联 tidy/validate/scope-hint；若决策影响 scope，再调 `/workflow-scope` |
+| `reject` | 写 `decisions/dXX_拒绝XXX.md`（status=rejected）；若 reject 原因含「lite 视角不够」/「需要多角色」，建议升级到 `/workflow-review` |
+| `defer` | 写 `decisions/dXX_暂缓XXX.md`（status=deferred），README latest decision 指针更新；不改 plan |
+
+### Fallback 行为（AskQuestion 不可用）
+
+按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback。
+
+> ⛔ 与 full review 一致：不要跳过这一步直接开始执行。lite 评审的价值同样在于收敛共识，决策记录是共识的固化。
 
 ## 产物格式
 

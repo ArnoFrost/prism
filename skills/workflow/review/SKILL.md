@@ -278,20 +278,47 @@ Merge 阶段的去重、仲裁、独立发现率计算规则详见 [review-merge
 
 ## 决策触发（⛔ Gate 4 后）
 
-Merge 产物落盘且校验通过后，**必须提示用户记录决策**：
+Merge 产物落盘且校验通过后，**必须**触发结构化决策门，让用户在 Accept / Reject / Defer 三选一中做出选择。
 
+> **决策门定位**：每次 review 仅触发 1 次，是评审产物归宿的低频锚点。与高频「路由门」不同——决策门统一用 `AskQuestion` 结构化询问，禁止纯文字提示静默推进。
+> 跨 skill 决策门约定见 SSOT [shared/topic-sniff-spec.md](../shared/topic-sniff-spec.md) §0.1 频率论。
+
+### Gate 4 触发模板（AskQuestion）
+
+调用 `AskQuestion` 工具传入以下结构化问题（一次只一个问题，三选一）：
+
+```yaml
+question:
+  id: review_decision_gate
+  prompt: |
+    评审已完成，产物已写入 reviews/rXX_描述.md（独立发现率 / 落盘统计已在合并报告中输出）。
+    请确认下一步：
+  options:
+    - id: accept
+      label: "Accept — 记录 decisions/dXX.md，执行 prism pipeline <topic_dir> 一键收尾（tidy --fix → validate --fix → scope 提示）"
+    - id: reject
+      label: "Reject — 说明原因后重新 review 或调整 scope"
+    - id: defer
+      label: "Defer — 标记为待决，不立即更新 plan"
 ```
-评审完成，产物已写入 reviews/rXX.md。
 
-请确认下一步：
-1. Accept → 记录 decisions/dXX.md，然后执行 pipeline 一键收尾：
-   prism pipeline <topic_dir>
-   （自动串联 tidy --fix → validate --fix → scope 更新提示）
-2. Reject → 说明原因，重新 review 或调整 scope
-3. Defer → 标记为待决，不更新 plan
+### 决策路径
 
-决策模板见 workspace.schema.yaml → topic_artifacts.decision.template
-```
+| 选择 | 后续动作 |
+|---|---|
+| `accept` | 立即写入 `decisions/dXX.md`（模板见 `workspace.schema.yaml → topic_artifacts.decision.template`），随后调用 `prism pipeline <topic_dir>` 串联 tidy/validate/scope-hint；若决策影响 scope，再调 `/workflow-scope` |
+| `reject` | 在用户给出 reject 理由后写 `decisions/dXX_拒绝XXX.md`（type=decision、status=rejected），并按用户意图重启 review 或调 `/workflow-scope` 调整边界 |
+| `defer` | 在 `decisions/dXX_暂缓XXX.md` 中标 status=deferred，README 中 latest decision 指针更新；不修改 plan |
+
+### Fallback 行为（AskQuestion 不可用）
+
+无 `AskQuestion` 原语的环境（CodeBuddy CLI / Claude Code 文本流 / 自动化无人值守）按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback。
+
+降级要点：
+- 输出三选项文本清单 + 编号 + 等待用户单次自由文本回复
+- 解析容忍 `1` / `Accept` / `accept it` / `选 1` 等多种表达
+- **禁止**静默选 Accept（决策门错选不可逆，不允许自动默认）
+- 用户回复歧义时**重展候选 + 再问**，不猜测
 
 > ⛔ 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化。
 
