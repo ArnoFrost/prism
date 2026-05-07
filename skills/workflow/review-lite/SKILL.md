@@ -99,7 +99,9 @@ prism sniff <project_dir> --topic <评审主题>
 
 ### Gate 4 触发模板（AskQuestion）
 
-调用 `AskQuestion` 工具传入以下结构化问题（一次只一个问题，三选一）：
+调用 `AskQuestion` 工具传入以下结构化问题（一次只一个问题，三选一）。
+
+> 以下 `yaml` 块仅描述**契约结构**；实际调用时按 `AskQuestion` 工具的 JSON schema 传参（顶层 `questions: [{id, prompt, options: [{id, label}]}]`）。与 `workflow-review` Gate 4 措辞一致，仅 `id` 改为 `review_lite_decision_gate`。
 
 ```yaml
 question:
