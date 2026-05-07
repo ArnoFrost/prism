@@ -1,0 +1,70 @@
+name: CI
+
+# Phase H-2 P1 B0 — Prism SDK 持续集成闸门：
+#   1. uv 已装（astral-sh/setup-uv）
+#   2. bin/* 可执行 + bin/prism --version 启动正常（doctor --scope ci）
+#   3. skills frontmatter 合规（doctor --scope ci 内含 skill 阶段）
+#   4. pytest tests/ 全绿（含 setup smoke + sniff + relink writeback）
+# 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
+# 不依赖 prism.local.yaml / vault / ~/.local/bin（doctor --scope ci 自包含）。
+
+on:
+  push:
+    branches: [main, mini, "release/**"]
+  pull_request:
+    branches: [main, mini]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: doctor + pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Python via uv
+        run: uv python install 3.11
+
+      - name: Show toolchain
+        run: |
+          uv --version
+          uv run python --version
+          bin/prism --version || true
+
+      - name: Doctor — scope ci (self-contained health gate)
+        run: |
+          bin/doctor --scope ci --json | tee doctor-ci.json
+          bin/doctor --scope ci
+
+      - name: pytest — SDK smoke + relink + sniff
+        run: |
+          uv run --with pytest python -m pytest tests/ -q
+
+      - name: Validate workflow skills
+        run: |
+          bin/validate-skills --json | tee validate-skills.json
+
+      - name: Upload doctor / validate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-ci-${{ matrix.os }}
+          path: |
+            doctor-ci.json
+            validate-skills.json
+          if-no-files-found: ignore
+          retention-days: 14

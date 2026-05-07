@@ -70,16 +70,38 @@ def test_doctor_config_fix_aligns_global_gitignore(tmp_path):
 
 
 def test_setup_and_doctor_prefer_uv_runner_over_direct_python3():
+    """守卫 bin/setup 与 bin/doctor 不出现未受守卫的 python3 直接调用。
+
+    允许出现 `python3` 字面量的形式：
+    1. shell 注释行（# 开头）
+    2. 字面量字符串（echo / printf / log_* 输出，会被引号包住）
+    3. `command -v python3` 探测
+    4. fallback `exec python3 "$@"` 分支
+
+    其他任何形式的裸 python3 调用都应改走 run_python helper。
+    """
+    import re
+
     setup = SETUP.read_text(encoding="utf-8")
     doctor = DOCTOR.read_text(encoding="utf-8")
 
     for content in (setup, doctor):
-        direct_calls = [
-            line.strip()
-            for line in content.splitlines()
-            if "python3" in line and "command -v python3" not in line and 'python3 "$@"' not in line
-        ]
-        assert direct_calls == []
+        offending = []
+        for raw in content.splitlines():
+            line = raw.strip()
+            if line.startswith("#"):
+                continue
+            if "python3" not in line:
+                continue
+            if "command -v python3" in line:
+                continue
+            if 'python3 "$@"' in line:
+                continue
+            stripped = re.sub(r'"[^"]*"|\'[^\']*\'', "", line)
+            if "python3" not in stripped:
+                continue
+            offending.append(line)
+        assert offending == [], f"未守卫的 python3 调用: {offending}"
 
 
 def _path_without(*binaries: str) -> str:

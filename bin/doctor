@@ -7,7 +7,7 @@
 #   bin/doctor --fix              非破坏性自动修复（validate --fix + relink + cli 注入）
 #   bin/doctor --rollback         回滚 --fix 的修改（删除 rc 锚点 + symlink）
 #   bin/doctor --json             JSON 输出供其他 skill 消费
-#   bin/doctor --scope <name>     只跑指定范围：env / config / link / skill / sync / cli / release
+#   bin/doctor --scope <name>     只跑指定范围：env / config / link / skill / sync / cli / release / ci
 #
 #   scope 说明:
 #     env       setup --check 的环境完整性
@@ -16,6 +16,7 @@
 #     cli       doctor_cli 的 prism 寻址体检
 #     config    prism.local.yaml 必填字段 + 路径可达性
 #     release   聚合以上全部（1.0 发布就绪闸门）
+#     ci        env + skill + cli（跳过 sync 远端访问；vault 路径不可达只 INFO 不计警告）
 #
 #   --output <path>  将 JSON 结果写入文件（自动启用 --json）
 #
@@ -49,6 +50,7 @@ ERR_SKILL=0;  WARN_SKILL=0; FIX_SKILL=0
 ERR_SYNC=0;   WARN_SYNC=0
 ERR_CLI=0;    WARN_CLI=0;   FIX_CLI=0
 ERR_CONFIG=0; WARN_CONFIG=0; FIX_CONFIG=0
+ERR_CI_HEALTH=0; WARN_CI_HEALTH=0
 
 # 解析参数
 while [[ $# -gt 0 ]]; do
@@ -71,10 +73,20 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ── 判定 scope 是否激活某阶段 ────────
-# release scope 聚合全部 5 个阶段；普通 scope 只激活同名阶段
+# release scope 聚合全部 5 个阶段（env/skill/sync/cli/config）；
+# ci scope 聚合 skill + ci_health（自包含：bin/* +x、bin/prism --version 可启动），
+#   跳过 env（依赖 prism.local.yaml）/ sync（远端访问）/ cli（依赖 ~/.local/bin / PATH 锚点）
+#   / config（依赖 vault_path 等本机字段）—— CI runner 无 prism.local.yaml 也能跑通；
+# 普通 scope 只激活同名阶段
 _in_scope() {
   [[ -z "$SCOPE" ]] && return 0
   [[ "$SCOPE" == "release" ]] && return 0
+  if [[ "$SCOPE" == "ci" ]]; then
+    case "$1" in
+      skill|ci_health) return 0 ;;
+      *) return 1 ;;
+    esac
+  fi
   [[ "$SCOPE" == "$1" ]] && return 0
   return 1
 }
@@ -498,6 +510,64 @@ for l in d["lines"]:
   fi
 }
 
+# ── Stage 6: CI 自检 (SDK 自包含完整性) ──
+# 仅在 SCOPE=ci 时激活；目标：在无 prism.local.yaml / 无 ~/.local/bin / 无 vault 的 CI runner
+# 上验证 SDK 自身合同（bin/* +x、bin/prism --version 能启动）。
+_stage_ci_health() {
+  _in_scope ci_health || return 0
+
+  ! $JSON && echo -e "\n${CYAN}[CI 自检]${NC}"
+
+  # 检查 1：核心 bin/* 可执行权限
+  local bin_required=("bin/prism" "bin/setup" "bin/doctor" "bin/setenv" "bin/relink")
+  local entry path
+  for entry in "${bin_required[@]}"; do
+    path="$PRISM_DIR/$entry"
+    if [[ ! -f "$path" ]]; then
+      ! $JSON && echo -e "  ${RED}✗${NC} 缺少 $entry"
+      ERR_CI_HEALTH=$((ERR_CI_HEALTH + 1))
+    elif [[ ! -x "$path" ]]; then
+      ! $JSON && echo -e "  ${RED}✗${NC} $entry 缺少可执行权限（chmod +x）"
+      ERR_CI_HEALTH=$((ERR_CI_HEALTH + 1))
+    fi
+  done
+
+  # 检查 2：bin/prism 自身能启动（uv 或 python3 fallback 至少一条路径成立）
+  local version_out version_rc=0
+  version_out=$(PRISM_FALLBACK_QUIET=1 "$PRISM_DIR/bin/prism" --version 2>&1) || version_rc=$?
+  if [[ $version_rc -ne 0 ]]; then
+    ! $JSON && echo -e "  ${RED}✗${NC} bin/prism --version 无法启动 (rc=$version_rc): $version_out"
+    ERR_CI_HEALTH=$((ERR_CI_HEALTH + 1))
+  elif [[ -z "$version_out" ]]; then
+    ! $JSON && echo -e "  ${YELLOW}⚠${NC} bin/prism --version 输出为空"
+    WARN_CI_HEALTH=$((WARN_CI_HEALTH + 1))
+  fi
+
+  # 检查 3：runtime 可用性（uv 或 python3 至少一个）
+  if command -v uv >/dev/null 2>&1; then
+    : # uv 在路径上，最佳
+  elif command -v python3 >/dev/null 2>&1; then
+    ! $JSON && echo -e "  ${YELLOW}⚠${NC} 仅有 python3 fallback（CI 建议预装 uv 以贴近用户契约）"
+    WARN_CI_HEALTH=$((WARN_CI_HEALTH + 1))
+  else
+    ! $JSON && echo -e "  ${RED}✗${NC} uv 与 python3 均不可用，无法启动 SDK"
+    ERR_CI_HEALTH=$((ERR_CI_HEALTH + 1))
+  fi
+
+  # 检查 4：VERSION 文件存在（分发包健康度信号）
+  if [[ ! -f "$PRISM_DIR/VERSION" ]]; then
+    ! $JSON && echo -e "  ${YELLOW}⚠${NC} VERSION 文件缺失（pack 时会回填，dev 仓库正常）"
+    WARN_CI_HEALTH=$((WARN_CI_HEALTH + 1))
+  fi
+
+  ! $JSON && {
+    if [[ $ERR_CI_HEALTH -eq 0 && $WARN_CI_HEALTH -eq 0 ]]; then
+      echo -e "  ${GREEN}✓${NC} SDK 自包含合同就绪（bin/* +x、bin/prism --version 启动正常）"
+    fi
+    echo -e "  ${DIM}→ ${ERR_CI_HEALTH} 错误, ${WARN_CI_HEALTH} 警告${NC}"
+  }
+}
+
 # ── 主流程 ───────────────────────────
 if ! $JSON; then
   echo -e "${CYAN}Prism Doctor${NC}"
@@ -509,9 +579,10 @@ _stage_skill
 _stage_sync
 _stage_cli
 _stage_config
+_stage_ci_health
 
-TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_SYNC + ERR_CLI + ERR_CONFIG))
-TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_SYNC + WARN_CLI + WARN_CONFIG))
+TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_SYNC + ERR_CLI + ERR_CONFIG + ERR_CI_HEALTH))
+TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_SYNC + WARN_CLI + WARN_CONFIG + WARN_CI_HEALTH))
 TOTAL_FIX=$((FIX_SKILL + FIX_CLI + FIX_CONFIG))
 
 # ── 输出总结 ─────────────────────────
@@ -523,14 +594,14 @@ if $JSON; then
   fi
   TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   cat <<EOF
-{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG}}
+{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","scope":"${SCOPE:-all}","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG},"ci_health":{"errors":$ERR_CI_HEALTH,"warnings":$WARN_CI_HEALTH}}
 EOF
   # --output 模式：将结果写入文件
   if [[ -n "$OUTPUT" ]]; then
     mkdir -p "$(dirname "$OUTPUT")"
     # 重新生成 JSON 写入文件（避免 stdout pipe 问题）
     cat > "$OUTPUT" <<EOF2
-{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG}}
+{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","scope":"${SCOPE:-all}","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG},"ci_health":{"errors":$ERR_CI_HEALTH,"warnings":$WARN_CI_HEALTH}}
 EOF2
   fi
 else
@@ -547,6 +618,10 @@ else
 fi
 
 # 退出码
+# - 错误 > 0：exit 1（所有 scope 一致）
+# - 警告 > 0：默认 exit 2；ci scope 友好退 0（CI 不应被 WARN 卡住流水线）
 if [[ $TOTAL_ERR -gt 0 ]]; then exit 1
-elif [[ $TOTAL_WARN -gt 0 ]]; then exit 2
+elif [[ $TOTAL_WARN -gt 0 ]]; then
+  [[ "$SCOPE" == "ci" ]] && exit 0
+  exit 2
 else exit 0; fi
