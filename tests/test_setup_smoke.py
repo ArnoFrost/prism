@@ -13,6 +13,7 @@ SDK_ROOT = Path(__file__).resolve().parents[1]
 SETUP = SDK_ROOT / "bin" / "setup"
 LOCAL_CONFIG = SDK_ROOT / "prism.local.yaml"
 DOCTOR = SDK_ROOT / "bin" / "doctor"
+PRISM = SDK_ROOT / "bin" / "prism"
 PRISM_GITIGNORE_PATTERNS = [
     "AGENT.local.md",
     "AGENT.*.local.md",
@@ -79,3 +80,74 @@ def test_setup_and_doctor_prefer_uv_runner_over_direct_python3():
             if "python3" in line and "command -v python3" not in line and 'python3 "$@"' not in line
         ]
         assert direct_calls == []
+
+
+def _path_without(*binaries: str) -> str:
+    """Return PATH with directories that contain any of *binaries* removed."""
+    keep = []
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not entry:
+            continue
+        skip = False
+        for binary in binaries:
+            candidate = Path(entry) / binary
+            if candidate.exists():
+                skip = True
+                break
+        if not skip:
+            keep.append(entry)
+    return os.pathsep.join(keep)
+
+
+def test_bin_prism_falls_back_to_python3_when_uv_missing(tmp_path):
+    """r10 A2: bin/prism 缺 uv 时应使用 python3 fallback 启动并退出 0。"""
+    if not PRISM.exists():
+        pytest.skip("bin/prism 不存在")
+
+    env = os.environ.copy()
+    env["PATH"] = _path_without("uv")
+    env["PRISM_FALLBACK_QUIET"] = "1"
+
+    result = subprocess.run(
+        [str(PRISM), "--version"],
+        cwd=str(SDK_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    assert result.returncode == 0, (
+        f"bin/prism --version 在缺 uv 时应通过 python3 fallback 退出 0；"
+        f"stdout={result.stdout!r} stderr={result.stderr!r}"
+    )
+    assert result.stdout.strip(), "bin/prism --version 应输出非空版本字符串"
+
+
+def test_bin_prism_emits_uv_missing_hint(tmp_path):
+    """r10 A2: bin/prism 在缺 uv 时必须把 fallback 状态打到 stderr，引导跑 bin/setup。"""
+    if not PRISM.exists():
+        pytest.skip("bin/prism 不存在")
+
+    env = os.environ.copy()
+    env["PATH"] = _path_without("uv")
+    env.pop("PRISM_FALLBACK_QUIET", None)
+
+    result = subprocess.run(
+        [str(PRISM), "--version"],
+        cwd=str(SDK_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    assert result.returncode == 0
+    assert "uv" in result.stderr and "bin/setup" in result.stderr, result.stderr
+
+
+def test_bin_prism_run_python_has_python3_fallback_branch():
+    """r10 A2: 静态保证 bin/prism 的 _run_python 包含 python3 fallback 分支。"""
+    content = PRISM.read_text(encoding="utf-8")
+    assert "exec python3" in content, "bin/prism 缺少 python3 fallback exec 分支"
+    assert "command -v python3" in content, "bin/prism 缺少 python3 可用性检查"

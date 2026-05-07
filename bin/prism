@@ -47,16 +47,28 @@ PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLI_SCRIPT="$PRISM_DIR/skills/workflow/shared/scripts/prism_cli.py"
 
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 DIM='\033[2m'
 NC='\033[0m'
 
+# Python runner 与 bin/setup / bin/doctor 一致：优先 uv run python，缺 uv 时
+# 用 python3 fallback 保证 bin/prism 在缺 uv 但已有 python3 的环境（CI / dev
+# container / 离线机器）仍能启动 + 自我修复。`uv` 仍是 core contract 硬依赖；
+# fallback 模式会向 stderr 输出明确提示，引导跑 bin/setup 安装 uv。
 _run_python() {
-  if ! command -v uv >/dev/null 2>&1; then
-    echo -e "${RED}✗ uv 未安装，Prism core contract 需要 uv 作为 Python 运行时${NC}" >&2
-    echo -e "  ${DIM}可运行 bin/setup 自动安装，或手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}" >&2
-    exit 127
+  if command -v uv >/dev/null 2>&1; then
+    exec uv run python "$@"
   fi
-  exec uv run python "$@"
+  if command -v python3 >/dev/null 2>&1; then
+    if [[ "${PRISM_FALLBACK_QUIET:-0}" != "1" ]]; then
+      echo -e "${YELLOW}⚠ uv 未安装，bin/prism 使用 python3 fallback 启动（degraded mode）${NC}" >&2
+      echo -e "  ${DIM}请运行 $PRISM_DIR/bin/setup 自动安装 uv 以恢复 core contract 一致性${NC}" >&2
+    fi
+    exec python3 "$@"
+  fi
+  echo -e "${RED}✗ 未找到 uv 或 python3，无法启动 bin/prism${NC}" >&2
+  echo -e "  ${DIM}先安装 Python 3 (https://python.org) 再运行 bin/setup 完成 uv 安装${NC}" >&2
+  exit 127
 }
 
 # ── --help/-h: 从文件头注释提取 ─────────
