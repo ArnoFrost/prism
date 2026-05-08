@@ -69,6 +69,75 @@ def test_doctor_config_fix_aligns_global_gitignore(tmp_path):
         assert pattern in content
 
 
+def test_doctor_config_fix_strips_legacy_agent_md_patterns(tmp_path):
+    """v1.1.4: doctor --fix 应清理 v1.1.1 老命名 AGENT.local.md / AGENT.*.local.md。"""
+    if not LOCAL_CONFIG.exists():
+        pytest.skip("prism.local.yaml is local-only; config doctor requires a configured workspace")
+
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path)
+
+    gitignore = tmp_path / ".gitignore_global"
+    gitignore.write_text(
+        "# 模拟 v1.1.1 老用户残留\n"
+        "AGENT.local.md\n"
+        "AGENT.*.local.md\n"
+        "# end legacy block\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [str(DOCTOR), "--scope", "config", "--fix", "--json"],
+        cwd=str(SDK_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["config"]["fixed"] >= 2, payload
+
+    content = gitignore.read_text(encoding="utf-8")
+    assert "AGENT.local.md\n" not in content, "老 pattern 行未清理: " + content
+    assert "AGENT.*.local.md\n" not in content, "老 wildcard 行未清理: " + content
+    assert "# 模拟 v1.1.1 老用户残留" in content, "误伤了无关注释行"
+    for pattern in PRISM_GITIGNORE_PATTERNS:
+        assert pattern in content
+
+
+def test_doctor_config_check_warns_on_legacy_patterns(tmp_path):
+    """v1.1.4: 不带 --fix 时，doctor --scope config 应当 WARN 残留老 pattern。"""
+    if not LOCAL_CONFIG.exists():
+        pytest.skip("prism.local.yaml is local-only; config doctor requires a configured workspace")
+
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path)
+
+    gitignore = tmp_path / ".gitignore_global"
+    gitignore.write_text(
+        "AGENTS.local.md\n"
+        "AGENTS.*.local.md\n"
+        "workspace.*.local\n"
+        "workspace.*.local/\n"
+        "prism.local.yaml\n"
+        "AGENT.local.md\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [str(DOCTOR), "--scope", "config"],
+        cwd=str(SDK_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "残留老 Prism 模式" in result.stdout, result.stdout
+
+
 def test_setup_and_doctor_prefer_uv_runner_over_direct_python3():
     """守卫 bin/setup 与 bin/doctor 不出现未受守卫的 python3 直接调用。
 

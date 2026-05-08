@@ -1,5 +1,26 @@
 ## [Unreleased]
 
+## [v1.1.4] — 2026-05-08
+
+**无感迁移版 · 把 v1.1.3 的"hard break + 手动 mv 提示"升级为"零步骤自动迁移"。** 同事仅需更新 SDK 后跑一次 `bin/relink` + `bin/setup`，老命名 `AGENT.md` 与全局 gitignore 老 pattern 全部自动收敛到 `AGENTS.md` 命名族。
+
+### Added — vault 内 AGENT.md 自动迁移
+- `bin/relink`：探测到 vault 工作区（`{WS_ROOT}/{CODE}/`）内仅有老命名 `AGENT.md` 时，自动 `mv AGENT.md AGENTS.md` 并建 `AGENTS.local.md` 软链。`--check` / `--dry-run` 守卫严格保留预览语义。
+- 边界守护：vault 内同时存在 `AGENT.md` + `AGENTS.md` 时跳过 mv 并输出 WARN，让用户决断；mv 失败（iCloud 占位符等）打 ERR 而非吞错。
+
+### Added — 全局 gitignore 老 pattern 自动清理
+- `bin/setup` / `bin/doctor`：新增 `PRISM_GITIGNORE_LEGACY_PATTERNS = [AGENT.local.md, AGENT.*.local.md]`，跑 `--fix` 时与新 pattern 补齐合并执行：先补缺失新 pattern，再删除残留老 pattern 行（注释行不受影响）。
+- 不带 `--fix` 时观测残留并输出 WARN，引导一行命令完成清理。
+
+### Tests — 5 + 2 个新 case
+- `tests/test_relink_agent_md_auto_migrate.py`：5 个 hermetic 场景（自动 mv 成功、`--dry-run` 不动、`--check` 仅 WARN、双名共存跳过、纯新命名零提示）。
+- `tests/test_setup_smoke.py`：新增 `test_doctor_config_fix_strips_legacy_agent_md_patterns` + `test_doctor_config_check_warns_on_legacy_patterns`。
+
+### Migration — 同事升级现在是零步骤
+1. `bin/setup` 重新跑一遍：自动补齐缺失新 pattern + 清理老 pattern
+2. `bin/relink`：vault 内残留的 `AGENT.md` 自动 mv 成 `AGENTS.md` 并建软链
+3. 升级完成。**v1.1.3 列出的三个手动步骤现已全自动**
+
 ## [v1.1.3] — 2026-05-08
 
 **收敛版 · 移除 AGENT.md 兼容，分发链路与 SDK 命名统一收束到 `AGENTS.md`。** 在 v1.1.2 引入双兼容（AGENTS.md 首选，AGENT.md fallback）后，本机迁移完成、确认双兼容带来的长期心智负担大于过渡价值，决定 hard break。

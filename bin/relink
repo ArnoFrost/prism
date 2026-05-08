@@ -312,16 +312,26 @@ while IFS= read -r line; do
       ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
 
       # AGENTS.md 协作契约软链（vault → workspace 桥接）
+      # 老命名 AGENT.md 自动迁移：仅限 vault 内 prism 工作区路径，无感升级
       agents_target="${WS_ROOT}/${code}/AGENTS.md"
+      legacy_target="${WS_ROOT}/${code}/AGENT.md"
+      if [[ -f "$legacy_target" && -f "$agents_target" ]]; then
+        log_warn "    ${code}: vault 内同时存在 AGENT.md 与 AGENTS.md，请手动确认后保留 AGENTS.md"
+      elif [[ -f "$legacy_target" && ! -f "$agents_target" ]]; then
+        if $CHECK_ONLY; then
+          log_warn "    ${code}: vault 内仍是老命名 AGENT.md（v1.1.4+ 应已迁移；运行 bin/relink 自动 mv）"
+        elif $DRY_RUN; then
+          log_fix "    ${code}: 将 mv ${legacy_target} → ${agents_target}"
+        else
+          if mv "$legacy_target" "$agents_target" 2>/dev/null; then
+            log_fix "    ${code}: 自动迁移 AGENT.md → AGENTS.md（vault 内）"
+          else
+            log_err "    ${code}: AGENT.md → AGENTS.md mv 失败（iCloud 占位符？请手动处理）"
+          fi
+        fi
+      fi
       if [[ -f "$agents_target" ]]; then
         ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"
-      else
-        # 老命名探测——仅打 WARN 引导用户手动迁移，不再自动创建老软链
-        legacy_target="${WS_ROOT}/${code}/AGENT.md"
-        if [[ -f "$legacy_target" ]]; then
-          echo -e "    ${YELLOW}⚠${NC} 仅找到老命名 AGENT.md，请手动 mv 为 AGENTS.md 后重跑 relink"
-          echo -e "       cd \"${WS_ROOT}/${code}\" && mv AGENT.md AGENTS.md"
-        fi
       fi
 
       # 回写 project.yaml paths（跨设备支持）

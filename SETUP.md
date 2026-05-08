@@ -356,6 +356,8 @@ prism.local.yaml
 
 > **为什么不用 `*.local.md`？** 这个通配符太宽泛，会误伤其他项目中合法的 `.local.md` 文件。Prism 仅使用 `AGENTS.local.md` / `AGENTS.{variant}.local.md`，用显式前缀限定范围，最小影响面。
 
+> **v1.1.4+ 自动清理老 pattern**：`bin/setup`（不带 `--check`）/ `bin/doctor --scope config --fix` 会同时检测并自动删除残留的 v1.1.1 老 pattern（`AGENT.local.md` / `AGENT.*.local.md`）。仅删除完全匹配的 pattern 行，不影响周围注释。
+
 **模式 A**：用 AskQuestion 确认是否自动追加。
 **模式 B**：展示将追加的内容，等待用户确认。
 
