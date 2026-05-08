@@ -15,8 +15,13 @@ LOCAL_CONFIG = SDK_ROOT / "prism.local.yaml"
 DOCTOR = SDK_ROOT / "bin" / "doctor"
 PRISM = SDK_ROOT / "bin" / "prism"
 PRISM_GITIGNORE_PATTERNS = [
+    # v1.1.2+ 复数命名（首选）
+    "AGENTS.local.md",
+    "AGENTS.*.local.md",
+    # v1.1.1 之前单数命名（兼容老 vault / 老工作区）
     "AGENT.local.md",
     "AGENT.*.local.md",
+    # 桥接 + 配置（与命名版本无关）
     "workspace.*.local",
     "workspace.*.local/",
     "prism.local.yaml",

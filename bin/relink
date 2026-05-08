@@ -311,10 +311,16 @@ while IFS= read -r line; do
       ws_link="${local_path}/workspace.${code_lower}.local"
       ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
 
-      agent_target="${WS_ROOT}/${code}/AGENT.md"
-      agent_link="${local_path}/AGENT.local.md"
-      if [[ -f "$agent_target" ]]; then
-        ensure_link "$agent_link" "$agent_target" "    AGENT.local.md"
+      # AGENTS.md / AGENT.md 双兼容（v1.1.2+）
+      # 优先探测 vault 里复数命名的 AGENTS.md，找到则建 AGENTS.local.md；
+      # 否则 fallback 到老命名 AGENT.md → AGENT.local.md。
+      # 不主动 rename 老文件——尊重用户工作区的现状，迁移由用户手动 git mv 决定。
+      agents_target_new="${WS_ROOT}/${code}/AGENTS.md"
+      agents_target_old="${WS_ROOT}/${code}/AGENT.md"
+      if [[ -f "$agents_target_new" ]]; then
+        ensure_link "${local_path}/AGENTS.local.md" "$agents_target_new" "    AGENTS.local.md"
+      elif [[ -f "$agents_target_old" ]]; then
+        ensure_link "${local_path}/AGENT.local.md" "$agents_target_old" "    AGENT.local.md (legacy)"
       fi
 
       # 回写 project.yaml paths（跨设备支持）
@@ -525,8 +531,8 @@ if $PRUNE; then
       if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
         local_path="${BASH_REMATCH[2]}"
         [[ -d "$local_path" ]] || continue
-        # 扫描 workspace.*.local 和 AGENT.local.md
-        for link in "$local_path"/workspace.*.local "$local_path"/AGENT.local.md; do
+        # 扫描 workspace.*.local 和 AGENTS.local.md / AGENT.local.md（双兼容）
+        for link in "$local_path"/workspace.*.local "$local_path"/AGENTS.local.md "$local_path"/AGENT.local.md; do
           [[ -L "$link" ]] || continue
           link_target=$(readlink "$link")
           if [[ ! -e "$link_target" ]]; then

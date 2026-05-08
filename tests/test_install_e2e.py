@@ -40,7 +40,9 @@ def _make_sdk_tree(dest: Path) -> Path:
             entry.chmod(entry.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     (dest / "skills").symlink_to(SDK_ROOT / "skills")
-    for fname in ("VERSION", "AGENT.md", "SETUP.md"):
+    # AGENTS.md / AGENT.md 双兼容：v1.1.2+ 首选 AGENTS.md，老 zip 可能仍是 AGENT.md
+    protocol_file = "AGENTS.md" if (SDK_ROOT / "AGENTS.md").exists() else "AGENT.md"
+    for fname in ("VERSION", protocol_file, "SETUP.md"):
         src = SDK_ROOT / fname
         if src.exists():
             (dest / fname).symlink_to(src)
