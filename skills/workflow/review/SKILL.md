@@ -57,6 +57,11 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 
 > 决策结果**必须在 Align 阶段显式输出**（如："判定 mode=full，原因：..."），不得隐式跳过。
 
+> [!warning]
+> **mode 自动判定不可信时升级为边界澄清门**（d11 B1）：
+> 当评审材料行数 / 文件数 / 并行能力均无法可靠估计（异常分支），mode 决策升格为低频锚点边界澄清门，按 SSOT [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.3.3 模板向用户三选一询问，禁止默认到 full / quick。
+> 正常路径（材料行数 / 文件数 / 并行能力可估计）继续按上述自动判定，不强制 Ask（OQ3 not_overturn — 不推翻高频 cohesion 默认）。
+
 ## 协作骨架：总分总 (Align → Explore → Merge)
 
 ### 阶段门控（Structured Gates）
@@ -88,7 +93,8 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 │    - source=topic_hint → 基于用户显式 topic 的子串匹配，可信
 │    - source=project_dir → project_dir 本身就是 topic 目录，可信
 │    - source=none → 未定位到 topic reviews/，编号 r01 为占位默认值，
-│                    **必须先与用户确认 topic 再使用，否则会覆盖已有评审**
+│                    **触发边界澄清门（SSOT §4.3.2）**：必须先与用户确认 topic
+│                    后再使用，否则会覆盖已有 r01；env 不得绕过此门
 │    - review 与 review-lite 共享同一编号池（reviews/rXX.md），lite 在 frontmatter
 │      标注 type: review-lite 区分，review.index.md 栏内标 `lite`
 ├────────── ⛔ Gate 1 ────────────┤
@@ -252,13 +258,18 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 | `ai-task.local/`（兼容） | 同上 |
 | 均不存在 | 按通用模式执行 |
 
-### sniff 失败处理
+### sniff 失败处理（边界澄清门 — 低频锚点）
 
-| 场景 | Fallback |
-|------|----------|
-| sniff 执行报错 | 告知用户，请求手动指定 output_dir + format |
-| `writable = false` | 降级为对话输出模式，不落盘 |
-| `topic_affinity = null` | 按 `new_topic` 处理或用户指定 |
+> [!warning]
+> sniff 失败属 Align 阶段异常分支，触发边界澄清门（**低频锚点，OQ3 not_overturn — 不推翻 review 默认 cohesion 高频路径**）。按 SSOT [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.3.1 处理；env=`PRISM_NO_INTERACTIVE=1` 路径必须 fail（不得绕过此门）。
+
+| 场景 | Fallback | SSOT 模板 |
+|------|----------|----------|
+| sniff 执行报错 | 触发边界澄清门，请求手动指定 output_dir + format + mode | §4.3.1 |
+| `next_review_source=none` | 触发边界澄清门（编号占位风险）：先与用户确认 topic + 编号再落盘，否则覆盖已有 r01 | §4.3.2 |
+| mode 自动判定不可信 | 触发边界澄清门，三选一（full / quick / 升级 review-lite） | §4.3.3 |
+| `writable = false` | 降级为对话输出模式，不落盘 | — |
+| `topic_affinity = null` | 按 `new_topic` 处理或用户指定 | — |
 
 ## 产物设计
 
@@ -314,15 +325,16 @@ question:
 
 ### Fallback 行为（AskQuestion 不可用）
 
-无 `AskQuestion` 原语的环境（CodeBuddy CLI / Claude Code 文本流 / 自动化无人值守）按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback。
+无 `AskQuestion` 原语的环境（CodeBuddy CLI / Claude Code 文本流 / 自动化无人值守）按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback + §3.2 反模式 + §2 触发条件优先级。
 
-降级要点：
+降级要点（与 SSOT §4.2 严格一致，不重复正文）：
 - 输出三选项文本清单 + 编号 + 等待用户单次自由文本回复
-- 解析容忍 `1` / `Accept` / `accept it` / `选 1` 等多种表达
-- **禁止**静默选 Accept（决策门错选不可逆，不允许自动默认）
-- 用户回复歧义时**重展候选 + 再问**，不猜测
+- 解析按 SSOT §5 协议严格匹配：`1` / `Accept` / `accept it` / `选 1` 等命中即可
+- **禁止**静默选 Accept；模糊回复（"好" / "行" / "OK" / "嗯"）一律视为未确认，重展候选 + 再问
+- `PRISM_NO_INTERACTIVE=1` 路径下决策门**必须 fail**，调用方需用 `--decision=accept|reject|defer` 显式提供决策（env 不得绕过决策门，见 SSOT §2）
+- 解析失败 / 超时 / 用户取消时**禁止写入 `decisions/dXX.md`**
 
-> ⛔ 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化。
+> ⛔ 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化；决策门错选会固化错误共识 + 串联 `prism pipeline`，回溯成本高（r13 P0 F2）。
 
 ## 目录结构
 

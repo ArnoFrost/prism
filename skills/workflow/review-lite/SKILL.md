@@ -57,7 +57,7 @@ stability: experimental
 >
 > sniff 返回的 `next_review_source` 指示编号来源的可信度：
 > - `affinity` / `topic_hint` / `project_dir`：可信直接用
-> - `none`：未定位到 topic，r01 只是占位默认值，**必须先确认 topic 再使用**
+> - `none`：未定位到 topic，r01 只是占位默认值，**触发边界澄清门**（详见 SSOT [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.3.2）：必须先与用户确认 topic 后再使用，否则会覆盖已有 r01；`PRISM_NO_INTERACTIVE=1` 路径下必须 fail（env 不得绕过此门）
 
 ## 执行步骤
 
@@ -128,9 +128,14 @@ question:
 
 ### Fallback 行为（AskQuestion 不可用）
 
-按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback。
+按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback + §3.2 反模式 + §2 触发条件优先级。
 
-> ⛔ 与 full review 一致：不要跳过这一步直接开始执行。lite 评审的价值同样在于收敛共识，决策记录是共识的固化。
+降级要点（与 SSOT §4.2 一致，不重复正文）：
+- 严格按 §5 协议解析；模糊回复一律视为未确认，重展候选 + 再问，**禁止解释为 Accept**
+- `PRISM_NO_INTERACTIVE=1` 路径下决策门**必须 fail**（env 不得绕过决策门，见 SSOT §2）
+- 解析失败 / 超时 / 取消时禁止写入 `decisions/dXX.md`
+
+> ⛔ 与 full review 一致：不要跳过这一步直接开始执行。lite 评审的价值同样在于收敛共识，决策记录是共识的固化；决策门错选会固化错误共识，回溯成本高（r13 P0 F2）。
 
 ## 产物格式
 

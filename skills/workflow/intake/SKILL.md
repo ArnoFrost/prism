@@ -95,6 +95,12 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 2. 按关键词聚类，生成聚合建议表
 3. 展示给用户确认
 
+> [!warning]
+> migrate 聚合方案的"用户确认"属决策门（低频锚点），按 SSOT [askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 与 §2 触发条件优先级处理：
+> - `PRISM_NO_INTERACTIVE=1` 路径下**必须 fail**，调用方需以参数显式提供聚合方案（env 不得绕过决策门）；
+> - 解析失败 / 模糊回复（"好" / "行" / "OK"）一律重问，禁止解释为 Accept；
+> - 用户未明确确认前**禁止移动专项目录或写入 archive/**。
+
 ### Phase 2：路由决策 (Route)
 
 > [!important]
@@ -152,28 +158,18 @@ sniff 检测到本次 intake 与已有 topic 有亲和（score=2）。
 
 #### 2.3 显式意图跳过 AskQuestion 的严格双层守卫
 
-仅当**两个条件同时满足**时，才允许跳过 AskQuestion 直接路由（沿用户显式意图）：
+> 守卫范式（关键词命中 + 可审计目标紧随的双条件）由 SSOT 维护：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §6.3「跳过 AskQuestion 的双层守卫」。
+> 本节仅声明 **intake Phase 2 路由门**的关键词白名单（SKILL 自定义部分）；可审计目标清单 / 反例 / 正例 / 反模式 一律以 SSOT 为准，**不在本 SKILL 复制**。
 
-1. **关键词命中**：用户原文匹配以下任一关键词
-   - 中文：`聚合到` / `合并到` / `归入` / `放进` / `内聚到`
-   - 英文：`merge into` / `add to existing` / `cohere to`
-2. **可审计目标紧随关键词**：上述关键词后紧跟任一可审计标识
-   - 具体编号：`027` / `#27` / `第 027`
-   - 完整目录 slug：`027_mini-core-delivery-contract`
-   - `@topic` 引用形式：`@027` / `@027_mini-core-delivery-contract`
+**intake 路由门关键词白名单**（仅扩展，不修改 SSOT §6.3 中"可审计目标"清单）：
 
-> **反例（一律 Ask，不跳过）**：
-> - "内聚一下" — 关键词命中，但无目标
-> - "聚合到之前那个专项" — 关键词命中，目标不可审计（"之前那个"无编号 / 无 slug）
-> - "合并下" — 关键词不在白名单，且无目标
-> - "027 这个东西继续做" — 有编号但无关键词，不构成显式聚合意图
->
-> **正例（允许跳过 Ask 直接路由）**：
-> - "聚合到 027"
-> - "合并到 027_mini-core-delivery-contract"
-> - "merge into @027"
+- **中文**：`聚合到` / `合并到` / `归入` / `放进` / `内聚到`
+- **英文**：`merge into` / `add to existing` / `cohere to`
 
-口语化「内聚」/「合并」常被用来指代 Git 操作而非 topic 路由，因此即使关键词命中也必须叠加可审计目标才能跳过 Ask，避免误绑定（r11 [F-C06] 风险）。
+> [!warning]
+> **不要把本 SKILL 的关键词白名单当成 SSOT 全文复用**——SSOT §6.3 已显式列出"只抄关键词不抄可审计目标"为破坏 SSOT 的反模式。任何沿用本守卫的新 SKILL 应当只扩展自己的关键词白名单 + 指针引用 SSOT，不得整段拷贝反例 / 正例。
+
+口语化「内聚」/「合并」常被用来指代 Git 操作而非 topic 路由，因此即使关键词命中也必须叠加可审计目标才能跳过 Ask，避免误绑定（r11 [F-C06] 风险，r13 P0 F3 已升格为 SSOT §6.3）。
 
 #### 2.4 路由日志输出
 
