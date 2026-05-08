@@ -1,5 +1,25 @@
 ## [Unreleased]
 
+## [v1.1.3] — 2026-05-08
+
+**收敛版 · 移除 AGENT.md 兼容，分发链路与 SDK 命名统一收束到 `AGENTS.md`。** 在 v1.1.2 引入双兼容（AGENTS.md 首选，AGENT.md fallback）后，本机迁移完成、确认双兼容带来的长期心智负担大于过渡价值，决定 hard break。
+
+### Changed — 协议命名收敛
+- `bin/setup` / `bin/doctor` / `skills/workspace/init/scripts/sniff.py` 的 `PRISM_GITIGNORE_PATTERNS` 删除 `AGENT.local.md` / `AGENT.*.local.md`
+- `bin/relink` 删除 fallback 创建 `AGENT.local.md` 软链分支；探测到 vault 内仅有老命名 `AGENT.md` 时打 WARN，提示用户手动 `mv AGENT.md AGENTS.md` 后重跑
+- `.gitignore` 收敛到 `AGENTS.local.md` / `AGENTS.*.local.md` 单一族
+- 文档（`AGENTS.md` / `SETUP.md` / `docs/architecture.md` / `workspace/README.md` / `workspace/schema/workspace.schema.yaml` / `skills/workspace/init/SKILL.md`）删除「命名兼容（v1.1.2+）」段、双兼容注脚、老 pattern 示例
+
+### Changed — 分发链路收敛
+- `prism-dist/scripts/pack.py`：`base_required` 强制 `prism/AGENTS.md`；content leak 校验只看 `AGENTS.local.md`
+- `prism-dist/templates/INSTALL_INTERNAL.md`：probe / §U2 备份恢复 / 5a / 5f gitignore 描述全部去兼容
+
+### Migration — 其他设备升级
+1. 全局 gitignore：把 `AGENT.local.md` / `AGENT.*.local.md` 替换为 `AGENTS.local.md` / `AGENTS.*.local.md`
+2. vault 内 `mv {CODE}/AGENT.md {CODE}/AGENTS.md`
+3. 工作仓库 `rm AGENT.local.md && bin/relink` 让 `AGENTS.local.md` 软链重建
+4. `bin/relink` 检测到老命名仍打 WARN 提示，零信息丢失
+
 ## [v1.1.0] — 2026-04-24
 
 **1.1 阶段版 · 在 `v1.0.0` 基础上继续做 CLI 语义、文档叙事与跨层 update/apply 机制收敛。** 这个版本的目标不是宣布一次全新架构，而是把 023 / 024 / 025 / 026 这几轮增强统一收束成一个更顺手、更可自省、也更适合继续日常观察使用的阶段性基线。
