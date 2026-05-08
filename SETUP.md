@@ -118,7 +118,8 @@ GI_GLOBAL=$(git config --global core.excludesfile 2>/dev/null)
 GI_GLOBAL="${GI_GLOBAL/#\~/$HOME}"
 echo "GITIGNORE_GLOBAL=${GI_GLOBAL:-not_configured}"
 if [ -f "$GI_GLOBAL" ]; then
-  for pat in "AGENT.local.md" "AGENT.*.local.md" "workspace.*.local" "workspace.*.local/" "prism.local.yaml"; do
+  # 双兼容探测：v1.1.2+ 复数命名（首选）+ v1.1.1 之前单数命名（兼容老用户）
+  for pat in "AGENTS.local.md" "AGENTS.*.local.md" "AGENT.local.md" "AGENT.*.local.md" "workspace.*.local" "workspace.*.local/" "prism.local.yaml"; do
     grep -qF "$pat" "$GI_GLOBAL" 2>/dev/null && echo "GI_HAS: $pat" || echo "GI_MISS: $pat"
   done
 fi
@@ -346,15 +347,23 @@ fi
 需要追加的模式（仅补缺失的）：
 
 ```gitignore
-# Prism / AI-TASK — .local 后缀约定（本地桥接，不入库）
+# Prism — .local 后缀约定（本地桥接，不入库）
+
+# v1.1.2+ 复数命名（首选，与业界 AGENTS.md 标准对齐）
+AGENTS.local.md
+AGENTS.*.local.md
+
+# v1.1.1 之前单数命名（兼容老 vault / 老工作区）
 AGENT.local.md
 AGENT.*.local.md
+
+# 桥接 + 配置（与命名版本无关）
 workspace.*.local
 workspace.*.local/
 prism.local.yaml
 ```
 
-> **为什么不用 `*.local.md`？** 这个通配符太宽泛，会误伤其他项目中合法的 `.local.md` 文件。Prism 仅使用 `AGENT.local.md` 和 `AGENT.{variant}.local.md`（如 `AGENT.personal.local.md`），因此用显式前缀限定范围，最小影响面。
+> **为什么不用 `*.local.md`？** 这个通配符太宽泛，会误伤其他项目中合法的 `.local.md` 文件。Prism 仅使用 `AGENTS.local.md` / `AGENTS.{variant}.local.md`（首选）和 `AGENT.local.md` / `AGENT.{variant}.local.md`（兼容），因此用显式前缀限定范围，最小影响面。
 
 **模式 A**：用 AskQuestion 确认是否自动追加。
 **模式 B**：展示将追加的内容，等待用户确认。
@@ -362,7 +371,7 @@ prism.local.yaml
 追加后验证：
 
 ```bash
-for pat in "AGENT.local.md" "AGENT.*.local.md" "workspace.*.local" "workspace.*.local/" "prism.local.yaml"; do
+for pat in "AGENTS.local.md" "AGENTS.*.local.md" "AGENT.local.md" "AGENT.*.local.md" "workspace.*.local" "workspace.*.local/" "prism.local.yaml"; do
   grep -qF "$pat" "$GI_GLOBAL" && echo "✓ $pat"
 done
 ```
@@ -483,6 +492,6 @@ bin/relink                        # 刷新软链接排除它
 ## 参考
 
 - 工具详细参数：[bin/README.md](bin/README.md)
-- 协作契约：[AGENT.md](AGENT.md)
+- 协作契约：[AGENTS.md](AGENTS.md)
 - 项目说明：[README.md](README.md)
 - 首屏能力闭环：`setenv → relink → workspace-init → review`
