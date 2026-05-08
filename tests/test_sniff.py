@@ -238,19 +238,15 @@ class TestCheckGitignore(unittest.TestCase):
             self.assertEqual(result["missing_global_patterns"], result["missing_patterns"])
 
     def test_complete_gitignore(self):
-        """完整的 .gitignore（双兼容：新老 AGENT(S).local.md 模式都写入）"""
+        """完整的 .gitignore（AGENTS.md 单一命名）"""
         with tempfile.TemporaryDirectory() as d:
             self._with_global_gitignore(os.path.join(d, "missing_global_gitignore"))
             gi = os.path.join(d, ".gitignore")
             with open(gi, "w") as f:
                 f.write("workspace.*.local\n")
                 f.write("workspace.*.local/\n")
-                # v1.1.2+ 复数命名（首选）
                 f.write("AGENTS.local.md\n")
                 f.write("AGENTS.*.local.md\n")
-                # v1.1.1 之前单数命名（兼容）
-                f.write("AGENT.local.md\n")
-                f.write("AGENT.*.local.md\n")
                 f.write("prism.local.yaml\n")
             result = check_gitignore(d)
             self.assertTrue(result["exists"])

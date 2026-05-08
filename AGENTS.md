@@ -55,18 +55,10 @@ Prism 采用三正交分离 + 软链接桥接：
 ```
 工作仓库/
 ├── ai-task.local           -> AI-TASK vault projects/{CODE}/
-└── AGENT.local.md          -> AI-TASK vault projects/{CODE}/AGENT.md
+└── AGENTS.local.md         -> AI-TASK vault projects/{CODE}/AGENTS.md
 ```
 
 **优先级规则**：当两种模式共存时，Agent 应优先读取 `workspace.{code}.local`；仅在新模式不存在时才 fallback 到 `ai-task.local`。
-
-### 命名兼容（v1.1.2+）
-
-`AGENT.md` / `AGENT.local.md` 是 v1.1.1 之前的单数命名，已迁移到业界标准 `AGENTS.md` / `AGENTS.local.md`（复数）。SDK 在 sniff / relink / doctor / setup 等所有 probe 路径上**双兼容**：
-
-- 新建一律写 `AGENTS.md` / `AGENTS.local.md`（首选）
-- 探测时若已存在 `AGENT.md` / `AGENT.local.md`，照常认可（不强制改名）
-- `bin/relink` 不会自动 rename 老文件；如需手动迁移，自行 `git mv` 后重跑 `bin/relink`
 
 ---
 
@@ -103,8 +95,6 @@ Prism vault (iCloud)/
 
 - `AGENTS.md` 提供规则基线（不可违反）
 - `AGENTS.local.md` 提供当前上下文和补充约定（可覆盖非规则性偏好）
-
-> 老命名 `AGENT.md` / `AGENT.local.md`（v1.1.1 之前）仍受 SDK probe 全链路兼容；详见上面「命名兼容」段。
 
 ---
 
@@ -189,15 +179,8 @@ projects:
 Prism 所有不入库的本地文件均使用 `.local` 后缀。推荐将以下模式配置在全局 gitignore（`~/.gitignore_global`）中，接入项目无需修改自身 `.gitignore`：
 
 ```gitignore
-# 推荐（v1.1.2+ 复数命名，与业界 AGENTS.md 标准对齐）
 AGENTS.local.md         # 用户级协作上下文
 AGENTS.*.local.md       # 变体（如 AGENTS.personal.local.md）
-
-# 兼容（v1.1.1 之前的单数命名，老 vault / 老工作区仍生效）
-AGENT.local.md
-AGENT.*.local.md
-
-# Prism 桥接 + 配置（与命名版本无关）
 workspace.*.local       # Prism 桥接文件/目录
 workspace.*.local/
 prism.local.yaml        # 本地配置

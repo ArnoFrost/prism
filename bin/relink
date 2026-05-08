@@ -311,16 +311,17 @@ while IFS= read -r line; do
       ws_link="${local_path}/workspace.${code_lower}.local"
       ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
 
-      # AGENTS.md / AGENT.md 双兼容（v1.1.2+）
-      # 优先探测 vault 里复数命名的 AGENTS.md，找到则建 AGENTS.local.md；
-      # 否则 fallback 到老命名 AGENT.md → AGENT.local.md。
-      # 不主动 rename 老文件——尊重用户工作区的现状，迁移由用户手动 git mv 决定。
-      agents_target_new="${WS_ROOT}/${code}/AGENTS.md"
-      agents_target_old="${WS_ROOT}/${code}/AGENT.md"
-      if [[ -f "$agents_target_new" ]]; then
-        ensure_link "${local_path}/AGENTS.local.md" "$agents_target_new" "    AGENTS.local.md"
-      elif [[ -f "$agents_target_old" ]]; then
-        ensure_link "${local_path}/AGENT.local.md" "$agents_target_old" "    AGENT.local.md (legacy)"
+      # AGENTS.md 协作契约软链（vault → workspace 桥接）
+      agents_target="${WS_ROOT}/${code}/AGENTS.md"
+      if [[ -f "$agents_target" ]]; then
+        ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"
+      else
+        # 老命名探测——仅打 WARN 引导用户手动迁移，不再自动创建老软链
+        legacy_target="${WS_ROOT}/${code}/AGENT.md"
+        if [[ -f "$legacy_target" ]]; then
+          echo -e "    ${YELLOW}⚠${NC} 仅找到老命名 AGENT.md，请手动 mv 为 AGENTS.md 后重跑 relink"
+          echo -e "       cd \"${WS_ROOT}/${code}\" && mv AGENT.md AGENTS.md"
+        fi
       fi
 
       # 回写 project.yaml paths（跨设备支持）
@@ -531,8 +532,8 @@ if $PRUNE; then
       if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
         local_path="${BASH_REMATCH[2]}"
         [[ -d "$local_path" ]] || continue
-        # 扫描 workspace.*.local 和 AGENTS.local.md / AGENT.local.md（双兼容）
-        for link in "$local_path"/workspace.*.local "$local_path"/AGENTS.local.md "$local_path"/AGENT.local.md; do
+        # 扫描 workspace.*.local 和 AGENTS.local.md
+        for link in "$local_path"/workspace.*.local "$local_path"/AGENTS.local.md; do
           [[ -L "$link" ]] || continue
           link_target=$(readlink "$link")
           if [[ ! -e "$link_target" ]]; then

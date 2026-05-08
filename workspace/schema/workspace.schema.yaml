@@ -13,7 +13,7 @@ structure:
   optional:
     - docs/
     - archive/
-    - AGENTS.md     # v1.1.2+ 首选；v1.1.1 之前为 AGENT.md（probe 双兼容）
+    - AGENTS.md
 
 # Symlink naming convention
 symlink:
