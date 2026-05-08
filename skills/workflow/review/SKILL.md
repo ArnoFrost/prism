@@ -58,9 +58,18 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 > 决策结果**必须在 Align 阶段显式输出**（如："判定 mode=full，原因：..."），不得隐式跳过。
 
 > [!warning]
-> **mode 自动判定不可信时升级为边界澄清门**（d11 B1）：
-> 当评审材料行数 / 文件数 / 并行能力均无法可靠估计（异常分支），mode 决策升格为低频锚点边界澄清门，按 SSOT [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.3.3 模板向用户三选一询问，禁止默认到 full / quick。
-> 正常路径（材料行数 / 文件数 / 并行能力可估计）继续按上述自动判定，不强制 Ask（OQ3 not_overturn — 不推翻高频 cohesion 默认）。
+> **mode 自动判定不可信时升级为边界澄清门**（d11 B1，r13 PostFix 收紧）：
+> **正常路径**（用户给出评审主题 + 材料路径可达 + 行数/文件数能枚举）一律走 §1 自动判定，**不强制 Ask** — 这是高频路径，对应 OQ3 not_overturn 原则。
+>
+> **仅当以下三个指标全部无法获得**时（**且**）才升格为 SSOT [askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.3.3 边界澄清门：
+> 1. 评审材料路径不可达 / 完全空目录 / 内容无法读取
+> 2. 文件数无法枚举（如 glob 报错）
+> 3. 当前 Agent 客户端的并行能力探测失败超过 1 次（不是"我没看到平台标识就保守"，要真探测）
+>
+> ⛔ **以下场景一律不算"不可信"，必须直接走 §1 自动判定**：
+> - "材料看着不大" / "保险起见再问一下" → 这是**伪触发**，违反频率论
+> - Agent 不熟悉当前平台 → 先 try Task tool，不是直接 Ask
+> - mode 决策与 review-lite 选择是**两件事**，不要在 §4.3.3 里把"升级 review-lite"当默认推荐
 
 ## 协作骨架：总分总 (Align → Explore → Merge)
 
@@ -220,7 +229,16 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 **⛔ Gate 1 校验**：上下文包含 output_dir + format + mode + 已加载 references 列表？→ 通过则进入 Explore
 
 **Explore（并行子任务）：**
-在同一轮响应中为每个角色发起独立子任务，prompt 包含角色定义（含 Output-Format 字段）+ 评审对象 + 输出契约 + 格式要求（format=ofm 时内联 Callout 映射表）。
+在同一轮响应中为每个角色**发起独立 Task 子任务**（subagent），prompt 包含角色定义（含 Output-Format 字段）+ 评审对象 + 输出契约 + 格式要求（format=ofm 时内联 Callout 映射表）。
+
+> [!danger]
+> **mode=full 真并行硬约束**（r13 PostFix）：
+> - mode=full 路径**必须**真发起并行 Task 子任务调度（每个角色独立上下文 + 独立返回）；
+> - **禁止**以"在同一轮响应里前后段落分别以角色 A / 角色 B / 角色 C 视角输出"代替真并行——这是**伪并行**，违反 mode=full 契约；
+> - IDE 客户端（Cursor / Claude Code / CodeBuddy）**必须先尝试调用 Task tool 一次**确认并行能力；调用失败抛 `tool_not_found` 才允许走串行 fallback；
+> - 串行 Fallback 仅当 `mode=quick` 显式指定 / 用户声明 / API 探测确认无并行能力 / 文本流 CLI 这四类合法触发场景命中时才使用。
+>
+> 详细触发条件白名单见 [parallel-execution.md §串行 Fallback](references/parallel-execution.md)。
 
 > 并行调度规范详见 [parallel-execution.md](references/parallel-execution.md)。
 > 串行模式下须在每个角色输出前声明："以下仅基于原始材料，不参考前序角色的发现"。

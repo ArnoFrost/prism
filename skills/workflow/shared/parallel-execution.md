@@ -44,20 +44,39 @@
 
 非强制，按实际可用参数选用：
 
-| 参数 | Cursor | Claude Code | 通用 |
-|------|--------|-------------|------|
-| 子任务 API | Task tool | Task tool | 任何可启动独立上下文的调度机制 |
-| 类型提示 | `subagent_type: "generalPurpose"` | 不适用 | 省略 |
-| 轻量模型 | `model: "fast"` | 不适用 | 省略，使用默认模型 |
-| 并行上限 | 4 | 无硬限制，建议 ≤ 5 | 按平台能力 |
-| 描述 | 简短英文 | 简短英文 | 简短英文 |
+| 参数 | Cursor IDE | Claude Code IDE | CodeBuddy IDE | 文本流 CLI（Codex / Claude Code CLI / CodeBuddy CLI） | 通用 |
+|------|-----------|-----------------|---------------|------------------------------------------------------|------|
+| 并行子任务 API | `Task` tool | `Task` tool | `Task` tool（与 Cursor 同名同语义） | ⚠️ 通常不可用（按串行 Fallback 处理） | 任何可启动独立上下文的调度机制 |
+| 类型提示 | `subagent_type: "generalPurpose"` | 不适用 | `subagent_type: "generalPurpose"`（兼容 Cursor 协议） | — | 省略 |
+| 轻量模型 | `model: "fast"` | 不适用 | 视实现可选 | — | 省略 |
+| 并行上限 | 4 | 无硬限制，建议 ≤ 5 | 4–5 | — | 按平台能力 |
+| 描述 | 简短英文 | 简短英文 | 简短英文 | — | 简短英文 |
+
+> [!important]
+> **IDE 类客户端（Cursor / Claude Code / CodeBuddy）原生支持并行子任务**，调用 skill 默认走"并行执行模式"。若 Agent 在 IDE 客户端但未识别到自身可用并行 API，应**先尝试调用 Task tool 一次**确认能力，**不要直接退化为串行**——见下方"串行 Fallback 触发条件白名单"。
 
 ## 串行 Fallback
 
-当环境不支持子任务调度时，在单次会话中顺序执行各工作单元：
+> [!warning]
+> **串行 Fallback 触发条件白名单**（命中其一才允许走串行；其余场景一律保持并行）：
+> 1. 平台 API 探测明确返回"不支持并行子任务"（如调用 `Task` 抛 `tool_not_found`）
+> 2. `mode=quick` 显式指定（review/SKILL.md §策略二）
+> 3. 用户原文明确声明"不要并行"/"按顺序来"等
+> 4. 文本流 CLI 类客户端（无 subagent 原语）
+>
+> ⛔ **禁止以下"伪触发"作为 fallback 理由**：
+> - "本次评审较小" / "材料行数有限" → 这是 mode 决策的输入，不是 fallback 触发条件
+> - "保险起见走串行" / "并行更复杂"
+> - "我看不到平台标识" → IDE 客户端应**先 try 一次 Task tool**
+> - "review-lite 更轻量" → review-lite 与 review 是不同入口，不构成 review/SKILL.md 内的 fallback 路径
+
+当合法触发后，在单次会话中顺序执行各工作单元：
 1. 依次处理每个单元，输出以编号章节分隔
 2. 各单元之间**禁止互相引用**（避免上下文锚定）
 3. 全部完成后执行汇总/合并
+
+> [!note]
+> **如何识别"伪并行串行 fallback"**：当 Agent 声称"以角色 A 视角输出 → 以角色 B 视角输出 → 以角色 C 视角输出"但**全部在同一轮单次响应里以前后段落形式出现**，这是伪并行（实际仍是串行）。`mode=full` 下要求**真发起并行 Task 调度**，每个角色独立上下文产出独立返回，详见 review/SKILL.md「策略一」对 Explore 的硬约束。
 
 ## 结果收集与合并
 
