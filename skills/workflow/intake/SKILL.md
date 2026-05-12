@@ -80,8 +80,22 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 | `topic_affinity.suggestion` | 路由决策依据 |
 | `topic_affinity.matched_topic` | 匹配到的已有专项（**仅作 sniff 最高匹配展示，绝非默认落盘目标**） |
 | `topic_affinity.candidates` | 多候选时展示列表 |
+| `topic_affinity.affinity_strength` | high / medium / low / none — **r18 PostFix 新增**，决定是否允许走 cohesion 默认 |
 | `next_topic_number` | 新建专项时的编号（全局递增） |
 | `format` | 产物格式（ofm / standard） |
+
+#### `affinity_strength` 路由判定（r18 PostFix · T8 落地）
+
+| affinity_strength | best_score | 行为 |
+|---|---|---|
+| `high` | ≥ 3 且与第二名差距 ≥ 1 | 允许走 cohesion 默认（仍触发 AskQuestion 让用户确认）|
+| `medium` | == 2 | cohesion 候选，但首项展示「全新专题（默认推荐）」+ AskQuestion 强制 |
+| `low` | == 1 | **禁止走 cohesion**：matched_topic 仅做 sniff 最高展示，默认 new_topic + AskQuestion |
+| `none` | 0 / 无候选 | 直接 new_topic + AskQuestion 让用户确认名称 |
+
+> **核心约束**：`affinity_strength=low` 时即使 sniff 回填了 matched_topic，
+> agent 也**不得**在 AskQuestion 候选列表中把它作为「sniff 最高匹配」展示——
+> 应当只展示「全新专题（默认推荐）」+「让我自己起名」两项，避免用户被弱信号诱导。
 
 ### Phase 1：接收 (Intake)
 
@@ -120,14 +134,11 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 | `new_topic` | 创建新专项 | 候选展示 + 编号 + 用户确认名称（首项即「全新专题（默认推荐）」） |
 | `null` | 无 workspace | 降级处理，见 [intake-fallback.md](references/intake-fallback.md) |
 
-> [!warning]
-> **过渡期守则（Phase 2 T8 `affinity_strength` 落地前）**
->
-> 当前 `sniff_lib.detect_topic_affinity` 在 `score < 2 + 有候选` 弱信号下仍会回填 `matched_topic`（r11 [F-B02] 待修）。在 T8 落地前，Agent 必须执行**额外一次主动判断**：
->
-> - 如果 sniff 给的 `matched_topic` 与用户语境**关键词意图明显冲突**（如用户描述的是「分发链路自检」、`matched_topic` 是「cross-layer-sync-hardening」），不要按表中默认动作沿用；改为强制 `AskQuestion` 让用户裁决。
-> - 判定标准：`matched_topic` 名词与用户原文核心动词/对象**无语义重合**，或两者 score 差 ≤ 1 且 `score ≤ 2` 时。
-> - 该守则在 T8 落地后由 `affinity_strength=high` 字段自动判定，届时本段移除。
+> [!note]
+> **T8 已落地（r18 PostFix）**：`sniff_lib.detect_topic_affinity` 已输出 `affinity_strength` 字段，
+> 弱信号匹配（score=1）由 `affinity_strength=low` 显式标识，agent 不再需要"额外主动判断"。
+> 历史教训：019/r02 误落、prism workspace 017 score=1 假匹配均源于弱信号回填 matched_topic
+> 被当成默认聚合目标 — 详见 Phase 0 §`affinity_strength` 路由判定表。
 
 #### 2.2 AskQuestion 候选构造规则
 
@@ -203,6 +214,40 @@ topic_affinity.suggestion = cohesion (score=2)
 2. **更新 `intake.md`**：已存在 → 追加条目（带日期标记）；不存在 → 模板创建
 3. **更新 `scope.md`**：根据新输入补充未决问题
 4. **更新 `README.md`**：刷新"当前状态"和"轮次索引"
+
+#### Phase 3 Gate Out — intake_gate_out 痕迹契约（r18 PostFix）
+
+> [!danger]
+> **intake 出口契约 — 防 intake 吃掉 scope/plan/README**
+>
+> Phase 3 结束时必须在响应中输出 `intake_gate_out` 块作为可观察执行痕迹：
+>
+> ```
+> intake_gate_out:
+>   topic_dir: <topic 目录相对路径>
+>   intake_md_lines: <intake.md 行数>
+>   scope_md_present: true | false           # scope.md 至少占位
+>   plan_md_present: true | false            # plan.md 至少占位
+>   readme_md_present: true | false          # README.md 至少占位
+>   review_index_present: true | false       # review.index.md 至少占位
+>   intake_size_ok: true | false             # intake.md 行数 ≤ 100（建议阈值）
+> ```
+>
+> **校验规则**（任一违反 → intake 未完成）：
+> - `scope_md_present` / `plan_md_present` / `readme_md_present` / `review_index_present` 任一为 `false` → **违约**：intake skill 必须按 [intake-templates.md](references/intake-templates.md) 补占位骨架；intake 完成前**禁止**进入下游 scope/review 阶段
+> - `intake_size_ok: false`（intake.md > 100 行）→ **强警示**：intake 正在吞噬合同面内容，应当把 scope 边界 / plan 时间线 / 验收门槛拆出到对应文件，intake 仅保留入料路由 + 派生背景
+>
+> **设计意图**：intake 是入料路由的轻量产物，**不是合同面 SSOT**。SSOT 分工：
+> - `intake.md` — 入料事件 + 路由判定 + 派生背景（**轻量**）
+> - `scope.md` — 边界 / 合同 / 验收 / 非目标（合同面 SSOT）
+> - `plan.md` — 时间线 / 检查点 / 编排（执行面 SSOT）
+> - `README.md` — 当前状态 / 轮次索引（指针面 SSOT）
+> - `decisions/dXX.md` — 路由 / 边界 / 方向决策（决策面 SSOT）
+>
+> **历史背景**（r18 修复动因，来自 020 真实观测）：
+> 020/intake.md 9 大节 20 个二级标题 185 行，塞了"核心交付 α/β / 非目标 / 长期资产 /
+> 预期周期 / 握手协议 / 验收门槛 / Open Questions / 工件演进"——全部应归 scope/plan/README/decisions，
+> 但 020 这三个文件**完全缺失**。结果：scope 永远没生成 → workflow-scope 无源 → 整个下游链路停摆。
 
 ### 路由决策记录
 

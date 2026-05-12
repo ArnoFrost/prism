@@ -83,6 +83,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 | ⛔ Explore→Merge | 所有角色均已输出独立评审 | 角色报告数量 = 预定角色数，每份含 TL;DR + Findings | 检查缺失角色，补执行或说明跳过原因 |
 | ⛔ Merge→落盘 | 综合报告 + review.index 写入；角色报告按条件落盘 | validate_product.py 退出码 = 0（ERROR 计数 = 0） | 执行 `--fix` 自动修复；仍失败则列出未解决 ERROR 请用户确认 |
 | ⛔ 落盘→决策触发 | 产物已落盘且校验通过 | review.index.md 包含本轮记录 | 补更新 review.index.md |
+| ⛔ 决策门关闭 | Gate 4 已触发；accept/reject 已写 dXX.md（defer 不写） | 响应中包含 `decision_artifact` 块，`written` 与 `path` 一致且 dXX.md 实际存在 | 立即补写 dXX.md + 重新输出 decision_artifact；未落盘前禁止宣布 review "完成" |
 
 ### 骨架图
 
@@ -383,6 +384,33 @@ question:
 | `reject` | 在用户给出 reject 理由后写 `decisions/dXX_拒绝XXX.md`（type=decision、status=rejected），并按用户意图重启 review 或调 `/workflow-scope` 调整边界 |
 | `defer` | 在 `decisions/dXX_暂缓XXX.md` 中标 status=deferred，README 中 latest decision 指针更新；不修改 plan |
 
+### 决策痕迹义务（r18 PostFix）
+
+> [!danger]
+> **decision_artifact 痕迹契约 — 防 Gate 4 静默跳过**
+>
+> Gate 4 决策后必须在响应中输出 `decision_artifact` 块作为可观察执行痕迹（与 task_probe 同模式）：
+>
+> ```
+> decision_artifact:
+>   decision: accept | reject | defer       # Gate 4 用户裁决结果
+>   decision_source: askquestion | text_fallback   # 决策门入口（结构化 / 文本降级）
+>   written: true | false                   # decisions/dXX.md 是否已落盘
+>   path: <相对路径，未写时填 null>          # 如 decisions/d01_accept_xxx.md
+>   timestamp: <ISO 8601，未写时填 null>     # 落盘时间
+> ```
+>
+> **校验规则**（任一违反 → Gate 4 未关闭）：
+> - `decision != "defer"` 且 `written: false` → **违约**：accept/reject 必须立即落盘 dXX.md
+> - `written: true` 但 `path` 为 null / 不存在 → **违约**：路径必须可审计
+> - 缺失 `decision_artifact` 块本身 → 视为决策门未关闭，禁止进入"已完成"语义
+>
+> **历史背景**（r18 修复动因，来自 019/020 真实观测）：
+> 019/r01 (5/12 14:18) 与 020/r01 (5/12 18:12) 均完成评审，TL;DR + 行动项齐备，
+> 但两个 topic 的 `decisions/` 目录均为空。原因：IDE 文本流 fallback 让 agent
+> 把"用户口头答 Accept"等同于"决策已记录"，跳过 dXX.md 落盘。无痕迹 = 无 enforce
+> 是同根痛点（同 r16 task_probe 教训）。
+
 ### Fallback 行为（AskQuestion 不可用）
 
 无 `AskQuestion` 原语的环境（CodeBuddy CLI / Claude Code 文本流 / 自动化无人值守）按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback + §3.2 反模式 + §2 触发条件优先级。
@@ -393,6 +421,7 @@ question:
 - **禁止**静默选 Accept；模糊回复（"好" / "行" / "OK" / "嗯"）一律视为未确认，重展候选 + 再问
 - `PRISM_NO_INTERACTIVE=1` 路径下决策门**必须 fail**，调用方需用 `--decision=accept|reject|defer` 显式提供决策（env 不得绕过决策门，见 SSOT §2）
 - 解析失败 / 超时 / 用户取消时**禁止写入 `decisions/dXX.md`**
+- **决策痕迹同样适用**：text_fallback 路径下解析成功后必须立即写 dXX.md + 输出 `decision_artifact` 块（`decision_source: text_fallback`），不得"agent 心里知道但没落盘"
 
 > ⛔ 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化；决策门错选会固化错误共识 + 串联 `prism pipeline`，回溯成本高（r13 P0 F2）。
 

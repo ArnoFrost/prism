@@ -309,17 +309,31 @@ def detect_topic_affinity(topics_dir: str, topic: str) -> dict | None:
     """检测新 topic 是否与已有专项目录匹配。
 
     返回:
-      matched_topic   - 最佳匹配的专项目录名（null = 无匹配）
-      candidates      - 所有候选专项（得分 > 0）
-      topic_readme    - 最佳匹配的 README.md 路径
-      suggestion      - cohesion / ask_user / new_topic
+      matched_topic       - 最佳匹配的专项目录名（null = 无匹配 / 强度过低）
+      candidates          - 所有候选专项（得分 > 0）
+      topic_readme        - 最佳匹配的 README.md 路径
+      suggestion          - cohesion / ask_user / new_topic
+      affinity_strength   - high / medium / low / none（r18 PostFix 新增）
+
+    affinity_strength 阈值（来自 r18 PostFix · intake T8 落地）：
+      high   - best_score >= 3 且与第二名差距 >= 1（高置信，可走 cohesion 默认）
+      medium - best_score == 2（中置信，cohesion 但应轻确认）
+      low    - best_score == 1（低置信，sniff 仅作参考，建议 ask_user / new_topic）
+      none   - 无候选
+
+    设计动因：旧版即使 score=1 也回填 matched_topic + suggestion 落入 ask_user，
+    但 agent 仍可能把 candidates[0] 视为"默认聚合目标"，导致弱信号路由错误
+    （019/r02 误落、prism workspace 017 score=1 假匹配等多次观测）。
+    affinity_strength=low 时调用方应**强制 new_topic + 用户确认**，
+    matched_topic 仅做 sniff 最高展示，不构成默认动作。
     """
     if not os.path.isdir(topics_dir):
         return None
 
     keywords = _extract_topic_keywords(topic)
     if not keywords:
-        return {"matched_topic": None, "candidates": [], "topic_readme": None, "suggestion": "new_topic"}
+        return {"matched_topic": None, "candidates": [], "topic_readme": None,
+                "suggestion": "new_topic", "affinity_strength": "none"}
 
     scored: list[tuple[str, int]] = []
     for entry in os.listdir(topics_dir):
@@ -345,19 +359,31 @@ def detect_topic_affinity(topics_dir: str, topic: str) -> dict | None:
     candidates = [{"name": name, "score": s} for name, s in scored]
 
     if not candidates:
-        return {"matched_topic": None, "candidates": [], "topic_readme": None, "suggestion": "new_topic"}
+        return {"matched_topic": None, "candidates": [], "topic_readme": None,
+                "suggestion": "new_topic", "affinity_strength": "none"}
 
     best = candidates[0]
     best_readme = os.path.join(topics_dir, best["name"], "README.md")
     readme_rel = best_readme if os.path.isfile(best_readme) else None
+    second_score = candidates[1]["score"] if len(candidates) > 1 else 0
 
-    if len(candidates) == 1 and best["score"] >= 2:
-        suggestion = "cohesion"
-    elif len(candidates) > 1 and candidates[0]["score"] == candidates[1]["score"]:
-        suggestion = "ask_user"
+    # 强度判定（r18 PostFix）
+    if best["score"] >= 3 and (best["score"] - second_score) >= 1:
+        affinity_strength = "high"
     elif best["score"] >= 2:
+        affinity_strength = "medium"
+    elif best["score"] == 1:
+        affinity_strength = "low"
+    else:
+        affinity_strength = "none"
+
+    # suggestion 与 affinity_strength 联动
+    if len(candidates) > 1 and candidates[0]["score"] == candidates[1]["score"]:
+        suggestion = "ask_user"  # 同分仲裁优先级最高
+    elif affinity_strength in ("high", "medium"):
         suggestion = "cohesion"
     else:
+        # low / none → 不默认 cohesion，由调用方按 SKILL.md 决定 ask_user/new_topic
         suggestion = "ask_user"
 
     return {
@@ -365,6 +391,7 @@ def detect_topic_affinity(topics_dir: str, topic: str) -> dict | None:
         "candidates": candidates,
         "topic_readme": readme_rel,
         "suggestion": suggestion,
+        "affinity_strength": affinity_strength,
     }
 
 
