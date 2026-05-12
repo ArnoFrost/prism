@@ -78,9 +78,12 @@ stability: experimental
 5. **确认评审对象、范围**
 6. **输出决策（必须显式）**：`format=?`、`output_dir=?`、`next_review_number=rXX`、`topic_route=?` + 已加载 references 清单
 
-> [!important]
-> **OFM 加载强制约束**（v1.1.7+ 新增）：
-> 若 sniff 返回 `format=ofm`，**必须**先 READ `review-ofm.md` 拿到 Callout 映射后再进入 Scan；否则产物会退化为裸 Markdown（无 `> [!info]/[!danger]` 等 Callout），违反 OFM 契约。
+> [!danger]
+> **二态产物契约（v1.1.7+ 与 full review §策略一 Align 同源）**
+>
+> **format=ofm**：必须先 READ `review-ofm.md`；产物顶部必须有 `> [!info]` 协议段；全篇 Callout ≥ 2（lite 阈值低于 full 的 3）。
+> **format=standard**：禁止使用 OFM Callout，保持裸 Markdown 列表 / 标题以兼容 GitHub 渲染。
+> 详细动因见 [review/SKILL.md §策略一 Align 7 步](../review/SKILL.md) danger callout。
 
 > 编号契约 / `next_review_source` 处理详见上文「流程」段。
 

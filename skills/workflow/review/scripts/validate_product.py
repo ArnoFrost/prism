@@ -257,6 +257,73 @@ def check_heading_depth(lines: list[str], relpath: str) -> list[Issue]:
     return issues
 
 
+# --- OFM 二态契约规则（v1.1.7+ 新增，防退化硬约束的机械抽检） ---
+
+def _is_review_main_report(relpath: str) -> bool:
+    """判断是否为 review 主报告（rXX_*.md），用于决定是否启用 OFM 二态契约校验。
+
+    豁免：raw/ 角色报告 (rXX-role-*.md) 与 review.index.md / decision.index.md 等索引。
+    """
+    name = os.path.basename(relpath)
+    if not re.match(r"^r\d{1,3}[_\.]", name):
+        return False
+    if "-role-" in name:
+        return False
+    return True
+
+
+def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
+    """[format=ofm] 主报告顶部必须有 `> [!info]` 评审协议段。
+
+    扫描 frontmatter 之后的前 30 行，寻找 `> [!info]`；找到即通过。
+    """
+    if not _is_review_main_report(relpath):
+        return []
+    body_start = 0
+    if lines and lines[0].strip() == "---":
+        for i in range(1, min(len(lines), 200)):
+            if lines[i].strip() == "---":
+                body_start = i + 1
+                break
+    window = lines[body_start:body_start + 30]
+    if any(re.match(r"^>\s*\[!info\]", ln) for ln in window):
+        return []
+    return [Issue("WARN", relpath, body_start + 1, "ofm-missing-protocol",
+                  "OFM 主报告顶部缺少 `> [!info]` 评审协议段（应含 路由 / format / 已加载 references / 评审对象 四要素）",
+                  False)]
+
+
+def check_ofm_callout_density(lines: list[str], relpath: str) -> list[Issue]:
+    """[format=ofm] 主报告全篇 Callout 数应 ≥ 3。
+
+    用同一正则统计全文 callouts；低于 3 即视为 OFM 退化（A 档/B 档）。
+    """
+    if not _is_review_main_report(relpath):
+        return []
+    count = sum(1 for ln in lines if re.match(r"^>\s*\[!", ln))
+    if count >= 3:
+        return []
+    severity = "WARN"
+    if count == 0:
+        msg = f"OFM 主报告完全无 Callout（A 档真退化），建议至少 3 个 (`[!info]` 协议段 + `[!danger]`/[!warning] Findings)"
+    else:
+        msg = f"OFM 主报告 Callout 数 = {count}（建议 ≥ 3，当前为 B 档极弱）"
+    return [Issue(severity, relpath, 1, "ofm-low-callout-density", msg, False)]
+
+
+def check_standard_no_ofm_callout(lines: list[str], relpath: str) -> list[Issue]:
+    """[format=standard] 主报告禁止使用 OFM Callout（保持普通渲染器兼容）。"""
+    if not _is_review_main_report(relpath):
+        return []
+    issues = []
+    for i, line in enumerate(lines, 1):
+        if re.match(r"^>\s*\[!", line):
+            issues.append(Issue("WARN", relpath, i, "standard-leaked-callout",
+                                "standard 产物混入了 OFM Callout（GitHub 等普通渲染器不识别），建议改为裸 Markdown 列表 / 引用",
+                                False))
+    return issues
+
+
 # --- 结构完整性规则（产物目录级） ---
 
 def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
@@ -408,6 +475,10 @@ def validate_file(filepath: str, fmt: str) -> list[Issue]:
         issues.extend(check_callout_format(lines, relpath))
         issues.extend(check_highlight_density(lines, relpath))
         issues.extend(check_heading_depth(lines, relpath))
+        issues.extend(check_ofm_protocol_header(lines, relpath))
+        issues.extend(check_ofm_callout_density(lines, relpath))
+    else:
+        issues.extend(check_standard_no_ofm_callout(lines, relpath))
 
     return issues
 

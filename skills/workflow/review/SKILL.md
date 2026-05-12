@@ -226,7 +226,23 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 6. 输出决策（必须显式）：`mode=?` + `topic_route=?`，附理由
 7. 输出「已加载 references」清单
 
-**⛔ Gate 1 校验**：上下文包含 output_dir + format + mode + 已加载 references 列表？→ 通过则进入 Explore
+> [!danger]
+> **二态产物契约（v1.1.7+ 新增）— 防 OFM 退化硬约束**
+>
+> **format=ofm**（落点在 Obsidian vault 内，sniff 检测到 `.obsidian/`）：
+> - 产物**第一个 callout 必须**是 `> [!info]` 评审协议段，内容含 `路由 / format / 已加载 references / 评审对象` 四要素；
+> - 综合报告**全篇 Callout 数 ≥ 3**（Findings 至少 P0 用 `[!danger]` / P1 用 `[!warning]`）；
+> - frontmatter 必填 `date / status / type / tags`。
+> - **违反任一即视为 OFM 退化**，validate_product.py 会输出 WARN（不阻塞但留痕）。
+>
+> **format=standard**（落点在普通 git 仓库，无 vault）：
+> - **禁止**使用 OFM Callout（`> [!info]` / `> [!danger]` 等），用裸 Markdown 列表 / 标题 / 引用即可；
+> - 不强制 frontmatter（视项目惯例）。
+> - 这是为了让 standard 产物在 GitHub / GitLab 等普通渲染器下保持可读性，不出现「未识别的 callout 语法块」。
+>
+> **历史数据复盘**（v1.1.7 修复动因）：vault 内 94 篇 full review 中 11 篇 callouts=0（A 档真退化），78 篇缺协议段元数据（C 档透明度低）。lite 100% 失效已在上一轮修复，此处加固 full 路径。
+
+**⛔ Gate 1 校验**：上下文包含 output_dir + format + mode + 已加载 references 列表？**且产物已按二态契约准备好顶部协议段（ofm）/ 默认裸 Markdown（standard）？** → 通过则进入 Explore
 
 **Explore（并行子任务）：**
 在同一轮响应中为每个角色**发起独立 Task 子任务**（subagent），prompt 包含角色定义（含 Output-Format 字段）+ 评审对象 + 输出契约 + 格式要求（format=ofm 时内联 Callout 映射表）。

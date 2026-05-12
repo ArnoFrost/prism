@@ -81,6 +81,112 @@ class TestValidateFile:
 
 
 # ============================================================
+# OFM 二态契约规则（v1.1.7+）
+# ============================================================
+
+class TestOfmDualStateContract:
+    """检验 format=ofm 时主报告必须有协议段 + Callout 密度；
+    format=standard 时主报告禁止混入 OFM Callout。"""
+
+    def _write_review(self, tmp_path, name: str, body: str) -> str:
+        md = tmp_path / name
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: done\n"
+            "type: review\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            f"{body}"
+        )
+        return str(md)
+
+    def test_ofm_main_report_missing_protocol_header(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r01_test.md",
+            "# r01 — 测试评审\n\n"
+            "## Findings\n\n"
+            "> [!danger]\n> P0 case\n\n"
+            "> [!warning]\n> P1 case\n\n"
+            "> [!note]\n> P2 case\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        rules = {i.rule for i in issues}
+        assert "ofm-missing-protocol" in rules
+
+    def test_ofm_main_report_with_protocol_passes(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r02_test.md",
+            "# r02 — 测试评审\n\n"
+            "> [!info]\n> 路由 / format=ofm / 已加载 references\n\n"
+            "> [!danger]\n> P0\n\n"
+            "> [!warning]\n> P1\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        rules = {i.rule for i in issues}
+        assert "ofm-missing-protocol" not in rules
+        assert "ofm-low-callout-density" not in rules
+
+    def test_ofm_main_report_zero_callout_is_A_grade_regression(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r03_test.md",
+            "# r03 — 测试评审\n\n"
+            "## Summary\n裸 Markdown 无任何 Callout\n\n"
+            "## Findings\n- **P1** ...\n- **P2** ...\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
+        assert len(density_issues) == 1
+        assert "A 档真退化" in density_issues[0].message
+
+    def test_ofm_main_report_few_callout_is_B_grade(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r04_test.md",
+            "# r04 — 测试评审\n\n"
+            "> [!warning]\n> 仅一个 callout\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
+        assert len(density_issues) == 1
+        assert "B 档" in density_issues[0].message
+
+    def test_ofm_role_report_skipped(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r01-role-A.md",
+            "# Role A 视角\n\n"
+            "纯文本，无 Callout 也无协议段\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        rules = {i.rule for i in issues}
+        assert "ofm-missing-protocol" not in rules
+        assert "ofm-low-callout-density" not in rules
+
+    def test_standard_main_report_with_ofm_callout_warned(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r05_test.md",
+            "# r05 — 测试评审\n\n"
+            "> [!info]\n> standard 里混入 callout\n\n"
+            "## Findings\n- P1 ...\n",
+        )
+        issues = vp.validate_file(path, "standard")
+        leaked = [i for i in issues if i.rule == "standard-leaked-callout"]
+        assert len(leaked) == 1
+
+    def test_standard_main_report_pure_markdown_passes(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r06_test.md",
+            "# r06 — 测试评审\n\n"
+            "## Summary\n一句话结论\n\n"
+            "## Findings\n- **P1** ...\n- **P2** ...\n",
+        )
+        issues = vp.validate_file(path, "standard")
+        rules = {i.rule for i in issues}
+        assert "standard-leaked-callout" not in rules
+        assert "ofm-missing-protocol" not in rules
+
+
+# ============================================================
 # apply_fixes
 # ============================================================
 
