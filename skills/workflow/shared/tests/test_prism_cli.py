@@ -337,3 +337,109 @@ class TestJsonFlagOrderCompat:
         from prism_cli import _normalize_argv
         original = ["sniff", "foo", "--topic", "bar"]
         assert _normalize_argv(original) == original
+
+
+# ============================================================
+# 029/r05 AP-15 P1 — finalize --decision flag 守门
+# ============================================================
+
+class TestFinalizeDecisionFlag:
+    """`prism finalize` 加 --decision flag + PRISM_NO_INTERACTIVE 守门契约。
+
+    三场景：
+    1. 交互模式（默认）：--decision 可选，audit hint
+    2. 非交互模式 + 无 --decision：rc=2（决策门必填）
+    3. 非交互模式 + --decision 提供：rc=0 + output 含 hint
+    """
+
+    def _build_minimal_topic(self, tmp_path):
+        """构造可被 finalize 接受的最小 topic 目录。"""
+        topic = tmp_path / "030_test"
+        (topic / "reviews").mkdir(parents=True)
+        (topic / "decisions").mkdir()
+        # 最简 scope.md / README.md（finalize 跑 tidy 时需要这些）
+        (topic / "scope.md").write_text(
+            "---\ndate: 2026-05-12\nstatus: draft\ntype: scope\n"
+            "tags:\n  - test\n---\n\n# Scope\n- [ ] item\n",
+            encoding="utf-8",
+        )
+        (topic / "README.md").write_text("# Topic\n", encoding="utf-8")
+        return topic
+
+    def _run(self, *args, env_extra=None):
+        env = os.environ.copy()
+        if env_extra:
+            env.update(env_extra)
+        return subprocess.run(
+            [BIN_PRISM, *args],
+            capture_output=True, text=True, timeout=15, env=env,
+        )
+
+    def test_interactive_mode_decision_optional(self, tmp_path):
+        """默认（无 PRISM_NO_INTERACTIVE）：--decision 可选，不传也 ok。"""
+        topic = self._build_minimal_topic(tmp_path)
+        # 移除可能继承的 PRISM_NO_INTERACTIVE
+        env = os.environ.copy()
+        env.pop("PRISM_NO_INTERACTIVE", None)
+        result = subprocess.run(
+            [BIN_PRISM, "finalize", str(topic), "--dry-run"],
+            capture_output=True, text=True, timeout=15, env=env,
+        )
+        assert result.returncode in (0, 1), (
+            f"交互模式无 --decision 不应触发守门 (rc=2)，实际 rc={result.returncode}\n"
+            f"stderr: {result.stderr}"
+        )
+
+    def test_no_interactive_missing_decision_rc2(self, tmp_path):
+        """PRISM_NO_INTERACTIVE=1 + 无 --decision → rc=2。"""
+        topic = self._build_minimal_topic(tmp_path)
+        result = self._run(
+            "finalize", str(topic), "--dry-run",
+            env_extra={"PRISM_NO_INTERACTIVE": "1"},
+        )
+        assert result.returncode == 2, (
+            f"应触发非交互守门 rc=2，实际 rc={result.returncode}\n"
+            f"stderr: {result.stderr}\nstdout: {result.stdout}"
+        )
+        assert "PRISM_NO_INTERACTIVE" in result.stderr
+        assert "--decision" in result.stderr
+
+    def test_no_interactive_with_decision_proceeds(self, tmp_path):
+        """PRISM_NO_INTERACTIVE=1 + --decision=accept → 继续执行（rc=0 或业务 rc）。"""
+        topic = self._build_minimal_topic(tmp_path)
+        result = self._run(
+            "finalize", str(topic), "--dry-run", "--decision", "accept",
+            env_extra={"PRISM_NO_INTERACTIVE": "1"},
+        )
+        # 不应触发守门 rc=2；业务可能 rc=0 也可能 rc=1（依赖 tidy/validate 结果）
+        assert result.returncode != 2, (
+            f"提供 --decision 后不应触发守门，实际 rc={result.returncode}\n"
+            f"stderr: {result.stderr}"
+        )
+        # output 应含 decision_hint
+        import json as _json
+        d = _json.loads(result.stdout)
+        assert d.get("decision_hint") == "accept"
+        assert d.get("interactive_mode") is False
+
+    def test_decision_choices_enforced(self, tmp_path):
+        """--decision 不在 {accept,reject,defer} → argparse 拒绝。"""
+        topic = self._build_minimal_topic(tmp_path)
+        result = self._run(
+            "finalize", str(topic), "--dry-run", "--decision", "bogus",
+            env_extra={"PRISM_NO_INTERACTIVE": "1"},
+        )
+        assert result.returncode != 0
+        assert "invalid choice" in result.stderr.lower() or "bogus" in result.stderr
+
+    def test_no_interactive_env_variants(self, tmp_path):
+        """PRISM_NO_INTERACTIVE 接受 '1' / 'true' / 'yes'。"""
+        topic = self._build_minimal_topic(tmp_path)
+        for variant in ("1", "true", "yes"):
+            result = self._run(
+                "finalize", str(topic), "--dry-run",
+                env_extra={"PRISM_NO_INTERACTIVE": variant},
+            )
+            assert result.returncode == 2, (
+                f"variant={variant!r} 应触发守门，实际 rc={result.returncode}"
+            )

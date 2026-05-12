@@ -32,7 +32,7 @@ BIN_PRISM = SDK_ROOT / "bin" / "prism"
 
 # md §5.2 表格标记：以"### 5.2"开头的段落内第一张表格
 SECTION_HEADER = re.compile(r"^###\s+5\.2\s")
-TABLE_ROW = re.compile(r"^\|\s*`prism\s+(\w+)`\s*\|\s*\**([a-z]+)\**\s*\|\s*([✅⬜])\s*\|\s*(.+?)\s*\|\s*$")
+TABLE_ROW = re.compile(r"^\|\s*`prism\s+([\w-]+)`\s*\|\s*\**([a-z]+)\**\s*\|\s*([✅⬜])\s*\|\s*(.+?)\s*\|\s*$")
 
 # ✅ / ⬜ → bool
 COMPLIANT_SYMBOL = {"✅": True, "⬜": False}

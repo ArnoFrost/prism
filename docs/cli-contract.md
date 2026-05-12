@@ -166,6 +166,7 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | `prism digest` | experimental | ⬜ | Topic 工件采集（供 Agent 生成摘要） |
 | `prism pipeline` | **deprecated** | ⬜ | 已重命名为 finalize（1.2 移除此别名） |
 | `prism manifest` | experimental | ✅ | 导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |
+| `prism validate-trace` | experimental | ✅ | 扫描痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact）；`--lenient` 旧产物迁移期使用（来源：029/r05 AP-8 P1） |
 
 ---
 
@@ -180,3 +181,4 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | 2026-04-23 | v1.1-M3 | §5.2 新增 finalize/tidy/status/digest 四行；`pipeline` stability 改 deprecated；§2.2 示例更新 | [024/d01](../workspace.prism.local/topics/024_cli-evolution/decisions/d01_cli命令结构裁决-单层vs-noun-verb.md) |
 | 2026-04-23 | v1.1-M4 | T4 `_dispatch_subprocess` 辅助函数；T5 `RELEASE_HEALTH.json` + `--output`；T6 `--rollback`；§6.1 bin/doctor 更新 | [024/plan](../workspace.prism.local/topics/024_cli-evolution/plan.md) |
 | 2026-04-24 | v1.1.0 | VERSION / README / CHANGELOG / schema 示例口径统一到 `v1.1.0`；将 023/024/025/026 视为已纳入当前阶段版本 | 当前阶段对齐 |
+| 2026-05-12 | v1.1.5 | §5.2 新增 `prism validate-trace` 行（痕迹义务家族机器抽检 verb，含 4 族 + `--lenient` 迁移期支持）；§4.x 加 `--json` 双向顺序兼容（`prism manifest --json` ↔ `prism --json manifest`）；finalize 加 `--decision` flag + PRISM_NO_INTERACTIVE 守门 | [029/r05 AP-8/9/15](../workspace.prism.local/topics/029_post-share-governance/reviews/r05_v1.0-v1.1-sdk-rollup-cr.md) |

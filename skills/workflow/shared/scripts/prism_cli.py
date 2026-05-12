@@ -29,6 +29,7 @@ import importlib.util
 import json
 import os
 import sys
+from pathlib import Path
 
 
 # ============================================================
@@ -151,6 +152,11 @@ VERB_REGISTRY = {
         "stability": "experimental",
         "schema_compliant": True,
         "description": "导出 verb 元数据（稳定性 + schema 合规度）；参数级 schema 延 024",
+    },
+    "validate-trace": {
+        "stability": "experimental",
+        "schema_compliant": True,
+        "description": "扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact）；--lenient 旧产物迁移期使用（来源：029/r05 AP-8 P1）",
     },
 }
 
@@ -363,6 +369,42 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 1 if result["errors"] else 0
 
 
+def cmd_validate_trace(args: argparse.Namespace) -> int:
+    """痕迹义务家族抽检（029/r05 AP-8 P1）。
+
+    扫描 topic_dir 下产物文件，校验 4 族痕迹块的存在性与字段完整性。
+    默认 strict（missing → ERR / rc=1），--lenient 降级为 WARN（rc=0）。
+    """
+    json_mode = getattr(args, "json_mode", False)
+    _add_to_path(SHARED_DIR)
+    import importlib.util
+    vt_path = os.path.join(SHARED_DIR, "scripts", "validate_trace.py")
+    spec = importlib.util.spec_from_file_location("validate_trace", vt_path)
+    vt = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vt)
+
+    topic_dir = Path(args.topic_dir).resolve()
+    if not topic_dir.is_dir():
+        msg = f"{args.topic_dir} 不是有效目录"
+        if json_mode:
+            _print_outer(_outer_envelope(
+                command="validate-trace",
+                errors=[{"code": "INVALID_ARG", "message": msg,
+                         "hint": "确认 topic_dir 路径存在且可读"}],
+            ))
+        else:
+            print(f"错误: {msg}", file=sys.stderr)
+        return 1
+
+    result = vt.scan_topic(topic_dir, strict=not getattr(args, "lenient", False))
+
+    if json_mode:
+        _print_outer(_outer_envelope(command="validate-trace", data=result))
+    else:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if result["ok"] else 1
+
+
 def cmd_archive(args: argparse.Namespace) -> int:
     """归档 topic（dispatch 到 shared/scripts/archive.py）"""
     _add_to_path(SCRIPT_DIR)
@@ -396,17 +438,42 @@ def cmd_migrate(args: argparse.Namespace) -> int:
 def cmd_finalize(args: argparse.Namespace) -> int:
     """Decision 后一键编排：tidy --fix → validate --fix → 提示 scope 更新。
 
-    用法: prism finalize <topic_dir> [--dry-run]
+    用法: prism finalize <topic_dir> [--dry-run] [--decision={accept|reject|defer}]
 
     执行流程：
       1. tidy --fix（README 指针同步 + review.index 补全）
       2. validate --fix（产物格式校验 + 自动修复）
       3. 输出 scope 更新提示（需要人工确认）
+
+    --decision 与非交互式守门（029/r05 AP-15 P1）：
+      - 默认（无 PRISM_NO_INTERACTIVE）：--decision 是可选 audit hint
+      - PRISM_NO_INTERACTIVE=1 + 无 --decision → rc=2（决策门必须显式给出，
+        禁止 env 静默绕过 — 与 askquestion-fallback.md §2 一致）
+      - PRISM_NO_INTERACTIVE=1 + --decision 给出 → 继续跑 tidy/validate，
+        output 含 decision_hint 字段供下游 agent / 审计消费
     """
     topic_dir = os.path.abspath(args.topic_dir)
     if not os.path.isdir(topic_dir):
         print(f"错误: {topic_dir} 不是有效目录", file=sys.stderr)
         return 1
+
+    # 029/r05 AP-15：非交互守门
+    decision_hint = getattr(args, "decision", None)
+    no_interactive = os.environ.get("PRISM_NO_INTERACTIVE", "").strip() in ("1", "true", "yes")
+    if no_interactive and not decision_hint:
+        msg = (
+            "PRISM_NO_INTERACTIVE=1 路径下决策门必须显式提供 --decision={accept|reject|defer}；"
+            "env 不得静默绕过决策门（askquestion-fallback.md §2 一致）"
+        )
+        print(f"错误: {msg}", file=sys.stderr)
+        if getattr(args, "json_mode", False):
+            _print_outer(_outer_envelope(
+                command="finalize",
+                errors=[{"code": "NO_INTERACTIVE_REQUIRES_DECISION",
+                         "message": msg,
+                         "hint": "传 --decision=accept|reject|defer 或 unset PRISM_NO_INTERACTIVE"}],
+            ))
+        return 2
 
     dry_run = getattr(args, "dry_run", False)
     steps = []
@@ -510,6 +577,9 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         "steps": steps,
         "success": not has_error,
         "next_action": "如需更新 scope，请执行 /workflow-scope" if not has_error else "请先解决 validate 错误",
+        # 029/r05 AP-15：audit hints
+        "decision_hint": decision_hint,
+        "interactive_mode": not no_interactive,
     }
 
     print(json.dumps(output, ensure_ascii=False, indent=2))
@@ -689,15 +759,23 @@ def main():
     p_sync.add_argument("--all", action="store_true")
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
-    # finalize（024 T3 · 原 pipeline）
+    # finalize（024 T3 · 原 pipeline；AP-15 加 --decision flag）
     p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
     p_finalize.add_argument("--dry-run", action="store_true", help="只预览不修复")
+    p_finalize.add_argument(
+        "--decision", choices=["accept", "reject", "defer"], default=None,
+        help="决策门 audit hint；PRISM_NO_INTERACTIVE=1 路径下必填（029/r05 AP-15）",
+    )
 
     # pipeline（deprecated alias → finalize，1.2 移除）
     p_pipeline = subparsers.add_parser("pipeline", help="[已弃用] 请使用 finalize")
     p_pipeline.add_argument("topic_dir", help="专项根目录")
     p_pipeline.add_argument("--dry-run", action="store_true", help="只预览不修复")
+    p_pipeline.add_argument(
+        "--decision", choices=["accept", "reject", "defer"], default=None,
+        help="（与 finalize 同 — 1.2 随 alias 一并移除）",
+    )
 
     # tidy（024 T2）
     p_tidy = subparsers.add_parser("tidy", help="工件机械对齐（README 指针 / review.index / frontmatter）")
@@ -714,6 +792,17 @@ def main():
     p_digest = subparsers.add_parser("digest", help="Topic 工件采集（供 Agent 生成摘要）")
     p_digest.add_argument("project_dir", help="项目根目录")
     p_digest.add_argument("--topic", required=True, help="Topic 目录名")
+
+    # validate-trace（029/r05 AP-8 P1 · 痕迹义务家族机器抽检）
+    p_validate_trace = subparsers.add_parser(
+        "validate-trace",
+        help="扫描痕迹义务家族（task_probe/decision_artifact/intake_gate_out/merge_artifact）",
+    )
+    p_validate_trace.add_argument("topic_dir", help="专项目录")
+    p_validate_trace.add_argument(
+        "--lenient", action="store_true",
+        help="missing 痕迹块降级为 WARN（默认 ERR）；旧产物迁移期使用",
+    )
 
     # manifest（023 M2 · d01/D2）
     p_manifest = subparsers.add_parser(
@@ -751,6 +840,7 @@ def main():
         "digest": cmd_digest,
         "pipeline": cmd_pipeline,
         "manifest": cmd_manifest,
+        "validate-trace": cmd_validate_trace,
     }
 
     # ── 顶层异常处理器（023 M1 · scope T1.b）──
