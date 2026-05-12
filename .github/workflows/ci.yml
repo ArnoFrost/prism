@@ -4,9 +4,15 @@ name: CI
 #   1. uv 已装（astral-sh/setup-uv）
 #   2. bin/* 可执行 + bin/prism --version 启动正常（doctor --scope ci）
 #   3. skills frontmatter 合规（doctor --scope ci 内含 skill 阶段）
-#   4. pytest tests/ 全绿（含 setup smoke + sniff + relink writeback）
+#   4. pytest tests/ + skills/workflow/shared/tests/ 全绿
+#      （含 setup smoke + sniff + relink + validate_product + cli_contract_sync
+#       + prism_cli + outer_schema + changelog_scan + index_update + sniff_lib
+#       + check_skill_deprecation 等 151+ tests，覆盖所有防漂移闸门）
 # 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
 # 不依赖 prism.local.yaml / vault / ~/.local/bin（doctor --scope ci 自包含）。
+#
+# 来源：029/r05 AP-2 P0（v1.1.5 收口节奏）—— 修复 v1.0→v1.1 CI 闸门漏跑
+# 79% 测试（32/151 → 全量）的系统性退化。
 
 on:
   push:
@@ -53,9 +59,9 @@ jobs:
           bin/doctor --scope ci --json | tee doctor-ci.json
           bin/doctor --scope ci
 
-      - name: pytest — SDK smoke + relink + sniff
+      - name: pytest — SDK smoke + relink + sniff + workflow shared tests
         run: |
-          uv run --with pytest python -m pytest tests/ -q
+          uv run --with pytest python -m pytest tests/ skills/workflow/shared/tests/ -q
 
       - name: Validate workflow skills
         run: |

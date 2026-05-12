@@ -296,21 +296,63 @@ def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
 
 
 def check_ofm_callout_density(lines: list[str], relpath: str) -> list[Issue]:
-    """[format=ofm] 主报告全篇 Callout 数应 ≥ 3。
+    """[format=ofm] 主报告 Callout 数阈值按 frontmatter `type` 分档。
 
-    用同一正则统计全文 callouts；低于 3 即视为 OFM 退化（A 档/B 档）。
+    阈值（来源：029/r05 AP-3 P0 修复 SKILL ↔ validator 硬冲突）：
+    - `type: review` (full review) → ≥ 3（含 `[!info]` 协议段 + `[!danger]`/[!warning]` Findings）
+    - `type: review-lite` (单视角 lite) → ≥ 2（含 `[!info]` 协议段 + 至少 1 个 Findings/结论 callout）
+
+    历史背景：v1.0 → v1.1 引入 OFM 二态产物契约（6f1527b）时，review-lite/SKILL.md
+    明确 Callout ≥ 2 即可（lite 单视角材料量小），但本函数当时统一写死 `>= 3`，
+    导致所有 lite 产物必然触发 ofm-low-callout-density WARN —— SKILL 与 validator
+    硬冲突（r05 C-F2 P0）。现按 type 分档对齐。
     """
     if not _is_review_main_report(relpath):
         return []
     count = sum(1 for ln in lines if re.match(r"^>\s*\[!", ln))
-    if count >= 3:
+
+    # 区分 review vs review-lite：从 frontmatter `type` 字段读取
+    frontmatter_type = _extract_frontmatter_type(lines)
+    is_lite = frontmatter_type == "review-lite"
+    threshold = 2 if is_lite else 3
+
+    if count >= threshold:
         return []
     severity = "WARN"
+    kind = "review-lite" if is_lite else "review"
     if count == 0:
-        msg = f"OFM 主报告完全无 Callout（A 档真退化），建议至少 3 个 (`[!info]` 协议段 + `[!danger]`/[!warning] Findings)"
+        msg = (
+            f"OFM 主报告完全无 Callout（A 档真退化），{kind} 建议至少 "
+            f"{threshold} 个 (`[!info]` 协议段 + `[!danger]`/[!warning] Findings)"
+        )
     else:
-        msg = f"OFM 主报告 Callout 数 = {count}（建议 ≥ 3，当前为 B 档极弱）"
+        msg = (
+            f"OFM 主报告 Callout 数 = {count}（{kind} 建议 ≥ {threshold}，"
+            f"当前为 B 档极弱）"
+        )
     return [Issue(severity, relpath, 1, "ofm-low-callout-density", msg, False)]
+
+
+def _extract_frontmatter_type(lines: list[str]) -> str | None:
+    """从 markdown 文件 frontmatter 提取 `type` 字段值。
+
+    支持的格式：
+        ---
+        type: review-lite
+        ...
+        ---
+
+    未找到 frontmatter 或 type 字段时返回 None。
+    """
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:30]:  # frontmatter 通常 ≤ 30 行
+        if line.strip() == "---":
+            break
+        m = re.match(r"^type:\s*(\S+)", line.strip())
+        if m:
+            return m.group(1).strip().strip("'\"")
+    return None
 
 
 def check_standard_no_ofm_callout(lines: list[str], relpath: str) -> list[Issue]:

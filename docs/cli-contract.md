@@ -13,7 +13,7 @@ Prism 的命令面分两层，职责正交：
 | 层 | 入口 | 承载动作 | 典型示例 |
 |----|------|---------|---------|
 | **`bin/`** | 直接可执行脚本 | 仓库/环境级维护动作（一次性、跨 workspace、会碰到本地文件系统/shell 环境） | `bin/setup`、`bin/doctor`、`bin/relink`、`bin/setenv`、`bin/validate-skills`、`bin/create-skill`、`bin/clean`、`bin/rename-artifacts` |
-| **`prism <verb>`** | `bin/prism` 统一入口（bash 壳 → `prism_cli.py` 分派） | workspace/topic 级动作（作用于具体专项产物，可重复、面向 Agent） | `prism sniff`、`prism validate`、`prism archive`、`prism migrate`、`prism pipeline` |
+| **`prism <verb>`** | `bin/prism` 统一入口（bash 壳 → `prism_cli.py` 分派） | workspace/topic 级动作（作用于具体专项产物，可重复、面向 Agent） | `prism sniff`、`prism validate`、`prism archive`、`prism migrate`、`prism finalize` |
 
 ### 分层边界（判断树）
 

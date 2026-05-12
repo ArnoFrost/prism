@@ -88,13 +88,13 @@ class TestOfmDualStateContract:
     """检验 format=ofm 时主报告必须有协议段 + Callout 密度；
     format=standard 时主报告禁止混入 OFM Callout。"""
 
-    def _write_review(self, tmp_path, name: str, body: str) -> str:
+    def _write_review(self, tmp_path, name: str, body: str, review_type: str = "review") -> str:
         md = tmp_path / name
         md.write_text(
             "---\n"
             "date: 2026-05-12\n"
             "status: done\n"
-            "type: review\n"
+            f"type: {review_type}\n"
             "tags:\n"
             "  - test\n"
             "---\n\n"
@@ -150,6 +150,56 @@ class TestOfmDualStateContract:
         density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
         assert len(density_issues) == 1
         assert "B 档" in density_issues[0].message
+
+    def test_ofm_review_lite_two_callouts_passes(self, tmp_path):
+        """type: review-lite 阈值 ≥ 2 即可（来源：029/r05 AP-3 P0 修复 SKILL ↔ validator 硬冲突）。
+
+        v1.1.7 的 OFM 二态契约要求 lite 单视角 Callout ≥ 2，但 validate 此前写死 ≥ 3，
+        导致所有 lite 产物必然触发 WARN。本 case 锁定阈值分档。
+        """
+        path = self._write_review(
+            tmp_path, "r10_lite.md",
+            "# r10 — 轻量评审\n\n"
+            "> [!info]\n> 路由 / format=ofm / mode=quick\n\n"
+            "> [!warning]\n> P1 — lite 单视角发现\n",
+            review_type="review-lite",
+        )
+        issues = vp.validate_file(path, "ofm")
+        density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
+        assert len(density_issues) == 0, (
+            f"review-lite 2 callouts 应通过阈值检查，实际触发: {density_issues}"
+        )
+
+    def test_ofm_review_lite_one_callout_still_warns(self, tmp_path):
+        """review-lite 只 1 callout 仍触发 WARN（lite 阈值 = 2，未达）。"""
+        path = self._write_review(
+            tmp_path, "r11_lite.md",
+            "# r11 — 轻量评审\n\n"
+            "> [!info]\n> 仅协议段，无 Findings callout\n",
+            review_type="review-lite",
+        )
+        issues = vp.validate_file(path, "ofm")
+        density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
+        assert len(density_issues) == 1
+        assert "review-lite" in density_issues[0].message
+        assert "≥ 2" in density_issues[0].message
+
+    def test_ofm_full_review_two_callouts_still_warns(self, tmp_path):
+        """type: review (full) 仍要 ≥ 3，2 callouts 仍 WARN（阈值未降级）。"""
+        path = self._write_review(
+            tmp_path, "r12_full.md",
+            "# r12 — 多角色评审\n\n"
+            "> [!info]\n> 协议段\n\n"
+            "> [!danger]\n> P0\n",
+            review_type="review",
+        )
+        issues = vp.validate_file(path, "ofm")
+        density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
+        assert len(density_issues) == 1
+        # full review 错误信息含 "review" 不含 "review-lite"
+        msg = density_issues[0].message
+        assert "review-lite" not in msg
+        assert "≥ 3" in msg
 
     def test_ofm_role_report_skipped(self, tmp_path):
         path = self._write_review(

@@ -122,7 +122,7 @@ sniff 检测到本次 intake 与已有 topic 有亲和：
 > - 模糊回复（"好" / "行" / "OK" / "嗯" / 空回复 / 重复请求）一律视为**未确认**，重展候选 + 再问，**禁止解释为 Accept**；
 > - 自由文本回复（不匹配 1~4 任何一项）一律按 `[4] Other` 解释——把文本内容**原样传回**当作"用户对方案的修订意图"，不解释为 Accept/Reject/Defer 三选一；
 > - `PRISM_NO_INTERACTIVE=1` 路径下决策门**必须 fail**，调用方需用 `--decision=accept|reject|defer` 显式提供决策（见 §2 优先级表）；
-> - 解析失败 / 超时 / 用户取消时**禁止写入 `decisions/dXX.md`**（决策门错选会固化错误共识 + 串联 `prism pipeline`，回溯成本高 — r13 P0 F2）。
+> - 解析失败 / 超时 / 用户取消时**禁止写入 `decisions/dXX.md`**（决策门错选会固化错误共识 + 串联 `prism finalize`，回溯成本高 — r13 P0 F2）。
 
 ### 4.3 边界澄清门（review / review-lite Align 阶段异常）
 

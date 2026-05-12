@@ -148,7 +148,7 @@ question:
     请确认下一步：
   options:
     - id: accept
-      label: "Accept — 记录 decisions/d{NN}.md，方案落地（AP-X ~ AP-Y）+ prism pipeline 收尾"
+      label: "Accept — 记录 decisions/d{NN}.md，方案落地（AP-X ~ AP-Y）+ prism finalize 收尾"
     - id: reject
       label: "Reject — 说明原因后重新 review-lite 或升级到 workflow-review（多角色视角）"
     - id: defer
@@ -161,7 +161,7 @@ question:
 
 | 选择 | 后续动作 |
 |---|---|
-| `accept` | 立即写入 `decisions/dXX.md`，调用 `prism pipeline <topic_dir>` 串联 tidy/validate/scope-hint；若决策影响 scope，再调 `/workflow-scope` |
+| `accept` | 立即写入 `decisions/dXX.md`，调用 `prism finalize <topic_dir>` 串联 tidy/validate/scope-hint；若决策影响 scope，再调 `/workflow-scope` |
 | `reject` | 写 `decisions/dXX_拒绝XXX.md`（status=rejected）；若 reject 原因含「lite 视角不够」/「需要多角色」，建议升级到 `/workflow-review` |
 | `defer` | 写 `decisions/dXX_暂缓XXX.md`（status=deferred），README latest decision 指针更新；不改 plan |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收，让用户继续描述修订方向；常见 lite 路径触发：用户键入"升级到 workflow-review"→ agent 应执行升级而非强行写 dXX |

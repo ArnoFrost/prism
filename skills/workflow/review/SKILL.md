@@ -118,7 +118,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 │  ② 独立发现率计算（公式见下方）
 │  ③ 输出统一行动计划
 │  ④ 落盘：综合报告 → [可选]角色报告 → review.index.md
-│  ⑤ 执行 prism pipeline <topic_dir>（tidy + validate + scope 提示）
+│  ⑤ 执行 prism finalize <topic_dir>（tidy + validate + scope 提示）
 ├────────── ⛔ Gate 3 ────────────┤
 │  ⑥ 校验通过后 → README 同步
 ├────────── ⛔ Gate 4 ────────────┤
@@ -298,7 +298,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
    - 独立发现率 ≥ 60%（角色视角差异大，raw 有独立参考价值）
    - 用户显式要求保留
 5. **追加** `review.index.md` 记录行
-6. **执行** `prism pipeline <topic_dir>`（自动串联 tidy + validate + scope 提示）
+6. **执行** `prism finalize <topic_dir>`（自动串联 tidy + validate + scope 提示；`prism pipeline` 是 v1.1 迁移期 deprecated alias，v1.2 移除）
 
 **⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 README 同步
 
@@ -389,7 +389,7 @@ question:
     请确认下一步：
   options:
     - id: accept
-      label: "Accept — 记录 decisions/d{NN}.md，方案落地（AP-X ~ AP-Y）+ prism pipeline 收尾"
+      label: "Accept — 记录 decisions/d{NN}.md，方案落地（AP-X ~ AP-Y）+ prism finalize 收尾"
     - id: reject
       label: "Reject — 说明原因后重新 review 或调整 scope"
     - id: defer
@@ -407,7 +407,7 @@ question:
 
 | 选择 | 后续动作 |
 |---|---|
-| `accept` | 立即写入 `decisions/dXX.md`（模板见 `workspace.schema.yaml → topic_artifacts.decision.template`），随后调用 `prism pipeline <topic_dir>` 串联 tidy/validate/scope-hint；若决策影响 scope，再调 `/workflow-scope` |
+| `accept` | 立即写入 `decisions/dXX.md`（模板见 `workspace.schema.yaml → topic_artifacts.decision.template`），随后调用 `prism finalize <topic_dir>` 串联 tidy/validate/scope-hint；若决策影响 scope，再调 `/workflow-scope` |
 | `reject` | 在用户给出 reject 理由后写 `decisions/dXX_拒绝XXX.md`（type=decision、status=rejected），并按用户意图重启 review 或调 `/workflow-scope` 调整边界 |
 | `defer` | 在 `decisions/dXX_暂缓XXX.md` 中标 status=deferred，README 中 latest decision 指针更新；不修改 plan |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"，原样回收 → 让用户继续描述修订方向 / 回答 OQ / 调整 AP，之后再回到 Gate 4 重新决策。**禁止**把含糊文本解释为 Accept |
@@ -454,7 +454,7 @@ question:
 - 解析失败 / 超时 / 用户取消时**禁止写入 `decisions/dXX.md`**
 - **决策痕迹同样适用**：text_fallback 路径下解析成功后必须立即写 dXX.md + 输出 `decision_artifact` 块（`decision_source: text_fallback`），不得"agent 心里知道但没落盘"
 
-> ⛔ 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化；决策门错选会固化错误共识 + 串联 `prism pipeline`，回溯成本高（r13 P0 F2）。
+> ⛔ 不要跳过这一步直接开始执行。review 的价值在于收敛共识，决策记录是共识的固化；决策门错选会固化错误共识 + 串联 `prism finalize`，回溯成本高（r13 P0 F2）。
 
 ## 目录结构
 
