@@ -96,11 +96,21 @@ topic_artifacts:
     naming_rule: "dXX_{简短描述}.md — 中英文均可，禁止空格/子目录"
     description: "人类 accept/reject/route 裁决记录"
     producer: "手动 / review 后触发"
+    # 来源：029/r05 AP-5 P1 — 补齐 dXX frontmatter（与 review 产物对齐）
+    # 此前 template 直接以正文起头，导致 validate_product 无法跑 frontmatter 校验，
+    # d04 等手写 dXX 缺 tags/type 被漏检。本次起 dXX 强制带 4 字段 frontmatter。
     template: |
-      # dXX — {决策标题}
+      ---
       date: {YYYY-MM-DD}
-      trigger: {触发来源，如 r01 review / intake 路由 / 对话}
       status: accepted | rejected | deferred
+      type: decision
+      tags:
+        - {topic-code}
+        - decision
+      ---
+
+      # dXX — {决策标题}
+      trigger: {触发来源，如 r01 review / intake 路由 / 对话}
       ## 决策
       {一句话结论}
       ## 上下文

@@ -69,15 +69,34 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 
 ## topic_affinity 评分规则
 
-基于 sniff_lib.detect_topic_affinity 实现：
+基于 `sniff_lib.detect_topic_affinity` 实现（与本节文字字字对齐，偏差以实现为准）：
 
 1. **关键词提取**：中文 2-gram + 英文单词切分
 2. **匹配范围**：topic 目录名（去前缀）+ README.md 前 500 字
-3. **评分**：关键词命中次数累加
-4. **决策阈值**：
-   - score ≥ 2 且唯一最高 → `cohesion`
-   - 最高两个得分相等 → `ask_user`
-   - score < 2 或无候选 → `new_topic`
+3. **评分**：关键词命中次数累加，按 score 降序排
+4. **affinity_strength 分档**（r18 PostFix 引入，r05 AP-7 P1 SSOT 化）：
+
+   | 强度 | 触发条件 | 语义 |
+   |------|---------|------|
+   | `high`   | `best_score >= 3` 且 `best_score - second_score >= 1` | 高置信唯一最优，可直接 cohesion |
+   | `medium` | `best_score == 2` | 中置信，cohesion 但应轻确认 |
+   | `low`    | `best_score == 1` | 低置信，仅供 sniff 参考，**不可作为 cohesion 默认依据** |
+   | `none`   | 无候选 / `best_score == 0` | 无关联候选，不可 cohesion |
+
+5. **suggestion 联动规则**（与 affinity_strength 同源派生）：
+
+   | 状态 | suggestion |
+   |------|------------|
+   | 任意两个最高分相等（同分仲裁） | `ask_user` |
+   | `affinity_strength ∈ {high, medium}` 且无同分 | `cohesion` |
+   | `affinity_strength ∈ {low, none}` | `ask_user` |
+
+> [!warning]
+> **历史偏差修正**（029/r05 AP-7 P1）：旧版本规范曾写 "`score < 2` 或无候选 → `new_topic`"，
+> 但实现侧自 r18 PostFix 起已升级为 "`low/none` → `ask_user`"（避免低置信
+> 匹配导致 019/r02 误落到错位 topic 的真实事故）。规范以**实现为唯一真相**：
+> Agent 收到 `affinity_strength == "low"` 时应**强制走 ask_user 路径**询问用户，
+> 不得自行降级为 cohesion。`new_topic` 仅作为用户在 ask_user 后明确选择的结果。
 
 ## 各 skill 的路由特化
 
@@ -103,7 +122,7 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 | `writable` | boolean | output_dir 是否可写 |
 | `format` | string | `ofm` \| `standard` |
 | `topic` | string \| null | 用户提供的主题 |
-| `topic_affinity` | object \| null | 亲和检测结果（含 suggestion） |
+| `topic_affinity` | object \| null | 亲和检测结果，含 `matched_topic` / `candidates` / `topic_readme` / `suggestion` / `affinity_strength`（详见 §topic_affinity 评分规则） |
 
 skill 可在此基础上扩展特有字段（如 review 的 `next_review_number`）。
 

@@ -609,7 +609,35 @@ def cmd_sync(args: argparse.Namespace) -> int:
 # 主入口
 # ============================================================
 
+def _normalize_argv(argv: list[str]) -> list[str]:
+    """让 `--json` 同时支持 verb-then-flag 与 flag-then-verb 顺序。
+
+    背景（029/r05 AP-9 P1）：argparse 全局 flag 必须出现在 subcommand 之前，
+    但 Agent / 用户常按 UNIX 习惯把 flag 放在末尾（`prism manifest --json`）。
+    本预处理把 `--json` 提升到 argv 首位，让两种顺序行为字字等价。
+
+    设计取舍：选 argv 预处理而非 parents=[parent_json] 模式 —— 预处理零
+    argparse 配置坑（如 default 覆盖父值的经典陷阱），改动面 = 1 函数 + main
+    入口 1 行。对 verb 自身参数 0 干扰（当前所有 verb 均不自带 --json，
+    SSOT 仅作 outer envelope 全局开关使用）。
+
+    >>> _normalize_argv(["sniff", "foo", "--json"])
+    ['--json', 'sniff', 'foo']
+    >>> _normalize_argv(["--json", "sniff", "foo"])
+    ['--json', 'sniff', 'foo']
+    >>> _normalize_argv(["sniff", "foo"])
+    ['sniff', 'foo']
+    >>> _normalize_argv([])
+    []
+    """
+    if "--json" not in argv:
+        return argv
+    return ["--json"] + [a for a in argv if a != "--json"]
+
+
 def main():
+    sys.argv[1:] = _normalize_argv(sys.argv[1:])
+
     parser = argparse.ArgumentParser(
         prog="prism",
         description="Prism workflow 统一 CLI 入口",

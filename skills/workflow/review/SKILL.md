@@ -300,6 +300,32 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 5. **追加** `review.index.md` 记录行
 6. **执行** `prism finalize <topic_dir>`（自动串联 tidy + validate + scope 提示；`prism pipeline` 是 v1.1 迁移期 deprecated alias，v1.2 移除）
 
+> [!danger]
+> **merge_artifact 痕迹契约 — 防 Merge Step 4 静默漏 raw**（来源：029/r05 AP-28，痕迹义务家族第 4 族）
+>
+> Merge 6 步完成后必须在响应中输出 `merge_artifact` 块作为可观察执行痕迹（与 task_probe / decision_artifact 同模式）：
+>
+> ```
+> merge_artifact:
+>   independence_threshold: 0.6          # 当前 raw 落盘阈值（与 Step 4 文本对齐）
+>   actual_independence: <0.0~1.0>       # 本次实测独立发现率（小数）
+>   raw_landed: true | false             # Step 4 raw 文件是否实际落盘
+>   raw_paths: [reviews/raw/rXX-role-A.md, ...]   # raw_landed=true 时非空数组；false 时空数组
+>   raw_skip_reason: <若 raw_landed=false>        # 跳过原因（如 "actual_independence=0.42 < 0.6 阈值"）
+>   roles_count: <int>                   # 实际角色数（与 Step 1 去重前预定角色数对齐）
+> ```
+>
+> **校验规则**（任一违反 → Merge 未关闭）：
+> - `actual_independence >= independence_threshold` 且 `raw_landed: false` → **违约**：触发阈值必须落 raw（r05 dogfooding 自证 P0）
+> - `raw_landed: true` 但 `raw_paths` 为空 → **违约**：路径必须可审计
+> - `raw_landed: true` 但任一 `raw_paths` 项实际不存在 → **违约**
+> - 缺失 `merge_artifact` 块本身 → 视为 Merge 阶段未关闭，禁止进入 Gate 3
+>
+> **dogfooding 自证背景**（r05 真实失败）：
+> r05 评审独立发现率 92.9%（远超 60% 阈值），但首版 Merge 漏落 raw 文件 —— 与 r16
+> task_probe / r18 decision_artifact 同根痛点（无痕迹 = 无 enforce）。本条契约
+> 由 029/r05 dogfooding 失败直接推动，作为家族第 4 族补全。
+
 **⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 README 同步
 
 7. **专项工件同步**（仅 cohesion 模式）：`README.md` 更新"当前状态"

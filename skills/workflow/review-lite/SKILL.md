@@ -166,6 +166,31 @@ question:
 | `defer` | 写 `decisions/dXX_暂缓XXX.md`（status=deferred），README latest decision 指针更新；不改 plan |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收，让用户继续描述修订方向；常见 lite 路径触发：用户键入"升级到 workflow-review"→ agent 应执行升级而非强行写 dXX |
 
+> [!danger]
+> **decision_artifact 痕迹契约 — 防 Gate 4 静默跳过**（与 workflow-review 对齐，来源：029/r05 AP-4 P1）
+>
+> Gate 4 决策后必须在响应中输出 `decision_artifact` 块作为可观察执行痕迹（与 task_probe 同模式）：
+>
+> ```
+> decision_artifact:
+>   decision: accept | reject | defer | other   # Gate 4 用户裁决结果（含第 4 项自由文本）
+>   decision_source: askquestion | text_fallback   # 决策门入口（结构化 / 文本降级）
+>   written: true | false                   # decisions/dXX.md 是否已落盘
+>   path: <相对路径，未写时填 null>          # 如 decisions/d01_accept_xxx.md
+>   timestamp: <ISO 8601，未写时填 null>     # 落盘时间
+>   user_text: <仅 decision=other 时填，原样保留用户自由文本>
+>   review_kind: review-lite                 # 与 full review 区分；validator 据此放宽阈值（如 callout ≥ 2）
+> ```
+>
+> **校验规则**（任一违反 → Gate 4 未关闭，与 full review 一致）：
+> - `decision in {accept, reject}` 且 `written: false` → **违约**：accept/reject 必须立即落盘 dXX.md
+> - `decision == "defer"` 时 `written` 可为 true/false 均合规
+> - `decision == "other"` 时 **禁止 written=true**：lite 路径的 other 常见为"升级到 workflow-review"，须把 `user_text` 原样保留供下文 agent 路由
+> - `written: true` 但 `path` 为 null / 不存在 → **违约**：路径必须可审计
+> - 缺失 `decision_artifact` 块本身 → 视为决策门未关闭，禁止进入"已完成"语义
+>
+> **lite 特例**：决策门 4 选项 + decision_artifact 契约与 full review 字字对齐，仅 `review_kind: review-lite` 区分供 validator/trace verb 按 type 分档处理。
+
 ### Fallback 行为（AskQuestion 不可用）
 
 按 SSOT 模板降级：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 决策门 fallback + §3.2 反模式 + §2 触发条件优先级。

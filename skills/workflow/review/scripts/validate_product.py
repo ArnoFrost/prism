@@ -355,6 +355,94 @@ def _extract_frontmatter_type(lines: list[str]) -> str | None:
     return None
 
 
+def _is_decision_artifact(relpath: str) -> bool:
+    """判断是否为 dXX 决策文件（decisions/dXX_*.md）。
+
+    来源：029/r05 AP-5 P1 —— 此前 dXX 与 review 共用 frontmatter 校验，
+    但 type/status 字段值不受约束（d04 首版漏 tags / dXX status 写法各异
+    无机械抽检）。本函数为 dXX 专属语义校验提供识别入口。
+    """
+    name = os.path.basename(relpath)
+    return bool(re.match(r"^d\d{1,3}[_\.]", name))
+
+
+def check_decision_semantics(lines: list[str], relpath: str) -> list[Issue]:
+    """[dXX] 决策文件 frontmatter 语义校验（独立于 ofm/standard）。
+
+    硬约束：
+    - 必须带 frontmatter（决策的可审计性 — 无 frontmatter → 失去 SSOT 元数据）
+    - type 必须 == "decision"
+    - status 必须 ∈ {accepted, rejected, deferred}
+
+    放宽（不强制）：
+    - tags 字段必填由通用 check_frontmatter 兜底（仅 OFM 路径触发）
+
+    来源：029/r05 AP-5 P1（v1.1.5 收口 - 补 dXX 校验空白）
+    """
+    if not _is_decision_artifact(relpath):
+        return []
+
+    issues = []
+
+    if not lines or lines[0].strip() != "---":
+        issues.append(Issue(
+            "ERROR", relpath, 1, "decision-frontmatter-missing",
+            "dXX 决策文件必须带 frontmatter（决策可审计性硬约束）",
+            False,
+        ))
+        return issues
+
+    end_idx = -1
+    for i in range(1, min(len(lines), 200)):
+        if lines[i].strip() == "---":
+            end_idx = i
+            break
+    if end_idx == -1:
+        issues.append(Issue(
+            "ERROR", relpath, 1, "decision-frontmatter-unclosed",
+            "dXX frontmatter 未闭合（缺少第二个 ---）",
+            False,
+        ))
+        return issues
+
+    fm_text = "\n".join(lines[1:end_idx])
+
+    m = re.search(r"^\s*type\s*:\s*(\S+)", fm_text, re.MULTILINE)
+    if m:
+        value = m.group(1).strip().strip("'\"")
+        if value != "decision":
+            issues.append(Issue(
+                "ERROR", relpath, 1, "decision-type-invalid",
+                f"dXX frontmatter type 必须为 'decision'，实际: '{value}'",
+                False,
+            ))
+    else:
+        issues.append(Issue(
+            "ERROR", relpath, 1, "decision-type-missing",
+            "dXX frontmatter 缺少 type 字段（应为 type: decision）",
+            False,
+        ))
+
+    valid_statuses = {"accepted", "rejected", "deferred"}
+    m = re.search(r"^\s*status\s*:\s*(\S+)", fm_text, re.MULTILINE)
+    if m:
+        value = m.group(1).strip().strip("'\"")
+        if value not in valid_statuses:
+            issues.append(Issue(
+                "ERROR", relpath, 1, "decision-status-invalid",
+                f"dXX frontmatter status 必须 ∈ {sorted(valid_statuses)}，实际: '{value}'",
+                False,
+            ))
+    else:
+        issues.append(Issue(
+            "ERROR", relpath, 1, "decision-status-missing",
+            f"dXX frontmatter 缺少 status 字段（应 ∈ {sorted(valid_statuses)}）",
+            False,
+        ))
+
+    return issues
+
+
 def check_standard_no_ofm_callout(lines: list[str], relpath: str) -> list[Issue]:
     """[format=standard] 主报告禁止使用 OFM Callout（保持普通渲染器兼容）。"""
     if not _is_review_main_report(relpath):
@@ -516,6 +604,7 @@ def validate_file(filepath: str, fmt: str) -> list[Issue]:
     issues.extend(check_mermaid_edge_label_space(lines, relpath))
     issues.extend(check_mermaid_slash_prefix(lines, relpath))
     issues.extend(check_mermaid_list_prefix(lines, relpath))
+    issues.extend(check_decision_semantics(lines, relpath))
 
     # ── OFM 专属规则（仅 format=ofm 时） ──
     if fmt == "ofm":

@@ -212,6 +212,119 @@ class TestOfmDualStateContract:
         assert "ofm-missing-protocol" not in rules
         assert "ofm-low-callout-density" not in rules
 
+    def test_decision_artifact_valid_passes(self, tmp_path):
+        """合规 dXX.md 通过校验（来源：029/r05 AP-5 P1）。"""
+        md = tmp_path / "d01_test.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: accepted\n"
+            "type: decision\n"
+            "tags:\n"
+            "  - decision\n"
+            "  - test\n"
+            "---\n\n"
+            "# d01 — Test Decision\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        decision_errors = [
+            i for i in issues
+            if i.rule.startswith("decision-") and i.level == "ERROR"
+        ]
+        assert decision_errors == []
+
+    def test_decision_artifact_missing_frontmatter(self, tmp_path):
+        """dXX 缺 frontmatter → ERROR decision-frontmatter-missing。"""
+        md = tmp_path / "d02_test.md"
+        md.write_text("# d02 — No Frontmatter\n\nBody.\n", encoding="utf-8")
+        issues = vp.validate_file(str(md), "standard")  # standard 也校验
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-frontmatter-missing" in rules
+
+    def test_decision_artifact_invalid_type(self, tmp_path):
+        """dXX type != 'decision' → ERROR decision-type-invalid。"""
+        md = tmp_path / "d03_test.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: accepted\n"
+            "type: review\n"  # 错的 type
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# d03\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-type-invalid" in rules
+
+    def test_decision_artifact_invalid_status(self, tmp_path):
+        """dXX status 不在 {accepted, rejected, deferred} → ERROR decision-status-invalid。"""
+        md = tmp_path / "d04_test.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: done\n"  # 错的 status
+            "type: decision\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# d04\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-status-invalid" in rules
+
+    def test_decision_artifact_missing_status(self, tmp_path):
+        """dXX 缺 status 字段 → ERROR decision-status-missing。"""
+        md = tmp_path / "d05_test.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "type: decision\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# d05\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-status-missing" in rules
+
+    def test_decision_artifact_three_valid_statuses(self, tmp_path):
+        """accepted / rejected / deferred 三种合法 status 全通过。"""
+        for status in ("accepted", "rejected", "deferred"):
+            md = tmp_path / f"d_{status}.md"
+            md.write_text(
+                f"---\ndate: 2026-05-12\nstatus: {status}\n"
+                f"type: decision\ntags:\n  - test\n---\n\n# Test\n",
+                encoding="utf-8",
+            )
+            issues = vp.validate_file(str(md), "ofm")
+            decision_errors = [
+                i for i in issues
+                if i.rule.startswith("decision-") and i.level == "ERROR"
+            ]
+            assert decision_errors == [], (
+                f"status={status} 应通过校验，实际错误: {decision_errors}"
+            )
+
+    def test_non_decision_files_skip_semantics(self, tmp_path):
+        """非 dXX 文件不跑 decision_semantics（review/scope/plan 等）。"""
+        md = tmp_path / "r01_test.md"
+        md.write_text(
+            "---\ndate: 2026-05-12\nstatus: done\ntype: review\n"
+            "tags:\n  - test\n---\n\n# r01\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        decision_errors = [i for i in issues if i.rule.startswith("decision-")]
+        assert decision_errors == []
+
     def test_standard_main_report_with_ofm_callout_warned(self, tmp_path):
         path = self._write_review(
             tmp_path, "r05_test.md",

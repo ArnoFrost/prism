@@ -260,3 +260,80 @@ class TestSniffKindDispatch:
         assert result.returncode != 0
         # argparse 的 choices 校验会在 stderr 报错
         assert "invalid choice" in result.stderr.lower() or "bogus" in result.stderr
+
+
+# ============================================================
+# 029/r05 AP-9 P1 — `--json` 双向顺序兼容
+# ============================================================
+
+class TestJsonFlagOrderCompat:
+    """`prism --json <verb>` 与 `prism <verb> --json` 必须等价。
+
+    需求：argparse 默认要求全局 flag 出现在 subcommand 之前，但 Agent / 用户
+    常按 UNIX 习惯把 flag 放在末尾。_normalize_argv() 把 --json 提升到首位。
+    """
+
+    PROJECT_DIR = "/Users/xuxin/prism"
+
+    def _run(self, *argv) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [BIN_PRISM, *argv],
+            capture_output=True, text=True, timeout=10,
+        )
+
+    def test_normalize_argv_unit(self):
+        """单元测试：_normalize_argv 把 --json 提升到首位。"""
+        from prism_cli import _normalize_argv
+        assert _normalize_argv(["sniff", "foo", "--json"]) == ["--json", "sniff", "foo"]
+        assert _normalize_argv(["--json", "sniff", "foo"]) == ["--json", "sniff", "foo"]
+        assert _normalize_argv(["sniff", "foo"]) == ["sniff", "foo"]
+        assert _normalize_argv([]) == []
+        # 多次 --json 也安全（合并为一个）
+        assert _normalize_argv(["sniff", "--json", "foo", "--json"]) == [
+            "--json", "sniff", "foo",
+        ]
+
+    def test_manifest_two_orders_equivalent(self):
+        """`prism manifest --json` ↔ `prism --json manifest` 输出完全一致。"""
+        post = self._run("manifest", "--json")
+        pre = self._run("--json", "manifest")
+        assert post.returncode == 0
+        assert pre.returncode == 0
+        assert post.stdout == pre.stdout, (
+            f"manifest 两种顺序 stdout 不一致\n"
+            f"post stdout = {post.stdout!r}\n"
+            f"pre  stdout = {pre.stdout!r}"
+        )
+
+    def test_sniff_two_orders_equivalent(self):
+        """`prism sniff <dir> --json` ↔ `prism --json sniff <dir>` 输出一致。"""
+        import json as _json
+        post = self._run("sniff", self.PROJECT_DIR, "--topic", "test", "--json")
+        pre = self._run("--json", "sniff", self.PROJECT_DIR, "--topic", "test")
+        assert post.returncode == 0
+        assert pre.returncode == 0
+        # JSON payload 应一致（忽略可能的时间戳字段）
+        d_post = _json.loads(post.stdout)
+        d_pre = _json.loads(pre.stdout)
+        # outer envelope 主体字段一致
+        for key in ("command", "ok"):
+            assert d_post.get(key) == d_pre.get(key), (
+                f"key={key} 不一致: post={d_post.get(key)} pre={d_pre.get(key)}"
+            )
+
+    def test_validate_two_orders_equivalent(self):
+        """`prism validate <dir> --json` ↔ `prism --json validate <dir>` 输出一致。"""
+        import json as _json
+        post = self._run("validate", self.PROJECT_DIR, "--json")
+        pre = self._run("--json", "validate", self.PROJECT_DIR)
+        assert post.returncode == pre.returncode
+        # 两种顺序都应返回合法 JSON 且字段对齐
+        d_post = _json.loads(post.stdout)
+        d_pre = _json.loads(pre.stdout)
+        assert sorted(d_post.keys()) == sorted(d_pre.keys())
+
+    def test_flag_at_tail_no_normalize_when_absent(self):
+        """argv 不含 --json 时不变（保护非 --json 路径不被预处理改坏）。"""
+        from prism_cli import _normalize_argv
+        original = ["sniff", "foo", "--topic", "bar"]
+        assert _normalize_argv(original) == original
