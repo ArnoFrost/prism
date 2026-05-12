@@ -79,7 +79,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 
 | Gate | Precondition | Verify（通过条件） | Fallback（违反时） |
 |------|-------------|-------------------|-------------------|
-| ⛔ Align→Explore | sniff 已执行，output_dir + format + mode 已确定 | 当前上下文包含 `output_dir`、`format`、`mode` 三个字段值 | 重新执行 sniff；若 sniff 失败则请求用户手动指定 output_dir + format |
+| ⛔ Align→Explore | sniff 已执行，output_dir + format + mode 已确定；mode=full 时已输出 task_probe 痕迹 | 上下文包含 `output_dir` / `format` / `mode` 三字段值，且（mode=full）`task_probe` 块字段齐全：`called` / `result` / `fallback_decision` / `fallback_reason` | 重新执行 sniff 或真实发起一次 Task 调用补 task_probe；sniff 失败时请求用户手动指定 output_dir + format |
 | ⛔ Explore→Merge | 所有角色均已输出独立评审 | 角色报告数量 = 预定角色数，每份含 TL;DR + Findings | 检查缺失角色，补执行或说明跳过原因 |
 | ⛔ Merge→落盘 | 综合报告 + review.index 写入；角色报告按条件落盘 | validate_product.py 退出码 = 0（ERROR 计数 = 0） | 执行 `--fix` 自动修复；仍失败则列出未解决 ERROR 请用户确认 |
 | ⛔ 落盘→决策触发 | 产物已落盘且校验通过 | review.index.md 包含本轮记录 | 补更新 review.index.md |
@@ -96,6 +96,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 │  ⑤ 确认评审对象、范围、角色
 │  ⑥ 输出 mode 决策及理由
 │  ⑦ 输出「已加载 references」清单
+│  ⑧ 【mode=full 必填】输出 task_probe 探测痕迹（真实发起一次 Task 调用）
 │
 │  ⚠ next_review_number 契约:
 │    - source=affinity → 编号基于路由成功的 topic/reviews/ 计算，可信直接用
@@ -217,7 +218,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 
 ### 策略一：并行子任务（推荐，mode=full）
 
-**Align（主 Agent）— 7 步：**
+**Align（主 Agent）— 8 步：**
 1. 执行 sniff：`prism sniff <project_dir> --topic <评审主题>`
 2. **READ** `{skill_dir}/references/review-templates.md` → 提取命名规则
 3. 若 format=ofm → **READ** `{skill_dir}/references/review-ofm.md` → 提取 Callout 映射
@@ -225,6 +226,17 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 5. 确认评审对象、范围、角色
 6. 输出决策（必须显式）：`mode=?` + `topic_route=?`，附理由
 7. 输出「已加载 references」清单
+8. **【mode=full 强制】输出 task_probe 探测痕迹**：在 Align 末尾以代码块形式输出以下字段（缺失视为未探测，Gate 1 不通过）：
+   ```
+   task_probe:
+     called: true | false        # 是否真实发起过 Task 调用
+     result: success | tool_not_found | other_error
+     fallback_decision: parallel | serial
+     fallback_reason: <并行 | #1 | #2 | #3 | #4>   # 串行时必须给出白名单条款编号
+   ```
+   - `mode=full` + `called: false` → **违约**，必须先真实发起一次 Task 调用再继续
+   - `fallback_decision: serial` 但 `fallback_reason` 未给编号（或编号不在 #1~#4） → **违约**
+   - `mode=quick` 路径可省略此步（fallback_reason 隐含 #2）
 
 > [!danger]
 > **二态产物契约（v1.1.7+ 新增）— 防 OFM 退化硬约束**
@@ -242,19 +254,25 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 >
 > **历史数据复盘**（v1.1.7 修复动因）：vault 内 94 篇 full review 中 11 篇 callouts=0（A 档真退化），78 篇缺协议段元数据（C 档透明度低）。lite 100% 失效已在上一轮修复，此处加固 full 路径。
 
-**⛔ Gate 1 校验**：上下文包含 output_dir + format + mode + 已加载 references 列表？**且产物已按二态契约准备好顶部协议段（ofm）/ 默认裸 Markdown（standard）？** → 通过则进入 Explore
+**⛔ Gate 1 校验**：上下文包含 output_dir + format + mode + 已加载 references 列表 + **task_probe 探测痕迹**（mode=full 必填）？**且产物已按二态契约准备好顶部协议段（ofm）/ 默认裸 Markdown（standard）？** → 通过则进入 Explore
+
+- task_probe 缺失 → 视为未探测，回退到"先真实调用一次 Task tool"
+- task_probe.called=false 但 fallback_decision=serial 且 reason 不在 #1~#4 → 视为伪触发，回退到并行
+- 上述校验通过后才允许进入 Explore
 
 **Explore（并行子任务）：**
 在同一轮响应中为每个角色**发起独立 Task 子任务**（subagent），prompt 包含角色定义（含 Output-Format 字段）+ 评审对象 + 输出契约 + 格式要求（format=ofm 时内联 Callout 映射表）。
 
 > [!danger]
-> **mode=full 真并行硬约束**（r13 PostFix）：
+> **mode=full 真并行硬约束**（r13 PostFix · r16 PostFix 收紧 task_probe 痕迹）：
 > - mode=full 路径**必须**真发起并行 Task 子任务调度（每个角色独立上下文 + 独立返回）；
 > - **禁止**以"在同一轮响应里前后段落分别以角色 A / 角色 B / 角色 C 视角输出"代替真并行——这是**伪并行**，违反 mode=full 契约；
-> - IDE 客户端（Cursor / Claude Code / CodeBuddy）**必须先尝试调用 Task tool 一次**确认并行能力；调用失败抛 `tool_not_found` 才允许走串行 fallback；
-> - 串行 Fallback 仅当 `mode=quick` 显式指定 / 用户声明 / API 探测确认无并行能力 / 文本流 CLI 这四类合法触发场景命中时才使用。
+> - IDE 客户端（Cursor / Claude Code / CodeBuddy 均已确认原生支持）**必须先尝试调用 Task tool 一次**确认并行能力；调用失败抛 `tool_not_found` 才允许走串行 fallback；
+> - 串行 Fallback 仅当**封闭白名单 4 条**之一命中时才允许：①Task 调用真实返回 `tool_not_found` / ②`mode=quick` 显式指定 / ③用户原文声明 / ④文本流 CLI 客户端。任何其他理由——无论包装成"主题归属 governance 类 / 角色需要共享事实 / 单 agent 串行执行 / 无可达条件"——一律视为**伪触发**，必须并行；
+> - **task_probe 痕迹义务**：Align 阶段必须输出 `task_probe` 字段（详见上方 Align 步骤 8），无痕迹 = 未探测 = 必须并行执行；
+> - **客户端自我描述不构成触发条件**：agent 声称"IDE 内单 agent 串行执行" / "无 Task 并行调度可达条件" / "我不确定平台是否支持"——这些都是 r16 真实观测到的绕过话术，**已被白名单显式禁止**。
 >
-> 详细触发条件白名单见 [parallel-execution.md §串行 Fallback](references/parallel-execution.md)。
+> 详细触发条件白名单见 [parallel-execution.md §串行 Fallback](references/parallel-execution.md)；伪触发反模式分类（A/B/C/D 四类）见同文件 §串行 Fallback 反模式清单。
 
 > 并行调度规范详见 [parallel-execution.md](references/parallel-execution.md)。
 > 串行模式下须在每个角色输出前声明："以下仅基于原始材料，不参考前序角色的发现"。
