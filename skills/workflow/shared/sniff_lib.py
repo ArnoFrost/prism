@@ -203,7 +203,10 @@ def find_obsidian(start_dir: str, project_dir: str | None = None) -> dict:
     if result:
         return result
 
-    current = os.path.abspath(start_dir)
+    # 第 4 级兜底：从 start_dir 向上递归找 .obsidian/。
+    # 必须用 realpath（解析 symlink），否则通过 `workspace.{code}.local`
+    # 软链进入的 vault 子目录无法被识别 —— r02@019 误判 standard 的根因。
+    current = os.path.realpath(start_dir)
     for _ in range(20):  # 与 detect_format 对齐，最多 20 层
         candidate = os.path.join(current, ".obsidian")
         if os.path.isdir(candidate):

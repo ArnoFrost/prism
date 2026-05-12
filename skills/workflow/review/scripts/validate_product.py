@@ -36,6 +36,8 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
+from sniff_lib import find_obsidian
+
 
 # ============================================================
 # 数据结构
@@ -437,17 +439,21 @@ def apply_fixes(lines: list[str], issues: list[Issue]) -> tuple[list[str], list[
 # ============================================================
 
 def detect_format(output_dir: str) -> str:
-    """嗅探 output_dir 所处环境来决定 format（与 sniff.py 逻辑对齐）"""
-    # 向上遍历查找 .obsidian/
-    current = os.path.abspath(output_dir)
-    for _ in range(20):  # 最多向上 20 层
-        if os.path.isdir(os.path.join(current, ".obsidian")):
-            return "ofm"
-        parent = os.path.dirname(current)
-        if parent == current:
-            break
-        current = parent
-    return "standard"
+    """嗅探 output_dir 所处环境来决定 format。
+
+    与 sniff.py 共用 `sniff_lib.find_obsidian`，确保 4 级探测优先级一致：
+      1. prism.local.yaml → vault_path
+      2. 环境变量 OBSIDIAN_AI_VAULT
+      3. iCloud 默认路径
+      4. realpath 向上递归 .obsidian/（兜底）
+
+    历史教训（r02@019_card-retire-round2）：本函数早期只复刻了第 4 级兜底
+    且用 os.path.abspath 不解析 symlink，导致 vault 内通过 workspace.*.local
+    软链访问的文件被判为 standard，触发 standard-leaked-callout 误报。
+    现已统一走 find_obsidian（SSOT），任何前 3 级命中即可避开兜底坑。
+    """
+    result = find_obsidian(start_dir=output_dir)
+    return "ofm" if result.get("detected") else "standard"
 
 
 def validate_file(filepath: str, fmt: str) -> list[Issue]:

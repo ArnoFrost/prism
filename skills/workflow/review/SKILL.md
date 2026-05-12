@@ -253,6 +253,14 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 > - 这是为了让 standard 产物在 GitHub / GitLab 等普通渲染器下保持可读性，不出现「未识别的 callout 语法块」。
 >
 > **历史数据复盘**（v1.1.7 修复动因）：vault 内 94 篇 full review 中 11 篇 callouts=0（A 档真退化），78 篇缺协议段元数据（C 档透明度低）。lite 100% 失效已在上一轮修复，此处加固 full 路径。
+>
+> **跨脚本探测 SSOT 约束**（v1.1.8 r17 PostFix，来自 r02@019_card-retire-round2 误报）：
+> `sniff.format` 与 `validate_product.detect_format` 必须共用同一 `find_obsidian()`
+> 4 级探测优先级（`prism.local.yaml` → `OBSIDIAN_AI_VAULT` → iCloud 默认路径 → realpath
+> 兜底）。**禁止** validate 自实现一份"对齐"逻辑——历史曾因 detect_format 只复刻
+> 第 4 级兜底 + 用 `abspath` 不解析 symlink，导致通过 `workspace.{code}.local`
+> 软链访问的 vault 文件被判 standard，触发 standard-leaked-callout 误报。
+> 兜底层一律用 `os.path.realpath`，不用 `abspath`。
 
 **⛔ Gate 1 校验**：上下文包含 output_dir + format + mode + 已加载 references 列表 + **task_probe 探测痕迹**（mode=full 必填）？**且产物已按二态契约准备好顶部协议段（ofm）/ 默认裸 Markdown（standard）？** → 通过则进入 Explore
 
