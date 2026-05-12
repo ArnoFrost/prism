@@ -117,23 +117,44 @@ stability: experimental
 
 ### Gate 4 触发模板（AskQuestion）
 
-调用 `AskQuestion` 工具传入以下结构化问题（一次只一个问题，三选一）。
+调用 `AskQuestion` 工具传入以下结构化问题（一次只一个问题，**4 选项**：3 决策 + 1 自由文本兜底）。
 
-> 以下 `yaml` 块仅描述**契约结构**；实际调用时按 `AskQuestion` 工具的 JSON schema 传参（顶层 `questions: [{id, prompt, options: [{id, label}]}]`）。与 `workflow-review` Gate 4 措辞一致，仅 `id` 改为 `review_lite_decision_gate`。
+> 以下 `yaml` 块仅描述**契约结构**；实际调用时按 `AskQuestion` 工具的 JSON schema 传参（顶层 `questions: [{id, prompt, options: [{id, label}]}]`）。
+> 与 `workflow-review` Gate 4 契约一致（含决策摘要要素 + 第 4 项 Other），仅 `id` 改为 `review_lite_decision_gate`，lite 路径量化摘要省略独立发现率（单视角）。
+
+> [!danger]
+> **决策摘要要素硬契约**（r18 PostFix · 029/r04）
+>
+> `prompt` 字段**禁止**死字符串"轻量评审已完成"——必须实写：
+> 1. 📌 产物路径（含 rXX_xxx.md 实际文件名）
+> 2. 📊 量化摘要（lite 单视角：Findings `P0×n0 / P1×n1 / P2×n2` ｜ 行动项 `M` 条，省略独立发现率）
+> 3. 🎯 核心结论：≤ 30 字浓缩
+> 4. ❓ Open Questions 列表
+> 5. 各 option 的 `label` 写具体后续动作
+>
+> 完整契约与示例见 SSOT [askquestion-fallback.md §4.2 决策摘要 5 要素](../shared/references/askquestion-fallback.md)。
 
 ```yaml
 question:
   id: review_lite_decision_gate
   prompt: |
-    轻量评审已完成，产物已写入 reviews/rXX_描述.md（type: review-lite）。
+    轻量评审已完成（type: review-lite）— 决策摘要：
+
+    📌 产物：reviews/{实际文件名}.md
+    📊 量化：P0×{n0} / P1×{n1} / P2×{n2} ｜ {M} 条行动项（lite 单视角，无独立发现率）
+    🎯 核心结论：{≤ 30 字浓缩}
+    ❓ 未决：OQ-1 {...} / OQ-2 {...}（若无 OQ 写"无悬而未决项"）
+
     请确认下一步：
   options:
     - id: accept
-      label: "Accept — 记录 decisions/dXX.md，执行 prism pipeline <topic_dir> 一键收尾"
+      label: "Accept — 记录 decisions/d{NN}.md，方案落地（AP-X ~ AP-Y）+ prism pipeline 收尾"
     - id: reject
-      label: "Reject — 说明原因后重新 review-lite 或升级到 workflow-review"
+      label: "Reject — 说明原因后重新 review-lite 或升级到 workflow-review（多角色视角）"
     - id: defer
-      label: "Defer — 标记为待决，不立即更新 plan"
+      label: "Defer — 标记为待决，先确认 OQ-X 后再定（不立即更新 plan）"
+    - id: type_something
+      label: "Other — 自由说明 / 修订方案后再决（如:'升级到 workflow-review 再决'）"
 ```
 
 ### 决策路径
@@ -143,6 +164,7 @@ question:
 | `accept` | 立即写入 `decisions/dXX.md`，调用 `prism pipeline <topic_dir>` 串联 tidy/validate/scope-hint；若决策影响 scope，再调 `/workflow-scope` |
 | `reject` | 写 `decisions/dXX_拒绝XXX.md`（status=rejected）；若 reject 原因含「lite 视角不够」/「需要多角色」，建议升级到 `/workflow-review` |
 | `defer` | 写 `decisions/dXX_暂缓XXX.md`（status=deferred），README latest decision 指针更新；不改 plan |
+| `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收，让用户继续描述修订方向；常见 lite 路径触发：用户键入"升级到 workflow-review"→ agent 应执行升级而非强行写 dXX |
 
 ### Fallback 行为（AskQuestion 不可用）
 
