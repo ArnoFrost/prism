@@ -201,11 +201,11 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism archive` | stable | ⬜ | 归档 topic 到 archive/ |
 | `prism migrate` | experimental | ⬜ | 迁移 review 子目录格式（1.2 如无新用例将降为过渡期工具） |
 | `prism sync` | **exempt** | ⬜ | 嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免） |
-| `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + scope 提示 |
+| `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示 |
 | `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
 | `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |
 | `prism digest` | experimental | ⬜ | Topic 工件采集（供 Agent 生成摘要） |
-| `prism pipeline` | **deprecated** | ⬜ | 已重命名为 finalize（1.2 移除此别名） |
+| `prism pipeline` | **deprecated** | ⬜ | 已重命名为 finalize（1.2 移除此别名）；**不支持 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag**，需 trace 覆盖请改用 `finalize`（029/r08 P1-F4） |
 | `prism manifest` | experimental | ✅ | 导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |
 | `prism validate-trace` | experimental | ✅ | 扫描痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact）；`--lenient` 旧产物迁移期使用（来源：029/r05 AP-8 P1） |
 
@@ -224,3 +224,4 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 2026-04-24 | v1.1.0 | VERSION / README / CHANGELOG / schema 示例口径统一到 `v1.1.0`；将 023/024/025/026 视为已纳入当前阶段版本 | 当前阶段对齐 |
 | 2026-05-12 | v1.1.5 | §5.2 新增 `prism validate-trace` 行（痕迹义务家族机器抽检 verb，含 4 族 + `--lenient` 迁移期支持）；§4.x 加 `--json` 双向顺序兼容（`prism manifest --json` ↔ `prism --json manifest`）；finalize 加 `--decision` flag + PRISM_NO_INTERACTIVE 守门 | [029/r05 AP-8/9/15](../workspace.prism.local/topics/029_post-share-governance/reviews/r05_v1.0-v1.1-sdk-rollup-cr.md) |
 | 2026-05-13 | v1.1.6 | §4.3 新增双协议显性化（`prism --json` envelope vs `bin/doctor --json` flat）；finalize 新增 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag + Step 2.5 痕迹抽检（029_ topic 默认 strict / 其他 lenient / frontmatter 与 ENV 可覆盖） | [029/r07 AP-43 + AP-47](../workspace.prism.local/topics/029_post-share-governance/reviews/r07_双线治理合并状态评审.md) |
+| 2026-05-13 | v1.1.7 | §5.2 finalize description 加 "validate-trace (Step 2.5)"；pipeline 行加"不支持 trace flag"脚注 | [029/r08 AP-53 (P1-F2/F4)](../workspace.prism.local/topics/029_post-share-governance/reviews/r08_r07行动计划复检与封存判据评估.md) |

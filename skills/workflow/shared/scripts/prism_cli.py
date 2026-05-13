@@ -126,7 +126,7 @@ VERB_REGISTRY = {
     "finalize": {
         "stability": "experimental",
         "schema_compliant": False,
-        "description": "Decision 后一键 tidy + validate + scope 提示",
+        "description": "Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示",
     },
     "tidy": {
         "stability": "experimental",
