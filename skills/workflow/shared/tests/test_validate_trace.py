@@ -387,19 +387,35 @@ class TestCliIntegration:
 # ============================================================
 
 class TestRealityCheck:
-    """029/r05 AP-8 引入痕迹落盘契约时点：旧产物豁免（--lenient）。
+    """029/r05 AP-8 引入痕迹落盘契约 + 029/r07 AP-40 dogfooding 修补完成。
 
-    本检查锁定：029 现存产物虽缺痕迹块，但通过 --lenient 不破坏现有 commit。
-    若未来 029 产物补齐痕迹块，可改为 strict 模式 reality check。
+    时间线：
+    - r05 起痕迹义务强制（旧产物可 --lenient 豁免）
+    - r07 self-detect 029 自身没补痕迹（dogfooding 失败）
+    - AP-40 dogfooding 修补阶段补全 r01/r03/r05/r06 task_probe&merge_artifact +
+      d01-d06 decision_artifact + intake gate_out
+    - 当前 029 已是 strict 0 errors / 0 warnings 状态（dogfooding 完成证据）
     """
 
-    def test_029_topic_lenient_ok(self):
+    def test_029_topic_strict_ok(self):
+        """AP-40 完成后 reality check：029 在 strict mode 下应零 errors 零 warnings。
+
+        如果未来 029 出现新 P0/P1 review 但漏补痕迹块，本测试会立即失败 — 防止 dogfooding 倒退。
+        """
         topic = REPO_ROOT / "workspace.prism.local" / "topics" / "029_post-share-governance"
         if not topic.is_dir():
             pytest.skip("029 topic 不在本环境（跨设备）")
-        result = vt.scan_topic(topic, strict=False)
+        result = vt.scan_topic(topic, strict=True)
         assert result["ok"] is True, (
-            f"029 --lenient reality check 应 ok=true，实际 errors={result['errors']}"
+            f"029 strict reality check 应 ok=true（AP-40 完成后），"
+            f"实际 errors={result['errors']}"
         )
-        # 但仍有 WARN（旧产物缺痕迹块的正常状态）
-        assert len(result["warnings"]) > 0
+        assert len(result["errors"]) == 0, (
+            f"029 strict mode 应 0 errors（AP-40 dogfooding 完成保障），"
+            f"实际 errors={result['errors']}"
+        )
+        # warnings 也应为 0（lenient 与 strict 在 AP-40 后等价）
+        assert len(result["warnings"]) == 0, (
+            f"029 lenient/strict 双零 warnings（dogfooding 完成证据），"
+            f"实际 warnings={result['warnings']}"
+        )
