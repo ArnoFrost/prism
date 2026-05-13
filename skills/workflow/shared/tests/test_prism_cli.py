@@ -162,16 +162,33 @@ class TestCliHelp:
 # 回归 Bug #1：sync --fetch 参数透传
 # ============================================================
 
+def _build_fake_repos(tmp_path):
+    """构造 3 个含 .git/ 子目录的临时 repo，绕过 sniff_repo 的路径守卫（os.path.isdir + .git 存在性）。
+
+    029/r08 后续 hotfix — 旧测试硬假设 ~/prism 真实存在，CI runner 上不存在导致 sniff_repo 提前 return
+    永远走不到被 mock 的 subprocess.run。改造为 tmp_path fixture 后两种环境行为一致。
+    """
+    fake = {}
+    for name in ("sdk", "skills", "env"):
+        repo = tmp_path / name
+        (repo / ".git").mkdir(parents=True)
+        fake[name] = {"path": str(repo), "label": f"fake {name}"}
+    return fake
+
+
 class TestSyncFetchPropagation:
     """验证 prism sync --fetch 实际调用 git fetch。
 
     历史：intake 阶段曾记录此处有 bug，实测验证透传链路正常（sniff_repo 接收 do_fetch=True）。
     本测试固化行为，防止未来 regression。
+
+    029/r08 hotfix：用 tmp_path 构造临时 git repo 绕过 ~/prism 本机依赖，与 c397a32 sniff 测试同款 fixture 范式。
     """
 
-    def test_fetch_flag_triggers_git_fetch(self):
+    def test_fetch_flag_triggers_git_fetch(self, tmp_path):
         """--fetch 必须导致 git fetch 被调用"""
         from prism_cli import cmd_sync
+        import prism_sync_sniff
 
         calls = []
 
@@ -182,8 +199,6 @@ class TestSyncFetchPropagation:
             mock.returncode = 0
             mock.stdout = ""
             return mock
-
-        import subprocess as sp
 
         class Args:
             all = True
@@ -192,7 +207,9 @@ class TestSyncFetchPropagation:
             env = False
             fetch = True
 
-        with patch.object(sp, "run", side_effect=tracker):
+        fake = _build_fake_repos(tmp_path)
+        with patch.dict(prism_sync_sniff.REPOS, fake, clear=False), \
+             patch.object(prism_sync_sniff.subprocess, "run", side_effect=tracker):
             cmd_sync(Args())
 
         fetch_calls = [
@@ -201,9 +218,10 @@ class TestSyncFetchPropagation:
         ]
         assert len(fetch_calls) >= 1, f"未调用 git fetch。所有调用: {calls}"
 
-    def test_no_fetch_flag_no_git_fetch(self):
-        """不传 --fetch 时不应调用 git fetch"""
+    def test_no_fetch_flag_no_git_fetch(self, tmp_path):
+        """不传 --fetch 时不应调用 git fetch（029/r08 hotfix 补 assertion）"""
         from prism_cli import cmd_sync
+        import prism_sync_sniff
 
         calls = []
 
@@ -215,8 +233,6 @@ class TestSyncFetchPropagation:
             mock.stdout = ""
             return mock
 
-        import subprocess as sp
-
         class Args:
             all = True
             sdk = False
@@ -224,8 +240,16 @@ class TestSyncFetchPropagation:
             env = False
             fetch = False
 
-        with patch.object(sp, "run", side_effect=tracker):
+        fake = _build_fake_repos(tmp_path)
+        with patch.dict(prism_sync_sniff.REPOS, fake, clear=False), \
+             patch.object(prism_sync_sniff.subprocess, "run", side_effect=tracker):
             cmd_sync(Args())
+
+        fetch_calls = [
+            c for c in calls
+            if c and isinstance(c, list) and "fetch" in c
+        ]
+        assert len(fetch_calls) == 0, f"--fetch=False 时不应调用 git fetch，但收到: {fetch_calls}"
 
 # ============================================================
 # 回归 Bug #2：sniff --kind 分派
