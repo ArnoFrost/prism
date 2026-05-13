@@ -46,3 +46,8 @@ dist/
 
 # === Prism 分发产物（由 prism-dist pack 输出，不入库） ===
 releases/
+
+# === OpenSpec 本机实验（029/d07 AP-39 修订版）===
+# 保留本机 openspec 探索能力，但 Prism workflow 治理与 openspec 实验并行不感知
+# 待 openspec 实验有结论再回 AP-33 裁决去留
+openspec/
