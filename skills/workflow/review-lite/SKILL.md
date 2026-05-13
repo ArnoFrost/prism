@@ -190,6 +190,10 @@ question:
 > - 缺失 `decision_artifact` 块本身 → 视为决策门未关闭，禁止进入"已完成"语义
 >
 > **lite 特例**：决策门 4 选项 + decision_artifact 契约与 full review 字字对齐，仅 `review_kind: review-lite` 区分供 validator/trace verb 按 type 分档处理。
+>
+> **同源约束（029/r06 AP-32）**：`decision_artifact.review_kind: review-lite` 必须与落盘报告 frontmatter
+> `type: review-lite` 保持一致。validator 的 Callout 阈值分档以 frontmatter `type` 为机器 SSOT；
+> `review_kind` 是决策痕迹侧的可审计镜像，二者不一致时应视为产物装配错误并优先修正 frontmatter。
 
 ### Fallback 行为（AskQuestion 不可用）
 

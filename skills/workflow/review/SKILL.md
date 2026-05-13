@@ -288,7 +288,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 
 **⛔ Gate 2 校验**：角色报告数量 = 预定角色数？→ 通过则进入 Merge
 
-**Merge（主 Agent）— 6 步有序流程：**
+**Merge（主 Agent）— 6 步有序流程 + Gate 后同步：**
 1. 去重仲裁 + 独立发现率计算（含计算表格）
 2. 输出统一行动计划
 3. **写入**综合报告 `reviews/rXX_{title}.md`
@@ -326,9 +326,9 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 > task_probe / r18 decision_artifact 同根痛点（无痕迹 = 无 enforce）。本条契约
 > 由 029/r05 dogfooding 失败直接推动，作为家族第 4 族补全。
 
-**⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 README 同步
+**⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 Gate 后同步
 
-7. **专项工件同步**（仅 cohesion 模式）：`README.md` 更新"当前状态"
+**Gate 后同步**（仅 cohesion 模式）：`README.md` 更新"当前状态"
    ⚠️ **不直接更新 `plan.md`** — plan 由 scope 驱动：review → 决策(dXX) → scope 更新 → plan 派生
 
 **⛔ Gate 4 → 决策触发**

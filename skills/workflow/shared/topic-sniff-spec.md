@@ -41,9 +41,9 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 
 | 意图 | 触发条件 | 产物落点 |
 |------|---------|---------|
-| **new_topic** | 用户明确要新建专项，或无匹配候选 | `topics/{NNN}_{topic-name}/` 新建目录 |
+| **new_topic** | 用户明确要新建专项；或 sniff 返回 `ask_user` 后用户选择新建 | `topics/{NNN}_{topic-name}/` 新建目录 |
 | **cohesion** | topic_affinity 高置信匹配到已有专项 | `topics/{existing}/` 追加工件 |
-| **ask_user** | 多个候选专项得分接近，无法自动决策 | 列出候选，等用户确认 |
+| **ask_user** | 多个候选专项得分接近，或 `affinity_strength ∈ {low, none}`，无法自动决策 | 列出候选/新建选项，等用户确认 |
 | **follow_up** | 对话上下文已在某 topic 内工作，无需重新路由 | 沿用当前 topic（不重新 sniff） |
 
 ### 意图判定流程
@@ -56,9 +56,9 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
     │
     ├─ 用户提供 --topic 参数？
     │   └─ 是 → 执行 topic_affinity 检测
-    │       ├─ 唯一高分匹配（score ≥ 2）→ cohesion
-    │       ├─ 多个候选得分相近 → ask_user
-    │       └─ 无匹配 → new_topic
+    │       ├─ high / medium 且无同分 → cohesion
+    │       ├─ 同分候选 → ask_user
+    │       └─ low / none → ask_user（用户确认后才 new_topic）
     │
     └─ 无 --topic 参数
         └─ skill 各自决定：
