@@ -240,12 +240,13 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 | `prism archive`  | 归档 topic 到 `archive/` |
 | `prism migrate`  | 迁移历史 review 子目录格式 |
 | `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态 |
-| `prism finalize` | Decision 后一键串联 tidy → validate → scope 提示 |
+| `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |
 | `prism tidy`     | 工件机械对齐（README 指针 / review.index / frontmatter） |
 | `prism status`   | Workspace 活跃 topic 健康度扫描 |
 | `prism digest`   | Topic 工件采集，供摘要/汇报生成 |
+| `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact），`--lenient` 旧产物迁移期使用 |
 | `prism manifest` | 导出 verb registry 元数据 |
-| `prism pipeline` | `finalize` 的 deprecated alias，迁移期保留 |
+| `prism pipeline` | `finalize` 的 deprecated alias，迁移期保留（**不支持 trace flag**）|
 
 
 详见 [bin/README.md](bin/README.md)。
@@ -264,7 +265,7 @@ prism --json manifest
 
 - **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
-- **experimental 标记**：标注为 experimental 的 verb（当前：`prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism manifest`）可能在下一个 minor 改名或改参数
+- **experimental 标记**：标注为 experimental 的 verb（当前：`prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism validate-trace` / `prism manifest`）可能在下一个 minor 改名或改参数
 - **deprecated 标记**：`prism pipeline` 已进入迁移期，当前仅作为 `finalize` 别名保留
 - **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 

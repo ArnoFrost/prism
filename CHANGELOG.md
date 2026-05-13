@@ -1,5 +1,82 @@
 ## [Unreleased]
 
+## [v1.1.7] — 2026-05-13
+
+**029 治理框架孵化器封存 · 文档全面对齐 Step 2.5 痕迹守门链路。** 自 r01→r09 完整 9 轮 review 链路完成"治理框架本身的元 dogfooding 孵化"使命；本 patch 收尾全 repo 文档面与 v1.1.5/v1.1.6 已落地能力的同步。
+
+### Closed — 029 专题封存
+- `029_post-share-governance` README/scope/review.index frontmatter `status: completed/closed`（[d09 accept r09](workspace.prism.local/topics/029_post-share-governance/decisions/d09_accept_r09_封存029_分两步.md)）
+- 封存判据双约束满足：① P0 清偿轮 r07/r08 全部 P0 已清偿（含 P0-C1 d08 元清偿）+ ② 零 P0 复检轮 r9 净零 P0（三角色独立发现率 90%，与 r05 同档）
+- 元治理遗产沉淀：痕迹义务 4 族 + mode=full 真并行 + Gate 4 决策门 + 元 finding 单轮清偿规则 + 端点可见性家族扩展 + PostFix Errata 反劣化模式
+
+### Docs — 文档同步 last sweep（029/d09 AP-61 / r9 P1-F2~F5）
+- `README.md` `prism <verb>` 表格 finalize 行加 `validate-trace (Step 2.5)`；experimental 列表补 `validate-trace`；新增 `prism validate-trace` 一行
+- `README.md` AP-46 段补"`029_*` 默认 strict"完整优先级链（CLI flag > ENV > frontmatter > `029_*` 默认 strict > 全局默认 lenient）
+- `bin/README.md` `prism` 能力枚举补 `validate-trace`；用法块补 `finalize` 的 trace flag + `validate-trace` 行；三类划分新增"029 治理 verb"类
+- `bin/prism` 头注释 finalize 描述同步
+- `docs/architecture.md` CLI 自省与治理层表 finalize 描述同步 + 新增"痕迹义务抽检"独立行
+- `docs/cli-contract.md` §5.2 finalize description 同步 + pipeline 加"不支持 trace flag"脚注 + §6 v1.1.7 行
+
+### Chore — Node.js 24 全栈迁移（029/d09 AP-65）
+- `.github/workflows/ci.yml`：`astral-sh/setup-uv@v5 → v7`（v7.0.0 2025-10-07 Node 24 默认）+ `actions/upload-artifact@v4 → v6`（v6.0.0 2025-12-12 Node 24 默认）+ checkout 保持 v5（已 Node 24）
+- 应对 2026-06-02 GitHub runner 强制 Node 24；秋季 (2026-09-16) 彻底移除 Node 20
+- CI run 25793165580 验证：双 OS 17-19s 全绿，Node 20 deprecation warning 已彻底消除
+
+### Fixed — 测试本机路径依赖（029/r08 hotfix）
+- `skills/workflow/shared/tests/test_prism_cli.py::TestSyncFetchPropagation` 改 tmp_path fixture + `patch.dict(prism_sync_sniff.REPOS, ...)`，绕过 sniff_repo 路径守卫，让 CI runner（无 ~/prism）也能跑通；连续 4 commit 红的 CI 在 1971639 一次切回 success
+- 补 `_build_fake_repos(tmp_path)` 通用 fixture + `test_no_fetch_flag_no_git_fetch` 补完缺失 assertion
+
+## [v1.1.6] — 2026-05-13
+
+**Step 2.5 痕迹义务接入产品默认行为 · 双 JSON 协议显性化 · workflow 可选性叙事。**
+
+### Added — finalize Step 2.5 痕迹守门（029/r07 AP-43）
+- `_resolve_trace_strict` 完整优先级链：CLI flag > ENV > frontmatter > `029_*` 默认 strict > 全局默认 lenient
+- `_extract_frontmatter_field` 支持行内注释 + 引号剥离
+- `prism finalize` 新增 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` 互斥 flag
+- 18 个集成测试（8 优先级链 + 7 frontmatter 解析 + 3 CLI 集成，含 029 reality check strict 0/0）
+
+### Added — 双 JSON 协议显性化（029/r07 AP-47）
+- `docs/cli-contract.md §4.3` 区分两种协议：`prism <verb> --json` envelope（含 ok/data/meta/errors 层）vs `bin/doctor --json` flat（直接读字段）
+- 消费者规则 + 命令归属表 + 明确"prism doctor 不是 verb"
+
+### Added — review-templates frontmatter 元数据约定（029/r07 AP-45）
+- `merged_at` / `accepted_at` / `superseded_at` / `archived_at` 字段语义 + 推荐填法
+- review/SKILL.md Phase 3 描述同步
+
+### Docs — workflow/痕迹义务可选性叙事（029/r07 AP-46）
+- `README.md` 新增 "workflow / 痕迹义务家族都是可选项" 段（core contract 仅 SDK + Vault Workspace + uv）
+- `AGENTS.md` `## 行为预期` 新增对应点（降低接入心理门槛）
+
+## [v1.1.5] — 2026-05-12 ~ 2026-05-13
+
+**痕迹义务家族机器抽检 · 字段对齐 SSOT · sniff empty_reason 语义化。**
+
+### Added — prism validate-trace verb（029/r05 AP-8 P1）
+- 扫描 4 族痕迹义务（task_probe / decision_artifact / intake_gate_out / merge_artifact）
+- `--lenient` flag 旧产物迁移期使用（missing 块降级为 WARN）
+- 通过 `prism_cli.py` 接入主 dispatch，schema_compliant=True
+
+### Added — sniff --json empty_reason 枚举（029/r07 AP-41）
+- 空态语义化：`no_workspace_bridge` / `topic_not_specified` / `affinity_low_confidence`
+- 13 个守门测试（含外 envelope 协议回归）
+
+### Added — finalize --decision flag + PRISM_NO_INTERACTIVE（029/r05 AP-15）
+- 非交互模式守门：让 CI / 脚本场景可自动决策
+- 显式 `--decision accept|reject|defer` 取代交互式 prompt
+
+### Changed — task_probe 字段对齐 SKILL.md SSOT（029/r07 AP-42）
+- `validate_trace.py TRACE_FAMILIES["task_probe"].required_fields` 从 `{attempted, succeeded}` 改为 `{called, result, fallback_decision, fallback_reason}` 与 SKILL.md 一致
+- 2 个 SSOT 守门测试（TestFieldNamingSSOT）防止字段名再次分叉
+
+### Added — 元治理 dogfooding 修补（029/r07 AP-40）
+- r01 frontmatter 加 `mode: quick`（修正 detect_review_mode 误判）；r03/r05/r06 补 task_probe + merge_artifact 块；d01-d06 补 decision_artifact 块；intake.md 补 intake_gate_out 块
+- 029 整专题 validate-trace strict 0/0 通过（reality check 在 commit 5fd8d1c 升级测试断言）
+
+### Added — --json 双向顺序兼容（029/r05 AP-9）
+- `prism manifest --json` ↔ `prism --json manifest` 通过 `_normalize_argv` 等价
+- 4 个 TestJsonFlagOrderCompat 守门测试
+
 ## [v1.1.4] — 2026-05-08
 
 **无感迁移版 · 把 v1.1.3 的"hard break + 手动 mv 提示"升级为"零步骤自动迁移"。** 同事仅需更新 SDK 后跑一次 `bin/relink` + `bin/setup`，老命名 `AGENT.md` 与全局 gitignore 老 pattern 全部自动收敛到 `AGENTS.md` 命名族。
