@@ -24,6 +24,17 @@ BIN_PRISM = os.path.join(SDK_ROOT, "bin", "prism")
 VERSION_FILE = os.path.join(SDK_ROOT, "VERSION")
 
 
+def build_project_with_workspace(tmp_path):
+    """构造不依赖本机绝对路径的最小 Prism project/workspace。"""
+    project_dir = tmp_path / "project"
+    topic_dir = project_dir / "workspace.test.local" / "topics" / "001_test"
+    reviews_dir = topic_dir / "reviews"
+    reviews_dir.mkdir(parents=True)
+    (topic_dir / "README.md").write_text("# test topic\n", encoding="utf-8")
+    (reviews_dir / "r01_seed.md").write_text("# r01\n", encoding="utf-8")
+    return str(project_dir)
+
+
 # ============================================================
 # 冒烟：bash 壳 bin/prism 可用
 # ============================================================
@@ -227,11 +238,10 @@ class TestSniffKindDispatch:
     review sniff，intake 场景无法通过统一 CLI 拿到 next_topic_number。
     """
 
-    PROJECT_DIR = "/Users/xuxin/prism"
-
-    def test_default_is_review(self):
+    def test_default_is_review(self, tmp_path):
+        project_dir = build_project_with_workspace(tmp_path)
         result = subprocess.run(
-            [BIN_PRISM, "sniff", self.PROJECT_DIR, "--topic", "test"],
+            [BIN_PRISM, "sniff", project_dir, "--topic", "test"],
             capture_output=True, text=True, timeout=10,
         )
         assert result.returncode == 0
@@ -240,9 +250,10 @@ class TestSniffKindDispatch:
         assert d.get("sniff_kind") == "review"
         assert "next_review_number" in d, "review sniff 应输出 next_review_number"
 
-    def test_kind_intake_outputs_next_topic_number(self):
+    def test_kind_intake_outputs_next_topic_number(self, tmp_path):
+        project_dir = build_project_with_workspace(tmp_path)
         result = subprocess.run(
-            [BIN_PRISM, "sniff", self.PROJECT_DIR, "--topic", "test", "--kind", "intake"],
+            [BIN_PRISM, "sniff", project_dir, "--topic", "test", "--kind", "intake"],
             capture_output=True, text=True, timeout=10,
         )
         assert result.returncode == 0
@@ -254,7 +265,7 @@ class TestSniffKindDispatch:
 
     def test_unknown_kind_rejected(self):
         result = subprocess.run(
-            [BIN_PRISM, "sniff", self.PROJECT_DIR, "--kind", "bogus"],
+            [BIN_PRISM, "sniff", SDK_ROOT, "--kind", "bogus"],
             capture_output=True, text=True, timeout=5,
         )
         assert result.returncode != 0
@@ -272,8 +283,6 @@ class TestJsonFlagOrderCompat:
     需求：argparse 默认要求全局 flag 出现在 subcommand 之前，但 Agent / 用户
     常按 UNIX 习惯把 flag 放在末尾。_normalize_argv() 把 --json 提升到首位。
     """
-
-    PROJECT_DIR = "/Users/xuxin/prism"
 
     def _run(self, *argv) -> subprocess.CompletedProcess:
         return subprocess.run(
@@ -305,11 +314,12 @@ class TestJsonFlagOrderCompat:
             f"pre  stdout = {pre.stdout!r}"
         )
 
-    def test_sniff_two_orders_equivalent(self):
+    def test_sniff_two_orders_equivalent(self, tmp_path):
         """`prism sniff <dir> --json` ↔ `prism --json sniff <dir>` 输出一致。"""
         import json as _json
-        post = self._run("sniff", self.PROJECT_DIR, "--topic", "test", "--json")
-        pre = self._run("--json", "sniff", self.PROJECT_DIR, "--topic", "test")
+        project_dir = build_project_with_workspace(tmp_path)
+        post = self._run("sniff", project_dir, "--topic", "test", "--json")
+        pre = self._run("--json", "sniff", project_dir, "--topic", "test")
         assert post.returncode == 0
         assert pre.returncode == 0
         # JSON payload 应一致（忽略可能的时间戳字段）
@@ -324,8 +334,8 @@ class TestJsonFlagOrderCompat:
     def test_validate_two_orders_equivalent(self):
         """`prism validate <dir> --json` ↔ `prism --json validate <dir>` 输出一致。"""
         import json as _json
-        post = self._run("validate", self.PROJECT_DIR, "--json")
-        pre = self._run("--json", "validate", self.PROJECT_DIR)
+        post = self._run("validate", SDK_ROOT, "--json")
+        pre = self._run("--json", "validate", SDK_ROOT)
         assert post.returncode == pre.returncode
         # 两种顺序都应返回合法 JSON 且字段对齐
         d_post = _json.loads(post.stdout)
