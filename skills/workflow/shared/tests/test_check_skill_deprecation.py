@@ -118,6 +118,24 @@ def test_alias_keyword_also_exempts(tmp_path: Path):
     assert result["ok"] is True
 
 
+def test_alias_substring_does_not_exempt(tmp_path: Path):
+    """aliases 这类普通子串不应误触发 alias 豁免。"""
+    skills = tmp_path / "skills"
+    skills.mkdir()
+    (skills / "fake-skill").mkdir()
+    (skills / "fake-skill" / "SKILL.md").write_text(
+        "# Fake\n\n"
+        "Aliases table: run `prism pipeline` after review.\n",
+        encoding="utf-8",
+    )
+
+    proc = run_check(skills, json_mode=True)
+    assert proc.returncode == 1
+    result = json.loads(proc.stdout)
+    assert result["ok"] is False
+    assert len(result["violations"]) == 1
+
+
 def test_html_allow_marker_exempts(tmp_path: Path):
     """HTML 注释 `<!-- allow-deprecated -->` 显式豁免。"""
     skills = tmp_path / "skills"

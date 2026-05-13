@@ -37,8 +37,9 @@ DEPRECATED_VERBS = {
     "pipeline": "finalize",
 }
 
-# 豁免 token：行内含任意一个即视为合法 deprecation 说明
-# 大小写不敏感
+# 豁免 token：行内命中任意一个即视为合法 deprecation 说明。
+# 英文单词按词边界匹配，避免 aliases / deprecatedly 等子串误赦。
+# 中文短语和显式 allow marker 按精确子串匹配。
 EXEMPT_TOKENS = [
     "deprecated",
     "alias",
@@ -49,6 +50,20 @@ EXEMPT_TOKENS = [
     "v1.X 移除",
     "<!-- allow-deprecated -->",
 ]
+
+
+def has_exempt_token(line: str) -> bool:
+    """判断一行是否含合法 deprecation 说明豁免 token。"""
+    line_lower = line.lower()
+    for token in EXEMPT_TOKENS:
+        token_lower = token.lower()
+        if re.fullmatch(r"[a-z][a-z0-9_-]*", token_lower):
+            if re.search(rf"(?<![a-z0-9_-]){re.escape(token_lower)}(?![a-z0-9_-])", line_lower):
+                return True
+            continue
+        if token_lower in line_lower:
+            return True
+    return False
 
 
 def scan_skill_files(skills_dir: Path) -> list[Path]:
@@ -75,9 +90,7 @@ def check_file(file_path: Path) -> list[dict]:
             pattern = rf"`?prism\s+{verb}\b"
             if not re.search(pattern, line):
                 continue
-            line_lower = line.lower()
-            exempt = any(token.lower() in line_lower for token in EXEMPT_TOKENS)
-            if exempt:
+            if has_exempt_token(line):
                 continue
             violations.append({
                 "file": str(file_path),

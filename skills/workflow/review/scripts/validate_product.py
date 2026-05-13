@@ -346,10 +346,10 @@ def _extract_frontmatter_type(lines: list[str]) -> str | None:
     """
     if not lines or lines[0].strip() != "---":
         return None
-    for line in lines[1:30]:  # frontmatter 通常 ≤ 30 行
+    for line in lines[1:200]:  # 与 check_frontmatter 的 frontmatter 上限对齐
         if line.strip() == "---":
             break
-        m = re.match(r"^type:\s*(\S+)", line.strip())
+        m = re.match(r"^\s*type\s*:\s*(\S+)", line)
         if m:
             return m.group(1).strip().strip("'\"")
     return None

@@ -170,6 +170,28 @@ class TestOfmDualStateContract:
             f"review-lite 2 callouts 应通过阈值检查，实际触发: {density_issues}"
         )
 
+    def test_ofm_review_lite_type_after_long_frontmatter_passes(self, tmp_path):
+        """type 字段在较长 frontmatter 后段时仍按 review-lite 阈值分档。"""
+        long_meta = "".join(f"extra_{i}: value\n" for i in range(35))
+        md = tmp_path / "r13_lite.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: done\n"
+            f"{long_meta}"
+            "type: review-lite\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# r13 — 轻量评审\n\n"
+            "> [!info]\n> 协议段\n\n"
+            "> [!warning]\n> P1\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
+        assert density_issues == []
+
     def test_ofm_review_lite_one_callout_still_warns(self, tmp_path):
         """review-lite 只 1 callout 仍触发 WARN（lite 阈值 = 2，未达）。"""
         path = self._write_review(
@@ -322,6 +344,14 @@ class TestOfmDualStateContract:
             encoding="utf-8",
         )
         issues = vp.validate_file(str(md), "ofm")
+        decision_errors = [i for i in issues if i.rule.startswith("decision-")]
+        assert decision_errors == []
+
+    def test_dxx_like_non_decision_prefix_skips_semantics(self, tmp_path):
+        """非 dXX 前缀（如 doc/draft）不触发 decision 语义校验。"""
+        md = tmp_path / "doc01_notes.md"
+        md.write_text("# Notes\n\nNo decision frontmatter.\n", encoding="utf-8")
+        issues = vp.validate_file(str(md), "standard")
         decision_errors = [i for i in issues if i.rule.startswith("decision-")]
         assert decision_errors == []
 
