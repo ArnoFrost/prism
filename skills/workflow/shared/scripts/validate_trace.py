@@ -38,9 +38,12 @@ from pathlib import Path
 # 4 族契约配置：family → 必需字段集合
 TRACE_FAMILIES: dict[str, dict] = {
     "task_probe": {
-        "required_fields": {"attempted", "succeeded", "fallback_reason"},
+        "required_fields": {"called", "result", "fallback_decision", "fallback_reason"},
         "applies_to": "review_main_full",
-        "description": "Task 工具并行调用探针 — mode=full 必须诚实声明 attempted/succeeded",
+        "description": (
+            "Task 工具并行调用探针 — mode=full 必须诚实声明 called/result/fallback_decision；"
+            "字段命名以 review/SKILL.md + parallel-execution.md 为 SSOT（029/r07 PostFix 1 对齐）"
+        ),
     },
     "decision_artifact": {
         "required_fields": {"decision", "decision_source", "written"},

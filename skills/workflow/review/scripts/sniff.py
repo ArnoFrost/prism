@@ -83,6 +83,15 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
     if reviews_dir_resolved:
         review_density_warning = check_review_density(reviews_dir_resolved)
 
+    # AP-41 / 029 r07 — 稀疏空态可消费语义化（empty_reason 枚举）
+    # 让消费者能区分「合法空态」与「实现/参数路径问题」
+    empty_reason = _compute_empty_reason(
+        workspace=workspace,
+        topic=topic,
+        topic_affinity=topic_affinity,
+        next_review_source=next_review_source,
+    )
+
     return {
         "project_dir": project_dir,
         "workspace": workspace,
@@ -98,7 +107,50 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         "next_review_number": next_review_number,
         "next_review_source": next_review_source,  # "affinity" | "topic_hint" | "project_dir" | "none"
         "review_density_warning": review_density_warning,
+        "empty_reason": empty_reason,
     }
+
+
+# ============================================================
+# AP-41 — 稀疏空态语义化（029/r07 / d07 OQ-1 落地）
+# ============================================================
+
+# empty_reason 枚举（按检测优先级，前者更"根本"）：
+#   null                          — 非空态，正常工作（workspace + topic + 强亲和）
+#   "no_workspace_bridge"         — 项目根没找到 workspace.*.local / ai-task.local 桥接
+#                                   （消费者 hint：先 ln -s 桥接 vault，或换其他项目根）
+#   "topic_not_specified"         — workspace 存在但未提供 --topic
+#                                   （topic_affinity 必为 null；非 bug，但 affinity 路由不可用）
+#   "topic_affinity_unavailable"  — workspace + topic 都给了但 topic_affinity 仍为 null
+#                                   （workspace 内可能没 topics/ 子目录）
+#   "affinity_low_confidence"     — topic_affinity 命中但 strength=low/none
+#                                   （建议消费者按 ask_user 提示用户确认 topic）
+
+EMPTY_REASONS = (
+    "no_workspace_bridge",
+    "topic_not_specified",
+    "topic_affinity_unavailable",
+    "affinity_low_confidence",
+)
+
+
+def _compute_empty_reason(
+    workspace: dict | None,
+    topic: str | None,
+    topic_affinity: dict | None,
+    next_review_source: str,
+) -> str | None:
+    """根据 sniff 各组件结果推算稀疏原因。返回 None 表示非空态。"""
+    if workspace is None:
+        return "no_workspace_bridge"
+    if topic is None:
+        return "topic_not_specified"
+    if topic_affinity is None:
+        return "topic_affinity_unavailable"
+    strength = topic_affinity.get("affinity_strength")
+    if strength in ("low", "none"):
+        return "affinity_low_confidence"
+    return None
 
 
 def main():

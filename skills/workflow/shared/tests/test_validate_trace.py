@@ -84,14 +84,14 @@ class TestExtractTraceBlock:
     def test_only_extracts_matching_family(self):
         text = (
             "task_probe:\n"
-            "  attempted: true\n"
+            "  called: true\n"
             "\n"
             "decision_artifact:\n"
             "  decision: accept\n"
         )
         tp = vt.extract_trace_block(text, "task_probe")
         da = vt.extract_trace_block(text, "decision_artifact")
-        assert tp == {"attempted": "true"}
+        assert tp == {"called": "true"}
         assert da == {"decision": "accept"}
 
 
@@ -217,9 +217,10 @@ class TestCompleteAndIncomplete:
             "---\nmode: full\ntype: review\n---\n"
             "# r01\n\n"
             "task_probe:\n"
-            "  attempted: true\n"
-            "  succeeded: true\n"
-            "  fallback_reason: none\n"
+            "  called: true\n"
+            "  result: success\n"
+            "  fallback_decision: parallel\n"
+            "  fallback_reason: 并行\n"
             "\n"
             "merge_artifact:\n"
             "  actual_independence: 0.7\n"
@@ -283,6 +284,57 @@ class TestCompleteAndIncomplete:
         result = vt.scan_topic(topic, strict=True)
         rules = {e["rule"] for e in result["errors"]}
         assert "decision-other-must-not-write" in rules
+
+
+# ============================================================
+# 字段命名 SSOT 同步（029/r07 PostFix 1 / AP-42）
+# ============================================================
+
+class TestFieldNamingSSOT:
+    """防止 validate_trace.TRACE_FAMILIES 与 SKILL.md 字段命名再次分叉。
+
+    SSOT 来源（按优先级）：
+    1. skills/workflow/shared/parallel-execution.md §task_probe 痕迹
+    2. skills/workflow/review/SKILL.md Align 步骤 8
+    3. skills/workflow/review-lite/SKILL.md（同源镜像）
+
+    分叉触发条件：required_fields 与 SSOT 字段集不一致。
+    """
+
+    def test_task_probe_required_fields_match_skill_ssot(self):
+        # SSOT — 见 review/SKILL.md Align 步骤 8 与 parallel-execution.md §task_probe
+        skill_ssot_fields = {"called", "result", "fallback_decision", "fallback_reason"}
+        actual_fields = vt.TRACE_FAMILIES["task_probe"]["required_fields"]
+        assert actual_fields == skill_ssot_fields, (
+            f"task_probe 字段命名与 SKILL.md SSOT 分叉！\n"
+            f"  SKILL.md (SSOT): {skill_ssot_fields}\n"
+            f"  validate_trace.py: {actual_fields}\n"
+            f"修复方式：选 SKILL.md 字段为 SSOT，同步 validate_trace.TRACE_FAMILIES"
+        )
+
+    def test_task_probe_passes_with_skill_ssot_fields(self, tmp_path: Path):
+        """端到端：用 SKILL.md 字段写出的 task_probe 块必须通过 strict 校验。"""
+        topic = tmp_path / "029-style"
+        (topic / "reviews").mkdir(parents=True)
+        (topic / "reviews" / "r01_skill_ssot.md").write_text(
+            "---\nmode: full\ntype: review\n---\n# r01\n\n"
+            "task_probe:\n"
+            "  called: true\n"
+            "  result: success\n"
+            "  fallback_decision: parallel\n"
+            "  fallback_reason: 并行\n"
+            "\n"
+            "merge_artifact:\n"
+            "  actual_independence: 0.7\n"
+            "  raw_landed: true\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        # task_probe 字段对齐后应不再出现 fields-incomplete
+        rules = {e["rule"] for e in result["errors"]}
+        assert "task_probe-fields-incomplete" not in rules, (
+            f"task_probe 用 SKILL.md SSOT 字段仍报 fields-incomplete: {result['errors']}"
+        )
 
 
 # ============================================================
