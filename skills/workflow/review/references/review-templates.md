@@ -67,3 +67,61 @@ topics/{NNN}_{topic}/
 ## mode=quick 产物
 
 所有角色评审 + Merge 输出到 `reviews/rXX_简短描述.md` 一个文件中。
+
+## frontmatter 元数据约定（029/r07 AP-45）
+
+### 必填字段（review/SKILL.md §产物 OFM 退化判据 line 248）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `date` | `YYYY-MM-DD` | **创建日**（评审开始草拟的日期），不会随评审状态变化 |
+| `status` | `draft` / `accepted` / `superseded` / `done` | 当前状态 |
+| `type` | `review` / `review-lite` / `decision` / `topic-readme` | 文件类型 |
+| `tags` | `[...]` | 至少 3 个；含 `review` / `decision` 等基础 tag + 主题 tag |
+
+### 可选字段（推荐填写）
+
+| 字段 | 适用 | 说明 |
+|------|------|------|
+| `mode` | review | `full` / `quick`，与 detect_review_mode 配合（029/r07 AP-40 教训：标题含 "mode=full" 字串可能被误判） |
+| `commit` | review/decision | 关联的 git commit hash 短码 |
+| `related` | 任意 | 关联文件相对路径列表 |
+| `git_range` | review | mode=full 评审对象的 commit 范围（如 `1efa09e..d4b2e6b`） |
+| `independent_finding_rate` | review | mode=full 角色独立发现率（百分比，如 `92.9`），与 `merge_artifact.actual_independence` 对应 |
+| `trace_strict` | topic-readme | `true` / `false`，是否在 finalize Step 2.5 强制 strict（029/r07 AP-43） |
+
+### 时间戳字段（029/r07 AP-45 — 状态切换可观察化）
+
+| 字段 | 适用 | 说明 |
+|------|------|------|
+| `accepted_at` | decision | 决策被 accept 的时刻 ISO 8601（如 `2026-05-13T12:30:00+08:00`），与 `decision_artifact.timestamp` 对应 |
+| `merged_at` | review | mode=full Merge 阶段落盘完成时刻，与 `merge_artifact.raw_landed=true` 对应 |
+| `superseded_at` | review/decision | 被新一轮取代的时刻；同时填 `superseded_by: r05` 等指针 |
+| `archived_at` | topic-readme | topic 进入 `archive/` 的时刻 |
+
+### 设计意图
+
+- `date` 字段不变（仍是创建日）— 不破坏现有产物
+- 新增字段都是**可选**，未来可被 `prism status` / `prism digest` 消费做时间线视图
+- `accepted_at` / `merged_at` 与 `decision_artifact` / `merge_artifact` 的 `timestamp` 字段是双源镜像（一个是 frontmatter 给 OFM 索引用，一个是正文块给 strict 校验用）
+- 状态切换（`status: draft → accepted`）建议同时填对应时间戳，未来可加 frontmatter validation 守门
+
+### 示例
+
+```yaml
+---
+date: 2026-05-12              # 创建日 — 写第一行时
+status: accepted              # 当前
+type: review
+mode: full
+tags: [review, 029, governance]
+related:
+  - "../README.md"
+  - "../../../skills/workflow/review/SKILL.md"
+git_range: 1efa09e..d4b2e6b
+commit: cccf1b8
+independent_finding_rate: 92.9
+merged_at: 2026-05-12T22:15:00+08:00     # mode=full Merge 完成时
+accepted_at: 2026-05-13T00:00:00+08:00   # 决策接受时
+---
+```

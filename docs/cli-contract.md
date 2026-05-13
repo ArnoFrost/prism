@@ -130,6 +130,47 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 - **`hint`**（可选）：修复建议
 - **未来字段**：`path` / `severity` / `context` 等延后按需扩；消费方须容忍未知字段（schema `additionalProperties: true`）
 
+### 4.3 双协议范围 — `prism --json` (envelope) vs `bin/doctor --json` (flat)（029/r07 AP-47）
+
+> 背景：r07 评审阶段 self-detect 两个 JSON 解析"误报"（实际是 dogfooding 失败）：①把 `prism sniff --json` 的 `data` 字段误读成顶层；②误用不存在的 `prism doctor` 命令解析 stderr 文本。本节把双协议显性化，杜绝消费者再次误判。
+
+| 协议 | 入口 | 形态 | 用途 |
+|------|------|------|------|
+| **envelope JSON** | `bin/prism <verb> --json` 或 `prism --json <verb>` | `{ok, command, version, data, warnings, errors}` 外层包裹 | 所有 `prism` verb；4.1 双层语义；可消费 `data` 字段 |
+| **flat JSON** | `bin/doctor --json` | 直接业务字段（`{version, timestamp, sdk_root, errors, warnings, ...}`，无 `data` 包裹）| 仓库/环境级体检；扁平结构便于日志聚合 |
+
+#### 消费者使用规则（必读）
+
+```python
+# ❌ 错误（r07 F2 false alarm 实例）：把 envelope 当 flat
+proc = subprocess.run(["bin/prism", "sniff", "."], ...)
+data = json.loads(proc.stdout)
+print(data["workspace"])    # ← KeyError，业务字段实际在 data["data"]["workspace"]
+
+# ✅ 正确：先解 envelope，再读 data
+envelope = json.loads(proc.stdout)
+assert envelope["ok"] is True
+business = envelope["data"]
+print(business["workspace"])
+
+# ✅ flat JSON 路径（bin/doctor）反而直接读
+doctor = json.loads(subprocess.run(["bin/doctor", "--json"], ...).stdout)
+print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
+```
+
+#### 命令归属判定（避免命令拼错）
+
+| 你想做什么 | 用什么命令 | 协议 |
+|------------|-----------|------|
+| 探测 topic / 校验产物 / 工件对齐 / 痕迹抽检 | `bin/prism <verb> --json` | envelope |
+| 仓库/环境/IDE 级体检（含 doctor / setup / relink） | `bin/<command> --json` 等 | flat（按命令文档） |
+
+> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/migrate/sync/finalize/pipeline/tidy/status/digest/validate-trace/manifest）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
+
+#### 守门测试
+
+`skills/workflow/shared/tests/test_review_sniff_empty_reason.py::TestCliJsonOutput::test_empty_reason_field_in_outer_envelope` 锁定：sniff 业务字段必须在 `envelope.data` 下，envelope 顶层不应出现业务字段（防协议倒退）。
+
 ---
 
 ## 5 当前 CLI 清单（v1.1）
@@ -182,3 +223,4 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 | 2026-04-23 | v1.1-M4 | T4 `_dispatch_subprocess` 辅助函数；T5 `RELEASE_HEALTH.json` + `--output`；T6 `--rollback`；§6.1 bin/doctor 更新 | [024/plan](../workspace.prism.local/topics/024_cli-evolution/plan.md) |
 | 2026-04-24 | v1.1.0 | VERSION / README / CHANGELOG / schema 示例口径统一到 `v1.1.0`；将 023/024/025/026 视为已纳入当前阶段版本 | 当前阶段对齐 |
 | 2026-05-12 | v1.1.5 | §5.2 新增 `prism validate-trace` 行（痕迹义务家族机器抽检 verb，含 4 族 + `--lenient` 迁移期支持）；§4.x 加 `--json` 双向顺序兼容（`prism manifest --json` ↔ `prism --json manifest`）；finalize 加 `--decision` flag + PRISM_NO_INTERACTIVE 守门 | [029/r05 AP-8/9/15](../workspace.prism.local/topics/029_post-share-governance/reviews/r05_v1.0-v1.1-sdk-rollup-cr.md) |
+| 2026-05-13 | v1.1.6 | §4.3 新增双协议显性化（`prism --json` envelope vs `bin/doctor --json` flat）；finalize 新增 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag + Step 2.5 痕迹抽检（029_ topic 默认 strict / 其他 lenient / frontmatter 与 ENV 可覆盖） | [029/r07 AP-43 + AP-47](../workspace.prism.local/topics/029_post-share-governance/reviews/r07_双线治理合并状态评审.md) |

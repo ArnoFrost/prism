@@ -435,14 +435,92 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resolve_trace_strict(topic_dir: str, cli_override: str | None) -> tuple[str, str]:
+    """决定 finalize Step 2.5 (validate-trace) 的执行模式。
+
+    返回 (mode, source) 二元组：
+      mode: "off" | "lenient" | "strict"
+      source: 决策来源（cli / env / frontmatter / default-029 / default）
+
+    优先级（高到低，029/d07 OQ-1 B+C 混合方案）：
+      1. CLI flag: --trace-strict / --trace-lenient / --no-trace-validate
+      2. ENV: PRISM_TRACE_VALIDATE=off|lenient|strict
+      3. README.md / scope.md frontmatter `trace_strict: true|false`
+      4. topic 路径含治理 dogfooding 主战场 (029_) → strict
+      5. 默认 lenient（不破坏其他 topic 历史产物）
+    """
+    # 1. CLI flag
+    if cli_override in ("off", "lenient", "strict"):
+        return cli_override, "cli"
+
+    # 2. ENV
+    env_val = os.environ.get("PRISM_TRACE_VALIDATE", "").strip().lower()
+    if env_val in ("off", "lenient", "strict"):
+        return env_val, "env"
+
+    # 3. frontmatter 显式声明（README.md 优先，scope.md 次之）
+    for fname in ("README.md", "scope.md"):
+        fpath = os.path.join(topic_dir, fname)
+        if os.path.isfile(fpath):
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    head = f.read(2048)
+                fm_val = _extract_frontmatter_field(head, "trace_strict")
+                if fm_val is not None:
+                    if fm_val.lower() in ("true", "yes", "1"):
+                        return "strict", f"frontmatter:{fname}"
+                    if fm_val.lower() in ("false", "no", "0"):
+                        return "lenient", f"frontmatter:{fname}"
+            except OSError:
+                pass
+
+    # 4. 029 默认 strict（治理 dogfooding 主战场，可被 frontmatter 关闭）
+    topic_name = os.path.basename(os.path.normpath(topic_dir))
+    if topic_name.startswith("029_"):
+        return "strict", "default-029"
+
+    # 5. 默认 lenient
+    return "lenient", "default"
+
+
+def _extract_frontmatter_field(text: str, field: str) -> str | None:
+    """从 markdown 头部 YAML frontmatter 中读出一个标量字段值。
+
+    剥离行内注释（# 之后内容）；剥离引号包裹。
+    """
+    if not text.startswith("---"):
+        return None
+    end_idx = text.find("\n---", 3)
+    if end_idx < 0:
+        return None
+    fm = text[3:end_idx]
+    import re
+    m = re.search(rf"^{re.escape(field)}\s*:\s*(.+?)\s*$", fm, re.M)
+    if not m:
+        return None
+    val = m.group(1).strip()
+    # 剥离行内 YAML 注释（# 之后；忽略引号内的 #）
+    if not (val.startswith('"') or val.startswith("'")):
+        if "#" in val:
+            val = val.split("#", 1)[0].rstrip()
+    # 剥离引号包裹
+    if len(val) >= 2 and (
+        (val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")
+    ):
+        val = val[1:-1]
+    return val
+
+
 def cmd_finalize(args: argparse.Namespace) -> int:
-    """Decision 后一键编排：tidy --fix → validate --fix → 提示 scope 更新。
+    """Decision 后一键编排：tidy --fix → validate --fix → validate-trace → scope 提示。
 
     用法: prism finalize <topic_dir> [--dry-run] [--decision={accept|reject|defer}]
+                         [--trace-strict | --trace-lenient | --no-trace-validate]
 
     执行流程：
       1. tidy --fix（README 指针同步 + review.index 补全）
       2. validate --fix（产物格式校验 + 自动修复）
+      2.5. validate-trace（痕迹义务家族机器抽检 — 029/r07 AP-43）
       3. 输出 scope 更新提示（需要人工确认）
 
     --decision 与非交互式守门（029/r05 AP-15 P1）：
@@ -451,6 +529,13 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         禁止 env 静默绕过 — 与 askquestion-fallback.md §2 一致）
       - PRISM_NO_INTERACTIVE=1 + --decision 给出 → 继续跑 tidy/validate，
         output 含 decision_hint 字段供下游 agent / 审计消费
+
+    --trace-strict / --trace-lenient / --no-trace-validate（029/r07 AP-43 OQ-1 B+C 混合）：
+      - 默认 lenient（不破坏其他 topic 历史产物）
+      - 029_ 前缀 topic 默认 strict（治理 dogfooding 主战场）
+      - README.md/scope.md frontmatter `trace_strict: true|false` 显式覆盖
+      - ENV PRISM_TRACE_VALIDATE=off|lenient|strict 全局覆盖
+      - CLI flag 最高优先级
     """
     topic_dir = os.path.abspath(args.topic_dir)
     if not os.path.isdir(topic_dir):
@@ -548,6 +633,78 @@ def cmd_finalize(args: argparse.Namespace) -> int:
             has_error = True
     else:
         steps.append({"step": "validate", "status": "skipped", "reason": "validate_product.py 未找到"})
+
+    # ── Step 2.5: validate-trace（029/r07 AP-43 — 痕迹义务家族机器抽检接入）──
+    # OQ-1 B+C 混合方案：029_ topic 默认 strict / 其他 lenient / frontmatter & flag 可覆盖
+    trace_cli_override = None
+    if getattr(args, "no_trace_validate", False):
+        trace_cli_override = "off"
+    elif getattr(args, "trace_strict", False):
+        trace_cli_override = "strict"
+    elif getattr(args, "trace_lenient", False):
+        trace_cli_override = "lenient"
+
+    trace_mode, trace_source = _resolve_trace_strict(topic_dir, trace_cli_override)
+
+    if trace_mode == "off":
+        steps.append({
+            "step": "validate-trace",
+            "status": "skipped",
+            "reason": f"trace 校验已关闭（source={trace_source}）",
+            "mode": "off",
+            "source": trace_source,
+        })
+    else:
+        _add_to_path(SHARED_DIR)
+        try:
+            import importlib.util
+            vt_path = os.path.join(SHARED_DIR, "scripts", "validate_trace.py")
+            if os.path.isfile(vt_path):
+                spec = importlib.util.spec_from_file_location("_validate_trace_inproc", vt_path)
+                vt_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(vt_mod)
+                from pathlib import Path as _Path
+                trace_result = vt_mod.scan_topic(_Path(topic_dir), strict=(trace_mode == "strict"))
+                trace_errors = len(trace_result.get("errors", []))
+                trace_warnings = len(trace_result.get("warnings", []))
+
+                step_status = "ok"
+                if trace_errors > 0:
+                    step_status = "error"
+                    has_error = True  # strict 模式 errors 阻塞 finalize
+                elif trace_warnings > 0:
+                    step_status = "warn"
+
+                steps.append({
+                    "step": "validate-trace",
+                    "status": step_status,
+                    "mode": trace_mode,
+                    "source": trace_source,
+                    "errors": trace_errors,
+                    "warnings": trace_warnings,
+                    "details": {
+                        "errors": trace_result.get("errors", [])[:10],   # 前 10 条供调试
+                        "warnings": trace_result.get("warnings", [])[:10],
+                    },
+                })
+            else:
+                steps.append({
+                    "step": "validate-trace",
+                    "status": "skipped",
+                    "reason": "validate_trace.py 未找到",
+                    "mode": trace_mode,
+                    "source": trace_source,
+                })
+        except Exception as exc:
+            steps.append({
+                "step": "validate-trace",
+                "status": "error",
+                "mode": trace_mode,
+                "source": trace_source,
+                "error": f"{type(exc).__name__}: {exc}",
+            })
+            # 守门：内部异常不阻塞 finalize（lenient 心态），但记录给 agent
+            # strict 模式遇到内部异常时也不阻塞，避免脚本 bug 把 finalize 锁死
 
     # ── Step 3: scope 更新提示 ──
     scope_path = os.path.join(topic_dir, "scope.md")
@@ -759,14 +916,25 @@ def main():
     p_sync.add_argument("--all", action="store_true")
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
-    # finalize（024 T3 · 原 pipeline；AP-15 加 --decision flag）
-    p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → scope 提示")
+    # finalize（024 T3 · 原 pipeline；AP-15 加 --decision flag；029/r07 AP-43 加 trace flags）
+    p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
     p_finalize.add_argument("--dry-run", action="store_true", help="只预览不修复")
     p_finalize.add_argument(
         "--decision", choices=["accept", "reject", "defer"], default=None,
         help="决策门 audit hint；PRISM_NO_INTERACTIVE=1 路径下必填（029/r05 AP-15）",
     )
+    # AP-43 痕迹义务家族 trace 校验模式（CLI 覆盖 frontmatter / env / 默认值）
+    trace_group = p_finalize.add_mutually_exclusive_group()
+    trace_group.add_argument("--trace-strict", action="store_true",
+        dest="trace_strict",
+        help="强制 strict 模式（痕迹缺失阻塞 finalize）— 覆盖 frontmatter/env/default")
+    trace_group.add_argument("--trace-lenient", action="store_true",
+        dest="trace_lenient",
+        help="强制 lenient 模式（痕迹缺失仅 WARN）— 覆盖 frontmatter/env/default")
+    trace_group.add_argument("--no-trace-validate", action="store_true",
+        dest="no_trace_validate",
+        help="完全跳过 Step 2.5 痕迹校验（CI 渐进接入用）")
 
     # pipeline（deprecated alias → finalize，1.2 移除）
     p_pipeline = subparsers.add_parser("pipeline", help="[已弃用] 请使用 finalize")

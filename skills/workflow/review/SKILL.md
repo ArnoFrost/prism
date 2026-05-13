@@ -245,8 +245,13 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 > **format=ofm**（落点在 Obsidian vault 内，sniff 检测到 `.obsidian/`）：
 > - 产物**第一个 callout 必须**是 `> [!info]` 评审协议段，内容含 `路由 / format / 已加载 references / 评审对象` 四要素；
 > - 综合报告**全篇 Callout 数 ≥ 3**（Findings 至少 P0 用 `[!danger]` / P1 用 `[!warning]`）；
-> - frontmatter 必填 `date / status / type / tags`。
-> - **违反任一即视为 OFM 退化**，validate_product.py 会输出 WARN（不阻塞但留痕）。
+> - frontmatter 必填 `date / status / type / tags`；
+> - frontmatter **推荐**带状态切换时间戳（029/r07 AP-45）：
+>   - `merged_at: <ISO 8601>` — mode=full Merge 阶段落盘完成时；
+>   - `accepted_at: <ISO 8601>` — 接受决策时填到对应 dXX 文件；
+>   - `superseded_at: <ISO 8601>` + `superseded_by: rXX` — 被新一轮取代时；
+>   - 详见 [review-templates.md §frontmatter 元数据约定](references/review-templates.md)。
+> - **违反任一必填即视为 OFM 退化**，validate_product.py 会输出 WARN（不阻塞但留痕）。
 >
 > **format=standard**（落点在普通 git 仓库，无 vault）：
 > - **禁止**使用 OFM Callout（`> [!info]` / `> [!danger]` 等），用裸 Markdown 列表 / 标题 / 引用即可；
