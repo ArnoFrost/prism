@@ -358,6 +358,15 @@ class TestFieldNamingSSOT:
             f"修复方式：选 SKILL.md 字段为 SSOT，同步 validate_trace.TRACE_FAMILIES"
         )
 
+    def test_task_probe_fields_derived_from_workflow_trace_schema(self):
+        """AP-81b：task_probe 字段来自内部 workflow_trace phase，而非手写第二份表。"""
+        phase = next(
+            phase for phase in vt.WORKFLOW_TRACE_SCHEMA["phases"]
+            if phase["family"] == "task_probe"
+        )
+        assert vt.TRACE_FAMILIES["task_probe"]["required_fields"] == phase["required_fields"]
+        assert vt.TRACE_FAMILIES["task_probe"]["schema_family"] == "workflow_trace"
+
     def test_task_probe_passes_with_skill_ssot_fields(self, tmp_path: Path):
         """端到端：用 SKILL.md 字段写出的 task_probe 块必须通过 strict 校验。"""
         topic = tmp_path / "029-style"

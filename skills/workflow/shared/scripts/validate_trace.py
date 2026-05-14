@@ -35,32 +35,66 @@ import sys
 from pathlib import Path
 
 
-# 4 族契约配置：family → 必需字段集合
-TRACE_FAMILIES: dict[str, dict] = {
-    "task_probe": {
-        "required_fields": {"called", "result", "fallback_decision", "fallback_reason"},
-        "applies_to": "review_main_full",
-        "description": (
-            "Task 工具并行调用探针 — mode=full 必须诚实声明 called/result/fallback_decision；"
-            "字段命名以 review/SKILL.md + parallel-execution.md 为 SSOT（029/r07 PostFix 1 对齐）"
-        ),
-    },
-    "decision_artifact": {
-        "required_fields": {"decision", "decision_source", "written"},
-        "applies_to": "decision_file",
-        "description": "Gate 4 决策痕迹 — accept/reject/defer/other + 落盘状态可审计",
-    },
-    "intake_gate_out": {
-        "required_fields": {"scope_md_present"},
-        "applies_to": "intake_file",
-        "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失",
-    },
-    "merge_artifact": {
-        "required_fields": {"actual_independence", "raw_landed"},
-        "applies_to": "review_main_full",
-        "description": "Merge Step 4 痕迹 — raw 文件落盘可审计（r05 dogfooding 推动）",
-    },
+# 内部统一 schema：workflow_trace → phase → 既有外部 family。
+#
+# AP-81b 边界：这里只做内部归一化。产物里仍落 `task_probe:`、
+# `merge_artifact:`、`decision_artifact:`、`intake_gate_out:` 四个块；
+# validate 输出里的 family 名称也保持不变，不新增第 5 族。
+WORKFLOW_TRACE_SCHEMA: dict[str, object] = {
+    "family": "workflow_trace",
+    "phases": [
+        {
+            "phase": "task_probe",
+            "family": "task_probe",
+            "required_fields": {"called", "result", "fallback_decision", "fallback_reason"},
+            "applies_to": "review_main_full",
+            "description": (
+                "Task 工具并行调用探针 — mode=full 必须诚实声明 called/result/fallback_decision；"
+                "字段命名以 review/SKILL.md + parallel-execution.md 为 SSOT（029/r07 PostFix 1 对齐）"
+            ),
+        },
+        {
+            "phase": "decision_artifact",
+            "family": "decision_artifact",
+            "required_fields": {"decision", "decision_source", "written"},
+            "applies_to": "decision_file",
+            "description": "Gate 4 决策痕迹 — accept/reject/defer/other + 落盘状态可审计",
+        },
+        {
+            "phase": "intake_gate_out",
+            "family": "intake_gate_out",
+            "required_fields": {"scope_md_present"},
+            "applies_to": "intake_file",
+            "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失",
+        },
+        {
+            "phase": "merge_artifact",
+            "family": "merge_artifact",
+            "required_fields": {"actual_independence", "raw_landed"},
+            "applies_to": "review_main_full",
+            "description": "Merge Step 4 痕迹 — raw 文件落盘可审计（r05 dogfooding 推动）",
+        },
+    ],
 }
+
+
+def _derive_trace_families(schema: dict[str, object]) -> dict[str, dict]:
+    """从内部 workflow_trace schema 派生旧 4 族映射。"""
+    families: dict[str, dict] = {}
+    for phase in schema["phases"]:
+        family = phase["family"]
+        families[family] = {
+            "required_fields": set(phase["required_fields"]),
+            "applies_to": phase["applies_to"],
+            "description": phase["description"],
+            "phase": phase["phase"],
+            "schema_family": schema["family"],
+        }
+    return families
+
+
+# 兼容外部守门与旧调用方：TRACE_FAMILIES 仍是 4 个外部 family。
+TRACE_FAMILIES: dict[str, dict] = _derive_trace_families(WORKFLOW_TRACE_SCHEMA)
 
 
 # --- Issue / Result 数据结构 ---

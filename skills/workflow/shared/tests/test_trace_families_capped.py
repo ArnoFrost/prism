@@ -70,6 +70,27 @@ class TestTraceFamiliesCount:
             f" 新场景应通过扩展 phase 字段 / required_fields 实现"
         )
 
+    def test_workflow_trace_schema_is_internal_only(self):
+        """AP-81b：内部可统一为 workflow_trace，但外部 family 仍固定 4 族。"""
+        schema = vt.WORKFLOW_TRACE_SCHEMA
+        assert schema["family"] == "workflow_trace"
+        phases = schema["phases"]
+        assert len(phases) == 4
+        assert {phase["family"] for phase in phases} == EXPECTED_FAMILIES
+        assert frozenset(vt.TRACE_FAMILIES.keys()) == EXPECTED_FAMILIES
+        assert "workflow_trace" not in vt.TRACE_FAMILIES
+
+    def test_derived_families_preserve_required_fields(self):
+        """TRACE_FAMILIES 由内部 schema 派生，但字段契约不变。"""
+        schema_by_family = {
+            phase["family"]: set(phase["required_fields"])
+            for phase in vt.WORKFLOW_TRACE_SCHEMA["phases"]
+        }
+        for family, meta in vt.TRACE_FAMILIES.items():
+            assert meta["schema_family"] == "workflow_trace"
+            assert meta["phase"] == family
+            assert meta["required_fields"] == schema_by_family[family]
+
 
 # ============================================================
 # Anchor 2: docs/architecture.md §封顶政策段落 SHA-256 hash 锚定
