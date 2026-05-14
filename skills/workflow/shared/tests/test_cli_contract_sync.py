@@ -192,7 +192,7 @@ class TestContractSync:
         orig = CONTRACT_MD.read_text(encoding="utf-8")
         manifest_row = (
             "| `prism manifest` | experimental | ✅ | "
-            "导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |\n"
+            "导出 verb 元数据（stability + schema_compliant）；参数级 schema 延后批 |\n"
         )
         assert manifest_row in orig, "fixture 未命中 manifest 行 —— 如果原表格格式改了请同步更新本测试"
         tainted = orig.replace(manifest_row, "", 1)
