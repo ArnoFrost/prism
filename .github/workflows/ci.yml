@@ -76,6 +76,10 @@ jobs:
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        # 显式 shell: bash 启用 pipefail（GHA 默认 `bash -e {0}` 不带 pipefail），
+        # 否则 `release_gate.py … | tee` 中上游脚本非零退出会被 `tee` 吞成功，
+        # 导致 breaking 提交可在无文档同步的情况下静默合入。来源：r02 F-P0-1。
+        shell: bash
         run: |
           uv run python skills/workflow/shared/scripts/release_gate.py \
             --repo . \
