@@ -87,6 +87,65 @@ class TestParsePrismLocalYaml:
 
 
 # ============================================================
+# find_workspace（桥接路径 / workspace 内路径）
+# ============================================================
+
+class TestFindWorkspace:
+    def test_finds_workspace_bridge_from_project_root(self, tmp_path):
+        project = tmp_path / "project"
+        workspace = project / "workspace.test.local"
+        (workspace / "topics").mkdir(parents=True)
+        (workspace / "project.yaml").write_text("code: TEST\n", encoding="utf-8")
+        (workspace / "README.md").write_text("# Test\n", encoding="utf-8")
+
+        result = sniff_lib.find_workspace(str(project))
+
+        assert result is not None
+        assert result["type"] == "prism"
+        assert result["path"] == str(workspace)
+        assert result["project_yaml"] is True
+        assert result["readme"] is True
+
+    def test_finds_workspace_when_starting_at_workspace_root(self, tmp_path):
+        workspace = tmp_path / "workspace.test.local"
+        (workspace / "topics").mkdir(parents=True)
+        (workspace / "project.yaml").write_text("code: TEST\n", encoding="utf-8")
+
+        result = sniff_lib.find_workspace(str(workspace))
+
+        assert result is not None
+        assert result["path"] == str(workspace)
+        assert result["type"] == "prism"
+
+    def test_finds_workspace_when_starting_inside_topic_dir(self, tmp_path):
+        workspace = tmp_path / "workspace.test.local"
+        topic = workspace / "topics" / "001_test" / "reviews"
+        topic.mkdir(parents=True)
+        (workspace / "project.yaml").write_text("code: TEST\n", encoding="utf-8")
+
+        result = sniff_lib.find_workspace(str(topic))
+
+        assert result is not None
+        assert result["path"] == str(workspace)
+        assert result["type"] == "prism"
+
+    def test_preserves_workspace_symlink_path(self, tmp_path):
+        project = tmp_path / "project"
+        project.mkdir()
+        target = tmp_path / "vault" / "Workspace" / "TEST"
+        (target / "topics" / "001_test").mkdir(parents=True)
+        (target / "project.yaml").write_text("code: TEST\n", encoding="utf-8")
+        link = project / "workspace.test.local"
+        os.symlink(target, link)
+
+        result = sniff_lib.find_workspace(str(link / "topics" / "001_test"))
+
+        assert result is not None
+        assert result["path"] == str(link)
+        assert result["type"] == "prism"
+
+
+# ============================================================
 # _extract_topic_keywords（2-gram 中文分词）
 # ============================================================
 

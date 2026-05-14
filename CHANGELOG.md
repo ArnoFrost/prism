@@ -1,6 +1,8 @@
 ## [Unreleased]
 
-_暂无。_
+### Fixed
+
+- **桥接路径入口探测增强**：`find_workspace()` 支持从仓库根、`workspace.*.local` 根目录、topic 子目录三类入口识别同一 workspace；`prism status/tidy/digest` 子进程显式注入 shared import 路径，避免依赖调用方 `PYTHONPATH`。
 
 ## [v2.0.0] — 2026-05-14
 

@@ -27,9 +27,12 @@ VERSION_FILE = os.path.join(SDK_ROOT, "VERSION")
 def build_project_with_workspace(tmp_path):
     """构造不依赖本机绝对路径的最小 Prism project/workspace。"""
     project_dir = tmp_path / "project"
-    topic_dir = project_dir / "workspace.test.local" / "topics" / "001_test"
+    workspace_dir = project_dir / "workspace.test.local"
+    topic_dir = workspace_dir / "topics" / "001_test"
     reviews_dir = topic_dir / "reviews"
     reviews_dir.mkdir(parents=True)
+    (workspace_dir / "project.yaml").write_text("code: TEST\n", encoding="utf-8")
+    (workspace_dir / "README.md").write_text("# Test workspace\n", encoding="utf-8")
     (topic_dir / "README.md").write_text("# test topic\n", encoding="utf-8")
     (reviews_dir / "r01_seed.md").write_text("# r01\n", encoding="utf-8")
     return str(project_dir)
@@ -353,6 +356,56 @@ class TestSniffKindDispatch:
         assert result.returncode != 0
         # argparse 的 choices 校验会在 stderr 报错
         assert "invalid choice" in result.stderr.lower() or "bogus" in result.stderr
+
+
+class TestWorkspaceBridgeEntrypoints:
+    """031/AP-55-b：repo root / workspace symlink / topic dir 都应能识别 workspace。"""
+
+    def test_sniff_from_workspace_root(self, tmp_path):
+        project_dir = build_project_with_workspace(tmp_path)
+        workspace_dir = os.path.join(project_dir, "workspace.test.local")
+
+        result = subprocess.run(
+            [BIN_PRISM, "sniff", workspace_dir, "--topic", "test"],
+            capture_output=True, text=True, timeout=10,
+        )
+
+        assert result.returncode == 0, result.stderr
+        import json as _json
+        data = _json.loads(result.stdout)
+        assert data["workspace"]["path"] == workspace_dir
+        assert data["workspace"]["type"] == "prism"
+
+    def test_sniff_from_topic_dir(self, tmp_path):
+        project_dir = build_project_with_workspace(tmp_path)
+        workspace_dir = os.path.join(project_dir, "workspace.test.local")
+        topic_dir = os.path.join(workspace_dir, "topics", "001_test")
+
+        result = subprocess.run(
+            [BIN_PRISM, "sniff", topic_dir, "--topic", "test"],
+            capture_output=True, text=True, timeout=10,
+        )
+
+        assert result.returncode == 0, result.stderr
+        import json as _json
+        data = _json.loads(result.stdout)
+        assert data["workspace"]["path"] == workspace_dir
+
+    def test_status_subprocess_has_shared_import_path(self, tmp_path):
+        project_dir = build_project_with_workspace(tmp_path)
+        workspace_dir = os.path.join(project_dir, "workspace.test.local")
+
+        for entrypoint in (project_dir, workspace_dir):
+            result = subprocess.run(
+                [BIN_PRISM, "status", entrypoint, "--format", "json"],
+                capture_output=True, text=True, timeout=10,
+            )
+
+            assert result.returncode == 0, result.stderr
+            import json as _json
+            data = _json.loads(result.stdout)
+            assert data.get("workspace") == workspace_dir
+            assert "error" not in data
 
 
 # ============================================================

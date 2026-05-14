@@ -15,19 +15,53 @@ from datetime import date
 from glob import glob
 
 
+def _workspace_info(path: str, ws_type: str | None = None) -> dict:
+    """构造 workspace 元数据，保留调用路径中的 symlink 语义。"""
+    name = os.path.basename(os.path.normpath(path))
+    resolved_type = ws_type or ("ai-task" if "ai-task" in name else "prism")
+    return {
+        "path": os.path.abspath(path),
+        "type": resolved_type,
+        "project_yaml": os.path.isfile(os.path.join(path, "project.yaml")),
+        "readme": os.path.isfile(os.path.join(path, "README.md")),
+    }
+
+
+def _looks_like_workspace_root(path: str) -> bool:
+    """判断当前路径本身是否已经是 Prism workspace 根。"""
+    return (
+        os.path.isfile(os.path.join(path, "project.yaml"))
+        and (
+            os.path.isdir(os.path.join(path, "topics"))
+            or os.path.isdir(os.path.join(path, "tasks"))
+        )
+    )
+
+
 def find_workspace(project_dir: str) -> dict | None:
-    """查找 Prism Workspace 或 ai-task.local"""
-    for pattern in ["workspace.*.local", "ai-task.local"]:
-        matches = glob(os.path.join(project_dir, pattern))
-        for m in matches:
-            if os.path.isdir(m):
-                ws_type = "ai-task" if "ai-task" in os.path.basename(m) else "prism"
-                return {
-                    "path": os.path.abspath(m),
-                    "type": ws_type,
-                    "project_yaml": os.path.isfile(os.path.join(m, "project.yaml")),
-                    "readme": os.path.isfile(os.path.join(m, "README.md")),
-                }
+    """查找 Prism Workspace 或 ai-task.local。
+
+    支持三类入口：
+    1. 仓库根目录下存在 `workspace.*.local` / `ai-task.local`
+    2. 传入路径本身已经是 workspace 根
+    3. 传入路径位于 workspace 下方的 topic / 子目录内
+    """
+    current = os.path.abspath(project_dir)
+    for _ in range(30):
+        if _looks_like_workspace_root(current):
+            return _workspace_info(current)
+
+        for pattern in ["workspace.*.local", "ai-task.local"]:
+            matches = glob(os.path.join(current, pattern))
+            for m in matches:
+                if os.path.isdir(m):
+                    ws_type = "ai-task" if "ai-task" in os.path.basename(m) else "prism"
+                    return _workspace_info(m, ws_type)
+
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
     return None
 
 

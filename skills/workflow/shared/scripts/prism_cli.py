@@ -248,15 +248,27 @@ def _dispatch_subprocess(skill: str, script: str, cmd_args: list[str]) -> int:
         print(f"错误: {skill} 脚本不存在: {script_path}", file=sys.stderr)
         return 1
 
+    env = _subprocess_env()
     result = subprocess.run(
         [sys.executable, script_path] + cmd_args,
-        capture_output=True, text=True, timeout=30,
+        capture_output=True, text=True, timeout=30, env=env,
     )
     if result.stdout.strip():
         print(result.stdout)
     if result.returncode != 0 and result.stderr.strip():
         print(result.stderr, file=sys.stderr)
     return result.returncode
+
+
+def _subprocess_env() -> dict[str, str]:
+    """为 workflow 子脚本注入 shared 路径，避免依赖调用方 PYTHONPATH。"""
+    env = os.environ.copy()
+    existing = env.get("PYTHONPATH", "")
+    paths = [SHARED_DIR, SCRIPT_DIR]
+    if existing:
+        paths.append(existing)
+    env["PYTHONPATH"] = os.pathsep.join(paths)
+    return env
 
 
 # ============================================================
@@ -578,7 +590,13 @@ def cmd_finalize(args: argparse.Namespace) -> int:
             tidy_cmd.append("--fix")
         tidy_cmd.extend(["--format", "json"])
 
-        result = subprocess.run(tidy_cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            tidy_cmd,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=_subprocess_env(),
+        )
         try:
             tidy_result = json.loads(result.stdout) if result.stdout.strip() else {}
         except json.JSONDecodeError:
@@ -607,7 +625,13 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         if not dry_run:
             validate_cmd.append("--fix")
 
-        result = subprocess.run(validate_cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            validate_cmd,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=_subprocess_env(),
+        )
         try:
             validate_result = json.loads(result.stdout) if result.stdout.strip() else {}
         except json.JSONDecodeError:
