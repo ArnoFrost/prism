@@ -126,8 +126,8 @@ sniff 返回 `topic_affinity` 后，按以下规则决定产物路径：
 
 ```
 topic_affinity.suggestion = cohesion
-→ 内聚到已有专项 006_task-cohesion-evolution/
-→ output: reviews/r03.md（综合报告）+ reviews/raw/（角色报告）
+→ 内聚到已有专项 NNN_some-topic/
+→ output: reviews/rXX.md（综合报告）+ reviews/raw/（角色报告）
 → 已加载 references: [review-templates.md, review-ofm.md]
 ```
 
@@ -249,10 +249,10 @@ sniff 返回 `format` 字段决定 Markdown 风格：
    - 独立发现率 ≥ 60%（角色视角差异大，raw 有独立参考价值）
    - 用户显式要求保留
 5. **追加** `review.index.md` 记录行
-6. **执行** `prism finalize <topic_dir>`（自动串联 tidy + validate + **validate-trace (Step 2.5)** + scope 提示；trace 模式按 frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 决议，专项目录名 `029_*` 默认 strict — 见 [README §workflow / 痕迹义务家族都是可选项](../../../README.md)）
+6. **执行** `prism finalize <topic_dir>`（自动串联 tidy + validate + **validate-trace (Step 2.5)** + scope 提示；trace 模式按 frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 决议，详见 [README §workflow / 痕迹义务家族都是可选项](../../../README.md)）
 
 > [!danger]
-> **merge_artifact 痕迹契约 — 防 Merge Step 4 静默漏 raw**（来源：029/r05 AP-28，痕迹义务家族第 4 族）
+> **merge_artifact 痕迹契约 — 防 Merge Step 4 静默漏 raw**（痕迹义务家族第 4 族）
 >
 > Merge 6 步完成后必须在响应中输出 `merge_artifact` 块作为可观察执行痕迹（与 task_probe / decision_artifact 同模式）：
 >
@@ -271,7 +271,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 > - `raw_landed: true` 但 `raw_paths` 为空 / 任一项不存在 → 违约（路径必须可审计）
 > - 缺失 `merge_artifact` 块本身 → Merge 未关闭，禁止进入 Gate 3
 >
-> r05 dogfooding 自证背景（独立发现率 92.9% 但首版漏落 raw → 痕迹义务家族第 4 族诞生动因）详见 [review-maintainer.md §4.4](references/review-maintainer.md)。
+> 此契约的历史来源（独立发现率 92.9% 但首版漏落 raw → 第 4 族诞生动因）详见 [review-maintainer.md §4.4](references/review-maintainer.md)。
 
 **⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 Gate 后同步
 
@@ -359,7 +359,7 @@ question:
     - id: defer
       label: "Defer — 标记为待决，先确认 OQ-X / OQ-Y 后再定（不立即更新 plan）"
     - id: type_something
-      label: "Other — 自由说明 / 修订方案后再决（如:'先改 AP-7 频控再 accept'）"
+      label: "Other — 自由说明 / 修订方案后再决（如:'先调整某项再 accept'）"
 ```
 
 > [!info]
