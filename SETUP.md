@@ -424,7 +424,7 @@ bin/relink                        # 刷软链接（如果 relink 规则有变化
 cd "$HOME/prism"
 git fetch --tags
 git tag --list --sort=-v:refname | head -5   # 列出近期 tag
-git checkout v<target>            # e.g. v1.1.7（最近 stable 主线）或 v2.0.0-rc1（canary 验证期）
+git checkout v<target>            # e.g. v1.1.7（历史 stable 主线）或 v2.0.0（当前 GA 口径）
 cd "$HOME/prism-skills"
 git checkout v<target>            # 同版本回滚
 

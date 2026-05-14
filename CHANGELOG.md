@@ -1,4 +1,8 @@
-## [Unreleased] — v2.0-canary
+## [Unreleased]
+
+_暂无。_
+
+## [v2.0.0] — 2026-05-14
 
 > **v2.0 主线四段叙事**
 >
@@ -7,7 +11,7 @@
 > 3. **治理路径默认弱化** — workflow / 痕迹义务家族明确为可选项；core contract 仅 `SDK + Vault Workspace + uv`，开箱即用不强制接入
 > 4. **workflow 复杂度简化** — review skill 主文 −14%、痕迹义务家族永久封顶为 4 族、`detect_review_mode` SSOT 反位修复
 >
-> v2.0-canary 自 main `v1.1.7` (`ba2d503`) 切出，主线 archive → canary dogfood 1 周 → v2.0.0-rc1 → squash merge → v2.0.0 GA。
+> v2.0 从 main `v1.1.7` (`ba2d503`) 切出 canary，完成主线 archive、rc 验证与 squash merge 后进入 `v2.0.0` GA 口径。
 
 ### Breaking
 
