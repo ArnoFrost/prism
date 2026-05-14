@@ -68,7 +68,7 @@ topics/{NNN}_{topic}/
 
 所有角色评审 + Merge 输出到 `reviews/rXX_简短描述.md` 一个文件中。
 
-## frontmatter 元数据约定（029/r07 AP-45）
+## frontmatter 元数据约定
 
 ### 必填字段（review/SKILL.md §产物 OFM 退化判据 line 248）
 
@@ -83,14 +83,14 @@ topics/{NNN}_{topic}/
 
 | 字段 | 适用 | 说明 |
 |------|------|------|
-| `mode` | review | `full` / `quick`，与 detect_review_mode 配合（029/r07 AP-40 教训：标题含 "mode=full" 字串可能被误判） |
+| `mode` | review | `full` / `quick`，与 detect_review_mode 配合（注意：标题或正文含 `mode=full` 字串可能在旧版本被误判，自 v2.0 起 frontmatter `type` 字段优先级最高，详见 `validate_trace.detect_review_mode`）|
 | `commit` | review/decision | 关联的 git commit hash 短码 |
 | `related` | 任意 | 关联文件相对路径列表 |
 | `git_range` | review | mode=full 评审对象的 commit 范围（如 `1efa09e..d4b2e6b`） |
 | `independent_finding_rate` | review | mode=full 角色独立发现率（百分比，如 `92.9`），与 `merge_artifact.actual_independence` 对应 |
-| `trace_strict` | topic-readme | `true` / `false`，是否在 finalize Step 2.5 强制 strict（029/r07 AP-43） |
+| `trace_strict` | topic-readme | `true` / `false`，是否在 finalize Step 2.5 强制 strict |
 
-### 时间戳字段（029/r07 AP-45 — 状态切换可观察化）
+### 时间戳字段（状态切换可观察化）
 
 | 字段 | 适用 | 说明 |
 |------|------|------|

@@ -59,7 +59,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 
 > [!warning]
 > **mode 自动判定不可信时升格为边界澄清门**：仅当 ① 评审材料路径不可达 / 完全空目录、② 文件数无法枚举、③ Task 并行能力探测失败超过 1 次 这三个指标**全部无法获得**时，才升格为 SSOT [askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.3.3 边界澄清门；正常路径走 §1 自动判定，**不强制 Ask**。
-> 伪触发反模式（"材料看着不大" / "Agent 不熟悉平台" / 把"升级 review-lite"当推荐）与 r13 PostFix 收紧动因详见 [review-maintainer.md §4.7](references/review-maintainer.md)。
+> 伪触发反模式（"材料看着不大" / "Agent 不熟悉平台" / 把"升级 review-lite"当推荐）的历史动因记录在维护者文档中。
 
 ## 协作骨架：总分总 (Align → Explore → Merge)
 
@@ -91,7 +91,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 │  ⚠ next_review_number 契约：source ∈ {affinity/topic_hint/project_dir} 可信；
 │    source=none → 触发边界澄清门（SSOT §4.3.2，env 不得绕过）；review 与 lite
 │    共享 reviews/rXX.md 编号池，lite frontmatter `type: review-lite` 区分。
-│    完整见 [review-maintainer.md §4.8](references/review-maintainer.md)
+│    完整历史背景在维护者文档
 ├────────── ⛔ Gate 1 ────────────┤
 │  2. Explore（独立评审）          │
 │  各角色独立输出评审章节          │
@@ -232,7 +232,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 >
 > **串行 Fallback 封闭白名单 4 条**：① `tool_not_found` / ② `mode=quick` 显式指定 / ③ 用户原文声明 / ④ 文本流 CLI 客户端。其他理由（包括"客户端自我描述不支持"/"主题归属 governance"/"角色需要共享事实"等）一律伪触发。`task_probe` 痕迹缺失 = 未探测 = 必须并行。
 >
-> 详细白名单见 [parallel-execution.md §串行 Fallback](references/parallel-execution.md)；r13/r16 PostFix 收紧动因 + 伪触发反模式 A/B/C/D 四类详见 [review-maintainer.md §4.3](references/review-maintainer.md)。
+> 详细白名单见 [parallel-execution.md §串行 Fallback](references/parallel-execution.md)；伪触发反模式 A/B/C/D 四类的历史动因记录在维护者文档。
 
 > 并行调度规范详见 [parallel-execution.md](references/parallel-execution.md)。
 > 串行模式下须在每个角色输出前声明："以下仅基于原始材料，不参考前序角色的发现"。
@@ -271,7 +271,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
 > - `raw_landed: true` 但 `raw_paths` 为空 / 任一项不存在 → 违约（路径必须可审计）
 > - 缺失 `merge_artifact` 块本身 → Merge 未关闭，禁止进入 Gate 3
 >
-> 此契约的历史来源（独立发现率 92.9% 但首版漏落 raw → 第 4 族诞生动因）详见 [review-maintainer.md §4.4](references/review-maintainer.md)。
+> 此契约的历史来源（独立发现率 92.9% 但首版漏落 raw → 第 4 族诞生动因）记录在维护者文档。
 
 **⛔ Gate 3 校验**：validate 退出码 = 0？→ 通过则执行 Gate 后同步
 
@@ -363,7 +363,7 @@ question:
 ```
 
 > [!info]
-> **Other 选项硬契约**：用户选 Other 后，agent 把自由文本**原样回收当作"方案修订意图"**，**不**立即写 dXX.md，**不**强行解释为 Accept/Reject/Defer。设计动因（r12 实测：强结构化 IDE 把"先改 X 再决"逼成假 Defer）详见 [review-maintainer.md §4.6](references/review-maintainer.md)。
+> **Other 选项硬契约**：用户选 Other 后，agent 把自由文本**原样回收当作"方案修订意图"**，**不**立即写 dXX.md，**不**强行解释为 Accept/Reject/Defer。此契约源于 IDE 实测中"强结构化把'先改 X 再决'逼成假 Defer"的反劣化教训，详细历史记录在维护者文档。
 
 ### 决策路径
 
@@ -398,7 +398,7 @@ question:
 > - `written: true` 但 `path` 为 null / 不存在 → 违约
 > - 缺失 `decision_artifact` 块本身 → Gate 4 未关闭，禁止"已完成"语义
 >
-> r18 修复动因（019/020 真实观测：评审完成但 decisions/ 为空）详见 [review-maintainer.md §4.5](references/review-maintainer.md)。
+> 此守门源于"评审完成但 decisions/ 为空"的真实观测教训，详细历史记录在维护者文档。
 
 ### Fallback 行为（AskQuestion 不可用）
 

@@ -166,7 +166,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 探测 topic / 校验产物 / 工件对齐 / 痕迹抽检 | `bin/prism <verb> --json` | envelope |
 | 仓库/环境/IDE 级体检（含 doctor / setup / relink） | `bin/<command> --json` 等 | flat（按命令文档） |
 
-> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/migrate/sync/finalize/pipeline/tidy/status/digest/validate-trace/manifest）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
+> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/migrate/sync/finalize/tidy/status/digest/validate-trace/manifest；自 v2.0 起 `pipeline` 已物理移除）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
 
 #### 守门测试
 

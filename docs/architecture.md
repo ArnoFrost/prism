@@ -130,8 +130,8 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 | 能力 | 当前入口 | 说明 |
 |------|---------|------|
 | CLI 命令面自描述 | `prism --json manifest` | 导出 verb registry（stability / schema_compliant / description），作为机器可见真源 |
-| Workflow 收尾串联 | `prism finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；`pipeline` 仅作 deprecated alias 保留（不支持 trace flag） |
-| 痕迹义务抽检 | `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact）；`029_*` 默认 strict，其他默认 lenient（frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 可覆盖）|
+| Workflow 收尾串联 | `prism finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；旧 `pipeline` alias 自 v2.0 起已物理移除（v1.1.x deprecated 期已结束） |
+| 痕迹义务抽检 | `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；特定前缀 topic 默认 strict，其他默认 lenient（frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 可覆盖）|
 | 工件机械对齐 | `prism tidy` | 对齐 README 指针、review.index、frontmatter 等 topic 工件 |
 | 健康巡检 | `prism status` | 扫描活跃 topic 状态，输出 workspace 健康快照 |
 | 摘要采集 | `prism digest` | 为协作者摘要 / 状态同步采集 topic 工件 |
@@ -147,7 +147,7 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 ### 当前边界
 
 - 核心架构已经成立，当前主要缺口是**第二/第三个非 Prism 项目的持续验证**，而不是主干设计尚未闭合
-- 文档叙事正在通过 topic `025_doc-narrative-alignment` 补齐；当前 README / architecture / bin README 处于实现追平阶段
+- 文档叙事正持续通过专项 topic 补齐；当前 README / architecture / bin README 处于实现追平阶段
 - verify 机制已不是“0 实例”状态，但整体仍偏轻量，尚未成为所有 topic 的默认强约束
 - archive 仍以脚本触发为主（`shared/scripts/archive.py`），`status` 只做弱提醒而非强制生命周期门控
 
@@ -284,7 +284,7 @@ prism/
 - [x] Routing-grade description（5 个 workflow skills 改写，≤ 80 tokens + Use when:）
 - [x] 确定性脚本提取（scaffold.py + index_update.py → intake skill scripts/）
 - [x] `prism-workflow-status` 巡检 skill（report-first, JSON + Markdown 双格式）
-- [x] `archive.py` 手动归档脚本 + status 弱提醒（d02 降级，不做独立 skill）
+- [x] `archive.py` 手动归档脚本 + status 弱提醒（按设计降级，不做独立 skill）
 
 **Phase 5 — Workflow SDK 收敛（009 专项）** ✅
 
@@ -301,19 +301,6 @@ prism/
 - [x] 跨项目验证（TVKMM 完整跑通 13 轮评审 + 8 个决策，011 专项实证）
 - [x] 触发 010 topic 周期性回顾（设计哲学 + 远期愿景校准，scope 11/13）
 - [x] 023 CLI contract hardening：outer schema / manifest / contract sync gate 收敛
-- [x] 024 CLI evolution：`finalize / tidy / status / digest` 上收为 `prism <verb>`，`pipeline` 降级为 deprecated alias
+- [x] CLI evolution（v1.1.x 阶段）：`finalize / tidy / status / digest` 上收为 `prism <verb>`，`pipeline` 降级为 deprecated alias（自 v2.0 起物理移除）
 - [x] `bin/doctor` 补齐 `--rollback` / `--output` 与 release health 输出
 
-**当前收尾项（非主干缺口）**
-
-- [ ] 端到端新用户验证（干净环境 smoke test，含 `SETUP.md` 引导）
-- [ ] 第二/第三个非 Prism 项目的持续观察验证
-- [ ] 文档叙事对齐（025 专项：README / architecture / bin README / 独立说明稿）
-- [ ] Quick Topic 轻量入口（降低小任务进入门槛）
-
-**Phase 7 — 远期方向（未排期）**
-
-- [ ] FrostAtlas 反哺（协作语义层模式稳定后，升格为控制面能力）
-- [ ] 团队试点探索（个人验证充分后，选一个小项目做多人验证）
-- [ ] Env 层去留决策（延后至 v1.0 验证完成后）
-- [ ] 跨平台支持（当前限于 macOS 软链接，Linux/WSL 适配）
