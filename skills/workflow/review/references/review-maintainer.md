@@ -2,6 +2,7 @@
 date: 2026-03-23
 status: active
 type: skill-maintainer-doc
+audience: maintainer
 tags:
   - workflow
   - review
