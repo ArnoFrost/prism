@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/ArnoFrost/prism/blob/main/docs/cli-json-schema.json",
   "title": "Prism CLI Outer Schema",
-  "description": "Prism `prism <verb> --json` 统一外层响应结构（023-cli-contract-hardening 落地；d01/D1 锁定）。所有标记 schema_compliant=true 的 verb 在 --json 模式下必须通过此 schema 校验。data 字段内部结构由各 verb 自定义（本文件不约束）。",
+  "description": "Prism `prism <verb> --json` 统一外层响应结构。所有标记 schema_compliant=true 的 verb 在 --json 模式下必须通过此 schema 校验。data 字段内部结构由各 verb 自定义（本文件不约束）。",
   "type": "object",
   "required": ["ok", "command", "version", "data", "warnings", "errors"],
   "additionalProperties": false,
@@ -66,8 +66,8 @@
       "command": "sniff",
       "version": "v1.1.0",
       "data": {
-        "project_dir": "/Users/xuxin/prism",
-        "workspace": { "path": "/Users/xuxin/prism/workspace.prism.local" }
+        "project_dir": "/path/to/your/project",
+        "workspace": { "path": "/path/to/your/project/workspace.prism.local" }
       },
       "warnings": [],
       "errors": []

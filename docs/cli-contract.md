@@ -1,8 +1,8 @@
 # CLI Contract — Prism 命令面契约
 
-> 本文件由 [021 workflow-cli-consolidation / d02](../workspace.prism.local/topics/021_workflow-cli-consolidation/decisions/d02_cli-v1.0升级三级门控.md) 固化。
+> 本文件固化 `bin/` 与 `prism <verb>` 命令面分层 / 稳定性承诺 / "30 秒加 verb" 设计门槛 / 双协议范围。
 > 所有对 `bin/` 与 `prism <verb>` 的新增、改名、删除必须引用本文作为依据。
-> 版本：v1.1（随 SDK `VERSION` 同步升级）
+> 版本：v2.0-canary（随 SDK `VERSION` 同步升级）
 
 ---
 
@@ -33,7 +33,7 @@ Prism 的命令面分两层，职责正交：
 
 | 命令 | 偏离层 | 决定 | 依据 |
 |------|-------|------|------|
-| `prism sync` | 实际是 repo 级动作（偏 bin/ 语义） | **永久豁免，不改名** | d02 D1 |
+| `prism sync` | 实际是 repo 级动作（偏 bin/ 语义） | **永久豁免，不改名** | v1.0 历史豁免[^v1.0-decision] |
 
 > **重要**：`prism sync` 是**唯一**历史豁免，不可援引为新豁免的先例。任何新命令必须严格按上述判断树归属，不接受"比照 sync"。
 
@@ -64,9 +64,10 @@ N+1（下一个 minor）：引入新命令；原命令仍可用但调用时打 W
 N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 ```
 
-**例**：若 1.1 把 `prism pipeline` 重命名为 `prism finalize`：
-- 1.1 同时保留 `prism pipeline`（WARN）+ 新增 `prism finalize`
-- 1.2 移除 `prism pipeline`
+**例（已发生 — 此契约真实演进过程）**：`prism pipeline` → `prism finalize` 改名链：
+- v1.1 同时保留 `prism pipeline`（运行时 WARN）+ 新增 `prism finalize`
+- v1.1.x 期间 SKILL/SSOT 引用渐进迁移到 `finalize`
+- **v2.0** 物理移除 `prism pipeline`（按本契约 N+2 原则取代原 v1.1.x CHANGELOG 多轮预告的"v1.2 移除"承诺，调整为 v2.0 一次性落地）
 
 ### 2.3 不属于破坏性变更的调整
 
@@ -81,7 +82,7 @@ N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 
 ## 3 "30 秒加 verb" 设计门槛
 
-> 来自 r02 Role C-P0：所有 CLI 升级设计须通过此门槛，避免过度工程化挤压人类维护体验。
+> 设计原则：所有 CLI 升级设计须通过此门槛，避免过度工程化挤压人类维护体验。
 
 新增一个 `prism <verb>` 的成本**必须控制在 30 秒内的心智负担**：
 
@@ -100,7 +101,7 @@ N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 
 为 Agent 友好性做的机器可读接口走"**单向附加**"原则——加了不改变现有使用方式。
 
-计划在 [023-cli-contract-hardening](../workspace.prism.local/topics/023_cli-contract-hardening/) 专项落地（编号位移说明：d02 原文称 022，因 022 已被 `022_prism-v1-release-gate` 占用）：
+机器可读接口在 v1.1 系列分批落地：
 
 | 接口 | 形式 | 承诺 |
 |------|------|------|
@@ -130,9 +131,9 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 - **`hint`**（可选）：修复建议
 - **未来字段**：`path` / `severity` / `context` 等延后按需扩；消费方须容忍未知字段（schema `additionalProperties: true`）
 
-### 4.3 双协议范围 — `prism --json` (envelope) vs `bin/doctor --json` (flat)（029/r07 AP-47）
+### 4.3 双协议范围 — `prism --json` (envelope) vs `bin/doctor --json` (flat)
 
-> 背景：r07 评审阶段 self-detect 两个 JSON 解析"误报"（实际是 dogfooding 失败）：①把 `prism sniff --json` 的 `data` 字段误读成顶层；②误用不存在的 `prism doctor` 命令解析 stderr 文本。本节把双协议显性化，杜绝消费者再次误判。
+> 背景：v1.1.x 评审阶段曾发现两个 JSON 解析消费误用：①把 `prism sniff --json` 的 `data` 字段误读成顶层；②误用不存在的 `prism doctor` 命令解析 stderr 文本。本节把双协议显性化，杜绝消费者再次误判。
 
 | 协议 | 入口 | 形态 | 用途 |
 |------|------|------|------|
@@ -142,7 +143,7 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 #### 消费者使用规则（必读）
 
 ```python
-# ❌ 错误（r07 F2 false alarm 实例）：把 envelope 当 flat
+# ❌ 错误（典型误用实例）：把 envelope 当 flat
 proc = subprocess.run(["bin/prism", "sniff", "."], ...)
 data = json.loads(proc.stdout)
 print(data["workspace"])    # ← KeyError，业务字段实际在 data["data"]["workspace"]
@@ -165,7 +166,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 探测 topic / 校验产物 / 工件对齐 / 痕迹抽检 | `bin/prism <verb> --json` | envelope |
 | 仓库/环境/IDE 级体检（含 doctor / setup / relink） | `bin/<command> --json` 等 | flat（按命令文档） |
 
-> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/migrate/sync/finalize/pipeline/tidy/status/digest/validate-trace/manifest）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
+> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/migrate/sync/finalize/tidy/status/digest/validate-trace/manifest；自 v2.0 起 `pipeline` 已物理移除）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
 
 #### 守门测试
 
@@ -173,7 +174,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 
 ---
 
-## 5 当前 CLI 清单（v1.1）
+## 5 当前 CLI 清单（v2.0-canary）
 
 ### 5.1 `bin/` 一览
 
@@ -205,23 +206,29 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
 | `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |
 | `prism digest` | experimental | ⬜ | Topic 工件采集（供 Agent 生成摘要） |
-| `prism pipeline` | **deprecated** | ⬜ | 已重命名为 finalize（1.2 移除此别名）；**不支持 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag**，需 trace 覆盖请改用 `finalize`（029/r08 P1-F4） |
-| `prism manifest` | experimental | ✅ | 导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |
-| `prism validate-trace` | experimental | ✅ | 扫描痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact）；`--lenient` 旧产物迁移期使用（来源：029/r05 AP-8 P1） |
+| ~~`prism pipeline`~~ | **removed (v2.0)** | — | v1.1.x 已为 deprecated alias；v2.0 物理移除。v1.x 调用方请改用 `prism finalize`；调用 `prism pipeline` 现 hard fail（exit 2）|
+| `prism manifest` | experimental | ✅ | 导出 verb 元数据（stability + schema_compliant）；参数级 schema 延后批 |
+| `prism validate-trace` | experimental | ✅ | 扫描痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；`--lenient` 旧产物迁移期使用 |
 
 ---
 
 ## 6 变更历史
 
-| 日期 | 版本 | 变更 | 依据 |
-|------|------|------|------|
-| 2026-04-21 | v1.0 | 初版；固化 `bin/` vs `prism` 分层、稳定性承诺、30 秒门槛、豁免条款 | [021/d02](../workspace.prism.local/topics/021_workflow-cli-consolidation/decisions/d02_cli-v1.0升级三级门控.md) |
-| 2026-04-22 | v1.1-M0 | §4 旧编号 022 → 023 + `prism --version` 联动 SDK VERSION 承诺写入 | [023/d01 D3](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
-| 2026-04-22 | v1.1-M1 | §4 加 cli-json-schema.json 反向引用；新增 §4.1 双层语义 + §4.2 Issue item 约定；承诺表述从"1.1 起 stable"改为弹性演进 | [023/d01 D1](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
-| 2026-04-22 | v1.1-M2 | §5.2 加 `JSON` 列 + 新增 `prism manifest` 行；表格改由 `VERB_REGISTRY` 反向守（pytest + pre-commit hook 示例） | [023/d01 D2 D4](../workspace.prism.local/topics/023_cli-contract-hardening/decisions/d01_023推进路径裁决.md) |
-| 2026-04-23 | v1.1-M3 | §5.2 新增 finalize/tidy/status/digest 四行；`pipeline` stability 改 deprecated；§2.2 示例更新 | [024/d01](../workspace.prism.local/topics/024_cli-evolution/decisions/d01_cli命令结构裁决-单层vs-noun-verb.md) |
-| 2026-04-23 | v1.1-M4 | T4 `_dispatch_subprocess` 辅助函数；T5 `RELEASE_HEALTH.json` + `--output`；T6 `--rollback`；§6.1 bin/doctor 更新 | [024/plan](../workspace.prism.local/topics/024_cli-evolution/plan.md) |
-| 2026-04-24 | v1.1.0 | VERSION / README / CHANGELOG / schema 示例口径统一到 `v1.1.0`；将 023/024/025/026 视为已纳入当前阶段版本 | 当前阶段对齐 |
-| 2026-05-12 | v1.1.5 | §5.2 新增 `prism validate-trace` 行（痕迹义务家族机器抽检 verb，含 4 族 + `--lenient` 迁移期支持）；§4.x 加 `--json` 双向顺序兼容（`prism manifest --json` ↔ `prism --json manifest`）；finalize 加 `--decision` flag + PRISM_NO_INTERACTIVE 守门 | [029/r05 AP-8/9/15](../workspace.prism.local/topics/029_post-share-governance/reviews/r05_v1.0-v1.1-sdk-rollup-cr.md) |
-| 2026-05-13 | v1.1.6 | §4.3 新增双协议显性化（`prism --json` envelope vs `bin/doctor --json` flat）；finalize 新增 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag + Step 2.5 痕迹抽检（029_ topic 默认 strict / 其他 lenient / frontmatter 与 ENV 可覆盖） | [029/r07 AP-43 + AP-47](../workspace.prism.local/topics/029_post-share-governance/reviews/r07_双线治理合并状态评审.md) |
-| 2026-05-13 | v1.1.7 | §5.2 finalize description 加 "validate-trace (Step 2.5)"；pipeline 行加"不支持 trace flag"脚注 | [029/r08 AP-53 (P1-F2/F4)](../workspace.prism.local/topics/029_post-share-governance/reviews/r08_r07行动计划复检与封存判据评估.md) |
+| 日期 | 版本 | 变更 |
+|------|------|------|
+| 2026-04-21 | v1.0 | 初版；固化 `bin/` vs `prism` 分层、稳定性承诺、30 秒门槛、豁免条款 |
+| 2026-04-22 | v1.1-M0 | §4 编号收敛 + `prism --version` 联动 SDK VERSION 承诺写入 |
+| 2026-04-22 | v1.1-M1 | §4 加 `cli-json-schema.json` 反向引用；新增 §4.1 双层语义 + §4.2 Issue item 约定；承诺表述从"1.1 起 stable"改为弹性演进 |
+| 2026-04-22 | v1.1-M2 | §5.2 加 `JSON` 列 + 新增 `prism manifest` 行；表格改由 `VERB_REGISTRY` 反向守（pytest + pre-commit hook 示例） |
+| 2026-04-23 | v1.1-M3 | §5.2 新增 `finalize/tidy/status/digest` 四行；`pipeline` stability 改 deprecated；§2.2 示例更新 |
+| 2026-04-23 | v1.1-M4 | T4 `_dispatch_subprocess` 辅助函数；T5 `RELEASE_HEALTH.json` + `--output`；T6 `--rollback`；§6.1 bin/doctor 更新 |
+| 2026-04-24 | v1.1.0 | VERSION / README / CHANGELOG / schema 示例口径统一到 `v1.1.0` |
+| 2026-05-12 | v1.1.5 | §5.2 新增 `prism validate-trace` 行（痕迹义务家族机器抽检 verb，含 4 族 + `--lenient` 迁移期支持）；§4.x 加 `--json` 双向顺序兼容（`prism manifest --json` ↔ `prism --json manifest`）；finalize 加 `--decision` flag + PRISM_NO_INTERACTIVE 守门 |
+| 2026-05-13 | v1.1.6 | §4.3 新增双协议显性化（`prism --json` envelope vs `bin/doctor --json` flat）；finalize 新增 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag + Step 2.5 痕迹抽检（特定前缀 topic 默认 strict / 其他 lenient / frontmatter 与 ENV 可覆盖） |
+| 2026-05-13 | v1.1.7 | §5.2 finalize description 加 "validate-trace (Step 2.5)"；pipeline 行加"不支持 trace flag"脚注 |
+| 2026-05-14 | **v2.0-canary** | **§5.2 `prism pipeline` 行从 deprecated 改为 ~~removed (v2.0)~~**（物理移除 alias，调用方 hard fail exit 2）；§2.2 改名示例段更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径）；与 v1.1.x CHANGELOG 承诺的"v1.2 移除"对齐到 v2.0 落地 |
+| 2026-05-15 | **v2.0-canary** | §1 / §2 / §4 默认路径脱敏（移除内部 review/decision 链路引用）；§6 表 vault link 迁出主表[^variant-history] |
+
+[^variant-history]: 各版本变更的详细 review / decision 推导链路保留在 vault Workspace 内部历史档案中，不在本契约暴露；参与维护的人员可通过 SDK 内 `references/maintainer.md` 等维护者文档定位。
+
+[^v1.0-decision]: v1.0 历史豁免决策的完整推导记录在 vault Workspace 治理历史档案中。

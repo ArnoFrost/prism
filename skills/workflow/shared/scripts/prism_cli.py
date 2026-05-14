@@ -13,7 +13,6 @@
   uv run python prism_cli.py tidy <project_dir> [--fix] [--topic <主题>]
   uv run python prism_cli.py status <project_dir> [--format json|markdown]
   uv run python prism_cli.py digest <project_dir> --topic <主题>
-  uv run python prism_cli.py pipeline <topic_dir> [--dry-run]  # deprecated → finalize
   uv run python prism_cli.py manifest            # verb 元数据清单
 
 顶层选项:
@@ -55,7 +54,7 @@ def _add_to_path(directory: str) -> None:
 
 
 # ============================================================
-# 版本解析（023 / d01 D3 + scope T3）
+# 版本解析
 # ============================================================
 
 def _resolve_version(version_file: str = VERSION_FILE):
@@ -80,7 +79,7 @@ def _resolve_version(version_file: str = VERSION_FILE):
 
 
 # ============================================================
-# Verb 元数据注册表（023 M2 · d01/D4 · scope T2.c）
+# Verb 元数据注册表
 # ============================================================
 #
 # 这是 manifest 的 **唯一真源**（Single Source of Truth）。
@@ -143,11 +142,6 @@ VERB_REGISTRY = {
         "schema_compliant": False,
         "description": "Topic 工件采集（供 Agent 生成摘要）",
     },
-    "pipeline": {
-        "stability": "deprecated",
-        "schema_compliant": False,
-        "description": "已重命名为 finalize（1.2 移除此别名）",
-    },
     "manifest": {
         "stability": "experimental",
         "schema_compliant": True,
@@ -156,13 +150,13 @@ VERB_REGISTRY = {
     "validate-trace": {
         "stability": "experimental",
         "schema_compliant": True,
-        "description": "扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact）；--lenient 旧产物迁移期使用（来源：029/r05 AP-8 P1）",
+        "description": "扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；--lenient 旧产物迁移期使用",
     },
 }
 
 
 # ============================================================
-# Outer schema 辅助（023 M1 · scope T1 / d01 D1）
+# Outer schema 辅助
 # ============================================================
 #
 # 统一 `prism <verb> --json` 外层响应结构：
@@ -370,7 +364,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 
 def cmd_validate_trace(args: argparse.Namespace) -> int:
-    """痕迹义务家族抽检（029/r05 AP-8 P1）。
+    """痕迹义务家族抽检（自 v2.0 起永久封顶 4 族）。
 
     扫描 topic_dir 下产物文件，校验 4 族痕迹块的存在性与字段完整性。
     默认 strict（missing → ERR / rc=1），--lenient 降级为 WARN（rc=0）。
@@ -442,11 +436,11 @@ def _resolve_trace_strict(topic_dir: str, cli_override: str | None) -> tuple[str
       mode: "off" | "lenient" | "strict"
       source: 决策来源（cli / env / frontmatter / default-029 / default）
 
-    优先级（高到低，029/d07 OQ-1 B+C 混合方案）：
+    优先级（高到低）：
       1. CLI flag: --trace-strict / --trace-lenient / --no-trace-validate
       2. ENV: PRISM_TRACE_VALIDATE=off|lenient|strict
       3. README.md / scope.md frontmatter `trace_strict: true|false`
-      4. topic 路径含治理 dogfooding 主战场 (029_) → strict
+      4. topic 路径以特定前缀（如 `029_`）开头 → strict（内置默认）
       5. 默认 lenient（不破坏其他 topic 历史产物）
     """
     # 1. CLI flag
@@ -474,7 +468,7 @@ def _resolve_trace_strict(topic_dir: str, cli_override: str | None) -> tuple[str
             except OSError:
                 pass
 
-    # 4. 029 默认 strict（治理 dogfooding 主战场，可被 frontmatter 关闭）
+    # 4. 特定前缀 topic 默认 strict（内置规则，可被 frontmatter 关闭）
     topic_name = os.path.basename(os.path.normpath(topic_dir))
     if topic_name.startswith("029_"):
         return "strict", "default-029"
@@ -520,19 +514,19 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     执行流程：
       1. tidy --fix（README 指针同步 + review.index 补全）
       2. validate --fix（产物格式校验 + 自动修复）
-      2.5. validate-trace（痕迹义务家族机器抽检 — 029/r07 AP-43）
+      2.5. validate-trace（痕迹义务家族机器抽检）
       3. 输出 scope 更新提示（需要人工确认）
 
-    --decision 与非交互式守门（029/r05 AP-15 P1）：
+    --decision 与非交互式守门：
       - 默认（无 PRISM_NO_INTERACTIVE）：--decision 是可选 audit hint
       - PRISM_NO_INTERACTIVE=1 + 无 --decision → rc=2（决策门必须显式给出，
         禁止 env 静默绕过 — 与 askquestion-fallback.md §2 一致）
       - PRISM_NO_INTERACTIVE=1 + --decision 给出 → 继续跑 tidy/validate，
         output 含 decision_hint 字段供下游 agent / 审计消费
 
-    --trace-strict / --trace-lenient / --no-trace-validate（029/r07 AP-43 OQ-1 B+C 混合）：
+    --trace-strict / --trace-lenient / --no-trace-validate：
       - 默认 lenient（不破坏其他 topic 历史产物）
-      - 029_ 前缀 topic 默认 strict（治理 dogfooding 主战场）
+      - 特定前缀（如 `029_`）topic 默认 strict（内置规则）
       - README.md/scope.md frontmatter `trace_strict: true|false` 显式覆盖
       - ENV PRISM_TRACE_VALIDATE=off|lenient|strict 全局覆盖
       - CLI flag 最高优先级
@@ -542,7 +536,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         print(f"错误: {topic_dir} 不是有效目录", file=sys.stderr)
         return 1
 
-    # 029/r05 AP-15：非交互守门
+    # 非交互守门
     decision_hint = getattr(args, "decision", None)
     no_interactive = os.environ.get("PRISM_NO_INTERACTIVE", "").strip() in ("1", "true", "yes")
     if no_interactive and not decision_hint:
@@ -634,8 +628,8 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     else:
         steps.append({"step": "validate", "status": "skipped", "reason": "validate_product.py 未找到"})
 
-    # ── Step 2.5: validate-trace（029/r07 AP-43 — 痕迹义务家族机器抽检接入）──
-    # OQ-1 B+C 混合方案：029_ topic 默认 strict / 其他 lenient / frontmatter & flag 可覆盖
+    # ── Step 2.5: validate-trace（痕迹义务家族机器抽检接入）──
+    # 默认行为：特定前缀 topic 默认 strict / 其他 lenient / frontmatter & flag 可覆盖
     trace_cli_override = None
     if getattr(args, "no_trace_validate", False):
         trace_cli_override = "off"
@@ -734,19 +728,13 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         "steps": steps,
         "success": not has_error,
         "next_action": "如需更新 scope，请执行 /workflow-scope" if not has_error else "请先解决 validate 错误",
-        # 029/r05 AP-15：audit hints
+        # audit hints
         "decision_hint": decision_hint,
         "interactive_mode": not no_interactive,
     }
 
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 1 if has_error else 0
-
-
-def cmd_pipeline(args: argparse.Namespace) -> int:
-    """已弃用别名：转发到 cmd_finalize，并输出 WARN。"""
-    print("WARN: `prism pipeline` 已重命名为 `prism finalize`（1.2 移除此别名）", file=sys.stderr)
-    return cmd_finalize(args)
 
 
 def cmd_tidy(args: argparse.Namespace) -> int:
@@ -770,7 +758,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
 
 
 def cmd_manifest(args: argparse.Namespace) -> int:
-    """输出 verb 元数据清单（023 M2 · scope T2.a · d01/D2 D4）。
+    """输出 verb 元数据清单。
 
     设计约束：
     - 真源：`VERB_REGISTRY` 代码字典（不解析 Markdown）
@@ -839,7 +827,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
 def _normalize_argv(argv: list[str]) -> list[str]:
     """让 `--json` 同时支持 verb-then-flag 与 flag-then-verb 顺序。
 
-    背景（029/r05 AP-9 P1）：argparse 全局 flag 必须出现在 subcommand 之前，
+    背景：argparse 全局 flag 必须出现在 subcommand 之前，
     但 Agent / 用户常按 UNIX 习惯把 flag 放在末尾（`prism manifest --json`）。
     本预处理把 `--json` 提升到 argv 首位，让两种顺序行为字字等价。
 
@@ -905,7 +893,7 @@ def main():
     # migrate
     p_migrate = subparsers.add_parser("migrate", help="迁移子目录评审格式")
     p_migrate.add_argument("topic_dir", help="专项根目录")
-    p_migrate.add_argument("--review", help="指定评审编号（如 r02）")
+    p_migrate.add_argument("--review", help="指定评审编号（如 rXX）")
     p_migrate.add_argument("--fix", action="store_true", help="执行迁移")
 
     # sync
@@ -916,15 +904,15 @@ def main():
     p_sync.add_argument("--all", action="store_true")
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
-    # finalize（024 T3 · 原 pipeline；AP-15 加 --decision flag；029/r07 AP-43 加 trace flags）
+    # finalize（v2.0 取代 pipeline；含 --decision flag + trace flags）
     p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
     p_finalize.add_argument("--dry-run", action="store_true", help="只预览不修复")
     p_finalize.add_argument(
         "--decision", choices=["accept", "reject", "defer"], default=None,
-        help="决策门 audit hint；PRISM_NO_INTERACTIVE=1 路径下必填（029/r05 AP-15）",
+        help="决策门 audit hint；PRISM_NO_INTERACTIVE=1 路径下必填",
     )
-    # AP-43 痕迹义务家族 trace 校验模式（CLI 覆盖 frontmatter / env / 默认值）
+    # 痕迹义务家族 trace 校验模式（CLI 覆盖 frontmatter / env / 默认值）
     trace_group = p_finalize.add_mutually_exclusive_group()
     trace_group.add_argument("--trace-strict", action="store_true",
         dest="trace_strict",
@@ -935,15 +923,6 @@ def main():
     trace_group.add_argument("--no-trace-validate", action="store_true",
         dest="no_trace_validate",
         help="完全跳过 Step 2.5 痕迹校验（CI 渐进接入用）")
-
-    # pipeline（deprecated alias → finalize，1.2 移除）
-    p_pipeline = subparsers.add_parser("pipeline", help="[已弃用] 请使用 finalize")
-    p_pipeline.add_argument("topic_dir", help="专项根目录")
-    p_pipeline.add_argument("--dry-run", action="store_true", help="只预览不修复")
-    p_pipeline.add_argument(
-        "--decision", choices=["accept", "reject", "defer"], default=None,
-        help="（与 finalize 同 — 1.2 随 alias 一并移除）",
-    )
 
     # tidy（024 T2）
     p_tidy = subparsers.add_parser("tidy", help="工件机械对齐（README 指针 / review.index / frontmatter）")
@@ -961,7 +940,7 @@ def main():
     p_digest.add_argument("project_dir", help="项目根目录")
     p_digest.add_argument("--topic", required=True, help="Topic 目录名")
 
-    # validate-trace（029/r05 AP-8 P1 · 痕迹义务家族机器抽检）
+    # validate-trace（痕迹义务家族机器抽检）
     p_validate_trace = subparsers.add_parser(
         "validate-trace",
         help="扫描痕迹义务家族（task_probe/decision_artifact/intake_gate_out/merge_artifact）",
@@ -972,7 +951,7 @@ def main():
         help="missing 痕迹块降级为 WARN（默认 ERR）；旧产物迁移期使用",
     )
 
-    # manifest（023 M2 · d01/D2）
+    # manifest
     p_manifest = subparsers.add_parser(
         "manifest",
         help="导出 verb 元数据清单（stability + schema_compliant），供 Agent / 工具链消费",
@@ -1006,7 +985,6 @@ def main():
         "tidy": cmd_tidy,
         "status": cmd_status,
         "digest": cmd_digest,
-        "pipeline": cmd_pipeline,
         "manifest": cmd_manifest,
         "validate-trace": cmd_validate_trace,
     }

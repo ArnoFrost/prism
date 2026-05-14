@@ -1,4 +1,95 @@
-## [Unreleased]
+## [Unreleased] — v2.0-canary
+
+> **v2.0 主线四段叙事**
+>
+> 1. **历史包袱清偿** — 产物校验按日期降噪、SKILL.md 复杂度警戒列表、SSOT 边界澄清，落地 v1.x 多轮 review 留下的非破坏性能力增量
+> 2. **deprecated 别名物理移除** — `prism pipeline` 一次性切到 `prism finalize`（v1.1.4 起多轮预告，v2.0 由 argparse 直接 reject）
+> 3. **治理路径默认弱化** — workflow / 痕迹义务家族明确为可选项；core contract 仅 `SDK + Vault Workspace + uv`，开箱即用不强制接入
+> 4. **workflow 复杂度简化** — review skill 主文 −14%、痕迹义务家族永久封顶为 4 族、`detect_review_mode` SSOT 反位修复
+>
+> v2.0-canary 自 main `v1.1.7` (`ba2d503`) 切出，主线 archive → canary dogfood 1 周 → v2.0.0-rc1 → squash merge → v2.0.0 GA。
+
+### Breaking
+
+- **`prism pipeline` 物理移除**：v1.1.x 期 deprecated alias `prism pipeline <topic>` 在 v2.0 由 argparse 直接 reject (`exit 2` + stderr `"invalid choice"`)。v1.1.4-v1.1.7 多轮 CHANGELOG 预告，迁移路径 = `prism finalize`。守门测试回归保护"pipeline 不可被无意识恢复"。
+
+### Added
+
+- **`prism finalize` Step 2.5 痕迹义务机器抽检**（也可独立 `prism validate-trace`）— 4 痕迹义务家族（`task_probe` / `merge_artifact` / `decision_artifact` / `intake_gate_out`）落盘抽检，自 v2.0 起永久封顶在 4 族（详见 [`docs/architecture.md §痕迹义务家族封顶政策`](docs/architecture.md)）。`--trace-strict / --trace-lenient / --no-trace-validate` flag 完整优先级链：CLI flag > ENV > frontmatter > 全局默认 lenient
+- **`validate_product --since-date YYYY-MM-DD`** — 产物校验按 frontmatter `date` 字段抑制历史噪声。被抑制文件不计入 `errors/warnings/files_checked`，但记录到 `suppressed_files / suppressed_count / since_date` JSON 字段供观测。无 frontmatter 或 date 不可解析的文件**不抑制**（保守安全，避免误隐藏新建文件的 issue）。边界 inclusive
+- **`skills_contract_scan.py`** — watch list 模式扫所有 `**/SKILL.md`，输出 lines > 450 或 danger callout 占比 > 8% 的警戒条目。**不 fail 构建**（exit code 始终 0，仅输出 WARN 级提示），用于"未来添码被迫拆分"。`--threshold-lines / --threshold-danger-pct / --quiet` flag
+- **双 JSON 协议显性化**（`docs/cli-contract.md §4.3`）— `prism <verb> --json` envelope（含 `ok/data/meta/errors` 层）vs `bin/doctor --json` flat（直接读字段）
+
+### Changed
+
+- **review skill 主文复杂度收敛** — `skills/workflow/review/SKILL.md` 515 行 → 442 行（−73 行 / −14%）。历史叙事（PostFix Errata 历史 / 历史决策链 / mode 探测演进 / merge_artifact 起源 / 二态产物契约背景等）迁出到 `references/review-maintainer.md` 默认不读层。`skills_contract_scan.py` 默认阈值同步：350 → 450 行（与 v2.0 主文上限对齐）
+- **`detect_review_mode` SSOT 反位修复** — review-lite 报告优先读 frontmatter `type: review-lite` 字段（最强信号），其次 frontmatter `mode: full | quick`，最后 fallback 到正文 `mode=full` 字符串匹配。修复 lite 报告含 mode=full 字面量描述未来 full 评审时被误识为 full 进而触发 `task_probe-missing / merge_artifact-missing` 误报的反位场景
+- **痕迹义务家族永久封顶为 4 族** — `task_probe / merge_artifact / decision_artifact / intake_gate_out` 自 v2.0 起永久封顶，禁止加第 5 族。新场景必须扩展 `phase` 字段或 `required_fields`；修订需重开 Protocol（高门槛刻意保持）
+
+### Docs
+
+- **README + AGENTS** 新增 "workflow / 痕迹义务家族都是可选项" 段（core contract 仅 `SDK + Vault Workspace + uv`）
+- **review-templates frontmatter 元数据约定** — `merged_at / accepted_at / superseded_at / archived_at` 字段语义 + 推荐填法
+- **`topic-sniff-spec.md §0` × `askquestion-fallback.md §7.1`** SSOT 边界互锚 — 维度互补 / schema 不同 / 不重叠
+
+### Chore
+
+- **Node.js 24 全栈迁移** — `.github/workflows/ci.yml` `setup-uv@v5 → v7` + `upload-artifact@v4 → v6`（应对 2026-06-02 Node 24 强制 + 秋季 Node 20 移除）
+
+<details>
+<summary>v2.0-canary 推进过程细节（治理路径，可选阅读）</summary>
+
+#### Breaking — `prism pipeline` 物理移除细节
+
+- **物理动作**：`prism_cli.py` 移除 `cmd_pipeline()` 函数 + `VERB_REGISTRY[pipeline]` + subparser `p_pipeline` + commands dict 入口（5 处 surgical removal）
+- **文档对齐**：`bin/prism` 头注释 / `bin/README.md` 用法块 / `README.md` `prism <verb>` 表格 / `docs/cli-contract.md §5.2` deprecated 行（→ removed v2.0）/ `skills/workflow/review/SKILL.md` Merge Step 6 历史括注全部清理
+- **运行时行为变化**：v1.1.x `prism pipeline <topic>` 输出 `WARN: 已重命名为 finalize` + 转发到 finalize；v2.0 argparse 直接 reject
+
+#### Added — `validate_product --since-date` 细节
+- `validate_product.py` 新增 `_extract_frontmatter_date()` helper + `validate_dir(since_date=...)` 形参 + CLI `--since-date YYYY-MM-DD` flag
+- **真实抑制效果**：某 topic `--since-date 2026-05-01` 抑制 33 个历史文件 / issue 23 → 10 / 55% 降幅
+- CLI 守门：`--since-date 2026/05/01` 等非 ISO 格式 `exit 2`
+- 6 个 `_extract_frontmatter_date` 单测 + 5 个 `validate_dir(since_date=...)` 抑制场景测试 + 1 个 CLI 格式守门测试
+
+#### Added — `skills_contract_scan.py` 细节
+- 新文件 `skills/workflow/shared/scripts/skills_contract_scan.py`（轻量版，~140 行）
+- 当前 reality：`skills/workflow/review/SKILL.md` 442 行（未触发 450 行警戒，与 v2.0 主文上限对齐）；danger 占比 0.97% 远低于 8%
+- 18 个测试 + v2.0 default 阈值测试 + v1.x explicit 阈值守门测试
+
+#### Added — SSOT 边界澄清细节
+- `topic-sniff-spec.md §0` 加 `[!note]` SSOT 边界标注：§0.1 = "skill × suggestion → 默认动作"（routing decision），§7.1 = "skill × 门类 × 实例 → 频率档 × 模板取向"（fallback template）— 维度互补、schema 不同、不重叠
+- `askquestion-fallback.md §7.1` 加对应反向标注 + 变更记录
+- 无代码改动，纯文档对齐 — 关闭"两表是否同一 SSOT"的疑虑
+
+#### Changed — review skill 拆分细节
+- 主文 8 段简化（二态产物契约 / 真并行 / merge_artifact / decision_artifact / 5 要素 / Other / mode 不可信 / next_review_number / 独立发现率）— 保留契约硬约束、迁出历史背景到 `references/review-maintainer.md`
+- references 加载策略：`SKILL.md` 启动期注入指针，agent 按需 lazy-load `references/review-maintainer.md`
+
+#### Changed — `detect_review_mode` SSOT 反位修复细节
+- 新增 `_parse_frontmatter_field` helper：解析文件开头 `---...---` frontmatter 块的字段值（支持去引号 / 去末尾注释）
+- 优先级反转：frontmatter `type: review-lite` (最强) > frontmatter `mode: full | quick` > 正文字符串匹配 (弱 fallback)
+- 4 个新测试：reality anchor (lite frontmatter + body 含 mode=full 字面量应识 quick) / `type:review` + `mode:full` → full / frontmatter 字段去引号去注释 / 无 frontmatter 返 None
+
+#### Changed — 痕迹义务家族封顶政策细节
+- `validate_trace.py` `TRACE_FAMILIES` dict 锚定 4 族 schema
+- `docs/architecture.md` 新加 §痕迹义务家族封顶政策段
+- 6 守门测试：4 族 count + 4 族 key 精确匹配 + 文档段落存在性 + SHA-256 hash 锚定 + doc-code 双向 sync + 语义锚点 ≥ 3
+
+#### v2.0 仍在路上
+- **桥接路径 UX 增强**：`prism status` / `sniff` 在 `workspace.*.local` 桥接路径下文案 + sniff_lib 探测逻辑双重增强（P1 排期，不阻 GA）
+- **对外面收敛 Tier 1+2**：默认路径脱敏（README/AGENTS/CLI argparse/cli-contract）+ pipeline 残留扫除 + maintainer 跳转弱化（v2.0 GA 前完成）
+- **v2.1 计划**：CHANGELOG 单流叙事固化、`audience: maintainer` frontmatter 元数据、4 族 → 单 `workflow_trace` schema 合并、机械守门 CI gate（WARN 级）、contributing.md
+
+#### 总测试计数
+- pytest 207 → 248 passed（v2.0-canary 累计新增 41 测试，零回归）+ finalize 主线 topic 4/4 strict 全绿
+
+#### 历史决策链路（按时间倒序）
+- v2.0-canary 切分支策略：自 main `v1.1.7` (`ba2d503`) 拉出，main 仅接 hotfix
+- v2.0 简化方向重定位：从"深语义 enforce"转为"workflow 简化 + 治理弱化"
+- 取消的硬错误路径：`raw_paths` 文件存在性 / `landed_at_threshold` 一致性 / `accept→written` 关联（已改为 opt-in flag）
+- 取消的 strict 默认：新 topic 默认仍 `trace_strict: false`（不强制全局迁移）
+
+</details>
 
 ## [v1.1.7] — 2026-05-13
 

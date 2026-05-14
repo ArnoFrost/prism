@@ -474,3 +474,116 @@ class TestCheckReviewStructure:
         # 全部应该是 WARN，不是 ERROR
         for issue in raw_issues:
             assert issue.level == "WARN"
+
+
+# ============================================================
+# 030/AP-72 r14 OQ-2 since_date — frontmatter date 抑制开关
+# ============================================================
+
+class TestExtractFrontmatterDate:
+    """_extract_frontmatter_date 单元测试 — frontmatter date 字段提取。"""
+
+    def test_extracts_iso_date(self):
+        lines = ["---\n", "date: 2026-04-15\n", "type: review\n", "---\n"]
+        assert vp._extract_frontmatter_date(lines) == "2026-04-15"
+
+    def test_strips_inline_comment(self):
+        lines = ["---\n", "date: 2026-04-15  # 历史日期\n", "---\n"]
+        assert vp._extract_frontmatter_date(lines) == "2026-04-15"
+
+    def test_strips_quotes(self):
+        lines = ["---\n", 'date: "2026-04-15"\n', "---\n"]
+        assert vp._extract_frontmatter_date(lines) == "2026-04-15"
+
+    def test_no_frontmatter_returns_none(self):
+        assert vp._extract_frontmatter_date(["# Just markdown\n"]) is None
+
+    def test_no_date_field_returns_none(self):
+        lines = ["---\n", "type: review\n", "---\n"]
+        assert vp._extract_frontmatter_date(lines) is None
+
+    def test_unclosed_frontmatter_returns_none_after_200_lines(self):
+        lines = ["---\n"] + ["body\n"] * 250
+        assert vp._extract_frontmatter_date(lines) is None
+
+
+class TestSinceDateSuppression:
+    """validate_dir(since_date=...) 抑制行为守门测试 — 030/AP-72。
+
+    设计意图：让 r14 P0-3 历史 56 WARN 类场景（v1.x 早期产物超龄）可被显式抑制，
+    既不重写历史也不让噪声污染当前 finalize 链路。
+    """
+
+    def _make_topic(self, tmp_path, files: dict[str, str]):
+        topic = tmp_path / "topic"
+        topic.mkdir()
+        for name, content in files.items():
+            (topic / name).write_text(content, encoding="utf-8")
+        return topic
+
+    def test_no_since_date_full_scan(self, tmp_path):
+        """不传 --since-date：行为与 v1.x 完全一致，无 suppressed_files 字段。"""
+        topic = self._make_topic(tmp_path, {
+            "r01_test.md": "---\ndate: 2026-01-01\ntype: review\ntags: [t]\n---\n# R01\n",
+        })
+        result = vp.validate_dir(str(topic), "ofm")
+        assert "suppressed_files" not in result
+        assert "since_date" not in result
+        assert result["files_checked"] == 1
+
+    def test_files_before_since_date_suppressed(self, tmp_path):
+        """frontmatter date < since_date 的文件被抑制，不计入 errors/warnings/files_checked。"""
+        topic = self._make_topic(tmp_path, {
+            "r01_old.md": "---\ndate: 2026-01-01\ntype: review\ntags: [t]\n---\n# R01\n",
+            "r02_new.md": "---\ndate: 2026-05-10\ntype: review\ntags: [t]\n---\n# R02\n",
+        })
+        result = vp.validate_dir(str(topic), "ofm", since_date="2026-05-01")
+        assert result["since_date"] == "2026-05-01"
+        assert result["suppressed_count"] == 1
+        assert len(result["suppressed_files"]) == 1
+        assert result["suppressed_files"][0]["file"] == "r01_old.md"
+        assert result["suppressed_files"][0]["frontmatter_date"] == "2026-01-01"
+        assert result["files_checked"] == 1
+
+    def test_files_after_since_date_still_scanned(self, tmp_path):
+        """frontmatter date >= since_date 的文件正常扫描，issues 正常累计。"""
+        topic = self._make_topic(tmp_path, {
+            "r01_new.md": "---\ndate: 2026-05-10\ntype: review\ntags: [t]\n---\n# R01\n",
+        })
+        result = vp.validate_dir(str(topic), "ofm", since_date="2026-05-01")
+        assert result["suppressed_count"] == 0
+        assert result["files_checked"] == 1
+
+    def test_files_without_frontmatter_not_suppressed(self, tmp_path):
+        """无 frontmatter 或 date 不可解析的文件不抑制（保守安全）。"""
+        topic = self._make_topic(tmp_path, {
+            "r01_no_fm.md": "# R01 just markdown\n",
+        })
+        result = vp.validate_dir(str(topic), "ofm", since_date="2026-05-01")
+        assert result["suppressed_count"] == 0
+        assert result["files_checked"] == 1
+
+    def test_equal_date_not_suppressed(self, tmp_path):
+        """frontmatter date == since_date 不抑制（边界 inclusive）。"""
+        topic = self._make_topic(tmp_path, {
+            "r01_boundary.md": "---\ndate: 2026-05-01\ntype: review\ntags: [t]\n---\n# R01\n",
+        })
+        result = vp.validate_dir(str(topic), "ofm", since_date="2026-05-01")
+        assert result["suppressed_count"] == 0
+        assert result["files_checked"] == 1
+
+
+class TestSinceDateCliValidation:
+    """CLI --since-date 参数格式守门 — 拒绝非 YYYY-MM-DD 格式。"""
+
+    def test_invalid_format_exits_with_code_2(self, tmp_path):
+        import subprocess
+        script = os.path.join(
+            os.path.dirname(__file__), "..", "..", "review", "scripts", "validate_product.py"
+        )
+        result = subprocess.run(
+            [sys.executable, script, str(tmp_path), "--since-date", "2026/05/01"],
+            capture_output=True, text=True, timeout=5,
+        )
+        assert result.returncode == 2
+        assert "YYYY-MM-DD" in result.stderr

@@ -105,19 +105,53 @@ def _is_intake_file(name: str) -> bool:
 _MODE_FULL_HINTS = ("mode=full", "mode: full", "mode full", "**full**", "[full]")
 
 
-def detect_review_mode(text: str) -> str:
-    """从 review 主报告正文/frontmatter 推断 mode（full / quick / unknown）。
+def _parse_frontmatter_field(text: str, field: str) -> str | None:
+    """从文件开头 frontmatter (---...---) 提取指定字段的 value。
 
-    优先级：
-    1. frontmatter `mode: full` / `mode: quick`
-    2. 正文 `mode=full` / `[!info]` 协议段提及 mode
-    3. 文件名含 'lite' → quick
+    限制：
+    - frontmatter 必须以 `---` 开头（文件首行）
+    - 仅解析第一个 frontmatter 块
+    - 返回 value 已去引号 / 去末尾注释；未找到返回 None
     """
-    head = text[:3000].lower()
-    if re.search(r"^mode:\s*full\b", head, re.MULTILINE):
-        return "full"
-    if re.search(r"^mode:\s*quick\b", head, re.MULTILINE):
+    head = text[:3000]
+    fm_match = re.match(r"^---\s*\n(.*?)^---\s*$", head, re.MULTILINE | re.DOTALL)
+    if not fm_match:
+        return None
+    fm_body = fm_match.group(1)
+    field_match = re.search(rf"^{re.escape(field)}\s*:\s*(.+?)$", fm_body, re.MULTILINE)
+    if not field_match:
+        return None
+    value = field_match.group(1).strip()
+    value = re.sub(r"\s+#.*$", "", value).strip()
+    value = value.strip("'\"")
+    return value
+
+
+def detect_review_mode(text: str) -> str:
+    """从 review 主报告 frontmatter / 正文推断 mode（full / quick / unknown）。
+
+    优先级（高 → 低）：
+    1. **frontmatter `type: review-lite` → quick**（最强信号，防正文 mode=full 字面量误判）
+    2. frontmatter `mode: full | quick`（mode=full review 显式声明）
+    3. 正文 `mode=full` / `[!info]` 协议段提及 mode → full（弱 fallback）
+    4. 正文含 `review-lite` / `mode=quick` → quick
+
+    设计动因：早期版本仅做 frontmatter mode 字段 + 正文字符串匹配，
+    导致 review-lite 报告在描述未来 full 评审或 mode=full 字面量时
+    被误识别为 mode=full → 走 full review 痕迹义务路径 → finalize 误报
+    `task_probe-missing` / `merge_artifact-missing`。优先级 1 修复这一边角。
+    """
+    type_field = _parse_frontmatter_field(text, "type")
+    if type_field == "review-lite":
         return "quick"
+
+    mode_field = _parse_frontmatter_field(text, "mode")
+    if mode_field == "full":
+        return "full"
+    if mode_field == "quick":
+        return "quick"
+
+    head = text[:3000].lower()
     for hint in _MODE_FULL_HINTS:
         if hint.lower() in head:
             return "full"

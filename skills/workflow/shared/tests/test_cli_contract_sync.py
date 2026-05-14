@@ -76,15 +76,19 @@ class TestManifestCommand:
             assert isinstance(verb["description"], str) and verb["description"]
 
     def test_manifest_contains_core_verbs(self):
-        """注册表不能漏掉当前 10 个业务 verb + manifest 自己（共 11 条）。"""
+        """注册表不能漏掉当前 v2.0 核心 verb（030/AP-71 后 pipeline 已物理移除，validate-trace 已并入正式表）。"""
         result = subprocess.run(
             [str(BIN_PRISM), "--json", "manifest"],
             capture_output=True, text=True, timeout=10,
         )
         envelope = json.loads(result.stdout)
         verb_names = {v["verb"] for v in envelope["data"]["verbs"]}
-        expected = {"sniff", "validate", "archive", "migrate", "sync", "finalize", "tidy", "status", "digest", "pipeline", "manifest"}
+        expected = {"sniff", "validate", "archive", "migrate", "sync", "finalize", "tidy", "status", "digest", "validate-trace", "manifest"}
         assert expected.issubset(verb_names), f"缺失: {expected - verb_names}"
+        assert "pipeline" not in verb_names, (
+            "v2.0 contract violation: `prism pipeline` 已物理移除 (030/AP-71 atomic_now)，"
+            "不应再出现在 VERB_REGISTRY"
+        )
 
     def test_schema_compliant_includes_m1_m2_verbs(self):
         """schema_compliant=True 的 verb 至少覆盖 M1/M2 迁移的 sniff / validate / manifest 三条。"""
@@ -188,7 +192,7 @@ class TestContractSync:
         orig = CONTRACT_MD.read_text(encoding="utf-8")
         manifest_row = (
             "| `prism manifest` | experimental | ✅ | "
-            "导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |\n"
+            "导出 verb 元数据（stability + schema_compliant）；参数级 schema 延后批 |\n"
         )
         assert manifest_row in orig, "fixture 未命中 manifest 行 —— 如果原表格格式改了请同步更新本测试"
         tainted = orig.replace(manifest_row, "", 1)

@@ -116,6 +116,52 @@ class TestDetectReviewMode:
         text = "---\ntype: review-lite\n---\n# Review\n"
         assert vt.detect_review_mode(text) == "quick"
 
+    def test_lite_type_overrides_full_literal_in_body(self):
+        """r02 F0 reality anchor — type: review-lite 优先于正文 mode=full 字面量。
+
+        场景：lite 报告在描述未来 full 评审计划时，正文出现 mode=full 字面量。
+        旧版本会 fall-through 到正文字符串匹配 → 误识为 full → finalize 报
+        task_probe-missing / merge_artifact-missing。修复后 type 优先级最高。
+        """
+        text = (
+            "---\n"
+            "date: 2026-05-14\n"
+            "status: done\n"
+            "type: review-lite\n"
+            "tags: [review, lite]\n"
+            "---\n\n"
+            "# r02 中场咨询\n\n"
+            "下一轮 r03 将以 mode=full 启动 — 三角色真并行评审。\n"
+            "本 lite 不强制 task_probe / merge_artifact 痕迹义务。\n"
+        )
+        assert vt.detect_review_mode(text) == "quick"
+
+    def test_full_type_with_mode_field(self):
+        """type: review + mode: full 应识别为 full（review-lite 不在场时走 mode 字段）。"""
+        text = (
+            "---\ntype: review\nmode: full\n---\n"
+            "# r03 对外面收敛\n\n这是一个 mode=full 评审。\n"
+        )
+        assert vt.detect_review_mode(text) == "full"
+
+    def test_parse_frontmatter_field_basic(self):
+        """frontmatter field 解析 — 字符串去引号 / 去注释。"""
+        text = (
+            "---\n"
+            "date: 2026-05-14\n"
+            "type: 'review-lite'  # explicit\n"
+            "status: \"done\"\n"
+            "---\n# Body\n"
+        )
+        assert vt._parse_frontmatter_field(text, "type") == "review-lite"
+        assert vt._parse_frontmatter_field(text, "status") == "done"
+        assert vt._parse_frontmatter_field(text, "missing") is None
+
+    def test_parse_frontmatter_field_no_frontmatter(self):
+        """无 frontmatter 文件返回 None。"""
+        text = "# Plain markdown\n\n no frontmatter here\n"
+        assert vt._parse_frontmatter_field(text, "type") is None
+
     def test_unknown(self):
         text = "# Just a title\n"
         assert vt.detect_review_mode(text) == "unknown"

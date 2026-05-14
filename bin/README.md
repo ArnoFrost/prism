@@ -121,7 +121,7 @@ bin/doctor --scope <name>         # 只跑指定范围
 | `sync` | prism 三仓 Git 远端同步状态 |
 | `cli` | `prism` 寻址体检（PATH + symlink） |
 | `config` | `prism.local.yaml` 必填字段 + 路径可达性 |
-| `release` | 聚合以上全部（1.0 发布就绪闸门） |
+| `release` | 聚合以上全部（release 发布就绪闸门） |
 
 `--rollback` 当前用于 CLI 寻址层回滚：删除 `--fix` 写入的 rc anchor 和 `~/.local/bin/prism` symlink。`--output` 适合生成 release health JSON 或给其他工具链消费。
 
@@ -141,20 +141,21 @@ prism finalize <topic_dir> [--dry-run] [--decision accept|reject|defer]
 prism tidy <project_dir> [--fix] [--topic <name>]
 prism status <project_dir> [--format json|markdown]
 prism digest <project_dir> --topic <name>
-prism validate-trace <topic_dir> [--lenient]   # 029/r05 AP-8 — 痕迹义务家族机器抽检
-prism pipeline <topic_dir> [--dry-run]   # deprecated alias → finalize（不支持 trace flag）
+prism validate-trace <topic_dir> [--lenient]   # 痕迹义务家族机器抽检（自 v2.0 起永久封顶 4 族）
 prism manifest                           # 导出 verb 元数据（stability + schema_compliant）
 prism --json manifest                    # 机器可读命令面总览
 ```
 
 `bin/prism` 是 bash 壳，exec `skills/workflow/shared/scripts/prism_cli.py`。寻址问题走 `bin/doctor --scope cli --fix`（写 rc 锚点 + 建 `~/.local/bin/prism` symlink）。
 
-当前 `prism` 命令面可分为三类：
+当前 `prism` 命令面可分为四类：
 
 - **核心 workflow verb**：`sniff / validate / archive / migrate / sync`
-- **024 新增/收敛 verb**：`finalize / tidy / status / digest`
-- **029 治理 verb**：`validate-trace`（痕迹义务家族机器抽检；finalize Step 2.5 自动串联）
-- **元信息与兼容层**：`manifest`、`pipeline`（deprecated alias）
+- **收尾串联 verb**：`finalize / tidy / status / digest`（v1.1.x 引入）
+- **痕迹治理 verb**：`validate-trace`（痕迹义务家族机器抽检；finalize Step 2.5 自动串联）
+- **元信息**：`manifest`
+
+> **v2.0 breaking change**：`prism pipeline` deprecated alias 已物理移除。v1.1.x 用户请改用 `prism finalize`。
 
 如需查看当前 CLI 能力面的**机器可见真源**，优先运行：
 

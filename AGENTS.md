@@ -115,7 +115,7 @@ Prism vault (iCloud)/
 - 保持状态与逻辑分离。
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
-- **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**（029/r07 AP-46）。core contract 只含 SDK + Vault + `uv`；review / decision / `task_probe` 等只在结构化协作场景启用。Agent 不应当把"必须先用 workflow"作为协作前置条件。
+- **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + Vault + `uv`；review / decision / `task_probe` 等只在结构化协作场景启用。Agent 不应当把"必须先用 workflow"作为协作前置条件。
 
 ---
 
