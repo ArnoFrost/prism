@@ -8,9 +8,9 @@ Prism 是一套**本地优先、无侵入**的个人 AI 工作流管线。它把
 
 > 共享规则，本地状态，清晰边界。
 
-当前阶段已统一按 `v1.1.0` 对齐：在 `v1.0.0` 里程碑之上，继续纳入 CLI contract hardening、CLI evolution、文档叙事补齐与跨层 update/apply 机制收敛；当前重点转向真实使用观察与工作流顺手度验证。
+当前阶段口径：`v2.0-canary`（v1.0/v1.1.x 是历史里程碑）。v2.0 主线四段叙事——历史包袱清偿 / `prism pipeline` deprecated alias 物理移除 / 治理路径默认弱化（workflow + 痕迹义务家族明确为可选项）/ workflow 复杂度简化——已在 canary 完成；当前重点转向 dogfood 实证与 GA 节奏收尾。
 
-如果你想先快速判断“Prism 现在到底是什么、为什么已经成立、还差什么”，可直接阅读 [docs/prism-1.0.md](docs/prism-1.0.md)。
+如果你想先快速判断"Prism 现在到底是什么、为什么已经成立、还差什么"，可直接阅读 [docs/prism-2.0.md](docs/prism-2.0.md)。
 
 ---
 

@@ -2,7 +2,7 @@
 
 > 本文件固化 `bin/` 与 `prism <verb>` 命令面分层 / 稳定性承诺 / "30 秒加 verb" 设计门槛 / 双协议范围。
 > 所有对 `bin/` 与 `prism <verb>` 的新增、改名、删除必须引用本文作为依据。
-> 版本：v1.1（随 SDK `VERSION` 同步升级）
+> 版本：v2.0-canary（随 SDK `VERSION` 同步升级）
 
 ---
 
@@ -174,7 +174,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 
 ---
 
-## 5 当前 CLI 清单（v1.1）
+## 5 当前 CLI 清单（v2.0-canary）
 
 ### 5.1 `bin/` 一览
 
