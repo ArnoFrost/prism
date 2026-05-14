@@ -188,7 +188,7 @@ prism/
 │   ├── rename-artifacts             # 产物批量重命名
 │   ├── prism-local-schema.yaml
 │   └── README.md
-├── skills/                          # 技能层（v1.0 已含内置 workflow / workspace 技能）
+├── skills/                          # 技能层（自 v1.0 起内置 workflow / workspace 技能）
 │   ├── schema/
 │   │   ├── skill.schema.yaml
 │   │   ├── skills-catalog.yaml
@@ -298,9 +298,27 @@ prism/
 
 **Phase 6 — v1.0 验证与 CLI 收敛** ✅
 
-- [x] 跨项目验证（TVKMM 完整跑通 13 轮评审 + 8 个决策，011 专项实证）
-- [x] 触发 010 topic 周期性回顾（设计哲学 + 远期愿景校准，scope 11/13）
-- [x] 023 CLI contract hardening：outer schema / manifest / contract sync gate 收敛
+- [x] 跨项目验证（完整跑通 13 轮评审 + 8 个决策的实证案例）
+- [x] 周期性设计哲学回顾 + 远期愿景校准（独立 topic）
+- [x] CLI contract hardening：outer schema / manifest / contract sync gate 收敛
 - [x] CLI evolution（v1.1.x 阶段）：`finalize / tidy / status / digest` 上收为 `prism <verb>`，`pipeline` 降级为 deprecated alias（自 v2.0 起物理移除）
 - [x] `bin/doctor` 补齐 `--rollback` / `--output` 与 release health 输出
+
+**Phase 7 — v2.0 简化与对外面收敛** 🚧 (canary)
+
+- [x] **历史包袱清偿**：产物校验按日期降噪、SKILL.md 复杂度警戒列表、SSOT 边界澄清
+- [x] **deprecated 别名物理移除**：`prism pipeline` 一次性切到 `prism finalize`（v1.1.4 起多轮预告，v2.0 由 argparse 直接 reject）
+- [x] **治理路径默认弱化**：workflow / 痕迹义务家族明确为可选项；core contract 仅 `SDK + Vault Workspace + uv`，开箱即用不强制接入
+- [x] **workflow 复杂度简化**：review skill 主文 −14% (515→442)、痕迹义务家族永久封顶为 4 族、`detect_review_mode` SSOT 反位修复
+- [x] **对外面收敛**：默认路径脱敏（README / AGENTS / CLI argparse / cli-contract / SKILL 主文）+ pipeline 残留扫除 + maintainer 文档跳转弱化
+- [ ] **dogfood 实证**：用 v2.0 简化后的默认 lenient 行为跑两个非 Prism 自身 topic 的完整 review
+- [ ] **GA 节奏**：`v2.0.0-rc1` tag → canary 内 dogfood 1 周 → squash merge main → `v2.0.0` tag
+
+**Phase 8 — v2.1 规划** 📅
+
+- [ ] `docs/migration.md`：v1.x → v2.0 用户感知变化清单 + Breaking 表 + 替换脚本指引
+- [ ] `audience: maintainer` 元数据：maintainer 文档与用户文档显性分层
+- [ ] 机械守门 WARN：默认路径集合扫描器，对内部 ID 模式输出 WARN（audience=maintainer 豁免）
+- [ ] `docs/contributing.md`：贡献者层入口 + 对外写作 checklist + 链接禁用规则
+- [ ] 发布门禁约束：CI 检测 CHANGELOG / migration.md 是否同步更新
 
