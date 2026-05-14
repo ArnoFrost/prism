@@ -18,6 +18,10 @@
 - `~/prism-skills/shared` 是指向 `~/prism/skills/workflow/shared` 的软链接；不要在 `prism-skills` 仓库提交 `shared/` 下的文件。
 - `prism.local.yaml`、`AGENTS.local.md`、`workspace.*.local` 是本地状态，不提交。
 
+### 跨仓 commit 引用边界
+
+如果 SDK 文档 / 工作区记录里嵌入了 `~/prism-skills` 的 commit hash，请把这种引用视作**当时所见的 point-in-time 证据**，而不是长期稳定的指针。`~/prism-skills` 仓库做 rebase / squash / cherry-pick 后，这些 hash 可能不再可达；维护者**不需要回溯修补**已落盘的历史记录。如果某个跨仓改动需要长期可追溯，应在 `~/prism-skills` 侧打 tag 并在 SDK 一侧引用 tag 名。
+
 ## 对外写作 Checklist
 
 写 README、SETUP、docs、SKILL 主文或模板时，先检查：
