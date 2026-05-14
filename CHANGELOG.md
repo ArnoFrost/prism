@@ -7,6 +7,7 @@
 - **痕迹义务内部 schema 归一化**：`validate_trace.py` 新增内部 `workflow_trace` schema，以 phase 派生既有 4 族配置；外部产物块、校验 family 名称和 4 族封顶契约保持不变。
 - **发布门禁约束**：新增 `release_gate.py` 与 CI 步骤；当提交使用 conventional breaking 标记或 `BREAKING CHANGE` footer 时，同一 diff 必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
 - **CI release_gate 步骤启用 pipefail**：在该 step 显式声明 `shell: bash`（自动带 `set -eo pipefail`），避免 `release_gate.py … | tee` 中上游脚本非零退出被 `tee` 吞成功，导致门禁可被静默旁路。
+- **CI checkout 拉完整历史**：`actions/checkout@v5` 加 `fetch-depth: 0`，让 release_gate 在 push 事件下能解析 `before` SHA 完成 `git diff base..head`，避免 shallow clone 下报 `bad object` 让 CI 误红。
 
 ### Docs
 

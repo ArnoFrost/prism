@@ -43,6 +43,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # release_gate 需要 git diff base..head；默认 fetch-depth: 1（shallow clone）
+          # 会让 push 事件的 `before` SHA 在本地不可达 → release_gate 报 `bad object`
+          # 让 step 真红。本仓 172 commits / 8.5MB，fetch-depth: 0 无性能代价。
+          fetch-depth: 0
 
       - name: Setup uv
         # 029/d09 AP-65 — 升级到 v7（2025-10-07）以默认 Node.js 24，
