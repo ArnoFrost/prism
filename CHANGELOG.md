@@ -1,4 +1,14 @@
-## [Unreleased]
+## [Unreleased] — v2.0-canary
+
+> **分支策略变更（2026-05-14）**：从 main `v1.1.7` (`ba2d503`) 拉出 `v2.0-canary` 分支，承载 030 专题全部破坏性改动（AP-71 atomic_now verb 迁移 / AP-63 深语义 hard error / AP-69 全 topic strict 默认 / AP-55-b sniff_lib 探测增强 / 027 r14 系列收尾）。main 仅接受 hotfix；030 archive → canary dogfood 1 周 → v2.0.0-rc1 → squash merge → v2.0.0 GA。详见 [030 scope §发布与分支策略](workspace.prism.local/topics/030_trace-enforce-depth/scope.md)。
+
+### 即将进入 v2.0 的破坏性变更（仅 v2.0-canary 可见，不影响 main 用户）
+
+- **AP-71 atomic_now**：`prism` 9 处 verb 引用统一切换（影响 cli-contract / SKILL.md / bin/prism / docs/architecture）
+- **AP-63 深语义 enforce**：`raw_paths` 文件存在性 / `landed_at_threshold` 一致性升级为 hard error；`accept→written` 关联允许 frontmatter override 降级
+- **AP-69 全 topic strict 默认**：新 topic 默认 `trace_strict: true`；028 + 026 作为示例迁移
+- **AP-55-b 桥接路径 UX**：`prism status` / `sniff` 在 `workspace.*.local` 桥接路径下文案 + sniff_lib 探测逻辑双重增强
+- **r14 系列收尾**（AP-71/72/73/74）：since_date 噪声抑制 + incremental_only 警戒列表 + sniff_as_ssot 单源化
 
 ## [v1.1.7] — 2026-05-13
 
