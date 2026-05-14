@@ -12,6 +12,16 @@
 > - SKILL.md 仅描述「该 skill 在收到 suggestion=X 时的默认动作」，阈值 / 字段语义需链回本文件
 > - 若实现（`sniff_lib.detect_topic_affinity`）与本文件描述偏离，以**实现为准**，需同步反向修正本文件，不得让 SKILL.md 复制错误阈值
 
+> [!note]
+> **SSOT 边界澄清**（030/AP-74 r14 OQ-6 sniff_as_ssot）— 本文件与 [askquestion-fallback.md](references/askquestion-fallback.md) 的 SSOT 范围切分：
+>
+> | 文件 | 管辖 SSOT | 表 schema |
+> |------|----------|----------|
+> | **本文件 §0.1** | **skill × suggestion → 默认动作**（routing decision）| `Skill / 频率 / cohesion / ask_user / new_topic` |
+> | **askquestion-fallback.md §7.1** | **skill × 门类 × 实例 → 频率档位 × 模板取向**（fallback template selection）| `Skill / 门类 / 实例 / 频率特征 / 模板取向` |
+>
+> 两表 schema 不同、维度互补、不重叠：本表用于"嗅探阶段决定路由意图"，§7.1 用于"fallback 阶段决定模板严格度"。任何 skill 内的频率分档讨论都应链回本表（路由）或 §7.1（fallback），不得在 SKILL.md 中再造第三套。
+
 ### 0.1 频率决定默认行为（Frequency-Driven Defaults）
 
 不同 skill 对**同一 `topic_affinity.suggestion`** 可有不同默认动作，由该 skill 的频率特征决定。这是有意为之的设计差异，不是待对齐的不一致：

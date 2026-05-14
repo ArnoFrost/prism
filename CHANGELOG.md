@@ -14,12 +14,40 @@
 - **依据**：[027/r14 P0-2](workspace.prism.local/topics/027_mini-core-delivery-contract/reviews/r14_近轮核心工作流技能修正盘点与反劣化能力评审.md)（atomic_now 一次切，r14 OQ-1 用户已预决）+ [030/d09 §3.3 AP-71](workspace.prism.local/topics/030_trace-enforce-depth/plan.md)
 - **契约对齐**：`docs/cli-contract.md §2.2` 改名示例段同步更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径），与 v1.1.x 承诺的"v1.2 移除"对齐到 v2.0 落地
 
-### 仍在路上的 v2.0 破坏性变更（v2.0-canary Wave 1-5 推进中）
+#### Added — 027 r14 系列收尾（030/AP-72 + AP-73 + AP-74 Wave 5 三项预决动作）
+
+**非破坏性增量能力**（v1.x → v2.0 增量，无 deprecated 项），三项打包一次落地：
+
+- **AP-72 `validate_product --since-date YYYY-MM-DD`（since_date 噪声抑制 / r14 OQ-2）**
+  - `validate_product.py` 新增 `_extract_frontmatter_date()` helper + `validate_dir(since_date=...)` 形参 + CLI `--since-date YYYY-MM-DD` flag
+  - frontmatter `date` 字段早于 since_date 的文件被抑制（既不计入 errors/warnings 也不计入 files_checked），但记录到 `suppressed_files / suppressed_count / since_date` 三个 JSON 字段供调用方观测
+  - 无 frontmatter 或 date 不可解析的文件**不抑制**（保守安全，避免误隐藏新建文件的 issue）
+  - 边界 inclusive：frontmatter date == since_date 不抑制
+  - **真实抑制效果**：027 topic `--since-date 2026-05-01` 抑制 33 个历史文件 / issue 从 23 (11 ERROR + 12 WARN) 降到 10 (4 + 6) / 55% 降幅，与 r14 P0-3 当时 56 WARN 噪声场景吻合
+  - CLI 守门：`--since-date 2026/05/01` 等非 ISO 格式 `exit 2`
+  - 6 个 `_extract_frontmatter_date` 单测 + 5 个 `validate_dir(since_date=...)` 抑制场景测试 + 1 个 CLI 格式守门测试
+
+- **AP-73 `skills_contract_scan.py`（incremental_only 警戒列表 / r14 P0-5）**
+  - 新文件 `skills/workflow/shared/scripts/skills_contract_scan.py`（轻量版，~140 行）
+  - 扫所有 `**/SKILL.md`，输出 watch_list（lines > 350 或 danger callout 占比 > 8% 触发）+ thresholds + scanned 计数
+  - **不 fail 构建**（exit code 始终 0，仅输出 WARN 级提示）— r14 incremental_only 决议"不压缩存量，未来添码被迫拆分"
+  - 当前 reality：`skills/workflow/review/SKILL.md` 515 行触发 lines 警戒（v1.x 时 398 行未触线，v2.0 时增长 30% 进入 watch_list）；danger 占比 0.97% 远低于 8%（比 r14 时 9.3% 大幅下降）
+  - `--threshold-lines` / `--threshold-danger-pct` / `--quiet` CLI flag
+  - 18 个测试（6 `count_danger_callouts` 单测 + 4 `scan_skill_file` + 4 `scan_all` + 4 CLI 集成）
+
+- **AP-74 `topic-sniff-spec §0.1` × `askquestion-fallback §7.1` 两表 SSOT 边界澄清（sniff_as_ssot / r14 OQ-6）**
+  - `topic-sniff-spec.md §0` 加 `[!note]` SSOT 边界标注：§0.1 = "skill × suggestion → 默认动作"（routing decision），§7.1 = "skill × 门类 × 实例 → 频率档 × 模板取向"（fallback template）— 维度互补、schema 不同、不重叠
+  - `askquestion-fallback.md §7.1` 加对应反向标注 + 变更记录补 2026-05-14 行
+  - 无代码改动，纯文档对齐 — 关闭"两表是否同一 SSOT"的疑虑
+
+- **依据**：[027/r14 P0-3 / P0-5 / OQ-6](workspace.prism.local/topics/027_mini-core-delivery-contract/reviews/r14_近轮核心工作流技能修正盘点与反劣化能力评审.md) + [030/plan Wave 5](workspace.prism.local/topics/030_trace-enforce-depth/plan.md)
+- **测试**：207 → 237 passed (新增 30 测试) + finalize 030 4/4 步全绿 + check_skill_deprecation 0 违规
+
+### 仍在路上的 v2.0 破坏性变更（v2.0-canary Wave 1-3 推进中）
 
 - **AP-63 深语义 enforce**（Wave 1）：`raw_paths` 文件存在性 / `landed_at_threshold` 一致性升级为 hard error；`accept→written` 关联允许 frontmatter override 降级
 - **AP-69 全 topic strict 默认**（Wave 3）：新 topic 默认 `trace_strict: true`；028 + 026 作为示例迁移
 - **AP-55-b 桥接路径 UX**（Wave 3）：`prism status` / `sniff` 在 `workspace.*.local` 桥接路径下文案 + sniff_lib 探测逻辑双重增强
-- **r14 系列收尾**（Wave 5 AP-72/73/74）：since_date 噪声抑制 + incremental_only 警戒列表 + sniff_as_ssot 单源化
 
 ## [v1.1.7] — 2026-05-13
 

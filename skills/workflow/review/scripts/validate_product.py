@@ -333,6 +333,31 @@ def check_ofm_callout_density(lines: list[str], relpath: str) -> list[Issue]:
     return [Issue(severity, relpath, 1, "ofm-low-callout-density", msg, False)]
 
 
+def _extract_frontmatter_date(lines: list[str]) -> str | None:
+    """从 markdown 文件 frontmatter 提取 `date` 字段值（030/AP-72 r14 OQ-2 since_date）。
+
+    返回 ISO date 字符串（如 "2026-04-15"）或 None（无 frontmatter / 无 date 字段 / 解析失败）。
+    用法：与 --since-date 抑制开关联动，frontmatter date < since_date 的文件会被抑制扫描。
+
+    设计意图（r14 OQ-2 用户决议 since_date 而非批量重写历史）：
+      - 抑制基于 frontmatter `date`（而非 mtime），让"业务时间"而非"文件系统时间"决定抑制
+      - 无 frontmatter 或 date 不可解析的文件 → 返回 None → 不抑制（保守安全）
+      - 即使文件被 git mv / 重命名导致 mtime 变更，只要 frontmatter date 早于 since_date 就抑制
+    """
+    if not lines or not lines[0].startswith("---"):
+        return None
+    for line in lines[1:200]:
+        if line.startswith("---"):
+            return None
+        if line.startswith("date:"):
+            value = line.split(":", 1)[1].strip()
+            value = value.split("#", 1)[0].strip()
+            value = value.strip("\"'").strip()
+            if value:
+                return value
+    return None
+
+
 def _extract_frontmatter_type(lines: list[str]) -> str | None:
     """从 markdown 文件 frontmatter 提取 `type` 字段值。
 
@@ -620,8 +645,20 @@ def validate_file(filepath: str, fmt: str) -> list[Issue]:
     return issues
 
 
-def validate_dir(output_dir: str, fmt: str, do_fix: bool = False) -> dict:
-    """校验整个产物目录"""
+def validate_dir(output_dir: str, fmt: str, do_fix: bool = False,
+                 since_date: str | None = None) -> dict:
+    """校验整个产物目录。
+
+    Args:
+        output_dir: 产物目录
+        fmt: ofm / standard
+        do_fix: 自动修复可修复 issue
+        since_date: 030/AP-72 r14 OQ-2 — ISO 日期字符串（如 "2026-05-01"），
+                    frontmatter `date` 字段早于此值的文件会被抑制扫描，
+                    既不计入 errors/warnings 也不计入 files_checked，
+                    但记录到 `suppressed_files` 字段供调用方观测。
+                    None = 不抑制（默认行为，与 v1.x 完全兼容）。
+    """
     md_files = sorted(
         p for p in Path(output_dir).rglob("*.md")
         if p.is_file()
@@ -629,11 +666,35 @@ def validate_dir(output_dir: str, fmt: str, do_fix: bool = False) -> dict:
 
     all_issues: list[Issue] = []
     all_fixes: list[Fix] = []
+    suppressed: list[dict] = []
+    files_actually_checked: list[Path] = []
 
     all_issues.extend(check_review_structure(output_dir, fmt))
 
     for md_file in md_files:
         filepath = str(md_file)
+
+        if since_date:
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    head_lines = []
+                    for _ in range(200):
+                        line = f.readline()
+                        if not line:
+                            break
+                        head_lines.append(line)
+                file_date = _extract_frontmatter_date(head_lines)
+                if file_date and file_date < since_date:
+                    suppressed.append({
+                        "file": os.path.basename(filepath),
+                        "frontmatter_date": file_date,
+                        "since_date": since_date,
+                    })
+                    continue
+            except OSError:
+                pass
+
+        files_actually_checked.append(md_file)
         issues = validate_file(filepath, fmt)
         all_issues.extend(issues)
 
@@ -651,7 +712,7 @@ def validate_dir(output_dir: str, fmt: str, do_fix: bool = False) -> dict:
 
     result = {
         "format": fmt,
-        "files_checked": len(md_files),
+        "files_checked": len(files_actually_checked),
         "errors": [
             {"file": i.file, "line": i.line, "rule": i.rule, "message": i.message}
             for i in errors
@@ -661,6 +722,11 @@ def validate_dir(output_dir: str, fmt: str, do_fix: bool = False) -> dict:
             for i in warnings
         ],
     }
+
+    if since_date:
+        result["since_date"] = since_date
+        result["suppressed_files"] = suppressed
+        result["suppressed_count"] = len(suppressed)
 
     if do_fix:
         result["fixes_applied"] = [
@@ -677,13 +743,19 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="prism-review 产物校验（嗅探感知：ofm / standard）",
-        usage="uv run python validate_product.py <output_dir> [--format ofm|standard] [--fix]",
+        usage=("uv run python validate_product.py <output_dir> "
+               "[--format ofm|standard] [--fix] [--since-date YYYY-MM-DD]"),
     )
     parser.add_argument("output_dir", help="产物目录")
     parser.add_argument("--format", choices=["ofm", "standard"], default=None,
                         help="覆盖格式探测（默认自动探测）")
     parser.add_argument("--fix", action="store_true",
                         help="自动修复可修复的问题")
+    parser.add_argument("--since-date", dest="since_date", default=None,
+                        metavar="YYYY-MM-DD",
+                        help=("030/AP-72 r14 OQ-2 — 抑制 frontmatter date 早于该日期的文件扫描。"
+                              "既不计入 errors/warnings 也不计入 files_checked，但记录到 "
+                              "suppressed_files 字段。无 frontmatter 或 date 不可解析的文件不抑制。"))
 
     args = parser.parse_args()
 
@@ -691,8 +763,16 @@ def main():
         print(f"错误: {args.output_dir} 不是有效目录", file=sys.stderr)
         sys.exit(1)
 
+    if args.since_date:
+        import re
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", args.since_date):
+            print(f"错误: --since-date 必须是 YYYY-MM-DD 格式（实际: {args.since_date}）",
+                  file=sys.stderr)
+            sys.exit(2)
+
     fmt = args.format or detect_format(args.output_dir)
-    result = validate_dir(args.output_dir, fmt, do_fix=args.fix)
+    result = validate_dir(args.output_dir, fmt, do_fix=args.fix,
+                          since_date=args.since_date)
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
