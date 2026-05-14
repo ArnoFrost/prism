@@ -6,6 +6,11 @@
 - **用户默认面 WARN 扫描器**：新增 `public_surface_scan.py`，默认扫描 README / SETUP / docs / skills 主技能与模板中的内部治理标记，并支持 `audience: maintainer` frontmatter 豁免维护者文档。
 - **痕迹义务内部 schema 归一化**：`validate_trace.py` 新增内部 `workflow_trace` schema，以 phase 派生既有 4 族配置；外部产物块、校验 family 名称和 4 族封顶契约保持不变。
 
+### Docs
+
+- **v1.x → v2.0 迁移入口**：新增 `docs/migration.md`，集中说明破坏性变化、14 类用户可感知变化、命令替换脚本和升级检查清单；README 顶屏收敛到单一迁移指针。
+- **贡献者入口**：新增 `docs/contributing.md`，明确 L1-L4 受众分层、默认面写作 checklist、`audience: maintainer` 用法与链接禁用规则。
+
 ## [v2.0.0] — 2026-05-14
 
 > **v2.0 主线四段叙事**

@@ -12,6 +12,8 @@ Prism 是一套**本地优先、无侵入**的个人 AI 工作流管线。它把
 
 如果你想先快速判断"Prism 现在到底是什么、为什么已经成立、还差什么"，可直接阅读 [docs/prism-2.0.md](docs/prism-2.0.md)。
 
+从 v1.x 升级到 v2.0，请只看 [docs/migration.md](docs/migration.md) 这一份迁移入口。
+
 ---
 
 ## 快速开始
