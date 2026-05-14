@@ -151,6 +151,26 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 - verify 机制已不是“0 实例”状态，但整体仍偏轻量，尚未成为所有 topic 的默认强约束
 - archive 仍以脚本触发为主（`shared/scripts/archive.py`），`status` 只做弱提醒而非强制生命周期门控
 
+### 痕迹义务家族封顶政策（v2.0 起永久生效）
+
+`prism validate-trace` 扫描的痕迹义务家族（trace obligation families）在 v2.0 起 **永久封顶为 4 族**：
+
+| 族 | 落点 | 用途 |
+|---|---|---|
+| `task_probe` | `reviews/rXX_*.md`（mode=full） | Task 工具并行调用探针 — 真并行 vs fallback 可观察痕迹 |
+| `merge_artifact` | `reviews/rXX_*.md`（mode=full） | Merge Step 4 痕迹 — raw 文件落盘可审计 |
+| `decision_artifact` | `decisions/dXX_*.md` | Gate 4 决策痕迹 — accept/reject/defer/other + 落盘状态可审计 |
+| `intake_gate_out` | `intake.md` | Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失 |
+
+**封顶约束（硬性，受守门测试保护）**：
+
+- 不再新增第 5 族（`len(TRACE_FAMILIES) == 4` 由 `tests/test_trace_families_capped.py` 锚定；任何新增族必须先重开 Protocol 修订该测试，门槛刻意做高）
+- 新场景必须通过两条路径之一实现：**① 扩展 `phase` / `applies_to` 字段语义；② 在现有族的 `required_fields` 内加新键**
+- 文档侧禁止新增"加 X 族 / 第 5 族"语义；规范文件（SKILL.md / docs / scope）模板均不得引入此类描述
+- **不影响** `validate-trace` 是 lenient 还是 strict 模式 — 封顶只约束族数量；模式优先级链（CLI flag > ENV > frontmatter > 默认）保持不变
+
+设计动因：早期治理实践证明每新增一族都会带来"模板 / 测试 / SKILL 描述 / agent 训练"的 4 处复制扩散，4 族已经覆盖核心评审 / 决策 / 入料 / 合并四个关键 phase；继续扩张族会导致治理通胀（governance inflation）。
+
 ---
 
 ## 目录结构
