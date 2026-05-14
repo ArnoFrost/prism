@@ -8,6 +8,7 @@ name: CI
 #      （含 setup smoke + sniff + relink + validate_product + cli_contract_sync
 #       + prism_cli + outer_schema + changelog_scan + index_update + sniff_lib
 #       + check_skill_deprecation 等 shared 回归，覆盖所有防漂移闸门）
+#   5. release gate：BREAKING 变更必须同步 CHANGELOG.md + docs/migration.md
 # 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
 # 不依赖 prism.local.yaml / vault / ~/.local/bin（doctor --scope ci 自包含）。
 #
@@ -71,6 +72,17 @@ jobs:
         run: |
           uv run --with pytest python -m pytest tests/ skills/workflow/shared/tests/ -q
 
+      - name: Release gate — breaking docs sync
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          uv run python skills/workflow/shared/scripts/release_gate.py \
+            --repo . \
+            --base "$PR_BASE_SHA" \
+            --head "$PR_HEAD_SHA" \
+            --json | tee release-gate.json
+
       - name: Validate workflow skills
         run: |
           bin/validate-skills --json | tee validate-skills.json
@@ -85,6 +97,7 @@ jobs:
           name: prism-ci-${{ matrix.os }}
           path: |
             doctor-ci.json
+            release-gate.json
             validate-skills.json
           if-no-files-found: ignore
           retention-days: 14

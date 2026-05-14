@@ -5,6 +5,7 @@
 - **桥接路径入口探测增强**：`find_workspace()` 支持从仓库根、`workspace.*.local` 根目录、topic 子目录三类入口识别同一 workspace；`prism status/tidy/digest` 子进程显式注入 shared import 路径，避免依赖调用方 `PYTHONPATH`。
 - **用户默认面 WARN 扫描器**：新增 `public_surface_scan.py`，默认扫描 README / SETUP / docs / skills 主技能与模板中的内部治理标记，并支持 `audience: maintainer` frontmatter 豁免维护者文档。
 - **痕迹义务内部 schema 归一化**：`validate_trace.py` 新增内部 `workflow_trace` schema，以 phase 派生既有 4 族配置；外部产物块、校验 family 名称和 4 族封顶契约保持不变。
+- **发布门禁约束**：新增 `release_gate.py` 与 CI 步骤；当提交使用 conventional breaking 标记或 `BREAKING CHANGE` footer 时，同一 diff 必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
 
 ### Docs
 
