@@ -9,9 +9,10 @@
   - 警戒列表提示：本脚本扫所有 SKILL.md，输出超过警戒线的文件清单 + 度量
   - 不 fail 构建：仅输出 WARN 级提示（exit code 始终 0），让维护者知情而非阻塞
 
-警戒线（基于 r14 数据，可由 CLI 覆盖）：
-  - lines > 350：超过 d11 历史经验中 SKILL 阅读舒适度上限
-  - danger_pct > 8%：danger callout 比例超过 r14 时 review/SKILL.md 触线点位
+警戒线（v2.0 d11 与 OQ-4 D 闸门对齐，可由 CLI 覆盖）：
+  - lines > 450：v2.0 OQ-4 D 用户裁决的 SKILL.md 行数闸门（v1.x 历史值为 350，
+    在 030/AP-79 拆分 review/SKILL.md 后调高与用户标准对齐）
+  - danger_pct > 8%：danger callout 比例上限（r14 时 review/SKILL.md 触线点位）
 
 输出 JSON schema：
   {
@@ -25,7 +26,7 @@
         "thresholds_breached": [str],     # ["lines", "danger_pct"]
       }
     ],
-    "thresholds": {"lines": 350, "danger_pct": 8.0},
+    "thresholds": {"lines": 450, "danger_pct": 8.0},
   }
 
 CLI 用法：
@@ -40,7 +41,7 @@ import os
 import sys
 from pathlib import Path
 
-DEFAULT_LINES_THRESHOLD = 350
+DEFAULT_LINES_THRESHOLD = 450  # v2.0 OQ-4 D 闸门（030/AP-79 d11 与用户标准对齐；v1.x 历史值 350）
 DEFAULT_DANGER_PCT_THRESHOLD = 8.0
 
 

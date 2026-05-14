@@ -125,7 +125,8 @@ class TestScanAll:
         assert result["watch_list"] == []
 
     def test_one_file_breaches(self, tmp_path):
-        big = "\n".join(["# big"] + [f"line {i}" for i in range(400)])
+        # 500 行 > v2.0 默认阈值 450（030/AP-79 d11 后调整）
+        big = "\n".join(["# big"] + [f"line {i}" for i in range(500)])
         skills_root = self._build_skills_tree(tmp_path, {
             "workflow/foo/SKILL.md": "# foo\nshort\n",
             "workflow/bar/SKILL.md": big,
@@ -185,7 +186,8 @@ class TestCli:
         assert result.stdout.strip() == ""
 
     def test_cli_outputs_breaches(self, tmp_path):
-        big = "\n".join(["# big"] + [f"line {i}" for i in range(400)])
+        # 500 行 > v2.0 默认阈值 450（030/AP-79 d11 后调整）
+        big = "\n".join(["# big"] + [f"line {i}" for i in range(500)])
         skills_root = self._build_skills_tree(tmp_path, {
             "workflow/big/SKILL.md": big,
         })
@@ -198,10 +200,11 @@ class TestCli:
         assert len(data["watch_list"]) == 1
         assert "lines" in data["watch_list"][0]["thresholds_breached"]
 
-    def test_cli_default_skills_root_has_review_skill(self):
-        """无参数调用：默认扫 prism repo skills/，预期至少触发 review/SKILL.md（515 行 > 350）。
+    def test_cli_default_skills_root_v2_threshold(self):
+        """v2.0 默认阈值（450）下扫 prism repo skills/。
 
-        030/AP-73 reality check 锚点 — 若未来 review/SKILL.md 拆分到 < 350 行，本测试需调整。
+        030/AP-79 d11 后行为：review/SKILL.md 拆分到 442 行（< 450 OQ-4 D 闸门），
+        默认阈值下不再触发警戒；如未来回归到 ≥ 450 行，本测试会捕获回归。
         """
         result = subprocess.run(
             [sys.executable, self.SCRIPT],
@@ -210,8 +213,29 @@ class TestCli:
         assert result.returncode == 0
         data = json.loads(result.stdout)
         assert data["scanned"] >= 1
+        assert data["thresholds"]["lines"] == 450
+        breached_files = [w["file"] for w in data["watch_list"]]
+        assert not any("review/SKILL.md" in f and "lines" in w["thresholds_breached"]
+                       for w, f in zip(data["watch_list"], breached_files)), (
+            f"030/AP-79 d11 验收 #2：review/SKILL.md 在默认 v2.0 阈值（450）下"
+            f"不应触发 lines 警戒；当前 watch_list={data['watch_list']}"
+        )
+
+    def test_cli_explicit_v1x_threshold_review_skill_breaches(self):
+        """显式传 v1.x 历史阈值（350）：review/SKILL.md 442 行仍触线（reality 锚点）。
+
+        030/AP-73 reality check 历史锚点 — 验证 contract_scan 阈值覆盖机制工作正常，
+        以及 v2.0 拆分后的 442 行仍超过 v1.x 历史经验值 350。
+        """
+        result = subprocess.run(
+            [sys.executable, self.SCRIPT, "--threshold-lines", "350"],
+            capture_output=True, text=True, timeout=10,
+        )
+        assert result.returncode == 0
+        data = json.loads(result.stdout)
+        assert data["thresholds"]["lines"] == 350
         breached_files = [w["file"] for w in data["watch_list"]]
         assert any("review/SKILL.md" in f for f in breached_files), (
-            f"030/AP-73 reality 锚点：review/SKILL.md 应触发警戒；"
+            f"030/AP-73 v1.x 阈值 reality 锚点：review/SKILL.md 在 350 阈值下应触发警戒；"
             f"当前 watch_list={breached_files}"
         )
