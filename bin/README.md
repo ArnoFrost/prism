@@ -142,7 +142,6 @@ prism tidy <project_dir> [--fix] [--topic <name>]
 prism status <project_dir> [--format json|markdown]
 prism digest <project_dir> --topic <name>
 prism validate-trace <topic_dir> [--lenient]   # 029/r05 AP-8 — 痕迹义务家族机器抽检
-prism pipeline <topic_dir> [--dry-run]   # deprecated alias → finalize（不支持 trace flag）
 prism manifest                           # 导出 verb 元数据（stability + schema_compliant）
 prism --json manifest                    # 机器可读命令面总览
 ```
@@ -154,7 +153,9 @@ prism --json manifest                    # 机器可读命令面总览
 - **核心 workflow verb**：`sniff / validate / archive / migrate / sync`
 - **024 新增/收敛 verb**：`finalize / tidy / status / digest`
 - **029 治理 verb**：`validate-trace`（痕迹义务家族机器抽检；finalize Step 2.5 自动串联）
-- **元信息与兼容层**：`manifest`、`pipeline`（deprecated alias）
+- **元信息**：`manifest`
+
+> **v2.0 breaking change（030/AP-71）**：`prism pipeline` deprecated alias 已物理移除。v1.1.x 用户请改用 `prism finalize`。
 
 如需查看当前 CLI 能力面的**机器可见真源**，优先运行：
 

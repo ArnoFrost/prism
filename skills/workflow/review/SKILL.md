@@ -303,7 +303,7 @@ sniff 返回 `format` 字段决定 Markdown 风格：
    - 独立发现率 ≥ 60%（角色视角差异大，raw 有独立参考价值）
    - 用户显式要求保留
 5. **追加** `review.index.md` 记录行
-6. **执行** `prism finalize <topic_dir>`（自动串联 tidy + validate + **validate-trace (Step 2.5)** + scope 提示；trace 模式按 frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 决议，专项目录名 `029_*` 默认 strict — 见 [README §workflow / 痕迹义务家族都是可选项](../../../README.md)；`prism pipeline` 是 v1.1 迁移期 deprecated alias 不支持 trace flag，v1.2 移除）
+6. **执行** `prism finalize <topic_dir>`（自动串联 tidy + validate + **validate-trace (Step 2.5)** + scope 提示；trace 模式按 frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 决议，专项目录名 `029_*` 默认 strict — 见 [README §workflow / 痕迹义务家族都是可选项](../../../README.md)）
 
 > [!danger]
 > **merge_artifact 痕迹契约 — 防 Merge Step 4 静默漏 raw**（来源：029/r05 AP-28，痕迹义务家族第 4 族）

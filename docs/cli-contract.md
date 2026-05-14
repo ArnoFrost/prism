@@ -64,9 +64,10 @@ N+1（下一个 minor）：引入新命令；原命令仍可用但调用时打 W
 N+2（再下一个 minor）：移除原命令；CHANGELOG 标注破坏性变更
 ```
 
-**例**：若 1.1 把 `prism pipeline` 重命名为 `prism finalize`：
-- 1.1 同时保留 `prism pipeline`（WARN）+ 新增 `prism finalize`
-- 1.2 移除 `prism pipeline`
+**例（已发生 — 此契约真实演进过程）**：`prism pipeline` → `prism finalize` 改名链：
+- v1.1 同时保留 `prism pipeline`（运行时 WARN）+ 新增 `prism finalize`（024 d01 落地）
+- v1.1.x 期间 SKILL/SSOT 引用渐进迁移到 `finalize`（029 r07 AP-43 / r08 AP-53 等）
+- **v2.0** 物理移除 `prism pipeline`（030 AP-71 atomic_now，按本契约 N+2 原则取代原"v1.2 移除"承诺）
 
 ### 2.3 不属于破坏性变更的调整
 
@@ -205,7 +206,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
 | `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |
 | `prism digest` | experimental | ⬜ | Topic 工件采集（供 Agent 生成摘要） |
-| `prism pipeline` | **deprecated** | ⬜ | 已重命名为 finalize（1.2 移除此别名）；**不支持 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag**，需 trace 覆盖请改用 `finalize`（029/r08 P1-F4） |
+| ~~`prism pipeline`~~ | **removed (v2.0)** | — | v1.1.x 已为 deprecated alias；v2.0 物理移除（030 AP-71）。v1.x 调用方请改用 `prism finalize`；调用 `prism pipeline` 现 hard fail（exit 2）|
 | `prism manifest` | experimental | ✅ | 导出 verb 元数据（stability + schema_compliant）；参数级 schema 延 024 |
 | `prism validate-trace` | experimental | ✅ | 扫描痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact）；`--lenient` 旧产物迁移期使用（来源：029/r05 AP-8 P1） |
 
@@ -225,3 +226,4 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 2026-05-12 | v1.1.5 | §5.2 新增 `prism validate-trace` 行（痕迹义务家族机器抽检 verb，含 4 族 + `--lenient` 迁移期支持）；§4.x 加 `--json` 双向顺序兼容（`prism manifest --json` ↔ `prism --json manifest`）；finalize 加 `--decision` flag + PRISM_NO_INTERACTIVE 守门 | [029/r05 AP-8/9/15](../workspace.prism.local/topics/029_post-share-governance/reviews/r05_v1.0-v1.1-sdk-rollup-cr.md) |
 | 2026-05-13 | v1.1.6 | §4.3 新增双协议显性化（`prism --json` envelope vs `bin/doctor --json` flat）；finalize 新增 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag + Step 2.5 痕迹抽检（029_ topic 默认 strict / 其他 lenient / frontmatter 与 ENV 可覆盖） | [029/r07 AP-43 + AP-47](../workspace.prism.local/topics/029_post-share-governance/reviews/r07_双线治理合并状态评审.md) |
 | 2026-05-13 | v1.1.7 | §5.2 finalize description 加 "validate-trace (Step 2.5)"；pipeline 行加"不支持 trace flag"脚注 | [029/r08 AP-53 (P1-F2/F4)](../workspace.prism.local/topics/029_post-share-governance/reviews/r08_r07行动计划复检与封存判据评估.md) |
+| 2026-05-14 | **v2.0-canary** | **§5.2 `prism pipeline` 行从 deprecated 改为 ~~removed (v2.0)~~**（物理移除 alias，调用方 hard fail exit 2）；§2.2 改名示例段更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径）；与 v1.1.x CHANGELOG 承诺的"v1.2 移除"对齐到 v2.0 落地 | [030/AP-71 atomic_now](../workspace.prism.local/topics/030_trace-enforce-depth/plan.md) |

@@ -148,7 +148,7 @@ class TestVersionSdkLinkage:
 # ============================================================
 
 class TestCliHelp:
-    @pytest.mark.parametrize("subcmd", ["sniff", "validate", "archive", "migrate", "sync", "finalize", "tidy", "status", "digest", "pipeline", "manifest"])
+    @pytest.mark.parametrize("subcmd", ["sniff", "validate", "archive", "migrate", "sync", "finalize", "tidy", "status", "digest", "validate-trace", "manifest"])
     def test_subcmd_help(self, subcmd):
         result = subprocess.run(
             [sys.executable, CLI_PATH, subcmd, "--help"],
@@ -156,6 +156,64 @@ class TestCliHelp:
         )
         assert result.returncode == 0, f"{subcmd} --help failed: {result.stderr}"
         assert "usage:" in result.stdout.lower()
+
+
+class TestV2_PipelineRemoved:
+    """守门：v2.0 物理移除 `prism pipeline` deprecated alias 后 hard fail（030/AP-71 atomic_now）。
+
+    设计意图：
+      - 任何 v1.1.x 残留 SOP / 自动化 / agent prompt 调用 `prism pipeline` 必须 hard fail
+        而非静默成功（避免 alias 被无意识恢复）
+      - exit code 必须 != 0（argparse subparser reject 默认 exit 2）
+      - stderr 必须含明确指示（让用户/agent 一眼看出"pipeline 已移除"，建议改用 finalize）
+
+    回归保护：未来若有人提 PR 把 pipeline alias 重新加回去（无论作为 alias 或 subcommand），
+    本测试会立即 fail，逼迫显式走 v2.0 contract 修订流程。
+    """
+
+    def test_pipeline_invocation_exits_nonzero(self, tmp_path):
+        """`prism pipeline <topic>` 调用必须 hard fail（exit code != 0）。"""
+        result = subprocess.run(
+            [sys.executable, CLI_PATH, "pipeline", str(tmp_path)],
+            capture_output=True, text=True, timeout=5,
+        )
+        assert result.returncode != 0, (
+            f"v2.0 contract violation: `prism pipeline` 应已物理移除 hard fail，"
+            f"但返回 exit code {result.returncode}。检查 prism_cli.py 是否被回退？"
+        )
+
+    def test_pipeline_help_exits_nonzero(self):
+        """`prism pipeline --help` 同样应 hard fail（subparser 不存在则 argparse 拒绝）。"""
+        result = subprocess.run(
+            [sys.executable, CLI_PATH, "pipeline", "--help"],
+            capture_output=True, text=True, timeout=5,
+        )
+        assert result.returncode != 0, "`prism pipeline --help` 不应识别 pipeline 为合法 subcommand"
+
+    def test_pipeline_not_in_manifest(self):
+        """`prism manifest --json` 输出不应包含 pipeline 条目（VERB_REGISTRY 已移除）。"""
+        result = subprocess.run(
+            [sys.executable, CLI_PATH, "--json", "manifest"],
+            capture_output=True, text=True, timeout=5,
+        )
+        assert result.returncode == 0, f"manifest 自身不应受影响: {result.stderr}"
+        assert '"pipeline"' not in result.stdout, (
+            "VERB_REGISTRY 仍含 pipeline 条目，物理移除不彻底"
+        )
+
+    def test_pipeline_stderr_helpful_or_default(self):
+        """argparse 默认 reject 信息含 'pipeline' 字样（让用户知道哪个 verb 出错），
+        不强制要求自定义 hint，但要求错误信息可被定位。
+        """
+        result = subprocess.run(
+            [sys.executable, CLI_PATH, "pipeline", "/tmp/nonexistent"],
+            capture_output=True, text=True, timeout=5,
+        )
+        combined = (result.stderr + result.stdout).lower()
+        assert "pipeline" in combined or "invalid choice" in combined, (
+            f"错误信息应包含 'pipeline' 或 'invalid choice' 提示用户：\n"
+            f"stderr={result.stderr}\nstdout={result.stdout}"
+        )
 
 
 # ============================================================

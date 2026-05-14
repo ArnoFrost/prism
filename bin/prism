@@ -23,7 +23,6 @@
 #   status          Workspace 活跃 topic 健康度扫描
 #   digest          Topic 工件采集（供 Agent 生成摘要）
 #   manifest        导出 verb 元数据（stability + schema_compliant）
-#   pipeline        [deprecated alias → finalize，1.2 移除]
 #
 # 退出码: 透传子命令的退出码
 #

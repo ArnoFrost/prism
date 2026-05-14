@@ -2,13 +2,24 @@
 
 > **分支策略变更（2026-05-14）**：从 main `v1.1.7` (`ba2d503`) 拉出 `v2.0-canary` 分支，承载 030 专题全部破坏性改动（AP-71 atomic_now verb 迁移 / AP-63 深语义 hard error / AP-69 全 topic strict 默认 / AP-55-b sniff_lib 探测增强 / 027 r14 系列收尾）。main 仅接受 hotfix；030 archive → canary dogfood 1 周 → v2.0.0-rc1 → squash merge → v2.0.0 GA。详见 [030 scope §发布与分支策略](workspace.prism.local/topics/030_trace-enforce-depth/scope.md)。
 
-### 即将进入 v2.0 的破坏性变更（仅 v2.0-canary 可见，不影响 main 用户）
+### 已落地的 v2.0 破坏性变更（v2.0-canary 已合，仅在 canary→main 后正式生效到 v1.x 用户）
 
-- **AP-71 atomic_now**：`prism` 9 处 verb 引用统一切换（影响 cli-contract / SKILL.md / bin/prism / docs/architecture）
-- **AP-63 深语义 enforce**：`raw_paths` 文件存在性 / `landed_at_threshold` 一致性升级为 hard error；`accept→written` 关联允许 frontmatter override 降级
-- **AP-69 全 topic strict 默认**：新 topic 默认 `trace_strict: true`；028 + 026 作为示例迁移
-- **AP-55-b 桥接路径 UX**：`prism status` / `sniff` 在 `workspace.*.local` 桥接路径下文案 + sniff_lib 探测逻辑双重增强
-- **r14 系列收尾**（AP-71/72/73/74）：since_date 噪声抑制 + incremental_only 警戒列表 + sniff_as_ssot 单源化
+#### Breaking — `prism pipeline` deprecated alias 物理移除（030/AP-71 atomic_now）
+
+- **物理动作**：`prism_cli.py` 移除 `cmd_pipeline()` 函数 + `VERB_REGISTRY[pipeline]` + subparser `p_pipeline` + commands dict 入口（5 处 surgical removal）
+- **文档对齐**：`bin/prism` 头注释 / `bin/README.md` 用法块 / `README.md` `prism <verb>` 表格 / `docs/cli-contract.md §5.2` deprecated 行（→ removed v2.0）/ `skills/workflow/review/SKILL.md` Merge Step 6 历史括注全部清理
+- **运行时行为变化**：v1.1.x `prism pipeline <topic>` 输出 `WARN: 已重命名为 finalize` + 转发到 finalize；**v2.0 `prism pipeline <topic>` argparse 直接 reject（exit 2 + stderr "invalid choice"）**
+- **迁移路径**：v1.1.x 调用方一次性切到 `prism finalize`；CHANGELOG v1.1.x 已多轮预告（v1.1.4 / v1.1.5 / v1.1.6 / v1.1.7 entry 均提及"deprecated alias，迁移期保留"）
+- **守门测试**：新增 v2.0 守门 case，回归保护"pipeline 不可被无意识恢复"
+- **依据**：[027/r14 P0-2](workspace.prism.local/topics/027_mini-core-delivery-contract/reviews/r14_近轮核心工作流技能修正盘点与反劣化能力评审.md)（atomic_now 一次切，r14 OQ-1 用户已预决）+ [030/d09 §3.3 AP-71](workspace.prism.local/topics/030_trace-enforce-depth/plan.md)
+- **契约对齐**：`docs/cli-contract.md §2.2` 改名示例段同步更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径），与 v1.1.x 承诺的"v1.2 移除"对齐到 v2.0 落地
+
+### 仍在路上的 v2.0 破坏性变更（v2.0-canary Wave 1-5 推进中）
+
+- **AP-63 深语义 enforce**（Wave 1）：`raw_paths` 文件存在性 / `landed_at_threshold` 一致性升级为 hard error；`accept→written` 关联允许 frontmatter override 降级
+- **AP-69 全 topic strict 默认**（Wave 3）：新 topic 默认 `trace_strict: true`；028 + 026 作为示例迁移
+- **AP-55-b 桥接路径 UX**（Wave 3）：`prism status` / `sniff` 在 `workspace.*.local` 桥接路径下文案 + sniff_lib 探测逻辑双重增强
+- **r14 系列收尾**（Wave 5 AP-72/73/74）：since_date 噪声抑制 + incremental_only 警戒列表 + sniff_as_ssot 单源化
 
 ## [v1.1.7] — 2026-05-13
 

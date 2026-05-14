@@ -13,7 +13,6 @@
   uv run python prism_cli.py tidy <project_dir> [--fix] [--topic <主题>]
   uv run python prism_cli.py status <project_dir> [--format json|markdown]
   uv run python prism_cli.py digest <project_dir> --topic <主题>
-  uv run python prism_cli.py pipeline <topic_dir> [--dry-run]  # deprecated → finalize
   uv run python prism_cli.py manifest            # verb 元数据清单
 
 顶层选项:
@@ -142,11 +141,6 @@ VERB_REGISTRY = {
         "stability": "experimental",
         "schema_compliant": False,
         "description": "Topic 工件采集（供 Agent 生成摘要）",
-    },
-    "pipeline": {
-        "stability": "deprecated",
-        "schema_compliant": False,
-        "description": "已重命名为 finalize（1.2 移除此别名）",
     },
     "manifest": {
         "stability": "experimental",
@@ -743,12 +737,6 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     return 1 if has_error else 0
 
 
-def cmd_pipeline(args: argparse.Namespace) -> int:
-    """已弃用别名：转发到 cmd_finalize，并输出 WARN。"""
-    print("WARN: `prism pipeline` 已重命名为 `prism finalize`（1.2 移除此别名）", file=sys.stderr)
-    return cmd_finalize(args)
-
-
 def cmd_tidy(args: argparse.Namespace) -> int:
     """工件机械对齐（dispatch 到 tidy/scripts/tidy.py）。"""
     cmd_args = [args.project_dir, "--format", "json"]
@@ -916,7 +904,7 @@ def main():
     p_sync.add_argument("--all", action="store_true")
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
-    # finalize（024 T3 · 原 pipeline；AP-15 加 --decision flag；029/r07 AP-43 加 trace flags）
+    # finalize（024 T3 · v2.0 取代 pipeline；AP-15 加 --decision flag；029/r07 AP-43 加 trace flags）
     p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
     p_finalize.add_argument("--dry-run", action="store_true", help="只预览不修复")
@@ -935,15 +923,6 @@ def main():
     trace_group.add_argument("--no-trace-validate", action="store_true",
         dest="no_trace_validate",
         help="完全跳过 Step 2.5 痕迹校验（CI 渐进接入用）")
-
-    # pipeline（deprecated alias → finalize，1.2 移除）
-    p_pipeline = subparsers.add_parser("pipeline", help="[已弃用] 请使用 finalize")
-    p_pipeline.add_argument("topic_dir", help="专项根目录")
-    p_pipeline.add_argument("--dry-run", action="store_true", help="只预览不修复")
-    p_pipeline.add_argument(
-        "--decision", choices=["accept", "reject", "defer"], default=None,
-        help="（与 finalize 同 — 1.2 随 alias 一并移除）",
-    )
 
     # tidy（024 T2）
     p_tidy = subparsers.add_parser("tidy", help="工件机械对齐（README 指针 / review.index / frontmatter）")
@@ -1006,7 +985,6 @@ def main():
         "tidy": cmd_tidy,
         "status": cmd_status,
         "digest": cmd_digest,
-        "pipeline": cmd_pipeline,
         "manifest": cmd_manifest,
         "validate-trace": cmd_validate_trace,
     }
