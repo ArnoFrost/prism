@@ -22,6 +22,31 @@
 
 如果 SDK 文档 / 工作区记录里嵌入了 `~/prism-skills` 的 commit hash，请把这种引用视作**当时所见的 point-in-time 证据**，而不是长期稳定的指针。`~/prism-skills` 仓库做 rebase / squash / cherry-pick 后，这些 hash 可能不再可达；维护者**不需要回溯修补**已落盘的历史记录。如果某个跨仓改动需要长期可追溯，应在 `~/prism-skills` 侧打 tag 并在 SDK 一侧引用 tag 名。
 
+### SDK 层 vs Workspace 层引用边界
+
+SDK 层文件（`bin/` / `skills/workflow/` / `docs/` / 模板等，**入 git 公共分发**）**不应**引用 Workspace 实例层的具体决策痕迹，包括：
+
+- workspace 内的 finding 编号（`F-P0-X` / `F-meta-X` / `r01` / `r02` 等）
+- decision 编号（`d01` / `d02` / `AP-N` / `AP-L-N` 等）
+- 内部 topic 编号（`032` / `033` / `V11.X` / `P-VX` 等）
+- 具体 commit hash 时间线（`cd890ad..79ef5cd@2026-05-15` 等）
+- subagent ID / 内部对话时间戳 / 个别用户表态
+
+这些是 **Workspace 层**才该承载的状态（`workspace.*.local/topics/*/` 内部记录）。
+SDK 层应当只表达**通用结论 / 规则 / 防护目标**，例如：
+
+| ❌ 反例（暴露 workspace 痕迹） | ✅ 正例（通用结论） |
+|---|---|
+| `参考 r01 F-P0-2 ① / 种子 #2` | `防 mode 取值错描（lite 是另一 skill）` |
+| `规则引入 commit cd890ad@2026-05-15` | （删除整条）|
+| `r02 F-L-P1-4 / AP-L-4 / 033 立项待解耦` | `validator 家族 mode 控制是否独立 flag 待评估` |
+| `防 F-meta-1 复发` | `防止 subagent 输出契约失效` |
+| `用户 14:25 反思 §2 分级 validate` | `首次合格优于多次 resume 补救（Harness 心流原则）` |
+
+**实操约束**：每次修改 SDK 层文件时（特别是 `skills/workflow/*/SKILL.md` / `shared/scripts/*` / `bin/*`），顺手 grep 当次 diff 中是否含 workspace 痕迹关键词；若有，改写为通用句或删除。
+
+> 公共分发到外部（mini / full profile）的视角下，外部读者看到 `r01 F-P0-2` 没有任何可解释性，反而是污染。
+
 ## 对外写作 Checklist
 
 写 README、SETUP、docs、SKILL 主文或模板时，先检查：
