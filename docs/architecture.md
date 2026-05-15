@@ -314,11 +314,11 @@ prism/
 - [x] **dogfood 实证**：用 v2.0 简化后的默认 lenient 行为完成非主线场景验证，进入后续持续试点
 - [x] **GA 节奏**：`v2.0.0-rc1` tag → squash merge main → `v2.0.0` 口径对齐
 
-**Phase 8 — v2.1 规划** 📅
+**Phase 8 — v2.1 5 件套（v2.1.0，2026-05-15）** ✅
 
-- [ ] `docs/migration.md`：v1.x → v2.0 用户感知变化清单 + Breaking 表 + 替换脚本指引
-- [ ] `audience: maintainer` 元数据：maintainer 文档与用户文档显性分层
-- [ ] 机械守门 WARN：默认路径集合扫描器，对内部 ID 模式输出 WARN（audience=maintainer 豁免）
-- [ ] `docs/contributing.md`：贡献者层入口 + 对外写作 checklist + 链接禁用规则
-- [ ] 发布门禁约束：CI 检测 CHANGELOG / migration.md 是否同步更新
+- [x] `docs/migration.md`：v1.x → v2.0 用户感知变化清单 + Breaking 表 + 替换脚本指引
+- [x] `audience: maintainer` 元数据：maintainer 文档与用户文档显性分层（配套 `public_surface_scan.py` 豁免逻辑）
+- [x] 机械守门 WARN：`skills/workflow/shared/scripts/public_surface_scan.py` 默认路径集合扫描器，对内部 ID 模式输出 WARN（audience=maintainer 豁免）
+- [x] `docs/contributing.md`：贡献者层入口 + 对外写作 checklist + 跨仓 commit 引用边界 + 链接禁用规则
+- [x] 发布门禁约束：`skills/workflow/shared/scripts/release_gate.py` + CI 步骤检测 BREAKING change 与 `CHANGELOG.md` + `docs/migration.md` 是否同步更新；CI step 显式 `shell: bash` 启用 pipefail，`actions/checkout` `fetch-depth: 0` 让 base SHA 可达
 
