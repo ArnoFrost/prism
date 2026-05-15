@@ -2,7 +2,7 @@
 
 > 本文件固化 `bin/` 与 `prism <verb>` 命令面分层 / 稳定性承诺 / "30 秒加 verb" 设计门槛 / 双协议范围。
 > 所有对 `bin/` 与 `prism <verb>` 的新增、改名、删除必须引用本文作为依据。
-> 版本：v2.0.0（随 SDK `VERSION` 同步升级）
+> 版本：v2.1.0（随 SDK `VERSION` 同步升级）
 
 ---
 
@@ -226,8 +226,8 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 2026-05-12 | v1.1.5 | §5.2 新增 `prism validate-trace` 行（痕迹义务家族机器抽检 verb，含 4 族 + `--lenient` 迁移期支持）；§4.x 加 `--json` 双向顺序兼容（`prism manifest --json` ↔ `prism --json manifest`）；finalize 加 `--decision` flag + PRISM_NO_INTERACTIVE 守门 |
 | 2026-05-13 | v1.1.6 | §4.3 新增双协议显性化（`prism --json` envelope vs `bin/doctor --json` flat）；finalize 新增 `--trace-strict` / `--trace-lenient` / `--no-trace-validate` flag + Step 2.5 痕迹抽检（特定前缀 topic 默认 strict / 其他 lenient / frontmatter 与 ENV 可覆盖） |
 | 2026-05-13 | v1.1.7 | §5.2 finalize description 加 "validate-trace (Step 2.5)"；pipeline 行加"不支持 trace flag"脚注 |
-| 2026-05-14 | **v2.0-canary** | **§5.2 `prism pipeline` 行从 deprecated 改为 ~~removed (v2.0)~~**（物理移除 alias，调用方 hard fail exit 2）；§2.2 改名示例段更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径）；与 v1.1.x CHANGELOG 承诺的"v1.2 移除"对齐到 v2.0 落地 |
-| 2026-05-14 | **v2.0.0** | §1 / §2 / §4 默认路径脱敏（移除内部 review/decision 链路引用）；§6 表 vault link 迁出主表[^variant-history]；VERSION / manifest / 默认文档口径对齐到 GA |
+| 2026-05-14 | **v2.0.0** | §5.2 `prism pipeline` 行从 deprecated 改为 ~~removed (v2.0)~~（物理移除 alias，调用方 hard fail exit 2）；§2.2 改名示例段更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径）；§1 / §2 / §4 默认路径脱敏（移除内部 review/decision 链路引用）；§6 表 vault link 迁出主表[^variant-history]；VERSION / manifest / 默认文档口径对齐到 GA。<br>（开发期 v2.0-canary 阶段的契约迭代已收编进本行；v2.0-canary 不再作为独立条目长期保留。）|
+| 2026-05-15 | **v2.1.0** | 文档对齐侧补丁：`pipeline` 物理移除已稳定，本契约无 verb 增删；`prism --version` 与 SDK `VERSION` 同步升级到 `v2.1.0`。|
 
 [^variant-history]: 各版本变更的详细 review / decision 推导链路保留在 vault Workspace 内部历史档案中，不在本契约暴露；参与维护的人员可通过 SDK 内 `references/maintainer.md` 等维护者文档定位。
 

@@ -300,3 +300,6 @@ git commit -m "feat: 新增 xxx 脚本"
 | 接受了评审决策（dXX），需更新边界或派生 plan | 执行 `/workflow-scope` 同步 |
 | 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
 | 日常迭代、小改动确认、scope/plan 快速对齐 | 执行 `/workflow-review-lite` |
+| 评审/决策落盘后，README 指针、review.index、frontmatter 需机械对齐 | 执行 `/workflow-tidy`（或随 `prism finalize` 自动串联） |
+| 想了解专项进度 / 检查骨架完整性 / 启动新一轮工作前的现状回顾 | 执行 `/workflow-status`（report-first，只报告不修改） |
+| 需要对外通报专项状态（产品 / 协作者 / 自我回顾） | 执行 `/workflow-digest`（生成 `digest.md` 快照） |

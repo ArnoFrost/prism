@@ -1,18 +1,44 @@
 ## [Unreleased]
 
-### Fixed
+_当前无未发布变更。_
+
+## [v2.1.0] — 2026-05-15
+
+> **v2.1 增量定位**
+>
+> v2.0.0 GA 后的下一个 minor 升级，把 v2.0 阶段欠缺的「对外文档矩阵 + 默认面治理 + 发布门禁」5 件套补齐。架构层面没有破坏性变更，主要是文档、扫描器、CI 步骤层面的能力补齐与防护加固。
+
+### v2.1 主交付（5 件套）
+
+#### Added
+
+- **v1.x → v2.0 迁移入口**：新增 `docs/migration.md`，集中说明破坏性变化、14 类用户可感知变化、命令替换脚本和升级检查清单；README 顶屏收敛到单一迁移指针。
+- **贡献者入口**：新增 `docs/contributing.md`，明确 L1-L4 受众分层、默认面写作 checklist、`audience: maintainer` 用法、跨仓 commit 引用边界与链接禁用规则。
+- **用户默认面 WARN 扫描器**：新增 `public_surface_scan.py`，默认扫描 README / SETUP / docs / skills 主技能与模板中的内部治理标记，并支持 `audience: maintainer` frontmatter 豁免维护者文档。
+- **发布门禁约束**：新增 `release_gate.py` 与 CI 步骤；当提交使用 conventional breaking 标记或 `BREAKING CHANGE` footer 时，同一 diff 必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
+
+#### Fixed
 
 - **桥接路径入口探测增强**：`find_workspace()` 支持从仓库根、`workspace.*.local` 根目录、topic 子目录三类入口识别同一 workspace；`prism status/tidy/digest` 子进程显式注入 shared import 路径，避免依赖调用方 `PYTHONPATH`。
-- **用户默认面 WARN 扫描器**：新增 `public_surface_scan.py`，默认扫描 README / SETUP / docs / skills 主技能与模板中的内部治理标记，并支持 `audience: maintainer` frontmatter 豁免维护者文档。
-- **痕迹义务内部 schema 归一化**：`validate_trace.py` 新增内部 `workflow_trace` schema，以 phase 派生既有 4 族配置；外部产物块、校验 family 名称和 4 族封顶契约保持不变。
-- **发布门禁约束**：新增 `release_gate.py` 与 CI 步骤；当提交使用 conventional breaking 标记或 `BREAKING CHANGE` footer 时，同一 diff 必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
+- **痕迹义务内部 schema 归一化**：`validate_trace.py` 新增内部 `workflow_trace` schema，以 phase 派生既有 4 族配置；外部产物块、校验 family 名称和 4 族封顶契约保持不变（仅内部组织方式调整，无外部契约变化）。
+
+### 元审计修复（CI 发布门禁实测有效化）
+
+发布门禁首次落地后通过元审计发现两个让门禁在 CI 上长期静默失效的边界 bug，本次一并修复：
+
+#### Fixed
+
 - **CI release_gate 步骤启用 pipefail**：在该 step 显式声明 `shell: bash`（自动带 `set -eo pipefail`），避免 `release_gate.py … | tee` 中上游脚本非零退出被 `tee` 吞成功，导致门禁可被静默旁路。
 - **CI checkout 拉完整历史**：`actions/checkout@v5` 加 `fetch-depth: 0`，让 release_gate 在 push 事件下能解析 `before` SHA 完成 `git diff base..head`，避免 shallow clone 下报 `bad object` 让 CI 误红。
 
-### Docs
+### 文档对齐
 
-- **v1.x → v2.0 迁移入口**：新增 `docs/migration.md`，集中说明破坏性变化、14 类用户可感知变化、命令替换脚本和升级检查清单；README 顶屏收敛到单一迁移指针。
-- **贡献者入口**：新增 `docs/contributing.md`，明确 L1-L4 受众分层、默认面写作 checklist、`audience: maintainer` 用法与链接禁用规则。
+#### Docs
+
+- **跨仓 commit 引用边界**：`docs/contributing.md` 增补「跨仓 hash 仅作 point-in-time 证据，rebase/squash 后失效不回溯修补」边界说明；如需长期追溯应在 `prism-skills` 一侧打 tag。
+- **v2.1 进度叙事同步**：README / `docs/prism-2.0.md` / `docs/architecture.md` Phase 8 / `docs/leader-pitch.md` 同步反映 v2.1 5 件套已完成；架构 Phase 8 全部勾选；prism-2.0 增补「v2.1 已完成」段；leader-pitch 升到 v2.1.0 口径。
+- **CLI 契约变更历史收编**：`docs/cli-contract.md §6` 把 v2.0-canary 行收编进 v2.0.0 行（canary 是 v2.0 GA 的前置阶段，无需独立长期保留）。
+- **AGENTS Mandatory 表补全**：`AGENTS.md §Mandatory skill usage` 增加 `workflow-status` / `workflow-tidy` 触发条件，让 8 个内置技能里所有有明确触发条件的都覆盖到。
 
 ## [v2.0.0] — 2026-05-14
 
