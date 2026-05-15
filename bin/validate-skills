@@ -225,6 +225,19 @@ for i in "${!SKILLS[@]}"; do
     done
   fi
 
+  # 7. 双 frontmatter 检测（r01 F-P0-1 / d01 AP-1 / V11.1）
+  #    标准 YAML frontmatter 含 1 个开块 + 1 个闭合块 = 文件头 2 个 `^---$` 行
+  #    双 fm 模式：闭合块（第 2 个 `^---$`）后紧跟新的 `^---$` + yaml 字段（`name:` / `description:` 等）
+  #    与 markdown horizontal rule（`---` 后跟空行 / 标题 / 正文）区分
+  third_fm=$(grep -n '^---$' "$file" | sed -n '3p' | cut -d: -f1)
+  if [[ -n "$third_fm" && "$third_fm" -lt 30 ]]; then
+    # 检查第 3 个 ^---$ 之后的非空行是否是 yaml 字段
+    next_yaml_line=$(sed -n "$((third_fm + 1)),$((third_fm + 5))p" "$file" | grep -v '^$' | head -1)
+    if [[ "$next_yaml_line" =~ ^[a-z_]+: ]]; then
+      skill_errors+=("双 frontmatter 检测：第 3 个 \`^---$\` 在 line $third_fm，后跟 yaml 字段 '$next_yaml_line'（疑似 frontmatter 复制 bug；参考 r01 F-P0-1）")
+    fi
+  fi
+
   # ── 输出 ──
 
   # 累加总数（JSON 模式也要统计）
