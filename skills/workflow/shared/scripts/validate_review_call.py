@@ -10,12 +10,16 @@ validate_review_call.py — Prism review call schema 校验
 | roles 数（mode=full）    | ≤ 5（reviews/raw/）    | F-P0-2 ③ 把"默认 3 / 上限 5"说成"4 角色草稿"                       |
 | task_probe.fallback_reason | 1 / 2 / 3 / 4 / 并行 | F-P0-2 ② 4 条串行白名单只校字段存在不校编号                       |
 
-来源：r01 F-P0-2 / d01 AP-2 / 032 V11.2
+引入点：commit cd890ad..79ef5cd @ 2026-05-15（v2.1.0 后第一组 dogfood 修复）
 
 设计：
 - 默认 strict：illegal → ERR（rc=1）
 - --lenient：illegal → WARN（rc=0，迁移期友好）
 - --json：JSON 输出，可被 finalize Step 2.6 消费
+
+引用边界（参考 docs/contributing.md §跨仓 commit 引用边界）：
+错误消息中的 commit hash 是 point-in-time 证据，rebase/squash 后失效不回溯修补；
+不引用 vault 实例层 review finding（避免 archive / 重命名导致链路断裂）。
 
 使用：
   uv run python validate_review_call.py <topic_dir>
@@ -144,7 +148,8 @@ def validate_review_file(review_file: Path, topic_dir: Path) -> list[dict]:
             "message": (
                 f"review frontmatter `mode: {mode}` 不在合法值 {sorted(VALID_MODES)} 内；"
                 "常见错描：'lite' 是另一个独立 skill (workflow-review-lite) 非 mode 值；"
-                "参考 r01 F-P0-2 ① / 种子 #2"
+                "规则引入 commit cd890ad..79ef5cd@2026-05-15（point-in-time 证据，"
+                "rebase/squash 后失效不回溯；详见 docs/contributing.md §跨仓 commit 引用边界）"
             ),
         })
 
@@ -162,8 +167,8 @@ def validate_review_file(review_file: Path, topic_dir: Path) -> list[dict]:
                     "file": str(review_file),
                     "message": (
                         f"reviews/raw/{review_id}-role-*.md 个数 = {roles_count} > "
-                        f"上限 {MAX_ROLES}（review/SKILL.md 默认 3 角色，自定义上限 5）；"
-                        "参考 r01 F-P0-2 ③ / 种子 #2"
+                        f"上限 {MAX_ROLES}（review/SKILL.md 默认 3 角色，自定义上限 5；"
+                        "规则引入 commit 79ef5cd@2026-05-15）"
                     ),
                 })
 
@@ -188,7 +193,8 @@ def validate_review_file(review_file: Path, topic_dir: Path) -> list[dict]:
                         f"{sorted(VALID_FALLBACK_REASONS)}；必须给出白名单条款编号："
                         "#1 tool_not_found / #2 mode=quick / #3 用户原文 / #4 文本流 CLI；"
                         "或 '并行' / 'parallel'（表示非 fallback）；"
-                        "参考 r01 F-P0-2 ② / parallel-execution.md §串行 Fallback"
+                        "白名单 SSOT：skills/workflow/shared/parallel-execution.md §串行 Fallback；"
+                        "规则引入 commit 79ef5cd@2026-05-15"
                     ),
                 })
 
