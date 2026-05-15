@@ -73,3 +73,4 @@ skills/workflow/
 | `review-spec-skeleton.md` | ReviewSpec 7 字段最小骨架 | workflow-review, workflow-review-lite |
 | `review-merge-spec.md` | 多角色评审结果合并规范 | workflow-review Merge 阶段 |
 | `topic-sniff-spec.md` | topic 前门路由统一规范 | 全部 workflow skills sniff 阶段 |
+| `vocabulary.md` | 受控词汇 SSOT — 首批 8 术语（OQ / goal / V / AP / plan / scope / phase / wave）+ 中英对照 + 14 组易混淆对比 | 全部 workflow skills + 各 topic 产物（cite，不复制定义） |
