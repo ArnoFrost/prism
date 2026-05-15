@@ -125,7 +125,7 @@ VERB_REGISTRY = {
     "finalize": {
         "stability": "experimental",
         "schema_compliant": False,
-        "description": "Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示",
+        "description": "Decision 后一键 tidy + validate + validate-trace (Step 2.5) + validate-review-call (Step 2.6) + scope 提示",
     },
     "tidy": {
         "stability": "experimental",
@@ -518,7 +518,7 @@ def _extract_frontmatter_field(text: str, field: str) -> str | None:
 
 
 def cmd_finalize(args: argparse.Namespace) -> int:
-    """Decision 后一键编排：tidy --fix → validate --fix → validate-trace → scope 提示。
+    """Decision 后一键编排：tidy --fix → validate --fix → validate-trace → validate-review-call → scope 提示。
 
     用法: prism finalize <topic_dir> [--dry-run] [--decision={accept|reject|defer}]
                          [--trace-strict | --trace-lenient | --no-trace-validate]
@@ -527,6 +527,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
       1. tidy --fix（README 指针同步 + review.index 补全）
       2. validate --fix（产物格式校验 + 自动修复）
       2.5. validate-trace（痕迹义务家族机器抽检）
+      2.6. validate-review-call（review schema 字段值校验 — mode/roles/fallback_reason；r01 AP-2）
       3. 输出 scope 更新提示（需要人工确认）
 
     --decision 与非交互式守门：
@@ -723,6 +724,67 @@ def cmd_finalize(args: argparse.Namespace) -> int:
             })
             # 守门：内部异常不阻塞 finalize（lenient 心态），但记录给 agent
             # strict 模式遇到内部异常时也不阻塞，避免脚本 bug 把 finalize 锁死
+
+    # ── Step 2.6: validate-review-call (V11.2 / r01 AP-2) — review schema 字段值校验 ──
+    # 校验 reviews/rXX_*.md 的 mode / roles_count / task_probe.fallback_reason；
+    # 与 Step 2.5 同 mode 决议（off/lenient/strict）；strict + errors 阻塞 finalize。
+    # 来源：r01 F-P0-2 / d01 AP-2 / 032 V11.2 — 防止 mode/角色/fallback 错描传播
+    if trace_mode != "off":
+        try:
+            import importlib.util
+            vrc_path = os.path.join(SHARED_DIR, "scripts", "validate_review_call.py")
+            if os.path.isfile(vrc_path):
+                spec = importlib.util.spec_from_file_location("_validate_review_call_inproc", vrc_path)
+                vrc_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(vrc_mod)
+                from pathlib import Path as _Path
+                rc_review_files = vrc_mod.find_review_files(_Path(topic_dir))
+                rc_issues: list[dict] = []
+                for rf in rc_review_files:
+                    rc_issues.extend(vrc_mod.validate_review_file(rf, _Path(topic_dir)))
+                # lenient 降级
+                if trace_mode == "lenient":
+                    for issue in rc_issues:
+                        if issue["level"] == "ERROR":
+                            issue["level"] = "WARN"
+                            issue["lenient"] = True
+                rc_errors_list = [i for i in rc_issues if i["level"] == "ERROR"]
+                rc_warnings_list = [i for i in rc_issues if i["level"] == "WARN"]
+
+                step_status = "ok"
+                if rc_errors_list:
+                    step_status = "error"
+                    has_error = True  # strict 模式 errors 阻塞 finalize
+                elif rc_warnings_list:
+                    step_status = "warn"
+
+                steps.append({
+                    "step": "validate-review-call",
+                    "status": step_status,
+                    "mode": trace_mode,
+                    "reviews_scanned": len(rc_review_files),
+                    "errors": len(rc_errors_list),
+                    "warnings": len(rc_warnings_list),
+                    "details": {
+                        "errors": rc_errors_list[:10],
+                        "warnings": rc_warnings_list[:10],
+                    },
+                })
+            else:
+                steps.append({
+                    "step": "validate-review-call",
+                    "status": "skipped",
+                    "reason": "validate_review_call.py 未找到",
+                    "mode": trace_mode,
+                })
+        except Exception as exc:
+            steps.append({
+                "step": "validate-review-call",
+                "status": "error",
+                "mode": trace_mode,
+                "error": f"{type(exc).__name__}: {exc}",
+            })
+            # 守门：内部异常不阻塞 finalize（与 Step 2.5 同心态）
 
     # ── Step 3: scope 更新提示 ──
     scope_path = os.path.join(topic_dir, "scope.md")
@@ -929,7 +991,7 @@ def main():
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
     # finalize（v2.0 取代 pipeline；含 --decision flag + trace flags）
-    p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → scope 提示")
+    p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → validate-review-call → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
     p_finalize.add_argument("--dry-run", action="store_true", help="只预览不修复")
     p_finalize.add_argument(
