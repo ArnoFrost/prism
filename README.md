@@ -111,7 +111,7 @@ Prism 当前以四个正交载体协同工作，各自独立版控：
 | 仓库            | 默认路径                 | 职责                         | 典型内容                                              |
 | ------------- | -------------------- | -------------------------- | ------------------------------------------------- |
 | **SDK**       | `~/prism`               | 协议 + 模板 + CLI + 内置 workflow | `bin/relink`, `bin/doctor`, `prism finalize` |
-| **Skills**    | `~/prism-skills`        | 可分享的通用技能                | `commit`, `digest`, `log-triage`, `learnnote` |
+| **Skills**    | `~/prism-skills`        | 可复用的自然语言能力（可分享）              | `commit`, `digest`, `log-triage`, `learnnote` |
 | **Env**       | `~/ArnoDotFiles`（可选）    | 个人/设备专属配置与技能            | `sync-dot`, `codex-sync`, hooks |
 | **Workspace** | iCloud Vault / 本地 Vault | 项目状态（topic、评审、上下文）     | `topics/`, `project.yaml` |
 

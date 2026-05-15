@@ -221,7 +221,7 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Prism 内置技能
 
-SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。
+SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检（与 README §Skills 表保持一致）。
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
@@ -230,9 +230,9 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-scope | `/workflow-scope` | 合同收敛 → plan 派生 |
 | workflow-review | `/workflow-review` | 正式评审 — 多角色协作（总分总结构） |
 | workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
-| workflow-status | `/workflow-status` | 健康度巡检 — 活跃专项 report-first 扫描 |
 | workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
 | workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
+| workflow-status | `/workflow-status` | 健康度巡检 — 活跃专项 report-first 扫描 |
 
 ---
 
