@@ -125,7 +125,7 @@ question:
 
 > [!danger]
 > **decision_artifact 痕迹契约**：Gate 4 决策后必须在响应中输出 `decision_artifact` yaml 块（字段：`decision / decision_source / written / path / timestamp / user_text / review_kind: review-lite`）。
-> 完整字段表 + 校验规则同 [workflow-review SKILL §决策痕迹义务](../review/SKILL.md)，唯一差异：`review_kind` 固定为 `review-lite`（不重复整块契约）。
+> 完整字段表 + 校验规则见 [shared/trace-artifacts-spec.md §decision_artifact](../shared/trace-artifacts-spec.md)（4 族 SSOT），lite 唯一差异：`review_kind` 固定为 `review-lite`。
 
 #### Fallback 行为（AskQuestion 不可用）
 
