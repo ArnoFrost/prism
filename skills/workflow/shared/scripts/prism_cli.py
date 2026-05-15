@@ -725,10 +725,10 @@ def cmd_finalize(args: argparse.Namespace) -> int:
             # 守门：内部异常不阻塞 finalize（lenient 心态），但记录给 agent
             # strict 模式遇到内部异常时也不阻塞，避免脚本 bug 把 finalize 锁死
 
-    # ── Step 2.6: validate-review-call (V11.2 / r01 AP-2) — review schema 字段值校验 ──
-    # 校验 reviews/rXX_*.md 的 mode / roles_count / task_probe.fallback_reason；
+    # ── Step 2.6: validate-review-call — review schema 字段值校验 ──
+    # 校验 reviews/rXX_*.md 的 mode / roles_count / task_probe.fallback_reason
+    # + reviews/raw/rXX-role-*.md 的 subagent_self_check 块（分级 validate Layer 2 终检）；
     # 与 Step 2.5 同 mode 决议（off/lenient/strict）；strict + errors 阻塞 finalize。
-    # 来源：r01 F-P0-2 / d01 AP-2 / 032 V11.2 — 防止 mode/角色/fallback 错描传播
     if trace_mode != "off":
         try:
             import importlib.util

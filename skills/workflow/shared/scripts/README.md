@@ -2,16 +2,14 @@
 
 > 本目录承载 Prism workflow 共享的脚本工具（确定性工作交脚本，参考 AGENTS.md 核心规则 9）。
 > 本文件作为 **validator 命名空间分工说明**，防止未来加更多校验器时 agent 困惑"谁该校验什么"。
->
-> 引入：commit `79ef5cd@2026-05-15`（V11.4-c / AP-L-3 LOCAL，源自 r02 F-L-P1-3）
 
 ## Validator 家族（4 个，按"校验对象"分轨）
 
 | Validator | 物理位置 | 校验对象 | 校验内容 | 错误信号锚点 |
 |-----------|---------|---------|----------|-------------|
-| **validate-skills** | `bin/validate-skills` | 单个 SKILL.md frontmatter + 引用完整性 | `name` 格式 / `description` 含 Use when / `visibility` ∈ {dev,internal,public} / `stability` / public_gate / scripts 与 references 的 symlink 完整性 / **双 frontmatter 检测**（commit `cd890ad@2026-05-15`）| `skills/workflow/shared/scripts/README.md` 本文件 + commit hash |
-| **validate_trace.py** | `shared/scripts/validate_trace.py` | topic 产物（reviews/decisions/intake.md）的痕迹义务块 | `task_probe` / `merge_artifact` / `decision_artifact` / `intake_gate_out` 四族存在性 + 必填字段完整性（**不校验字段值**） | `review/SKILL.md §痕迹义务` + 维护者文档（4 族永久封顶 v2.0+） |
-| **validate_review_call.py** | `shared/scripts/validate_review_call.py` | reviews/rXX_*.md + reviews/raw/rXX-role-*.md schema 字段值 + **subagent 输出契约**（详见下方 §subagent_self_check schema） | `frontmatter mode ∈ {full, quick}` / `raw/rXX-role-*.md` 个数 ≤ 5 / `task_probe.fallback_reason ∈ {1,2,3,4, 并行, parallel}` / **`subagent_self_check` 块字段完整性**（**校验字段值，与 trace 互补**）| `parallel-execution.md §串行 Fallback` + commit `79ef5cd@2026-05-15` + 033 P-V3 |
+| **validate-skills** | `bin/validate-skills` | 单个 SKILL.md frontmatter + 引用完整性 | `name` 格式 / `description` 含 Use when / `visibility` ∈ {dev,internal,public} / `stability` / public_gate / scripts 与 references 的 symlink 完整性 / **双 frontmatter 检测** | 本 README |
+| **validate_trace.py** | `shared/scripts/validate_trace.py` | topic 产物（reviews/decisions/intake.md）的痕迹义务块 | `task_probe` / `merge_artifact` / `decision_artifact` / `intake_gate_out` 四族存在性 + 必填字段完整性（**不校验字段值**） | `review/SKILL.md §痕迹义务` |
+| **validate_review_call.py** | `shared/scripts/validate_review_call.py` | reviews/rXX_*.md + reviews/raw/rXX-role-*.md schema 字段值 + **subagent 输出契约**（详见下方 §subagent_self_check schema） | `frontmatter mode ∈ {full, quick}` / `raw/rXX-role-*.md` 个数 ≤ 5 / `task_probe.fallback_reason ∈ {1,2,3,4, 并行, parallel}` / **`subagent_self_check` 块字段完整性**（**校验字段值，与 trace 互补**）| `parallel-execution.md §串行 Fallback` + 本 README |
 | **validate_product.py** | `review/scripts/validate_product.py` | review 落盘产物的格式校验（OFM Callout 计数 / frontmatter 完整性 / 命名规则） | mode=full 至少 3 Callout / mode=lite 至少 2 Callout / frontmatter type 与 callout 数分档（**format 层 lint**）| `review-ofm.md` + `review-templates.md` |
 
 ### 边界 1：各 validator **只校验自己负责的对象**
@@ -36,7 +34,7 @@ review 产物格式 lint  → validate_product    （review/scripts/，finalize 
 
 - `validate-skills`：无 mode flag，恒 strict（pre-commit 类工具）
 - `validate_trace.py`：`--lenient` flag；finalize 通过 frontmatter `trace_strict` / ENV / CLI flag 决议
-- `validate_review_call.py`：`--lenient` flag；finalize 复用 `validate_trace` 同 `trace_mode`（**潜在 design smell**，r02 F-L-P1-4 / AP-L-4 / 033 立项待解耦）
+- `validate_review_call.py`：`--lenient` flag；finalize 复用 `validate_trace` 同 `trace_mode`（潜在 design smell — validator 家族 mode 控制是否独立 flag 待评估）
 - `validate_product.py`：内部 strict（review 落盘门）
 
 ## 非 Validator 类（13 个，按职责分组）
@@ -67,11 +65,10 @@ review 产物格式 lint  → validate_product    （review/scripts/，finalize 
 5. [ ] 至少 4 类 mock 测试 cover（合法 case / 各类非法 case / lenient 降级）
 6. [ ] 在本 README 表中追加一行
 
-## subagent_self_check schema（033 P-V3 引入）
+## subagent_self_check schema
 
-> **设计动机**：r01 F-meta-1 — Explore 阶段 3 subagent 中 2 个连续 2 次违反输出契约
-> （仅给 `user_visible_high_level_summary` 摘要，未输出完整 markdown），且 resume 后仍失败。
-> 用户 14:25 反思：**SKILL prompt 写法是病灶 + 需要分级 validate**（subagent 自检 + merge 终检）。
+> **设计动机**：防止 subagent 输出契约失效 —— 即 subagent 在 prompt 复杂或 token 紧张时，
+> 选择把核心结论压缩到摘要而非展开成完整 markdown，导致主 agent 必须 resume 补救（费时）。
 >
 > 本 schema 是**分级 validate 的 subagent 自检层**：让 subagent 在落盘 raw/rXX-role-*.md
 > 前自检输出是否合格（完整 markdown vs 摘要压缩），merge 阶段由 `validate_review_call.py`
@@ -122,16 +119,13 @@ Layer 2 (merge 终检):
   → 失败 → 主 agent 选择 resume / 重试 / 接受标注
 ```
 
-### 历史背景
+### 设计意图
 
-r01 F-meta-1 实地观测：A subagent (b1775eaa) + B subagent (3fc7cdf6) 连续 4 次输出
-违反契约（首发 + resume × 2 × 2 agent）。仅 C subagent (a66a94e0) 1 次成功。
-此 schema 直接缓解 F-meta-1，让 subagent **首次** 输出合格而非 resume 补救。
+让 subagent **首次**输出合格而非主 agent resume 补救：subagent 自检块的存在本身就是
+约束，让 subagent 在落盘前主动校验"我输出的是完整 markdown 还是 summary"。
 
-## 历史背景
+## 设计意图（validator 命名空间）
 
-本 README 引入动机：r02 F-L-P1-3 — V11.2 加入 `validate_review_call.py` 后，
-`shared/scripts/` 有 3 个 validator 形式相似但职责不同，agent 调用时容易困惑
-（与 r01 F-P1-7 "4 族痕迹义务跨 skill 复制" 同根 — 命名空间设计欠缺）。
-
-d02 accept r02 → V11.4-c LOCAL 派生（AP-L-3）。033 P-V3 扩展（subagent_self_check schema）。
+`shared/scripts/` 内多个 validator 形式相似但职责不同，agent 调用时容易困惑。
+本 README 显式划分各 validator 的"校验对象 / 校验内容 / 不校验什么 / 与同伴边界"，
+作为新增 validator 的 checklist。

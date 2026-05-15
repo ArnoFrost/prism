@@ -4,25 +4,17 @@ validate_review_call.py — Prism review call schema 校验
 =========================================================
 对 review 类产物（reviews/rXX_*.md + reviews/raw/rXX-role-*.md）做 schema 字段值校验：
 
-| 校验项                       | 期望值                  | 错误来源                                                          |
+| 校验项                       | 期望值                  | 防护目标                                                          |
 |-----------------------------|------------------------|-------------------------------------------------------------------|
-| frontmatter mode            | full / quick           | F-P0-2 ① 主对话 agent 易把 mode 说成 full/lite（lite 是另一 skill）|
-| roles 数（mode=full）       | ≤ 5（reviews/raw/）    | F-P0-2 ③ 把"默认 3 / 上限 5"说成"4 角色草稿"                       |
-| task_probe.fallback_reason  | 1 / 2 / 3 / 4 / 并行   | F-P0-2 ② 4 条串行白名单只校字段存在不校编号                       |
-| subagent_self_check (raw)   | md_complete + fields_present + approx_line_count + output_format | r01 F-meta-1（subagent 输出契约失效）+ 用户 14:25 分级 validate |
-
-引入点：
-  - V11.2 (commit cd890ad..79ef5cd @ 2026-05-15) — mode/roles/fallback_reason 校验
-  - 033 P-V3 (本次) — subagent_self_check 分级 validate Layer 2 终检
+| frontmatter mode            | full / quick           | 防 mode 取值错描（lite 是另一 skill 非 mode 值）                  |
+| roles 数（mode=full）       | ≤ 5（reviews/raw/）    | 防"默认 3 / 上限 5"被错描为其他数字                                |
+| task_probe.fallback_reason  | 1 / 2 / 3 / 4 / 并行   | 防 4 条串行白名单只填字段不填编号                                  |
+| subagent_self_check (raw)   | md_complete + fields_present + approx_line_count + output_format | 防 subagent 输出契约失效（首次给 summary 而非完整 markdown） |
 
 设计：
 - 默认 strict：illegal → ERR（rc=1）
 - --lenient：illegal → WARN（rc=0，迁移期友好）
 - --json：JSON 输出，可被 finalize Step 2.6 消费
-
-引用边界（参考 docs/contributing.md §跨仓 commit 引用边界）：
-错误消息中的 commit hash 是 point-in-time 证据，rebase/squash 后失效不回溯修补；
-不引用 vault 实例层 review finding（避免 archive / 重命名导致链路断裂）。
 
 使用：
   uv run python validate_review_call.py <topic_dir>
@@ -45,7 +37,7 @@ MAX_ROLES = 5
 # task_probe.fallback_reason 白名单：4 条串行 fallback 编号 + "并行"（非 fallback 标记）
 # 详见 skills/workflow/shared/parallel-execution.md §串行 Fallback
 VALID_FALLBACK_REASONS = {"1", "2", "3", "4", "并行", "parallel"}
-# subagent_self_check.fields_present 必填字段集合（033 P-V3 — 分级 validate Layer 2 终检）
+# subagent_self_check.fields_present 必填字段集合（分级 validate Layer 2 终检）
 # 详见 shared/scripts/README.md §subagent_self_check schema
 SUBAGENT_REQUIRED_FIELDS = {"findings", "scoring", "actions"}
 # subagent_self_check.approx_line_count 短输出阈值（疑似 summary 压缩）
@@ -125,7 +117,7 @@ def count_raw_role_files(topic_dir: Path, review_id: str) -> int:
 
 
 def list_raw_role_files(topic_dir: Path, review_id: str) -> list[Path]:
-    """列出 reviews/raw/<review_id>-role-*.md 路径（033 P-V3 — Layer 2 自检校验）。"""
+    """列出 reviews/raw/<review_id>-role-*.md 路径（分级 validate Layer 2 自检校验）。"""
     raw_dir = topic_dir / "reviews" / "raw"
     if not raw_dir.is_dir():
         return []
@@ -144,14 +136,14 @@ def parse_yaml_list(value: str) -> list[str]:
 
 
 def validate_subagent_self_check(raw_file: Path, expected_format: str | None = None) -> list[dict]:
-    """校验单个 raw/rXX-role-*.md 的 subagent_self_check yaml 块（033 P-V3 — Layer 2 终检）。
+    """校验单个 raw/rXX-role-*.md 的 subagent_self_check yaml 块（分级 validate Layer 2 终检）。
 
     分级 validate 设计：
       Layer 1 (subagent 自检): subagent 落盘前在 raw 末尾输出 subagent_self_check: 块
       Layer 2 (merge 终检，本函数): 主 agent 调用本校验，让首次合格率 ≥ 80%
 
     schema 定义见 shared/scripts/README.md §subagent_self_check schema
-    动机：r01 F-meta-1（subagent 输出契约失效）+ 用户 14:25 反思
+    防护目标：subagent 输出契约失效（首次给 summary 而非完整 markdown）
     """
     issues: list[dict] = []
     content = raw_file.read_text(encoding="utf-8")
@@ -165,7 +157,7 @@ def validate_subagent_self_check(raw_file: Path, expected_format: str | None = N
             "file": str(raw_file),
             "message": (
                 "raw 文件缺整个 `subagent_self_check:` 块；"
-                "建议 subagent 在落盘前输出自检（防 F-meta-1 复发，详见 shared/scripts/README.md §subagent_self_check schema）"
+                "建议 subagent 在落盘前输出自检（详见 shared/scripts/README.md §subagent_self_check schema）"
             ),
         })
         return issues
@@ -261,9 +253,7 @@ def validate_review_file(review_file: Path, topic_dir: Path) -> list[dict]:
             "file": str(review_file),
             "message": (
                 f"review frontmatter `mode: {mode}` 不在合法值 {sorted(VALID_MODES)} 内；"
-                "常见错描：'lite' 是另一个独立 skill (workflow-review-lite) 非 mode 值；"
-                "规则引入 commit cd890ad..79ef5cd@2026-05-15（point-in-time 证据，"
-                "rebase/squash 后失效不回溯；详见 docs/contributing.md §跨仓 commit 引用边界）"
+                "常见错描：'lite' 是另一个独立 skill (workflow-review-lite) 非 mode 值"
             ),
         })
 
@@ -281,12 +271,11 @@ def validate_review_file(review_file: Path, topic_dir: Path) -> list[dict]:
                     "file": str(review_file),
                     "message": (
                         f"reviews/raw/{review_id}-role-*.md 个数 = {roles_count} > "
-                        f"上限 {MAX_ROLES}（review/SKILL.md 默认 3 角色，自定义上限 5；"
-                        "规则引入 commit 79ef5cd@2026-05-15）"
+                        f"上限 {MAX_ROLES}（review/SKILL.md 默认 3 角色，自定义上限 5）"
                     ),
                 })
 
-        # raw 文件 subagent_self_check 校验（033 P-V3 — Layer 2 终检，分级 validate）
+        # raw 文件 subagent_self_check 校验（分级 validate Layer 2 终检）
         if review_id_match:
             review_id = review_id_match.group(1)
             expected_format = fm.get("format")  # review 主体 frontmatter 期望的 format
@@ -314,8 +303,7 @@ def validate_review_file(review_file: Path, topic_dir: Path) -> list[dict]:
                         f"{sorted(VALID_FALLBACK_REASONS)}；必须给出白名单条款编号："
                         "#1 tool_not_found / #2 mode=quick / #3 用户原文 / #4 文本流 CLI；"
                         "或 '并行' / 'parallel'（表示非 fallback）；"
-                        "白名单 SSOT：skills/workflow/shared/parallel-execution.md §串行 Fallback；"
-                        "规则引入 commit 79ef5cd@2026-05-15"
+                        "白名单 SSOT：skills/workflow/shared/parallel-execution.md §串行 Fallback"
                     ),
                 })
 

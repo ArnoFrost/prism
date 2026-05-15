@@ -44,7 +44,7 @@ workflow-review 是**阶段性正式收敛工具**，不是每轮对话都要重
 |------|--------|------|------|
 | `--mode` | `full` / `quick` | 自动 | full = 并行 + 多文件 + 深度审查；quick = 串行 + 单文件 + 快速扫描 |
 
-> ⚠️ **取值合法性由 `validate_review_call.py` 在 finalize Step 2.6 校验**（仅 `full` / `quick`；`lite` 不是 mode 值而是另一个独立 skill `workflow-review-lite`）。详见 [shared/scripts/validate_review_call.py](../shared/scripts/validate_review_call.py)；动机参见 r01 F-P0-2 / d01 AP-2。
+> ⚠️ **取值合法性由 `validate_review_call.py` 在 finalize Step 2.6 校验**（仅 `full` / `quick`；`lite` 不是 mode 值而是另一个独立 skill `workflow-review-lite`）。详见 [shared/scripts/validate_review_call.py](../shared/scripts/validate_review_call.py)。
 
 ### 动态决策（用户未指定 mode 时）
 
