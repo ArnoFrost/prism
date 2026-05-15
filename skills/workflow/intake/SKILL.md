@@ -80,11 +80,11 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 | `topic_affinity.suggestion` | 路由决策依据 |
 | `topic_affinity.matched_topic` | 匹配到的已有专项（**仅作 sniff 最高匹配展示，绝非默认落盘目标**） |
 | `topic_affinity.candidates` | 多候选时展示列表 |
-| `topic_affinity.affinity_strength` | high / medium / low / none — **r18 PostFix 新增**，决定是否允许走 cohesion 默认 |
+| `topic_affinity.affinity_strength` | high / medium / low / none — 决定是否允许走 cohesion 默认 |
 | `next_topic_number` | 新建专项时的编号（全局递增） |
 | `format` | 产物格式（ofm / standard） |
 
-#### `affinity_strength` 路由判定（r18 PostFix · T8 落地）
+#### `affinity_strength` 路由判定
 
 | affinity_strength | best_score | 行为 |
 |---|---|---|
@@ -135,10 +135,7 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 | `null` | 无 workspace | 降级处理，见 [intake-fallback.md](references/intake-fallback.md) |
 
 > [!note]
-> **T8 已落地（r18 PostFix）**：`sniff_lib.detect_topic_affinity` 已输出 `affinity_strength` 字段，
-> 弱信号匹配（score=1）由 `affinity_strength=low` 显式标识，agent 不再需要"额外主动判断"。
-> 历史教训：019/r02 误落、prism workspace 017 score=1 假匹配均源于弱信号回填 matched_topic
-> 被当成默认聚合目标 — 详见 Phase 0 §`affinity_strength` 路由判定表。
+> `sniff_lib.detect_topic_affinity` 输出 `affinity_strength` 字段；弱信号匹配（score=1）由 `affinity_strength=low` 显式标识，agent 不需"额外主动判断"。弱信号回填 matched_topic 被当成默认聚合目标是历史教训 — 详见 Phase 0 §`affinity_strength` 路由判定表。
 
 #### 2.2 AskQuestion 候选构造规则
 
@@ -180,7 +177,7 @@ sniff 检测到本次 intake 与已有 topic 有亲和（score=2）。
 > [!warning]
 > **不要把本 SKILL 的关键词白名单当成 SSOT 全文复用**——SSOT §6.3 已显式列出"只抄关键词不抄可审计目标"为破坏 SSOT 的反模式。任何沿用本守卫的新 SKILL 应当只扩展自己的关键词白名单 + 指针引用 SSOT，不得整段拷贝反例 / 正例。
 
-口语化「内聚」/「合并」常被用来指代 Git 操作而非 topic 路由，因此即使关键词命中也必须叠加可审计目标才能跳过 Ask，避免误绑定（r11 [F-C06] 风险，r13 P0 F3 已升格为 SSOT §6.3）。
+口语化「内聚」/「合并」常被用来指代 Git 操作而非 topic 路由，因此即使关键词命中也必须叠加可审计目标才能跳过 Ask，避免误绑定（已升格为 SSOT §6.3 硬约束）。
 
 #### 2.4 路由日志输出
 
@@ -215,39 +212,11 @@ topic_affinity.suggestion = cohesion (score=2)
 3. **更新 `scope.md`**：根据新输入补充未决问题
 4. **更新 `README.md`**：刷新"当前状态"和"轮次索引"
 
-#### Phase 3 Gate Out — intake_gate_out 痕迹契约（r18 PostFix）
+#### Phase 3 Gate Out — intake_gate_out 痕迹契约
 
 > [!danger]
-> **intake 出口契约 — 防 intake 吃掉 scope/plan/README**
->
-> Phase 3 结束时必须在响应中输出 `intake_gate_out` 块作为可观察执行痕迹：
->
-> ```
-> intake_gate_out:
->   topic_dir: <topic 目录相对路径>
->   intake_md_lines: <intake.md 行数>
->   scope_md_present: true | false           # scope.md 至少占位
->   plan_md_present: true | false            # plan.md 至少占位
->   readme_md_present: true | false          # README.md 至少占位
->   review_index_present: true | false       # review.index.md 至少占位
->   intake_size_ok: true | false             # intake.md 行数 ≤ 100（建议阈值）
-> ```
->
-> **校验规则**（任一违反 → intake 未完成）：
-> - `scope_md_present` / `plan_md_present` / `readme_md_present` / `review_index_present` 任一为 `false` → **违约**：intake skill 必须按 [intake-templates.md](references/intake-templates.md) 补占位骨架；intake 完成前**禁止**进入下游 scope/review 阶段
-> - `intake_size_ok: false`（intake.md > 100 行）→ **强警示**：intake 正在吞噬合同面内容，应当把 scope 边界 / plan 时间线 / 验收门槛拆出到对应文件，intake 仅保留入料路由 + 派生背景
->
-> **设计意图**：intake 是入料路由的轻量产物，**不是合同面 SSOT**。SSOT 分工：
-> - `intake.md` — 入料事件 + 路由判定 + 派生背景（**轻量**）
-> - `scope.md` — 边界 / 合同 / 验收 / 非目标（合同面 SSOT）
-> - `plan.md` — 时间线 / 检查点 / 编排（执行面 SSOT）
-> - `README.md` — 当前状态 / 轮次索引（指针面 SSOT）
-> - `decisions/dXX.md` — 路由 / 边界 / 方向决策（决策面 SSOT）
->
-> **历史背景**（r18 修复动因，来自 020 真实观测）：
-> 020/intake.md 9 大节 20 个二级标题 185 行，塞了"核心交付 α/β / 非目标 / 长期资产 /
-> 预期周期 / 握手协议 / 验收门槛 / Open Questions / 工件演进"——全部应归 scope/plan/README/decisions，
-> 但 020 这三个文件**完全缺失**。结果：scope 永远没生成 → workflow-scope 无源 → 整个下游链路停摆。
+> Phase 3 结束时必须在响应中输出 `intake_gate_out` 块作为可观察执行痕迹（防 intake 吞噬合同面 SSOT）。
+> **字段表 + 校验规则 + SSOT 分工** 见 [shared/trace-artifacts-spec.md §intake_gate_out](../shared/trace-artifacts-spec.md)。
 
 ### 路由决策记录
 

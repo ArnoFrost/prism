@@ -169,8 +169,45 @@ Callout 完整映射见 [review-ofm.md](references/review-ofm.md)。
 > [!danger]
 > **mode=full 真并行硬约束**：必须真发起并行 Task 调度（每角色独立上下文 + 独立返回）；**禁止**伪并行（同一轮响应里分段以不同角色视角输出）。IDE 客户端必须先尝试 Task tool 一次确认能力，调用真实返回 `tool_not_found` 才允许串行 fallback。
 >
-> **subagent 输出契约 — Layer 1 自检**：subagent 落盘 raw 前必须输出 `subagent_self_check:` yaml 块（字段：`md_complete / fields_present / output_format / approx_line_count / role`）。详见 [shared/scripts/README.md §subagent_self_check schema](../shared/scripts/README.md)。
 > **首次合格优于多次 resume 补救**（Harness vs 心流原则）。
+
+#### Subagent 召集 Prompt 模板（V7 真闭合硬前置）
+
+主 agent 召集每个角色 subagent 时**必须**按以下骨架内联到 Task prompt（不依赖 subagent 自行查 reference）。骨架本身 ≤ 30 行 / ≤ 5 字段维度（来自 Harness vs 心流原则）。
+
+```text
+你是 {评审主题} 评审的 角色 {A|B|C}：{角色名}（评测尺：{评测尺简述}）。
+独立工作，不知道其他角色存在。
+
+## 评审对象
+{≤ 8 条文件路径或 commit 范围；不重复主 agent 已给出的全部背景}
+
+## 你的视角（≤ 5 个维度）
+{每个维度 1 行：维度名 + 关键判断问题}
+
+## 输出契约（必须直接输出 OFM markdown，禁止压缩到 summary）
+- TL;DR ≤ 3 句
+- Findings（P0/P1/P2 分级；每条 cite 文件 + 行号 + 证据）
+- {角色特有字段：Risks / Scoring / BV 等}
+- Actions（≤ 5 条，含 LOCAL/PROTOCOL/DEPRECATION 标）
+
+## subagent_self_check（落盘前必填）
+```yaml
+subagent_self_check:
+  md_complete: true | false             # 是完整 markdown 而非 summary 压缩
+  fields_present: [tldr, findings, ...] # 实际包含字段
+  output_format: ofm | standard
+  approx_line_count: <int>
+  role: {A|B|C}
+```
+
+## 反 yes-man 约束
+- 不预先 accept 主 agent 推测结论
+- 不"无 P0"凑数
+- 完整 markdown 输出，禁止 user_visible_high_level_summary 压缩
+```
+
+> **失败模式**：压缩到 summary / 缺关键字段 / Callout 替换为裸 Markdown / 省略 self_check 块（前三者 ERROR；后者 WARN 向后兼容）。Schema SSOT + Layer 2 终检见 [shared/scripts/README.md §subagent_self_check schema](../shared/scripts/README.md)。
 
 并行调度规范 + 串行 Fallback 4 条白名单 + 反模式 A/B/C/D 详见 [parallel-execution.md](references/parallel-execution.md)。
 

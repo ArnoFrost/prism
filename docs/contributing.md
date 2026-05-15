@@ -22,6 +22,18 @@
 
 如果 SDK 文档 / 工作区记录里嵌入了 `~/prism-skills` 的 commit hash，请把这种引用视作**当时所见的 point-in-time 证据**，而不是长期稳定的指针。`~/prism-skills` 仓库做 rebase / squash / cherry-pick 后，这些 hash 可能不再可达；维护者**不需要回溯修补**已落盘的历史记录。如果某个跨仓改动需要长期可追溯，应在 `~/prism-skills` 侧打 tag 并在 SDK 一侧引用 tag 名。
 
+### 治理 SSOT topic 默认 strict
+
+承担 Prism workflow / skill 治理职责的 topic（如 protocol-hardening / skills-governance / trace-enforce-depth 等），其 `README.md` frontmatter 应显式声明：
+
+```yaml
+trace_strict: true
+```
+
+理由：治理 SSOT topic 内的 review/decision/intake 产物是后续所有项目的范例参考；若该 topic 自己走 lenient，finalize 全绿即"未阻断"而非"完全合规"，下游消费者看到的 status 失去判别价值。strict 模式让痕迹义务族 ERROR 真正阻断 finalize，确保治理 SSOT 自身经得起 lint 闸门。
+
+历史教训：曾出现治理 topic `trace_strict: false` 导致 `validate-review-call` Step 2.6 ERROR 路径永远走不到 — "全绿"实为"未抛 ERROR"假象。
+
 ### SDK 层 vs Workspace 层引用边界
 
 SDK 层文件（`bin/` / `skills/workflow/` / `docs/` / 模板等，**入 git 公共分发**）**不应**引用 Workspace 实例层的具体决策痕迹，包括：

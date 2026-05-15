@@ -100,6 +100,16 @@ validator 的 Callout 阈值分档以 frontmatter `type` 为机器 SSOT；
 **Other 选项硬契约**：用户选 Other 后，agent 把自由文本**原样回收当作"方案修订意图"**，
 **不**立即写 dXX.md，**不**强行解释为 Accept/Reject/Defer。
 
+**Other 路径升级约束（防绕过决策门审计）**：
+
+Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 turn 内 agent 基于该 Other 文本对 `scope.md` 做**实质修订**（行级 diff > 10 行 或 涉及 G/V/约束/非目标段任一类的增删），**必须**：
+
+1. 在做修订前重新触发 Gate 4 AskQuestion，让用户在 Accept / Reject / Defer 之间显式裁决
+2. 落 `decision_artifact` 完整块（`written: true` + 实存 dXX.md path）
+3. **禁止**"Other 兜底吞决策"模式（让实质 scope 修订无 decision_artifact 痕迹）
+
+历史教训：曾出现 Other 路径反思**实质驱动** scope 从 v1 → v2 的彻底改写（撤回主目标 + 新增多条 G/V + 关键约束 + 非目标）却未落 decision_artifact —— 决策链 d01..dXX 序列对完整治理事件不再封闭，事后追认困难。
+
 ---
 
 ## intake_gate_out

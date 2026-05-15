@@ -67,6 +67,16 @@ question:
 
 > 设计动机：强结构化曾把"先改 X 再决"逼成假 Defer，反劣化共识。Other 选项 = 拒绝把含糊文本解释为既定决策的口袋兜底。
 
+### 防绕过决策门审计（升级约束）
+
+Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 turn 内 agent 基于该 Other 文本对 `scope.md` 做**实质修订**（行级 diff > 10 行 或 涉及 G/V/约束/非目标段任一类的增删），**必须**：
+
+1. 在做修订前重新触发 Gate 4 AskQuestion，让用户在 Accept / Reject / Defer 之间显式裁决
+2. 落 `decision_artifact` 完整块（`written: true` + 实存 dXX.md path）
+3. **禁止**"Other 兜底吞决策"模式（让实质 scope 修订无 decision_artifact 痕迹）
+
+历史教训详见 [trace-artifacts-spec.md §decision_artifact §Other 路径升级约束](../../shared/trace-artifacts-spec.md)。
+
 ## 决策路径表
 
 | 选择 | 后续动作 |
