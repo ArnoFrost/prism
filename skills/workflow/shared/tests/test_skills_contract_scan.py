@@ -221,11 +221,11 @@ class TestCli:
             f"不应触发 lines 警戒；当前 watch_list={data['watch_list']}"
         )
 
-    def test_cli_explicit_v1x_threshold_review_skill_breaches(self):
-        """显式传 v1.x 历史阈值（350）：review/SKILL.md 442 行仍触线（reality 锚点）。
+    def test_cli_explicit_v1x_threshold_review_skill_passes(self):
+        """显式传 v1.x 历史阈值（350）：review/SKILL.md 已瘦身到 < 350 行，不再触发。
 
-        030/AP-73 reality check 历史锚点 — 验证 contract_scan 阈值覆盖机制工作正常，
-        以及 v2.0 拆分后的 442 行仍超过 v1.x 历史经验值 350。
+        030/AP-73 reality check 更新 — v2.0 beta 阶段 review SKILL.md 经多轮重构
+        从 442 行降到 ~293 行，已低于 v1.x 历史经验值 350，验证瘦身成果。
         """
         result = subprocess.run(
             [sys.executable, self.SCRIPT, "--threshold-lines", "350"],
@@ -235,7 +235,7 @@ class TestCli:
         data = json.loads(result.stdout)
         assert data["thresholds"]["lines"] == 350
         breached_files = [w["file"] for w in data["watch_list"]]
-        assert any("review/SKILL.md" in f for f in breached_files), (
-            f"030/AP-73 v1.x 阈值 reality 锚点：review/SKILL.md 在 350 阈值下应触发警戒；"
+        assert not any("review/SKILL.md" in f for f in breached_files), (
+            f"review/SKILL.md 已瘦身到 <350 行，不应再触发 v1.x 阈值警戒；"
             f"当前 watch_list={breached_files}"
         )
