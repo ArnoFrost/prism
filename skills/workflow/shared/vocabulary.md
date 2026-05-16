@@ -149,11 +149,16 @@
 
 **正确**（cite SSOT，不复制定义）：
 
+各 SKILL 子目录维护一个 `references/vocabulary.md` 软链 指向 `../../shared/vocabulary.md`，在 SKILL.md 中以**相对子目录路径**引用——保证 `bin/relink` 分发到 IDE 后路径不断。
+
 ```markdown
-术语遵循 [vocabulary.md](../shared/vocabulary.md) — 缩写列表 + 易混淆对比 见 SSOT。
+# 在 SKILL.md 中 cite（推荐：通过同级 references 软链）
+术语遵循 [vocabulary.md](references/vocabulary.md) — 缩写列表 + 易混淆对比 见 SSOT。
 
 > 例：`OQ` = 开放问题（详见 vocabulary.md §术语表）
 ```
+
+> ⚠️ **不推荐**：跨目录相对路径 `../shared/vocabulary.md` —— 仅在 SDK 内 SKILL 目录下成立，`bin/relink` 分发到 IDE 后路径断裂；topic 产物从 vault（iCloud）侧引用更不通。各 SKILL 子目录用 `references/vocabulary.md` 软链方案规避（r01 P0-1 / d01 AP-1）。
 
 **禁止**（字字复制本体定义）：
 
@@ -173,6 +178,26 @@
 | 列举行动 | `**AP-3** intake_gate_out 增 fingerprint` | `应该加一个 fingerprint` |
 | 派生 plan | `**P-V1 → V1** — 落地 SSOT` | `### 第一步` |
 
+### Prefix dispatch 表（按上下文选 prefix 形态）
+
+> 解决 r01 P0-2（"按上下文选 prefix" 无机械规则 → 用户"太随意"根因）。
+> 落点：scope / plan / review / decision 等 topic 产物里的列项，按下表选 prefix 形态。
+
+| Prefix | 上下文 | 含义 | 典型落点 | 示例 |
+|--------|--------|------|---------|------|
+| **OQ-N** | scope 阶段提出的 topic 级开放问题 | 全 topic 范围未决议题，由 dXX 裁决或 review 触发 | `scope.md` §未决问题 | `OQ-3: 是否承载 031 V7 archive 维护者裁定` |
+| **OQ-rXX-N** | review 阶段发现的 review 局部开放问题 | 仅本轮 review 范围内未决，由对应 dXX 裁决 | `reviews/rXX_*.md` §Open Questions | `OQ-r01-1: 形态规范采用方案 B 还是 C？` |
+| **AP-N** | review/scope/decision 派生的通用 LOCAL/PROTOCOL 行动 | 当前 topic 内执行类工作 | `reviews/rXX_*.md` / `decisions/dXX_*.md` §Actions | `AP-1: 各 SKILL 子目录建 references/vocabulary.md 软链` |
+| **AP-L-N** | 跨多个 SKILL 的 LIBRARY 类行动（影响 shared/ 或 templates/） | 跨 SKILL 影响面 | 同上 | `AP-L-4: trace-artifacts-spec §decision_artifact 字段定义` |
+| **AP-Z-N** | ZERO-COST 类行动（无代码改动，仅文档或元数据维护） | 文档维护、配置补齐 | 同上 | `AP-Z3: INSTALL_INTERNAL.md 维护者群通知 v2.0 风格` |
+| **AP-meta-N** | META 跨 topic 转移类行动 | 把本 topic 的 finding 转给另一 topic | 跨 topic 联动声明 | `AP-meta-1: M-1 复现证据归集到 033 V12 证据池` |
+| **dXX** | decision 事件节点 | 决策门触发产物，按时序编号 d01 → d02 → … | `decisions/dXX_*.md` | `d01_accept_r01.md` |
+| **dXX-AP-N** | decision 内派生的行动条目 | 决策一并落地的 inline AP（与独立 AP-N 区别）| `decisions/dXX_*.md` §Accept 范围 | `d01-AP-3: 演进规则新立第 5 行` |
+| **dXX-OQ-N** | decision 内显式留口的子 OQ | 决策中识别但未当场裁决的子议题 | `decisions/dXX_*.md` §未决 | `d01-OQ-1: dispatch 表是否需要 v2.x 第二批补 PROTOCOL 形态` |
+| **rXX** | review 轮次 | 评审事件节点，按 topic 内时序编号 | `reviews/rXX_*.md` | `r01_词典画风规范化与形态治理.md` |
+
+> ⚠️ **dXX / dXX-AP-N / dXX-OQ-N 当前为接口预留**（来自 OQ-9 / 接口 #2，2026-05-16）。实际语义在 v2.3+ decision-chain 治理专项（候选 035）启动时落定；本批入表只为前向兼容。
+
 ### 演进规则
 
 | 操作 | 流程 |
@@ -181,6 +206,9 @@
 | 修改既有术语定义 | 走 dXX 决策 + 在 §变更记录 追加一行 |
 | 增易混淆对比 | 不需 dXX；任何 review/scope 阶段发现混淆即可 PR 追加 |
 | 删除术语 | ❌ 不允许；只允许标 deprecated（保留向后兼容） |
+| **形态规范变更** [^1] | 走 dXX 决策 + 在 §变更记录 追加一行；**不需 review**（与「修改既有术语定义」语义独立）|
+
+[^1]: 「形态规范变更」涵盖 §术语表列结构 / Prefix dispatch 表行结构 / 术语表组织形态等元规范的修订。**注**：索引架构变更（如未来引入 `decision.index.md` 替代 / 并存 `review.index.md`）同属本类，走 dXX 路径，不需要 review 兜底；新引入概念在 §第二批候选术语 区先占位，dXX 落地时正式纳入首批。来自 d01 OQ-r01-2 / 接口 #3（OQ-9 预留）。
 
 ---
 
@@ -189,6 +217,7 @@
 | 日期 | 触发 | 变更摘要 |
 |------|------|---------|
 | 2026-05-15 | 034 P-V1 | 初版落地 — 首批 8 术语 + 中英对照 + 易混淆对比 14 组 |
+| 2026-05-16 | 034 d01 P-V2.0a | + §使用约定 cite 示例改 `references/vocabulary.md`（AP-1 配套，r01 P0-1）+ §使用约定 加 prefix dispatch 表（AP-2，r01 P0-2，含 dXX/dXX-AP-N/dXX-OQ-N 接口 #2 预留）+ §演进规则 新立第 5 行「形态规范变更」+ 索引架构变更脚注（AP-3，r01 P0-3，含接口 #3 预留）+ §第二批候选术语区（接口 #1，OQ-9 预留）|
 
 ---
 
@@ -202,3 +231,23 @@
 | `review-spec-skeleton.md` | 引用本词典中的 review / finding / AP 等术语（finding 待第二批纳入） |
 
 > 本词典首批不含 review / finding / decision / archive 等术语（留 OQ-7 复看时第二批纳入）。
+
+---
+
+## 第二批候选术语（未来 dXX 引入）
+
+> **状态**：占位区 — 列出未来批次候选术语 + 等待治理 wave，本身不定义语义，仅作为 SSOT 入口。详见 §演进规则脚注 [^1]。
+>
+> 任何条目正式入首批 §术语表 须走 dXX 决策（参考 §演进规则 第 1 行「新增术语」）。
+
+| 候选术语 | 性质 | 等待治理 wave | 触发条件 |
+|---------|------|--------------|----------|
+| `review` | 评审 | v2.3+ 第二批 | OQ-7 复看时纳入 |
+| `finding` | 评审发现 | v2.3+ 第二批 | OQ-7 复看时纳入 |
+| `decision` (`d`) | 决策事件 | **decision-chain 治理 wave**（v2.3+ 候选 035）| 034 OQ-9 启动 |
+| `decision-chain` | 决策链时序（d01 → d02 → …）| **decision-chain 治理 wave** | 同上 |
+| `decision-index` | 决策索引 SSOT（取代 review.index 候选）| **decision-chain 治理 wave** | 同上 |
+| `archive` | 归档（topic / SKILL）| v2.3+ 第二批 | OQ-7 复看时纳入 |
+| `index` | 索引（中性概念）| v2.3+ 第二批 | OQ-7 + decision-chain 治理同步落定 |
+
+> 来自 d01 / OQ-9 接口 #1（2026-05-16 预留）：本表的目的是让未来命题启动时**不需要回头改首批结构**，直接走 dXX 决策门把候选条目移到 §术语表即可。
