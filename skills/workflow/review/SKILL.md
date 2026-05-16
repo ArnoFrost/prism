@@ -108,7 +108,7 @@ sniff 返回 `topic_affinity.suggestion` 后：
 | `new_topic` | 新建专项 | `topics/{NNN}_{topic-name}/reviews/rXX.md` |
 | `null` | 无 workspace | 当前目录或用户指定 |
 
-决策结果**必须**显式输出。`next_review_source` 处理：`affinity` / `topic_hint` / `project_dir` 可信直接用；`none` 触发边界澄清门（详见 [askquestion-fallback.md §4.3.2](../shared/references/askquestion-fallback.md)）。
+决策结果**必须**显式输出。`next_review_source` 处理：`affinity` / `topic_hint` / `project_dir` 可信直接用；`none` 触发边界澄清门（详见 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)）。
 
 ## 默认角色（3 角色）
 
@@ -215,7 +215,7 @@ subagent_self_check:
 
 并行调度规范 + 串行 Fallback 4 条白名单 + 反模式 A/B/C/D 详见 [parallel-execution.md](references/parallel-execution.md)。
 
-**Merge 阶段**：按上方协作骨架 ① ~ ⑦ 执行。raw 落盘判定（Step 4）+ merge_artifact 痕迹完整字段表见 [shared/trace-artifacts-spec.md](../shared/trace-artifacts-spec.md)。
+**Merge 阶段**：按上方协作骨架 ① ~ ⑦ 执行。raw 落盘判定（Step 4）+ merge_artifact 痕迹完整字段表见 [shared/trace-artifacts-spec.md](references/trace-artifacts-spec.md)。
 
 ### 策略二：串行角色切换（mode=quick）
 
@@ -231,7 +231,7 @@ subagent_self_check:
 | `writable = false` | 降级为对话输出模式，不落盘 |
 | `topic_affinity = null` | 按 `new_topic` 处理或用户指定 |
 
-详见 [askquestion-fallback.md §4.3](../shared/references/askquestion-fallback.md)。
+详见 [askquestion-fallback.md §4.3](references/askquestion-fallback.md)。
 
 ## 痕迹义务（4 族封顶）
 
@@ -239,7 +239,7 @@ subagent_self_check:
 - `merge_artifact`（Merge 后必填）
 - `decision_artifact`（Gate 4 后必填）
 
-完整字段表 + 校验规则见 [shared/trace-artifacts-spec.md](../shared/trace-artifacts-spec.md)（4 族 SSOT）。
+完整字段表 + 校验规则见 [shared/trace-artifacts-spec.md](references/trace-artifacts-spec.md)（4 族 SSOT）。
 
 机器抽检由 `validate_trace.py` 执行；字段值校验由 `validate_review_call.py` 执行。共同原则：**无痕迹 = 未执行**。
 
@@ -278,4 +278,4 @@ Merge 落盘且 Gate 3 通过后，**必须**触发结构化决策门（AskQuest
 | `scripts/{sniff,validate_product}.py` | 环境探测 / 产物校验 |
 
 产物命名 + 模板细节见 [review-templates.md](references/review-templates.md)。
-合并规则（去重 / 仲裁 / 独立发现率公式）见 [review-merge-spec.md](../shared/review-merge-spec.md)。
+合并规则（去重 / 仲裁 / 独立发现率公式）见 [review-merge-spec.md](references/review-merge-spec.md)。

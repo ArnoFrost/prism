@@ -42,7 +42,7 @@ stability: experimental
 4. Decision（Gate 4 决策门 — AskQuestion 4 选项）
 ```
 
-> **编号契约**：`reviews/rXX_*.md` 流水编号由 sniff.py 返回，frontmatter `type: review-lite` 区分；不另起 r01 序列。`next_review_source = none` 触发边界澄清门（详见 [askquestion-fallback.md §4.3.2](../shared/references/askquestion-fallback.md)）。
+> **编号契约**：`reviews/rXX_*.md` 流水编号由 sniff.py 返回，frontmatter `type: review-lite` 区分；不另起 r01 序列。`next_review_source = none` 触发边界澄清门（详见 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)）。
 
 ## 执行步骤
 
@@ -91,7 +91,7 @@ stability: experimental
 > 4. ❓ Open Questions 列表
 > 5. 各 option 的 `label` 写具体后续动作（含 dXX 编号 / AP-X / OQ-X）
 >
-> 完整示例见 SSOT [askquestion-fallback.md §4.2](../shared/references/askquestion-fallback.md)。
+> 完整示例见 SSOT [askquestion-fallback.md §4.2](references/askquestion-fallback.md)。
 
 ```yaml
 question:
@@ -127,11 +127,11 @@ question:
 
 > [!danger]
 > **decision_artifact 痕迹契约**：Gate 4 决策后必须在响应中输出 `decision_artifact` yaml 块（字段：`decision / decision_source / written / path / timestamp / user_text / review_kind: review-lite`）。
-> 完整字段表 + 校验规则见 [shared/trace-artifacts-spec.md §decision_artifact](../shared/trace-artifacts-spec.md)（4 族 SSOT），lite 唯一差异：`review_kind` 固定为 `review-lite`。
+> 完整字段表 + 校验规则见 [shared/trace-artifacts-spec.md §decision_artifact](references/trace-artifacts-spec.md)（4 族 SSOT），lite 唯一差异：`review_kind` 固定为 `review-lite`。
 
 #### Fallback 行为（AskQuestion 不可用）
 
-按 SSOT 降级：详见 [shared/references/askquestion-fallback.md §4.2](../shared/references/askquestion-fallback.md)。关键约束：**模糊回复一律视为未确认 + `PRISM_NO_INTERACTIVE=1` 必须 fail + 解析失败禁止写 dXX.md**。
+按 SSOT 降级：详见 [shared/references/askquestion-fallback.md §4.2](references/askquestion-fallback.md)。关键约束：**模糊回复一律视为未确认 + `PRISM_NO_INTERACTIVE=1` 必须 fail + 解析失败禁止写 dXX.md**。
 
 ⛔ 决策门不可跳过。
 

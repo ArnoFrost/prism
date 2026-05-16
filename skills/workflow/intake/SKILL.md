@@ -13,7 +13,7 @@ stability: experimental
 |------|------|
 | **是什么** | 把混沌输入收进 topic 体系的入口控制器：判断新建/追加/迁移，生成或补全专项骨架 |
 | **不是什么** | 不是 scope — 不定正式边界、不写验收口径、不产出 plan 条目；不做评审；不替代 decision 记录路由裁决 |
-| **读取工件** | sniff 输出按 [topic-sniff-spec](../shared/topic-sniff-spec.md) 路由；另读 intake-templates.md、intake-fallback.md |
+| **读取工件** | sniff 输出按 [topic-sniff-spec](references/topic-sniff-spec.md) 路由；另读 intake-templates.md、intake-fallback.md |
 | **写入工件** | intake.md（新建/追加）、README.md（按 [topic-readme 模板](../../workspace/templates/topic-readme.md)）、scope.md（草稿骨架）、plan.md（按 [topic-plan 模板](../../workspace/templates/topic-plan.md) 占位）、decision.index.md（决策链主索引占位 — 事件链 SSOT，含时序表 + frontmatter 依赖字段说明）、review.index.md（评审辅助索引占位 — 稀疏关联律）、index.md（专项引用） |
 | **结束建议** | → `workflow-scope`（收敛边界） |
 | **设计模式** | Pattern 4 — Context-aware Tool Selection（根据 topic_affinity 路由到新建/追加/迁移） + Pattern 1 — Sequential Workflow（sniff→classify→route→initialize） |
@@ -112,7 +112,7 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 3. 展示给用户确认
 
 > [!warning]
-> migrate 聚合方案的"用户确认"属决策门（低频锚点），按 SSOT [askquestion-fallback.md](../shared/references/askquestion-fallback.md) §4.2 与 §2 触发条件优先级处理：
+> migrate 聚合方案的"用户确认"属决策门（低频锚点），按 SSOT [askquestion-fallback.md](references/askquestion-fallback.md) §4.2 与 §2 触发条件优先级处理：
 > - `PRISM_NO_INTERACTIVE=1` 路径下**必须 fail**，调用方需以参数显式提供聚合方案（env 不得绕过决策门）；
 > - 解析失败 / 模糊回复（"好" / "行" / "OK"）一律重问，禁止解释为 Accept；
 > - 用户未明确确认前**禁止移动专项目录或写入 archive/**。
@@ -123,7 +123,7 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 > **频率论（Frequency-Driven Defaults）**
 > intake 是**低频启动事件**（新需求、不确定归属、跨周），默认偏 `new_topic` + 强制 AskQuestion 是**保护机制**——保护用户不被 sniff 的弱信号匹配「温柔默认聚合」掉。
 > review 是**高频持续事件**（同一专项内多次评审），默认偏 `cohesion` + 轻确认是**顺滑机制**。
-> 两者**消费同一 sniff 输出但走相反默认**，是有意识的设计差异，不是待对齐的不一致。详见 [topic-sniff-spec](../shared/topic-sniff-spec.md) 顶部「展示视图协议 + 频率论」声明。
+> 两者**消费同一 sniff 输出但走相反默认**，是有意识的设计差异，不是待对齐的不一致。详见 [topic-sniff-spec](references/topic-sniff-spec.md) 顶部「展示视图协议 + 频率论」声明。
 
 > **核心原则**：**未收到用户对 AskQuestion 的明确响应之前，禁止把 `topic_affinity.matched_topic` 或路由表第 1 项作为已确认目标进行任何写盘动作。**
 
@@ -164,11 +164,11 @@ sniff 检测到本次 intake 与已有 topic 有亲和（score=2）。
 请回复编号或选项内容。
 ```
 
-无 `AskQuestion` 原语时的等价 fallback 详见 SSOT [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md)（intake 路由门使用 §4.1 模板）。
+无 `AskQuestion` 原语时的等价 fallback 详见 SSOT [shared/references/askquestion-fallback.md](references/askquestion-fallback.md)（intake 路由门使用 §4.1 模板）。
 
 #### 2.3 显式意图跳过 AskQuestion 的严格双层守卫
 
-> 守卫范式（关键词命中 + 可审计目标紧随的双条件）由 SSOT 维护：详见 [shared/references/askquestion-fallback.md](../shared/references/askquestion-fallback.md) §6.3「跳过 AskQuestion 的双层守卫」。
+> 守卫范式（关键词命中 + 可审计目标紧随的双条件）由 SSOT 维护：详见 [shared/references/askquestion-fallback.md](references/askquestion-fallback.md) §6.3「跳过 AskQuestion 的双层守卫」。
 > 本节仅声明 **intake Phase 2 路由门**的关键词白名单（SKILL 自定义部分）；可审计目标清单 / 反例 / 正例 / 反模式 一律以 SSOT 为准，**不在本 SKILL 复制**。
 
 **intake 路由门关键词白名单**（仅扩展，不修改 SSOT §6.3 中"可审计目标"清单）：
@@ -218,7 +218,7 @@ topic_affinity.suggestion = cohesion (score=2)
 
 > [!danger]
 > Phase 3 结束时必须在响应中输出 `intake_gate_out` 块作为可观察执行痕迹（防 intake 吞噬合同面 SSOT）。
-> **字段表 + 校验规则 + SSOT 分工** 见 [shared/trace-artifacts-spec.md §intake_gate_out](../shared/trace-artifacts-spec.md)。
+> **字段表 + 校验规则 + SSOT 分工** 见 [shared/trace-artifacts-spec.md §intake_gate_out](references/trace-artifacts-spec.md)。
 
 ### 路由决策记录
 
