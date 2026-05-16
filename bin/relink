@@ -117,6 +117,52 @@ is_archived() {
   return 1
 }
 
+# 双源合并：扫描各仓库 _archived/ 目录，追加到归档集合
+_scan_archived_dir() {
+  local dir="$1"
+  [[ -d "$dir" ]] || return
+  for _d in "$dir"/*/; do
+    [[ -d "$_d" ]] || continue
+    local _name
+    _name=$(basename "$_d")
+    if ! is_archived "$_name"; then
+      ARCHIVED_SKILLS+=("$_name")
+    fi
+  done
+}
+
+[[ -n "$SKILLS_PATH" ]] && _scan_archived_dir "$SKILLS_PATH/_archived"
+[[ -n "$ENV_PATH" ]]    && _scan_archived_dir "$ENV_PATH/skills/_archived"
+
+# 回写 archived_skills 到 prism.local.yaml（幂等：删旧段 + 追加新段）
+_sync_archived_yaml() {
+  [[ ${#ARCHIVED_SKILLS[@]} -eq 0 ]] && return
+  $CHECK_ONLY && return
+  $DRY_RUN && return
+
+  local tmp="${CONFIG}.tmp.$$"
+  # 删除旧 archived_skills 段
+  awk '
+    /^archived_skills:/ { skip=1; next }
+    skip && /^[[:space:]]/ { next }
+    skip && !/^[[:space:]]/ { skip=0 }
+    { print }
+  ' "$CONFIG" > "$tmp"
+
+  # 移除尾部多余空行
+  sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp" 2>/dev/null || true
+
+  # 追加新段（排序去重保持可读性）
+  echo "" >> "$tmp"
+  echo "archived_skills:" >> "$tmp"
+  printf '%s\n' "${ARCHIVED_SKILLS[@]}" | sort -u | while read -r name; do
+    echo "  - ${name}" >> "$tmp"
+  done
+
+  mv "$tmp" "$CONFIG"
+}
+_sync_archived_yaml
+
 is_platform_blocked() {
   local skill_dir="$1"
   local platform="$2"
@@ -489,6 +535,34 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
   fi
 fi
 
+# 3d. 归档反解：主动清除已归档技能在各平台的 symlink（无需 --prune）
+UNLINKED_ARCHIVED=0
+if [[ ${#ARCHIVED_SKILLS[@]} -gt 0 && ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
+  _has_unlink_output=false
+  for target in "${PLATFORM_TARGETS[@]}"; do
+    platform="${target%%|*}"
+    root_dir="${target#*|}"
+    for archived_name in "${ARCHIVED_SKILLS[@]}"; do
+      link_path="${root_dir}/${archived_name}"
+      if [[ -L "$link_path" ]]; then
+        if ! $_has_unlink_output; then
+          echo -e "\n${CYAN}[归档反解]${NC}"
+          _has_unlink_output=true
+        fi
+        if $CHECK_ONLY; then
+          log_warn "${platform}: ${archived_name} 已归档但链接仍在"
+        elif $DRY_RUN; then
+          echo -e "  ${YELLOW}⌫${NC} ${platform}: ${archived_name} ${DIM}(归档，将反解)${NC}"
+        else
+          rm "$link_path"
+          echo -e "  ${YELLOW}⌫${NC} ${platform}: ${archived_name} ${DIM}(归档，已反解)${NC}"
+        fi
+        ((UNLINKED_ARCHIVED++)) || true
+      fi
+    done
+  done
+fi
+
 # 4. Prune: 清理陈旧软链接
 PRUNED=0
 if $PRUNE; then
@@ -566,6 +640,7 @@ echo ""
 echo "─────────────────────────────────"
 ARCHIVE_LABEL=""
 [[ $SKIPPED_ARCHIVED -gt 0 ]] && ARCHIVE_LABEL="  ${DIM}归档跳过: ${SKIPPED_ARCHIVED}${NC}"
+[[ $UNLINKED_ARCHIVED -gt 0 ]] && ARCHIVE_LABEL="${ARCHIVE_LABEL}  ${YELLOW}归档反解: ${UNLINKED_ARCHIVED}${NC}"
 
 if [[ $PRUNED -gt 0 ]]; then
   echo -e "  检查项: ${TOTAL}  ${GREEN}正常: ${OK}${NC}  ${GREEN}修复: ${FIXED}${NC}  ${YELLOW}清理: ${PRUNED}${NC}  ${RED}错误: ${ERRORS}${NC}${ARCHIVE_LABEL}"
