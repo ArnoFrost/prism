@@ -8,7 +8,7 @@ Prism 是一套**本地优先、无侵入**的个人 AI 工作流管线。它把
 
 > 共享规则，本地状态，清晰边界。
 
-当前阶段口径：**v2.1.0 已发**（v2.0.0 GA 之后的下一个 minor）。v2.0 主线四段叙事（历史包袱清偿 / `prism pipeline` 物理移除 / 治理路径默认弱化 / workflow 复杂度简化）已在 v2.0.0 落地；v2.1 5 件套（`docs/migration.md` / `docs/contributing.md` / `audience: maintainer` 元数据 / 默认面 WARN 扫描器 / breaking 发布门禁）已在 v2.1.0 落地。当前重点转向 dogfood 验证、对外试点和日常维护。
+当前阶段口径：**v2.0.0-beta.1**（内部 beta 观察期）。v2.0 alpha 阶段完成主线四段交付（历史包袱清偿 / `prism pipeline` 物理移除 / 治理路径默认弱化 / workflow 复杂度简化 + 文档矩阵 5 件套）；beta 阶段新增术语词典固化、决策链治理、SDK 工程规范整理。当前重点转向 dogfood 验证与稳定性观察。
 
 如果你想先快速判断"Prism 现在到底是什么、为什么已经成立、还差什么"，可直接阅读 [docs/prism-2.0.md](docs/prism-2.0.md)。
 

@@ -2,134 +2,84 @@
 
 _当前无未发布变更。_
 
-## [v2.1.0] — 2026-05-15
+## [v2.0.0-beta.1] — 2026-05-16
 
-> **v2.1 增量定位**
+> **v2.0 beta 阶段**
 >
-> v2.0.0 GA 后的下一个 minor 升级，把 v2.0 阶段欠缺的「对外文档矩阵 + 默认面治理 + 发布门禁」5 件套补齐。架构层面没有破坏性变更，主要是文档、扫描器、CI 步骤层面的能力补齐与防护加固。
-
-### v2.1 主交付（5 件套）
-
-#### Added
-
-- **v1.x → v2.0 迁移入口**：新增 `docs/migration.md`，集中说明破坏性变化、14 类用户可感知变化、命令替换脚本和升级检查清单；README 顶屏收敛到单一迁移指针。
-- **贡献者入口**：新增 `docs/contributing.md`，明确 L1-L4 受众分层、默认面写作 checklist、`audience: maintainer` 用法、跨仓 commit 引用边界与链接禁用规则。
-- **用户默认面 WARN 扫描器**：新增 `public_surface_scan.py`，默认扫描 README / SETUP / docs / skills 主技能与模板中的内部治理标记，并支持 `audience: maintainer` frontmatter 豁免维护者文档。
-- **发布门禁约束**：新增 `release_gate.py` 与 CI 步骤；当提交使用 conventional breaking 标记或 `BREAKING CHANGE` footer 时，同一 diff 必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
-
-#### Fixed
-
-- **桥接路径入口探测增强**：`find_workspace()` 支持从仓库根、`workspace.*.local` 根目录、topic 子目录三类入口识别同一 workspace；`prism status/tidy/digest` 子进程显式注入 shared import 路径，避免依赖调用方 `PYTHONPATH`。
-- **痕迹义务内部 schema 归一化**：`validate_trace.py` 新增内部 `workflow_trace` schema，以 phase 派生既有 4 族配置；外部产物块、校验 family 名称和 4 族封顶契约保持不变（仅内部组织方式调整，无外部契约变化）。
-
-### 元审计修复（CI 发布门禁实测有效化）
-
-发布门禁首次落地后通过元审计发现两个让门禁在 CI 上长期静默失效的边界 bug，本次一并修复：
-
-#### Fixed
-
-- **CI release_gate 步骤启用 pipefail**：在该 step 显式声明 `shell: bash`（自动带 `set -eo pipefail`），避免 `release_gate.py … | tee` 中上游脚本非零退出被 `tee` 吞成功，导致门禁可被静默旁路。
-- **CI checkout 拉完整历史**：`actions/checkout@v5` 加 `fetch-depth: 0`，让 release_gate 在 push 事件下能解析 `before` SHA 完成 `git diff base..head`，避免 shallow clone 下报 `bad object` 让 CI 误红。
-
-### 文档对齐
-
-#### Docs
-
-- **跨仓 commit 引用边界**：`docs/contributing.md` 增补「跨仓 hash 仅作 point-in-time 证据，rebase/squash 后失效不回溯修补」边界说明；如需长期追溯应在 `prism-skills` 一侧打 tag。
-- **v2.1 进度叙事同步**：README / `docs/prism-2.0.md` / `docs/architecture.md` Phase 8 / `docs/leader-pitch.md` 同步反映 v2.1 5 件套已完成；架构 Phase 8 全部勾选；prism-2.0 增补「v2.1 已完成」段；leader-pitch 升到 v2.1.0 口径。
-- **CLI 契约变更历史收编**：`docs/cli-contract.md §6` 把 v2.0-canary 行收编进 v2.0.0 行（canary 是 v2.0 GA 的前置阶段，无需独立长期保留）。
-- **AGENTS Mandatory 表补全**：`AGENTS.md §Mandatory skill usage` 增加 `workflow-status` / `workflow-tidy` 触发条件，让 8 个内置技能里所有有明确触发条件的都覆盖到。
-
-## [v2.0.0] — 2026-05-14
-
-> **v2.0 主线四段叙事**
->
-> 1. **历史包袱清偿** — 产物校验按日期降噪、SKILL.md 复杂度警戒列表、SSOT 边界澄清，落地 v1.x 多轮 review 留下的非破坏性能力增量
-> 2. **deprecated 别名物理移除** — `prism pipeline` 一次性切到 `prism finalize`（v1.1.4 起多轮预告，v2.0 由 argparse 直接 reject）
-> 3. **治理路径默认弱化** — workflow / 痕迹义务家族明确为可选项；core contract 仅 `SDK + Vault Workspace + uv`，开箱即用不强制接入
-> 4. **workflow 复杂度简化** — review skill 主文 −14%、痕迹义务家族永久封顶为 4 族、`detect_review_mode` SSOT 反位修复
->
-> v2.0 从 main `v1.1.7` (`ba2d503`) 切出 canary，完成主线 archive、rc 验证与 squash merge 后进入 `v2.0.0` GA 口径。
-
-### Breaking
-
-- **`prism pipeline` 物理移除**：v1.1.x 期 deprecated alias `prism pipeline <topic>` 在 v2.0 由 argparse 直接 reject (`exit 2` + stderr `"invalid choice"`)。v1.1.4-v1.1.7 多轮 CHANGELOG 预告，迁移路径 = `prism finalize`。守门测试回归保护"pipeline 不可被无意识恢复"。
+> 在 v2.0-alpha（原 rc1）基础上完成的整合改进。主线三段：
+> 1. **术语词典固化 + 瘦身** — vocabulary SSOT 11 术语，267→111 行（解释拆到独立文件）
+> 2. **决策链治理** — decision.index 升主索引 / review.index 降辅助索引 / 稀疏关联律
+> 3. **SDK 层工程规范** — symlink 分发统一 / validate_product 提升公共位置 / references 按需加载策略
 
 ### Added
 
-- **`prism finalize` Step 2.5 痕迹义务机器抽检**（也可独立 `prism validate-trace`）— 4 痕迹义务家族（`task_probe` / `merge_artifact` / `decision_artifact` / `intake_gate_out`）落盘抽检，自 v2.0 起永久封顶在 4 族（详见 [`docs/architecture.md §痕迹义务家族封顶政策`](docs/architecture.md)）。`--trace-strict / --trace-lenient / --no-trace-validate` flag 完整优先级链：CLI flag > ENV > frontmatter > 全局默认 lenient
-- **`validate_product --since-date YYYY-MM-DD`** — 产物校验按 frontmatter `date` 字段抑制历史噪声。被抑制文件不计入 `errors/warnings/files_checked`，但记录到 `suppressed_files / suppressed_count / since_date` JSON 字段供观测。无 frontmatter 或 date 不可解析的文件**不抑制**（保守安全，避免误隐藏新建文件的 issue）。边界 inclusive
-- **`skills_contract_scan.py`** — watch list 模式扫所有 `**/SKILL.md`，输出 lines > 450 或 danger callout 占比 > 8% 的警戒条目。**不 fail 构建**（exit code 始终 0，仅输出 WARN 级提示），用于"未来添码被迫拆分"。`--threshold-lines / --threshold-danger-pct / --quiet` flag
-- **双 JSON 协议显性化**（`docs/cli-contract.md §4.3`）— `prism <verb> --json` envelope（含 `ok/data/meta/errors` 层）vs `bin/doctor --json` flat（直接读字段）
+- **术语词典 vocabulary SSOT**（11 个核心术语）：`skills/workflow/shared/vocabulary.md` 111 行 + `vocabulary-disambiguation.md` 153 行（易混淆对比 + 使用约定拆离；agent 日常不加载）
+- **decision.index.md 主索引 schema**：`workspace.schema.yaml` 升 recommended / `review.index.md` 降 optional 辅助索引；`validate_product.py` 加 missing-decision-index WARN（向后兼容）
+- **intake scaffold 生成 decision.index 占位**：新 topic 通过 `/workflow-intake` 自动生成决策链主索引模板
+- **SKILL references 按需加载策略**：review / intake / review-lite SKILL.md 加载策略表，标注各阶段必读 vs 按需读取（review 从 1655 行全量降到 ~400 行必读）
 
 ### Changed
 
-- **review skill 主文复杂度收敛** — `skills/workflow/review/SKILL.md` 515 行 → 442 行（−73 行 / −14%）。历史叙事（PostFix Errata 历史 / 历史决策链 / mode 探测演进 / merge_artifact 起源 / 二态产物契约背景等）迁出到 `references/review-maintainer.md` 默认不读层。`skills_contract_scan.py` 默认阈值同步：350 → 450 行（与 v2.0 主文上限对齐）
-- **`detect_review_mode` SSOT 反位修复** — review-lite 报告优先读 frontmatter `type: review-lite` 字段（最强信号），其次 frontmatter `mode: full | quick`，最后 fallback 到正文 `mode=full` 字符串匹配。修复 lite 报告含 mode=full 字面量描述未来 full 评审时被误识为 full 进而触发 `task_probe-missing / merge_artifact-missing` 误报的反位场景
-- **痕迹义务家族永久封顶为 4 族** — `task_probe / merge_artifact / decision_artifact / intake_gate_out` 自 v2.0 起永久封顶，禁止加第 5 族。新场景必须扩展 `phase` 字段或 `required_fields`；修订需重开 Protocol（高门槛刻意保持）
+- **review SKILL Merge 阶段索引联动**：5 处 review.index 引用改为 decision.index（主）+ review.index（辅助，稀疏关联律）
+- **review-lite SKILL 对齐**：写入工件 / 流程图 / 落盘清单 / 模板引用 4 处对齐稀疏关联律
+- **vocabulary 设计原则精简**：6 条 → 3 条（合并防御性约束）；接口预留注释删除（已落地）
+- **validate_product.py 提升到 shared/scripts/**：从 review/scripts/ 移到公共位置，review 保留 symlink 向后兼容
+- **shared references symlink 统一分发**：askquestion-fallback / trace-artifacts-spec / review-merge-spec / topic-sniff-spec / plan-derive-spec / context-pack-spec 6 个 shared 文件在消费方 SKILL 建 symlink，引用路径从 `../shared/` 改为 `references/`（relink 分发到 IDE 后不断裂）
 
-### Docs
+### Fixed
 
-- **README + AGENTS** 新增 "workflow / 痕迹义务家族都是可选项" 段（core contract 仅 `SDK + Vault Workspace + uv`）
-- **review-templates frontmatter 元数据约定** — `merged_at / accepted_at / superseded_at / archived_at` 字段语义 + 推荐填法
-- **`topic-sniff-spec.md §0` × `askquestion-fallback.md §7.1`** SSOT 边界互锚 — 维度互补 / schema 不同 / 不重叠
+- **SDK 层 workspace 实例层痕迹清洗**：vocabulary.md / AGENTS.md / 4 SKILL.md 中混入的 workspace 实例层引用清除
 
-### Chore
+### v2.0-alpha 主线交付（alpha 阶段完整内容）
 
-- **Node.js 24 全栈迁移** — `.github/workflows/ci.yml` `setup-uv@v5 → v7` + `upload-artifact@v4 → v6`（应对 2026-06-02 Node 24 强制 + 秋季 Node 20 移除）
+> 以下内容在 v2.0-alpha 阶段（原 v2.0.0-rc1）落地，beta 阶段继承。
+
+#### Breaking
+
+- **`prism pipeline` 物理移除**：v1.1.x 期 deprecated alias 在 v2.0 由 argparse 直接 reject（`exit 2`）。迁移路径 = `prism finalize`
+
+#### Added — 核心能力
+
+- **`prism finalize` Step 2.5 痕迹义务机器抽检**（`prism validate-trace`）— 4 族永久封顶
+- **`validate_product --since-date YYYY-MM-DD`** — 按 frontmatter date 抑制历史噪声
+- **`skills_contract_scan.py`** — SKILL.md 复杂度警戒（仅 WARN）
+- **`release_gate.py` 发布门禁** — breaking 标记必须同步 CHANGELOG + migration.md
+- **`public_surface_scan.py` 默认面扫描器** — `audience: maintainer` frontmatter 豁免
+
+#### Added — 文档矩阵
+
+- **`docs/migration.md`** — v1.x → v2.0 迁移入口
+- **`docs/contributing.md`** — L1-L4 受众分层 + 默认面 checklist
+
+#### Changed — 简化与收敛
+
+- **review skill 主文 −14%**（515→442 行）：历史叙事迁到 `review-maintainer.md` 默认不读层
+- **review-lite 大幅重构**（323→142 行）
+- **治理路径默认弱化** — workflow / 痕迹义务家族明确为可选项
+- **痕迹义务家族永久封顶为 4 族**
+
+#### Fixed
+
+- **桥接路径入口探测增强** / **CI release_gate pipefail** / **CI checkout 完整历史** / **痕迹义务 schema 归一化** / **detect_review_mode SSOT 反位修复**
+
+#### Docs
+
+- README / AGENTS workflow 可选性叙事 / CLI 契约变更收编 / 跨仓 commit 引用边界 / AGENTS Mandatory 表补全
+
+## [v2.0.0-alpha] — 2026-05-14
+
+> **即原 `v2.0.0-rc1`**（git tag `v2.0.0-rc1` 保留不删）。v2.0 首个可用版本，从 main `v1.1.7` 切出 canary 后落地。
+>
+> alpha 阶段主线四段叙事：
+> 1. **历史包袱清偿** — 产物校验按日期降噪、SKILL.md 复杂度警戒列表、SSOT 边界澄清
+> 2. **deprecated 别名物理移除** — `prism pipeline` → `prism finalize`
+> 3. **治理路径默认弱化** — workflow / 痕迹义务明确为可选
+> 4. **workflow 复杂度简化** — review skill 主文 −14%、痕迹义务族封顶 4 族
 
 <details>
-<summary>v2.0-canary 推进过程细节（治理路径，可选阅读）</summary>
+<summary>v2.0-alpha 完整变更细节（可选阅读）</summary>
 
-#### Breaking — `prism pipeline` 物理移除细节
-
-- **物理动作**：`prism_cli.py` 移除 `cmd_pipeline()` 函数 + `VERB_REGISTRY[pipeline]` + subparser `p_pipeline` + commands dict 入口（5 处 surgical removal）
-- **文档对齐**：`bin/prism` 头注释 / `bin/README.md` 用法块 / `README.md` `prism <verb>` 表格 / `docs/cli-contract.md §5.2` deprecated 行（→ removed v2.0）/ `skills/workflow/review/SKILL.md` Merge Step 6 历史括注全部清理
-- **运行时行为变化**：v1.1.x `prism pipeline <topic>` 输出 `WARN: 已重命名为 finalize` + 转发到 finalize；v2.0 argparse 直接 reject
-
-#### Added — `validate_product --since-date` 细节
-- `validate_product.py` 新增 `_extract_frontmatter_date()` helper + `validate_dir(since_date=...)` 形参 + CLI `--since-date YYYY-MM-DD` flag
-- **真实抑制效果**：某 topic `--since-date 2026-05-01` 抑制 33 个历史文件 / issue 23 → 10 / 55% 降幅
-- CLI 守门：`--since-date 2026/05/01` 等非 ISO 格式 `exit 2`
-- 6 个 `_extract_frontmatter_date` 单测 + 5 个 `validate_dir(since_date=...)` 抑制场景测试 + 1 个 CLI 格式守门测试
-
-#### Added — `skills_contract_scan.py` 细节
-- 新文件 `skills/workflow/shared/scripts/skills_contract_scan.py`（轻量版，~140 行）
-- 当前 reality：`skills/workflow/review/SKILL.md` 442 行（未触发 450 行警戒，与 v2.0 主文上限对齐）；danger 占比 0.97% 远低于 8%
-- 18 个测试 + v2.0 default 阈值测试 + v1.x explicit 阈值守门测试
-
-#### Added — SSOT 边界澄清细节
-- `topic-sniff-spec.md §0` 加 `[!note]` SSOT 边界标注：§0.1 = "skill × suggestion → 默认动作"（routing decision），§7.1 = "skill × 门类 × 实例 → 频率档 × 模板取向"（fallback template）— 维度互补、schema 不同、不重叠
-- `askquestion-fallback.md §7.1` 加对应反向标注 + 变更记录
-- 无代码改动，纯文档对齐 — 关闭"两表是否同一 SSOT"的疑虑
-
-#### Changed — review skill 拆分细节
-- 主文 8 段简化（二态产物契约 / 真并行 / merge_artifact / decision_artifact / 5 要素 / Other / mode 不可信 / next_review_number / 独立发现率）— 保留契约硬约束、迁出历史背景到 `references/review-maintainer.md`
-- references 加载策略：`SKILL.md` 启动期注入指针，agent 按需 lazy-load `references/review-maintainer.md`
-
-#### Changed — `detect_review_mode` SSOT 反位修复细节
-- 新增 `_parse_frontmatter_field` helper：解析文件开头 `---...---` frontmatter 块的字段值（支持去引号 / 去末尾注释）
-- 优先级反转：frontmatter `type: review-lite` (最强) > frontmatter `mode: full | quick` > 正文字符串匹配 (弱 fallback)
-- 4 个新测试：reality anchor (lite frontmatter + body 含 mode=full 字面量应识 quick) / `type:review` + `mode:full` → full / frontmatter 字段去引号去注释 / 无 frontmatter 返 None
-
-#### Changed — 痕迹义务家族封顶政策细节
-- `validate_trace.py` `TRACE_FAMILIES` dict 锚定 4 族 schema
-- `docs/architecture.md` 新加 §痕迹义务家族封顶政策段
-- 6 守门测试：4 族 count + 4 族 key 精确匹配 + 文档段落存在性 + SHA-256 hash 锚定 + doc-code 双向 sync + 语义锚点 ≥ 3
-
-#### v2.0 仍在路上
-- **桥接路径 UX 增强**：`prism status` / `sniff` 在 `workspace.*.local` 桥接路径下文案 + sniff_lib 探测逻辑双重增强（P1 排期，不阻 GA）
-- **对外面收敛 Tier 1+2**：默认路径脱敏（README/AGENTS/CLI argparse/cli-contract）+ pipeline 残留扫除 + maintainer 跳转弱化（v2.0 GA 前完成）
-- **v2.1 计划**：CHANGELOG 单流叙事固化、`audience: maintainer` frontmatter 元数据、4 族 → 单 `workflow_trace` schema 合并、机械守门 CI gate（WARN 级）、contributing.md
-
-#### 总测试计数
-- pytest 207 → 248 passed（v2.0-canary 累计新增 41 测试，零回归）+ finalize 主线 topic 4/4 strict 全绿
-
-#### 历史决策链路（按时间倒序）
-- v2.0-canary 切分支策略：自 main `v1.1.7` (`ba2d503`) 拉出，main 仅接 hotfix
-- v2.0 简化方向重定位：从"深语义 enforce"转为"workflow 简化 + 治理弱化"
-- 取消的硬错误路径：`raw_paths` 文件存在性 / `landed_at_threshold` 一致性 / `accept→written` 关联（已改为 opt-in flag）
-- 取消的 strict 默认：新 topic 默认仍 `trace_strict: false`（不强制全局迁移）
+（alpha 阶段的详细 Breaking / Added / Changed / Docs / Chore 内容见 git log v2.0.0-rc1..v2.0.0-beta.1 或旧版 CHANGELOG 存档。）
 
 </details>
 

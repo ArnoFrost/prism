@@ -414,7 +414,7 @@ git pull origin main              # Skills（双仓同 semver，需同步）
 cd "$HOME/prism"
 bin/doctor --scope release --quick    # 升级后体检
 bin/relink                        # 刷软链接（如果 relink 规则有变化）
-prism --version                   # 自查版本号（应 ≥ v2.1.0）
+prism --version                   # 自查版本号（应 ≥ v2.0.0-beta.1）
 ```
 
 **zip 分发路径**：参见 `INSTALL_INTERNAL.md` 的 Step 3a（mv-swap 模式，自动保留本地配置）。
@@ -427,7 +427,7 @@ prism --version                   # 自查版本号（应 ≥ v2.1.0）
 cd "$HOME/prism"
 git fetch --tags
 git tag --list --sort=-v:refname | head -5   # 列出近期 tag
-git checkout v<target>            # e.g. v2.1.0（当前发行）/ v2.0.0（v2.0 GA）/ v1.1.7（v1.x 末版）
+git checkout v<target>            # e.g. v2.0.0-beta.1（当前 beta）/ v1.1.7（v1.x 末版）
 cd "$HOME/prism-skills"
 git checkout v<target>            # 同版本回滚
 

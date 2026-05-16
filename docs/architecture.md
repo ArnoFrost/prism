@@ -312,9 +312,9 @@ prism/
 - [x] **workflow 复杂度简化**：review skill 主文 −14% (515→442)、痕迹义务家族永久封顶为 4 族、`detect_review_mode` SSOT 反位修复
 - [x] **对外面收敛**：默认路径脱敏（README / AGENTS / CLI argparse / cli-contract / SKILL 主文）+ pipeline 残留扫除 + maintainer 文档跳转弱化
 - [x] **dogfood 实证**：用 v2.0 简化后的默认 lenient 行为完成非主线场景验证，进入后续持续试点
-- [x] **GA 节奏**：`v2.0.0-rc1` tag → squash merge main → `v2.0.0` 口径对齐
+- [x] **GA 节奏**：`v2.0.0-rc1` tag → alpha 口径对齐 → beta 阶段持续改进
 
-**Phase 8 — v2.1 5 件套（v2.1.0，2026-05-15）** ✅
+**Phase 8 — 文档矩阵 5 件套（v2.0-alpha 阶段，2026-05-15）** ✅
 
 - [x] `docs/migration.md`：v1.x → v2.0 用户感知变化清单 + Breaking 表 + 替换脚本指引
 - [x] `audience: maintainer` 元数据：maintainer 文档与用户文档显性分层（配套 `public_surface_scan.py` 豁免逻辑）
