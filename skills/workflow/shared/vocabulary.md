@@ -1,17 +1,17 @@
 # Prism Workflow Vocabulary — 术语词典 SSOT
 
-> Prism workflow 受控词汇唯一 SSOT（首批 8 个核心术语，**永久平铺**）。
+> Prism workflow 受控词汇唯一 SSOT（首批 11 个核心术语，**永久平铺**）。
 > 被各 SKILL / 文档 / topic 产物 cite，**不字字复制本体**。
 > 初版落地 2026-05-15（详见 §变更记录）。
 
 ## 设计原则
 
 - **双面分发**：本文件是 SDK 协议级 SSOT；`docs/glossary.md` 是人类阅读分发面（cite 本文件，不复制定义）
-- **平铺一张表（硬约束）**：首批 8 个术语不分核心 / 衍生 / 别名层级；**禁止引入语义类列 / 分层分组 / 别名独立段**，任何此类提议必须先走 dXX 决策门推翻
+- **平铺一张表（硬约束）**：首批 11 个术语不分核心 / 衍生 / 别名层级；**禁止引入语义类列 / 分层分组 / 别名独立段**，任何此类提议必须先走 dXX 决策门推翻
 - **最小侵入**：固化术语只通过新增 SSOT + 各处 cite 实现，**不强制重写已有 archive topic 中的术语**（archive 容忍异构）；active 期间形态规范对**已写产物豁免**，仅约束新写（soft_warn 律 — 不阻断 finalize 校验）
 - **可逆性**：术语定义可通过 dXX 回退；不锁死
 - **不引入 hard error**：漂移检测（人工自检 checklist + 未来可选脚本）最多 WARN
-- **形态分类原则（统一律）**：首批 8 术语形态分三类——
+- **形态分类原则（统一律）**：首批 11 术语形态分三类——
   - `abbreviation` 大写缩写（OQ / AP）— 适用：跨语言场景、简短引用、scope 编号 prefix
   - `lowercase_word` 小写英文词（goal / plan / scope / phase / wave）— 适用：自然语言段落、文档行文、SKILL 描述
   - `letter_id` 大写字母编号（V / G / P）— 适用：scope 条目编号（V1/G1）、plan 派生编号（P-V1/P-V2）
@@ -20,7 +20,7 @@
 
 ---
 
-## 术语表（首批 8 个）
+## 术语表（首批 11 个）
 
 | 缩写 | 形态类型 | 中文 | 英文 | 一句话定义 |
 |:----:|:--------:|------|------|------|
@@ -32,6 +32,9 @@
 | **scope** | lowercase_word | 合同 / 合同收敛 | Scope (contract) | 专项的合同面 SSOT；含 G / V / 非目标 / 关键约束 / 未决问题 / 变更记录 六段；review 不直接改，通过 dXX 间接驱动 |
 | **phase** / **P** | lowercase_word + letter_id | 阶段 | Phase | plan 中的执行单位；推荐用 `P-VN` 表示（与验收项 VN 1:1 派生强溯源）；也可指生命周期段（启动 / 收敛 / 执行 / 归档） |
 | **wave** | lowercase_word | 批次 | Wave | 跨 phase 的执行批次，把多个 phase 组织成有顺序的发布单元；编号 `Wave 1~N`，比 phase 粗粒度 |
+| **decision** / **d** | lowercase_word + letter_id | 决策 | Decision (event) | 人类对评审 / intake / 跨 topic 派生输入做出的正式裁决事件，记录在 `decisions/dXX_*.md`；按时序编号 d01 → d02 → …；被 `decision.index.md` 时序表收录为事件链节点 |
+| **decision-chain** | lowercase_word | 决策链 | Decision chain | topic 内决策事件按时序串联形成的链；可通过 frontmatter 字段（`supersedes` / `derived_from` / `related_dXX`）表达依赖图；事件链 SSOT 由 `decision.index.md` 承载 |
+| **decision-index** | lowercase_word | 决策索引 | Decision index | topic 内决策链**主索引**文件（事件链 SSOT），含时序表 + frontmatter 依赖字段；主索引地位由本文件承担；`review.index` 是辅助索引（仅列被 decision 引用的 review；稀疏关联律）|
 
 > **编号规约统一**：N 表示自然数（≥ 1）；XX 表示两位零填充编号（dXX / rXX）；前缀字母字面量（V / G / AP / P / d / r）。
 >
@@ -227,6 +230,7 @@
 | 2026-05-15 | 初版落地 | 首批 8 术语 + 中英对照 + 易混淆对比 14 组 |
 | 2026-05-16 | 协议级前置补丁 | + §使用约定 cite 示例改 `references/vocabulary.md`（修复 cite 路径稳定性）+ §使用约定 加 prefix dispatch 表（含 dXX/dXX-AP-N/dXX-OQ-N 接口预留行）+ §演进规则 新立第 5 行「形态规范变更」+ 索引架构变更脚注 + §第二批候选术语区 |
 | 2026-05-16 | 形态规范落地 | + §术语表 加「形态类型」列（abbreviation / lowercase_word / letter_id 三类，统一律）+ §设计原则 第 6 条「形态分类原则」+ §平铺律段加硬约束注 |
+| 2026-05-16 | decision-chain 治理同步推 | + §术语表 +3 行（首批 8→11）：decision / decision-chain / decision-index（含形态类型列）；§第二批候选术语区对应 3 条移除；§设计原则 + §平铺律段 + §形态分类原则 数字更新（8→11）；接口 #1 解锁完成 |
 
 ---
 
@@ -235,11 +239,12 @@
 | SSOT | 关系 |
 |------|------|
 | `plan-derive-spec.md` | 引用本词典中的 scope / plan / V / phase 术语 |
-| `trace-artifacts-spec.md` | 引用本词典中的 OQ / decision_artifact 等术语 |
+| `trace-artifacts-spec.md` | 引用本词典中的 OQ / decision / decision_artifact 等术语 |
 | `topic-sniff-spec.md` | 引用本词典中的 scope / intake / topic 等术语 |
-| `review-spec-skeleton.md` | 引用本词典中的 review / finding / AP 等术语（finding 待第二批纳入） |
+| `review-spec-skeleton.md` | 引用本词典中的 review / finding / AP 等术语（review / finding 待第二批纳入） |
+| `workspace.schema.yaml` | 引用本词典中的 decision / decision-index / scope / plan 等术语（decision-chain 治理 wave 落定后对齐）|
 
-> 本词典首批不含 review / finding / decision / archive 等术语（详见下方 §第二批候选术语，待后续 dXX 决策门启动时纳入）。
+> 本词典首批含 11 术语；review / finding / archive / index 等术语暂不入首批（详见下方 §第二批候选术语，待后续 dXX 决策门启动时纳入）。
 
 ---
 
@@ -253,10 +258,9 @@
 |---------|------|--------------|----------|
 | `review` | 评审 | 词典第二批 | 第二批 dXX 启动 |
 | `finding` | 评审发现 | 词典第二批 | 第二批 dXX 启动 |
-| `decision` (`d`) | 决策事件 | **decision-chain 治理 wave** | decision-chain 专项 dXX 启动 |
-| `decision-chain` | 决策链时序（d01 → d02 → …）| **decision-chain 治理 wave** | 同上 |
-| `decision-index` | 决策索引 SSOT（取代 review.index 候选）| **decision-chain 治理 wave** | 同上 |
 | `archive` | 归档（topic / SKILL）| 词典第二批 | 第二批 dXX 启动 |
-| `index` | 索引（中性概念）| 词典第二批 | decision-chain 治理 wave 同步落定 |
+| `index` | 索引（中性概念）| 词典第二批 | 第二批 dXX 启动（decision-chain 治理已落定 `decision-index` 形态） |
 
 > 本表的目的是让未来命题启动时**不需要回头改首批结构**，直接走 dXX 决策门把候选条目移到 §术语表即可。
+>
+> **已落定**：`decision` / `decision-chain` / `decision-index` 三条已通过 decision-chain 治理 wave 移入首批 §术语表（接口 #1 解锁完成）。
