@@ -13,7 +13,7 @@ stability: experimental
 |------|------|
 | **是什么** | 低摩擦、单视角轻量检查入口：快速扫描 → 输出 findings → 落盘 → 触发决策门 |
 | **不是什么** | 不做多角色拆分、不产 raw/ 角色报告、不主动启动并行 subagent |
-| **写入工件** | `reviews/rXX_描述.md`（单文件，frontmatter `type: review-lite`）+ `review.index.md`（追加标 lite）|
+| **写入工件** | `reviews/rXX_描述.md`（单文件，frontmatter `type: review-lite`）+ 索引联动（稀疏关联律：`decision.index.md` 主索引由后续 dXX 追加；`review.index.md` 辅助索引仅在被 decision 引用时追加，标 lite）|
 | **结束建议** | → 用户 Accept / Reject / Defer（Gate 4 决策门）|
 
 ---
@@ -22,7 +22,7 @@ stability: experimental
 
 > 管线定位：`intake → scope → review-lite → decision`；`{skill_dir}` 指 SKILL.md 所在目录（按 IDE 平台映射）。
 
-> **术语**：本 SKILL 中 OQ / scope / plan / AP / finding 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
+> **术语**：本 SKILL 中 OQ / scope / plan / AP / finding 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 11 术语 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
 
 ## 何时使用
 
@@ -38,7 +38,7 @@ stability: experimental
 ```
 1. Align（对齐）— sniff / format / 路由 / 编号 / 已加载 references
 2. Scan（单视角扫描）— 读评审对象 → 输出 findings + actions
-3. Write（落盘）— reviews/rXX.md + review.index.md 追加
+3. Write（落盘）— reviews/rXX.md + 索引联动（稀疏关联律）
 4. Decision（Gate 4 决策门 — AskQuestion 4 选项）
 ```
 
@@ -75,7 +75,7 @@ stability: experimental
 
 落盘清单：
 - `reviews/rXX_{title}.md`（单文件，frontmatter `type: review-lite`）
-- `review.index.md`（追加记录行，说明栏标注 `lite`）
+- 索引联动（稀疏关联律）：`review.index.md` 仅在被 decision 引用时追加（说明栏标注 `lite`）；`decision.index.md` 主索引由后续 dXX 落盘时追加
 
 正文模板（ofm / standard 两种）详见 [references/lite-templates.md](references/lite-templates.md)。
 
@@ -137,7 +137,7 @@ question:
 
 ## 产物模板
 
-Frontmatter / ofm 正文 / standard 正文 / review.index 追加格式 详见 [references/lite-templates.md](references/lite-templates.md)。
+Frontmatter / ofm 正文 / standard 正文 / 索引联动格式 详见 [references/lite-templates.md](references/lite-templates.md)。
 
 ## 目录结构
 
