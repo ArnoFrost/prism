@@ -25,6 +25,8 @@ stability: experimental
 > 管线定位：`intake → scope ←→ review → archive`
 > scope 与 review 在专项生命周期中**交替执行**：scope(v1) → review(r01) → 决策(d01) → scope(v2) → ...
 
+> **术语**：本 SKILL 中 scope / plan / G / V / OQ / AP / phase / wave 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + 14 组易混淆对比 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**（参 r01 d01 AP-1）。
+
 ## 何时使用
 
 | 场景 | 做法 |

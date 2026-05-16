@@ -26,6 +26,8 @@ stability: experimental
 
 > **路径变量**：本文中 `{skill_dir}` 指**此 SKILL.md 文件所在目录**的绝对路径。在 Cursor 中对应 skill 根目录，在 CodeBuddy / Claude Code 中对应 `{baseDir}`。执行脚本时请自行替换为实际路径。
 
+> **术语**：本 SKILL 中 OQ / goal / V / scope / topic 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + 14 组易混淆对比见 SSOT；**不字字复制本体定义**（参 r01 d01 AP-1）。
+
 ## 何时使用
 
 | 场景 | 做法 |

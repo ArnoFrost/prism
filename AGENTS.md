@@ -236,6 +236,20 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 
 ---
 
+## 术语词典（受控词汇 SSOT）
+
+Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)。**首批 8 个核心术语** — `OQ` / `goal` (G) / `V` / `AP` / `plan` / `scope` / `phase` (P) / `wave` — 含形态类型分类、中英对照、一句话定义、14 组易混淆对比、Prefix dispatch 表、§演进规则；**永久平铺，不分核心 / 衍生 / 别名**（OQ-8 平铺律硬约束）。
+
+| 分发面 | 路径 | 角色 |
+|--------|------|------|
+| **SDK 协议级 SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 唯一 SSOT；其他面 cite 不复制 |
+| **人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
+| **各 workflow SKILL 子目录软链** | `skills/workflow/{review,review-lite,intake,scope,digest}/references/vocabulary.md` | `bin/relink` 分发到 IDE；SKILL.md 用 `references/vocabulary.md` 相对路径引用 |
+
+所有 SKILL / 文档 / topic 产物**不字字复制术语定义**（避免漂移），按需 cite 即可。词典演进走 dXX 决策门（详见 vocabulary.md §演进规则）。
+
+---
+
 ## CodeBuddy IDE Hook（可选）
 
 CodeBuddy IDE 支持 `PostToolUse` hook，可在 agent 写入文件后自动触发工作流脚本。
