@@ -238,7 +238,7 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 
 ## 术语词典（受控词汇 SSOT）
 
-Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)。**首批 8 个核心术语** — `OQ` / `goal` (G) / `V` / `AP` / `plan` / `scope` / `phase` (P) / `wave` — 含形态类型分类、中英对照、一句话定义、14 组易混淆对比、Prefix dispatch 表、§演进规则；**永久平铺，不分核心 / 衍生 / 别名**（OQ-8 平铺律硬约束）。
+Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)。**首批 8 个核心术语** — `OQ` / `goal` (G) / `V` / `AP` / `plan` / `scope` / `phase` (P) / `wave` — 含形态类型分类、中英对照、一句话定义、14 组易混淆对比、Prefix dispatch 表、§演进规则；**永久平铺，不分核心 / 衍生 / 别名**（平铺律硬约束）。
 
 | 分发面 | 路径 | 角色 |
 |--------|------|------|

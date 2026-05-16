@@ -22,7 +22,7 @@ stability: experimental
 
 > 管线定位：`intake → scope → review-lite → decision`；`{skill_dir}` 指 SKILL.md 所在目录（按 IDE 平台映射）。
 
-> **术语**：本 SKILL 中 OQ / scope / plan / AP / finding 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**（参 r01 d01 AP-1）。
+> **术语**：本 SKILL 中 OQ / scope / plan / AP / finding 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
 
 ## 何时使用
 

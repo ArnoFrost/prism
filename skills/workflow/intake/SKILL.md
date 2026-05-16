@@ -26,7 +26,7 @@ stability: experimental
 
 > **路径变量**：本文中 `{skill_dir}` 指**此 SKILL.md 文件所在目录**的绝对路径。在 Cursor 中对应 skill 根目录，在 CodeBuddy / Claude Code 中对应 `{baseDir}`。执行脚本时请自行替换为实际路径。
 
-> **术语**：本 SKILL 中 OQ / goal / V / scope / topic 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + 14 组易混淆对比见 SSOT；**不字字复制本体定义**（参 r01 d01 AP-1）。
+> **术语**：本 SKILL 中 OQ / goal / V / scope / topic 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + 14 组易混淆对比见 SSOT；**不字字复制本体定义**。
 
 ## 何时使用
 
@@ -156,9 +156,9 @@ prism sniff --kind intake <project_dir> --topic <描述关键词>
 sniff 检测到本次 intake 与已有 topic 有亲和（score=2）。
 
 请选择路由方式：
-  [1] 全新专题：027_xxx（默认推荐）
-  [2] 聚合到 026_yyy（sniff 最高匹配，非默认）
-  [3] 聚合到 025_zzz（候选）
+  [1] 全新专题：{NNN}_{topic-slug-new}（默认推荐）
+  [2] 聚合到 {NNN}_{topic-slug-best}（sniff 最高匹配，非默认）
+  [3] 聚合到 {NNN}_{topic-slug-alt}（候选）
   [4] 都不是，让我自己起名
 
 请回复编号或选项内容。
@@ -193,7 +193,7 @@ topic_affinity.suggestion = new_topic
 
 ```
 topic_affinity.suggestion = cohesion (score=2)
-→ 已展示候选 AskQuestion → 用户选择 [2] 聚合到 026_yyy
+→ 已展示候选 AskQuestion → 用户选择 [2] 聚合到 {NNN}_{topic-slug-best}
 → 进入 Phase 3 内聚分支
 ```
 

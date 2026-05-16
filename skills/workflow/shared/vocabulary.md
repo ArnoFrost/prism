@@ -2,21 +2,21 @@
 
 > Prism workflow 受控词汇唯一 SSOT（首批 8 个核心术语，**永久平铺**）。
 > 被各 SKILL / 文档 / topic 产物 cite，**不字字复制本体**。
-> 由 034_flow-and-vocab-governance V1 落地（2026-05-15）。
+> 初版落地 2026-05-15（详见 §变更记录）。
 
 ## 设计原则
 
 - **双面分发**：本文件是 SDK 协议级 SSOT；`docs/glossary.md` 是人类阅读分发面（cite 本文件，不复制定义）
-- **平铺一张表**（**d01 OQ-8 锚定硬约束**，原 OQ-8 intake-derived → 升格）：首批 8 个术语不分核心 / 衍生 / 别名层级；**禁止引入语义类列 / 分层分组 / 别名独立段**，任何此类提议必须先 dXX 推翻
-- **最小侵入**：固化术语只通过新增 SSOT + 各处 cite 实现，**不强制重写已有 archive topic 中的术语**（archive 容忍异构）；active 期间形态规范对已写产物豁免，仅约束新写（d01 OQ-r01-3 soft_warn 律）
+- **平铺一张表（硬约束）**：首批 8 个术语不分核心 / 衍生 / 别名层级；**禁止引入语义类列 / 分层分组 / 别名独立段**，任何此类提议必须先走 dXX 决策门推翻
+- **最小侵入**：固化术语只通过新增 SSOT + 各处 cite 实现，**不强制重写已有 archive topic 中的术语**（archive 容忍异构）；active 期间形态规范对**已写产物豁免**，仅约束新写（soft_warn 律 — 不阻断 finalize 校验）
 - **可逆性**：术语定义可通过 dXX 回退；不锁死
-- **不引入 hard error**：漂移检测（人工自检 checklist + 未来可选脚本）最多 WARN（继承 030 d10「不再 hard error 升级」）
-- **形态分类原则**（d01 OQ-r01-1 = 方案 B 统一律）：首批 8 术语形态分三类——
+- **不引入 hard error**：漂移检测（人工自检 checklist + 未来可选脚本）最多 WARN
+- **形态分类原则（统一律）**：首批 8 术语形态分三类——
   - `abbreviation` 大写缩写（OQ / AP）— 适用：跨语言场景、简短引用、scope 编号 prefix
   - `lowercase_word` 小写英文词（goal / plan / scope / phase / wave）— 适用：自然语言段落、文档行文、SKILL 描述
   - `letter_id` 大写字母编号（V / G / P）— 适用：scope 条目编号（V1/G1）、plan 派生编号（P-V1/P-V2）
   - 双形态术语（goal/G、phase/P）按用法选 token：行文用小写词、编号用字母 id；不强制单一形态
-  - **统一律 = 标同一形态学尺度，非分类律**——拒绝按「语义类」（决策 / 目标 / 判断 / 行动 / 合同 / 结构）建分组列；防 d01 OQ-8 平铺律侧门翻案（详见 d01 r01 P0-4）
+  - **统一律 = 标同一形态学尺度，非分类律**——拒绝按「语义类」（决策 / 目标 / 判断 / 行动 / 合同 / 结构）建分组列；防平铺律侧门翻案
 
 ---
 
@@ -35,7 +35,7 @@
 
 > **编号规约统一**：N 表示自然数（≥ 1）；XX 表示两位零填充编号（dXX / rXX）；前缀字母字面量（V / G / AP / P / d / r）。
 >
-> **形态类型列**（d01 OQ-r01-1 = 方案 B 统一律）：每个 term 标该术语在「缩写」列出现的所有形态学类型，详见 §设计原则 第 6 条「形态分类原则」。**统一律 = 同一形态学尺度标注**，非语义分类列（参 d01 OQ-8 平铺律硬约束）。
+> **形态类型列（统一律）**：每个 term 标该术语在「缩写」列出现的所有形态学类型，详见 §设计原则 第 6 条「形态分类原则」。**统一律 = 同一形态学尺度标注**，非语义分类列（参 §设计原则 平铺律硬约束）。
 
 ---
 
@@ -45,8 +45,8 @@
 
 | 形态 | 来源 | 编号空间 | 典型出处 |
 |------|------|---------|---------|
-| `OQ-N` | scope 阶段直接登记 | 单 topic 内自增 | 033 scope `OQ-1~OQ-10` |
-| `OQ-rXX-N` | review 衍生（rXX 评审产生的开放问题） | review 局部空间 | 032 r01 `OQ-r01-1~OQ-r01-9` |
+| `OQ-N` | scope 阶段直接登记 | 单 topic 内自增 | `scope.md` §未决问题 `OQ-1~OQ-N` |
+| `OQ-rXX-N` | review 衍生（rXX 评审产生的开放问题） | review 局部空间 | `reviews/rXX_*.md` §Open Questions |
 
 > **判别**：纯 OQ-N → scope 自带；OQ-r__-N → review 衍生（消费时按 review 上下文解读）。
 
@@ -79,9 +79,9 @@
 
 | 前缀 | 含义 | 出处典型 |
 |------|------|---------|
-| `AP-N`（无前缀字母） | 直接 action，无子族 | 030 `AP-79/80/81b` |
-| `AP-L-N` | **LOCAL** 类（实例层动作，不动协议） | 032 `AP-L-1~AP-L-4` |
-| `AP-Z-N` | **Z 系列**（待清算 / 推迟到下一专项） | 030 `AP-Z3/Z4/Z5` 转入 031 |
+| `AP-N`（无前缀字母） | 直接 action，无子族 | `reviews/rXX` / `decisions/dXX` 中通用 action |
+| `AP-L-N` | **LOCAL** 类（实例层动作，不动协议） | LOCAL 范围内的小补丁 |
+| `AP-Z-N` | **Z 系列**（待清算 / 推迟到下一专项） | 跨 topic 转移项（推迟到下一专项） |
 
 > AP 总编号空间是单 topic 内连续递增；子族前缀只是分类标签，**不**重置编号。
 
@@ -99,7 +99,7 @@
 |------|------|
 | `plan`（小写英文） | 抽象概念 = 执行计划 / 执行过程 |
 | `plan.md` | 承载文件，是 plan 的物化形式 |
-| 用户原话「执行 plan 的过程」 | 按 plan.md 中 `P-V1~P-VN` 推进的动作序列 |
+| 用户原话「执行 plan 的过程」 | 按 plan.md 中各 phase（`P-V1~P-VN`）推进的动作序列 |
 
 ### plan vs scope
 
@@ -166,7 +166,7 @@
 > 例：`OQ` = 开放问题（详见 vocabulary.md §术语表）
 ```
 
-> ⚠️ **不推荐**：跨目录相对路径 `../shared/vocabulary.md` —— 仅在 SDK 内 SKILL 目录下成立，`bin/relink` 分发到 IDE 后路径断裂；topic 产物从 vault（iCloud）侧引用更不通。各 SKILL 子目录用 `references/vocabulary.md` 软链方案规避（r01 P0-1 / d01 AP-1）。
+> ⚠️ **不推荐**：跨目录相对路径 `../shared/vocabulary.md` —— 仅在 SDK 内 SKILL 目录下成立，`bin/relink` 分发到 IDE 后路径断裂；topic 产物从 vault（iCloud）侧引用更不通。各 SKILL 子目录用 `references/vocabulary.md` 软链方案规避。
 
 **禁止**（字字复制本体定义）：
 
@@ -183,28 +183,28 @@
 | 列举开放问题 | `## 未决问题\n- [ ] **OQ-1**: ...` | `## 待定\n- 这个怎么办` |
 | 列举目标 | `## 目标\n- **G1** — ...` | `## 我想做的事\n- ...` |
 | 列举验收 | `## 验收口径\n- [ ] **V1** — ...` | `## checklist\n- [ ] 看起来差不多` |
-| 列举行动 | `**AP-3** intake_gate_out 增 fingerprint` | `应该加一个 fingerprint` |
+| 列举行动 | `**AP-N** {具体行动描述}` | `应该加一个 ...`（含糊未编号） |
 | 派生 plan | `**P-V1 → V1** — 落地 SSOT` | `### 第一步` |
 
 ### Prefix dispatch 表（按上下文选 prefix 形态）
 
-> 解决 r01 P0-2（"按上下文选 prefix" 无机械规则 → 用户"太随意"根因）。
+> 解决「按上下文选 prefix」无机械规则的问题（消费方无判断规则会导致 prefix 选择随意化）。
 > 落点：scope / plan / review / decision 等 topic 产物里的列项，按下表选 prefix 形态。
 
-| Prefix | 上下文 | 含义 | 典型落点 | 示例 |
-|--------|--------|------|---------|------|
-| **OQ-N** | scope 阶段提出的 topic 级开放问题 | 全 topic 范围未决议题，由 dXX 裁决或 review 触发 | `scope.md` §未决问题 | `OQ-3: 是否承载 031 V7 archive 维护者裁定` |
-| **OQ-rXX-N** | review 阶段发现的 review 局部开放问题 | 仅本轮 review 范围内未决，由对应 dXX 裁决 | `reviews/rXX_*.md` §Open Questions | `OQ-r01-1: 形态规范采用方案 B 还是 C？` |
-| **AP-N** | review/scope/decision 派生的通用 LOCAL/PROTOCOL 行动 | 当前 topic 内执行类工作 | `reviews/rXX_*.md` / `decisions/dXX_*.md` §Actions | `AP-1: 各 SKILL 子目录建 references/vocabulary.md 软链` |
-| **AP-L-N** | 跨多个 SKILL 的 LIBRARY 类行动（影响 shared/ 或 templates/） | 跨 SKILL 影响面 | 同上 | `AP-L-4: trace-artifacts-spec §decision_artifact 字段定义` |
-| **AP-Z-N** | ZERO-COST 类行动（无代码改动，仅文档或元数据维护） | 文档维护、配置补齐 | 同上 | `AP-Z3: INSTALL_INTERNAL.md 维护者群通知 v2.0 风格` |
-| **AP-meta-N** | META 跨 topic 转移类行动 | 把本 topic 的 finding 转给另一 topic | 跨 topic 联动声明 | `AP-meta-1: M-1 复现证据归集到 033 V12 证据池` |
-| **dXX** | decision 事件节点 | 决策门触发产物，按时序编号 d01 → d02 → … | `decisions/dXX_*.md` | `d01_accept_r01.md` |
-| **dXX-AP-N** | decision 内派生的行动条目 | 决策一并落地的 inline AP（与独立 AP-N 区别）| `decisions/dXX_*.md` §Accept 范围 | `d01-AP-3: 演进规则新立第 5 行` |
-| **dXX-OQ-N** | decision 内显式留口的子 OQ | 决策中识别但未当场裁决的子议题 | `decisions/dXX_*.md` §未决 | `d01-OQ-1: dispatch 表是否需要 v2.x 第二批补 PROTOCOL 形态` |
-| **rXX** | review 轮次 | 评审事件节点，按 topic 内时序编号 | `reviews/rXX_*.md` | `r01_词典画风规范化与形态治理.md` |
+| Prefix | 上下文 | 含义 | 典型落点 | 示例形态 |
+|--------|--------|------|---------|----------|
+| **OQ-N** | scope 阶段提出的 topic 级开放问题 | 全 topic 范围未决议题，由 dXX 裁决或 review 触发 | `scope.md` §未决问题 | `OQ-N: {topic 级 open question 描述}` |
+| **OQ-rXX-N** | review 阶段发现的 review 局部开放问题 | 仅本轮 review 范围内未决，由对应 dXX 裁决 | `reviews/rXX_*.md` §Open Questions | `OQ-rXX-N: {review 衍生 open question 描述}` |
+| **AP-N** | review/scope/decision 派生的通用 LOCAL/PROTOCOL 行动 | 当前 topic 内执行类工作 | `reviews/rXX_*.md` / `decisions/dXX_*.md` §Actions | `AP-N: {具体 action 描述}` |
+| **AP-L-N** | 跨多个 SKILL 的 LIBRARY 类行动（影响 shared/ 或 templates/） | 跨 SKILL 影响面 | 同上 | `AP-L-N: {跨 SKILL 行动描述}` |
+| **AP-Z-N** | ZERO-COST 类行动（无代码改动，仅文档或元数据维护） | 文档维护、配置补齐 | 同上 | `AP-Z-N: {ZERO-COST 维护任务描述}` |
+| **AP-meta-N** | META 跨 topic 转移类行动 | 把本 topic 的 finding 转给另一 topic | 跨 topic 联动声明 | `AP-meta-N: {跨 topic 转移描述}` |
+| **dXX** | decision 事件节点 | 决策门触发产物，按时序编号 d01 → d02 → … | `decisions/dXX_*.md` | `dXX_{action}_{ref}.md` |
+| **dXX-AP-N** | decision 内派生的行动条目 | 决策一并落地的 inline AP（与独立 AP-N 区别）| `decisions/dXX_*.md` §Accept 范围 | `dXX-AP-N: {decision 内行动描述}` |
+| **dXX-OQ-N** | decision 内显式留口的子 OQ | 决策中识别但未当场裁决的子议题 | `decisions/dXX_*.md` §未决 | `dXX-OQ-N: {decision 内留口议题}` |
+| **rXX** | review 轮次 | 评审事件节点，按 topic 内时序编号 | `reviews/rXX_*.md` | `rXX_{title}.md` |
 
-> ⚠️ **dXX / dXX-AP-N / dXX-OQ-N 当前为接口预留**（来自 OQ-9 / 接口 #2，2026-05-16）。实际语义在 v2.3+ decision-chain 治理专项（候选 035）启动时落定；本批入表只为前向兼容。
+> ⚠️ **dXX / dXX-AP-N / dXX-OQ-N 当前为接口预留**。实际语义在未来 decision-chain 治理专项启动时落定；本批入表只为前向兼容。
 
 ### 演进规则
 
@@ -216,7 +216,7 @@
 | 删除术语 | ❌ 不允许；只允许标 deprecated（保留向后兼容） |
 | **形态规范变更** [^1] | 走 dXX 决策 + 在 §变更记录 追加一行；**不需 review**（与「修改既有术语定义」语义独立）|
 
-[^1]: 「形态规范变更」涵盖 §术语表列结构 / Prefix dispatch 表行结构 / 术语表组织形态等元规范的修订。**注**：索引架构变更（如未来引入 `decision.index.md` 替代 / 并存 `review.index.md`）同属本类，走 dXX 路径，不需要 review 兜底；新引入概念在 §第二批候选术语 区先占位，dXX 落地时正式纳入首批。来自 d01 OQ-r01-2 / 接口 #3（OQ-9 预留）。
+[^1]: 「形态规范变更」涵盖 §术语表列结构 / Prefix dispatch 表行结构 / 术语表组织形态等元规范的修订。**注**：索引架构变更（如未来引入 `decision.index.md` 替代 / 并存 `review.index.md`）同属本类，走 dXX 路径，不需要 review 兜底；新引入概念在 §第二批候选术语 区先占位，dXX 落地时正式纳入首批。
 
 ---
 
@@ -224,9 +224,9 @@
 
 | 日期 | 触发 | 变更摘要 |
 |------|------|---------|
-| 2026-05-15 | 034 P-V1 | 初版落地 — 首批 8 术语 + 中英对照 + 易混淆对比 14 组 |
-| 2026-05-16 | 034 d01 P-V2.0a | + §使用约定 cite 示例改 `references/vocabulary.md`（AP-1 配套，r01 P0-1）+ §使用约定 加 prefix dispatch 表（AP-2，r01 P0-2，含 dXX/dXX-AP-N/dXX-OQ-N 接口 #2 预留）+ §演进规则 新立第 5 行「形态规范变更」+ 索引架构变更脚注（AP-3，r01 P0-3，含接口 #3 预留）+ §第二批候选术语区（接口 #1，OQ-9 预留）|
-| 2026-05-16 | 034 d01 P-V2.0b | + §术语表 加「形态类型」列（abbreviation / lowercase_word / letter_id 三类，方案 B 统一律；AP-4，r01 P1-1+P1-2+P1-3 / d01 OQ-r01-1）+ §设计原则 第 6 条「形态分类原则」+ §平铺律段加 d01 锚定硬约束注（OQ-8 升格） |
+| 2026-05-15 | 初版落地 | 首批 8 术语 + 中英对照 + 易混淆对比 14 组 |
+| 2026-05-16 | 协议级前置补丁 | + §使用约定 cite 示例改 `references/vocabulary.md`（修复 cite 路径稳定性）+ §使用约定 加 prefix dispatch 表（含 dXX/dXX-AP-N/dXX-OQ-N 接口预留行）+ §演进规则 新立第 5 行「形态规范变更」+ 索引架构变更脚注 + §第二批候选术语区 |
+| 2026-05-16 | 形态规范落地 | + §术语表 加「形态类型」列（abbreviation / lowercase_word / letter_id 三类，统一律）+ §设计原则 第 6 条「形态分类原则」+ §平铺律段加硬约束注 |
 
 ---
 
@@ -239,7 +239,7 @@
 | `topic-sniff-spec.md` | 引用本词典中的 scope / intake / topic 等术语 |
 | `review-spec-skeleton.md` | 引用本词典中的 review / finding / AP 等术语（finding 待第二批纳入） |
 
-> 本词典首批不含 review / finding / decision / archive 等术语（留 OQ-7 复看时第二批纳入）。
+> 本词典首批不含 review / finding / decision / archive 等术语（详见下方 §第二批候选术语，待后续 dXX 决策门启动时纳入）。
 
 ---
 
@@ -251,12 +251,12 @@
 
 | 候选术语 | 性质 | 等待治理 wave | 触发条件 |
 |---------|------|--------------|----------|
-| `review` | 评审 | v2.3+ 第二批 | OQ-7 复看时纳入 |
-| `finding` | 评审发现 | v2.3+ 第二批 | OQ-7 复看时纳入 |
-| `decision` (`d`) | 决策事件 | **decision-chain 治理 wave**（v2.3+ 候选 035）| 034 OQ-9 启动 |
+| `review` | 评审 | 词典第二批 | 第二批 dXX 启动 |
+| `finding` | 评审发现 | 词典第二批 | 第二批 dXX 启动 |
+| `decision` (`d`) | 决策事件 | **decision-chain 治理 wave** | decision-chain 专项 dXX 启动 |
 | `decision-chain` | 决策链时序（d01 → d02 → …）| **decision-chain 治理 wave** | 同上 |
 | `decision-index` | 决策索引 SSOT（取代 review.index 候选）| **decision-chain 治理 wave** | 同上 |
-| `archive` | 归档（topic / SKILL）| v2.3+ 第二批 | OQ-7 复看时纳入 |
-| `index` | 索引（中性概念）| v2.3+ 第二批 | OQ-7 + decision-chain 治理同步落定 |
+| `archive` | 归档（topic / SKILL）| 词典第二批 | 第二批 dXX 启动 |
+| `index` | 索引（中性概念）| 词典第二批 | decision-chain 治理 wave 同步落定 |
 
-> 来自 d01 / OQ-9 接口 #1（2026-05-16 预留）：本表的目的是让未来命题启动时**不需要回头改首批结构**，直接走 dXX 决策门把候选条目移到 §术语表即可。
+> 本表的目的是让未来命题启动时**不需要回头改首批结构**，直接走 dXX 决策门把候选条目移到 §术语表即可。
