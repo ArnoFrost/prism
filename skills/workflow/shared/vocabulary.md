@@ -7,27 +7,35 @@
 ## 设计原则
 
 - **双面分发**：本文件是 SDK 协议级 SSOT；`docs/glossary.md` 是人类阅读分发面（cite 本文件，不复制定义）
-- **平铺一张表**：首批 8 个术语不分核心 / 衍生 / 别名层级（OQ-8 推荐）
-- **最小侵入**：固化术语只通过新增 SSOT + 各处 cite 实现，**不强制重写已有 archive topic 中的术语**（archive 容忍异构）
+- **平铺一张表**（**d01 OQ-8 锚定硬约束**，原 OQ-8 intake-derived → 升格）：首批 8 个术语不分核心 / 衍生 / 别名层级；**禁止引入语义类列 / 分层分组 / 别名独立段**，任何此类提议必须先 dXX 推翻
+- **最小侵入**：固化术语只通过新增 SSOT + 各处 cite 实现，**不强制重写已有 archive topic 中的术语**（archive 容忍异构）；active 期间形态规范对已写产物豁免，仅约束新写（d01 OQ-r01-3 soft_warn 律）
 - **可逆性**：术语定义可通过 dXX 回退；不锁死
 - **不引入 hard error**：漂移检测（人工自检 checklist + 未来可选脚本）最多 WARN（继承 030 d10「不再 hard error 升级」）
+- **形态分类原则**（d01 OQ-r01-1 = 方案 B 统一律）：首批 8 术语形态分三类——
+  - `abbreviation` 大写缩写（OQ / AP）— 适用：跨语言场景、简短引用、scope 编号 prefix
+  - `lowercase_word` 小写英文词（goal / plan / scope / phase / wave）— 适用：自然语言段落、文档行文、SKILL 描述
+  - `letter_id` 大写字母编号（V / G / P）— 适用：scope 条目编号（V1/G1）、plan 派生编号（P-V1/P-V2）
+  - 双形态术语（goal/G、phase/P）按用法选 token：行文用小写词、编号用字母 id；不强制单一形态
+  - **统一律 = 标同一形态学尺度，非分类律**——拒绝按「语义类」（决策 / 目标 / 判断 / 行动 / 合同 / 结构）建分组列；防 d01 OQ-8 平铺律侧门翻案（详见 d01 r01 P0-4）
 
 ---
 
 ## 术语表（首批 8 个）
 
-| 缩写 | 中文 | 英文 | 一句话定义 |
-|:----:|------|------|------|
-| **OQ** | 开放问题 | Open Question | scope 阶段记录、需后续 review/decision 裁决的待定议题；`[ ]` 未决 / `[x]` + 决策编号 已解决 |
-| **goal** / **G** | 目标 | Goal | scope 中明确要达成的结果，正式编号为 `G1`、`G2`...；与「非目标」（anti-goals）互补 |
-| **V** | 验收口径 | Verification Criterion | scope 中 goal 的可勾选判定项（`[ ]` / `[x]`）；scope 合同面最核心段落，回答「什么条件成立算完」 |
-| **AP** | 行动项 | Action Point | review / decision 中识别的具体待办，用 `AP-N` **全局递增**编号；可带 LOCAL/PROTOCOL/Z 等子族前缀 |
-| **plan** | 执行计划 | Plan | scope 派生的执行面 SSOT；含「当前焦点」+「总计划（待执行 / 已完成）」+「明确不做」三段 |
-| **scope** | 合同 / 合同收敛 | Scope (contract) | 专项的合同面 SSOT；含 G / V / 非目标 / 关键约束 / 未决问题 / 变更记录 六段；review 不直接改，通过 dXX 间接驱动 |
-| **phase** / **P** | 阶段 | Phase | plan 中的执行单位；推荐用 `P-VN` 表示（与验收项 VN 1:1 派生强溯源）；也可指生命周期段（启动 / 收敛 / 执行 / 归档） |
-| **wave** | 批次 | Wave | 跨 phase 的执行批次，把多个 phase 组织成有顺序的发布单元；编号 `Wave 1~N`，比 phase 粗粒度 |
+| 缩写 | 形态类型 | 中文 | 英文 | 一句话定义 |
+|:----:|:--------:|------|------|------|
+| **OQ** | abbreviation | 开放问题 | Open Question | scope 阶段记录、需后续 review/decision 裁决的待定议题；`[ ]` 未决 / `[x]` + 决策编号 已解决 |
+| **goal** / **G** | lowercase_word + letter_id | 目标 | Goal | scope 中明确要达成的结果，正式编号为 `G1`、`G2`...；与「非目标」（anti-goals）互补 |
+| **V** | letter_id | 验收口径 | Verification Criterion | scope 中 goal 的可勾选判定项（`[ ]` / `[x]`）；scope 合同面最核心段落，回答「什么条件成立算完」 |
+| **AP** | abbreviation | 行动项 | Action Point | review / decision 中识别的具体待办，用 `AP-N` **全局递增**编号；可带 LOCAL/PROTOCOL/Z 等子族前缀 |
+| **plan** | lowercase_word | 执行计划 | Plan | scope 派生的执行面 SSOT；含「当前焦点」+「总计划（待执行 / 已完成）」+「明确不做」三段 |
+| **scope** | lowercase_word | 合同 / 合同收敛 | Scope (contract) | 专项的合同面 SSOT；含 G / V / 非目标 / 关键约束 / 未决问题 / 变更记录 六段；review 不直接改，通过 dXX 间接驱动 |
+| **phase** / **P** | lowercase_word + letter_id | 阶段 | Phase | plan 中的执行单位；推荐用 `P-VN` 表示（与验收项 VN 1:1 派生强溯源）；也可指生命周期段（启动 / 收敛 / 执行 / 归档） |
+| **wave** | lowercase_word | 批次 | Wave | 跨 phase 的执行批次，把多个 phase 组织成有顺序的发布单元；编号 `Wave 1~N`，比 phase 粗粒度 |
 
 > **编号规约统一**：N 表示自然数（≥ 1）；XX 表示两位零填充编号（dXX / rXX）；前缀字母字面量（V / G / AP / P / d / r）。
+>
+> **形态类型列**（d01 OQ-r01-1 = 方案 B 统一律）：每个 term 标该术语在「缩写」列出现的所有形态学类型，详见 §设计原则 第 6 条「形态分类原则」。**统一律 = 同一形态学尺度标注**，非语义分类列（参 d01 OQ-8 平铺律硬约束）。
 
 ---
 
@@ -218,6 +226,7 @@
 |------|------|---------|
 | 2026-05-15 | 034 P-V1 | 初版落地 — 首批 8 术语 + 中英对照 + 易混淆对比 14 组 |
 | 2026-05-16 | 034 d01 P-V2.0a | + §使用约定 cite 示例改 `references/vocabulary.md`（AP-1 配套，r01 P0-1）+ §使用约定 加 prefix dispatch 表（AP-2，r01 P0-2，含 dXX/dXX-AP-N/dXX-OQ-N 接口 #2 预留）+ §演进规则 新立第 5 行「形态规范变更」+ 索引架构变更脚注（AP-3，r01 P0-3，含接口 #3 预留）+ §第二批候选术语区（接口 #1，OQ-9 预留）|
+| 2026-05-16 | 034 d01 P-V2.0b | + §术语表 加「形态类型」列（abbreviation / lowercase_word / letter_id 三类，方案 B 统一律；AP-4，r01 P1-1+P1-2+P1-3 / d01 OQ-r01-1）+ §设计原则 第 6 条「形态分类原则」+ §平铺律段加 d01 锚定硬约束注（OQ-8 升格） |
 
 ---
 
