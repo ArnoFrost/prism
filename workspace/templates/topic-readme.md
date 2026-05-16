@@ -13,6 +13,7 @@
 |------|------|
 | **scope** | [scope.md](./scope.md) |
 | **plan** | [plan.md](./plan.md) |
+| **decision chain** | [decision.index.md](./decision.index.md) — 主索引（事件链 SSOT） |
 | **latest review** | — |
 | **latest decision** | — |
 | **next action** | {见下方 next_action 规范} |
@@ -27,6 +28,11 @@ next_action 取值规范：
     - "📦 已归档"（topic 已归档）
   - 联动规则：next_action = plan.md「当前焦点」段的一句话摘要
     由 workflow-scope 在 Phase 4（同步）时自动更新
+
+索引地位说明：
+  - decision.index.md = 决策链主索引（事件链 SSOT，含时序 + frontmatter 依赖字段）
+  - review.index.md   = 评审辅助索引（仅列被 decision 引用的 review；稀疏关联）
+  - 历史 topic 可能仅有 review.index.md（向后兼容；新 topic 推荐建 decision.index.md）
 -->
 
 ## 当前状态

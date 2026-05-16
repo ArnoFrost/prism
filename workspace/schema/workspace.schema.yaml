@@ -29,14 +29,14 @@ topic:
   # 专项内部结构定义
   structure:
     required:
-      - README.md           # 主线导航（编号/created/updated/status + 轮次索引）
+      - README.md           # 主线导航（编号/created/updated/status + 索引）
     recommended:
       - intake.md           # 输入整形（混沌输入 → 结构化）
       - scope.md            # 合同收敛（目标/非目标/验收口径/约束/未决）
       - plan.md             # 总计划 + 当前焦点（单文件双区，跨轮次更新）
-      - review.index.md     # 评审索引
+      - decision.index.md   # 决策链主索引（事件链 SSOT — 时序表 + frontmatter 依赖字段）
     optional:
-      - decision.index.md   # 决策索引
+      - review.index.md     # 评审辅助索引（仅列被 decision 引用的 review，主索引由 decision.index 承担）
       - reviews/            # 评审轮次产物（rXX_short-desc.md）
       - "reviews/raw/"      # 原始角色报告（可选保留）
       - decisions/          # 决策记录（dXX_short-desc.md）
@@ -123,8 +123,9 @@ topic_artifacts:
       - [ ] {需要执行的动作}
   review_index:
     filename: "review.index.md"
-    description: "评审索引 — 哪轮做了什么，当前依据哪轮"
-    producer: "workflow-review 自动追加"
+    description: "评审辅助索引 — 仅列被 decision 引用的 review（稀疏关联原则）；主索引地位由 decision.index 承担"
+    producer: "workflow-review 在 review 被 decision 引用时追加"
+    status: "auxiliary"
   verify:
     filename_pattern: "verify/vXX_{short-desc}.md"
     naming_rule: "vXX_{简短描述}.md — 中英文均可，禁止空格"
@@ -136,8 +137,13 @@ topic_artifacts:
     producer: "手动 / workflow-scope(派生)"
   decision_index:
     filename: "decision.index.md"
-    description: "决策索引 — 人类裁决历史"
-    producer: "手动"
+    description: "决策链主索引（SSOT）— 含时序表（dXX | title | accepted_at | review_ref）+ frontmatter 依赖字段（supersedes / derived_from / related_dXX）；topic 内决策史的事件链入口"
+    producer: "workflow-review / workflow-scope 在决策 accept 时追加 / 手动"
+    status: "primary"
+    frontmatter_dependency_fields:
+      - supersedes        # 本决策推翻 / 取代了哪些 dXX（list[str]）
+      - derived_from      # 本决策从哪些 dXX 派生（list[str]）
+      - related_dXX       # 关联但非派生 / 非推翻的 dXX（list[str]）
 
 # Archive rules
 archive:
