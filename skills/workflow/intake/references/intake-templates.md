@@ -23,13 +23,15 @@ topics/{NNN}_{topic-name}/
 ├── intake.md              # 输入整形（本次 intake 产物）
 ├── scope.md               # 合同收敛（目标/非目标/验收）
 ├── plan.md                # 当前有效行动方案（占位）
-├── review.index.md        # 评审索引（占位）
+├── decision.index.md      # 决策链主索引（占位 — 事件链 SSOT）
+├── review.index.md        # 评审辅助索引（占位 — 稀疏关联律）
 ├── reviews/               # 评审轮次产物目录
 ├── decisions/             # 决策记录目录
 └── verify/                # 验证规格（按需，plan 条目关联）
 ```
 
-> `artifacts/`、`snapshots/`、`decision.index.md`、`verify/` 按需创建，不预生成。
+> `artifacts/`、`snapshots/`、`verify/` 按需创建，不预生成。
+> `decision.index.md` 由 intake 自动生成（主索引）；`review.index.md` 由 intake 自动生成（辅助索引，仅在 review 被 decision 引用时填充）。
 
 ## README.md 模板
 
@@ -176,7 +178,40 @@ _（无）_
 -->
 ```
 
-## review.index.md 模板
+## decision.index.md 模板（主索引）
+
+```markdown
+---
+date: {YYYY-MM-DD}
+status: active
+type: decision-index
+tags:
+  - {topic-tag}
+related:                    # ⚠️ 仅用相对路径，禁止 [[wikilink]]
+  - "./scope.md"
+  - "./README.md"
+---
+
+# 决策链主索引 — {专项标题}
+
+> **事件链 SSOT** — topic 内所有决策事件的时序索引；含时序表 + frontmatter 依赖字段。
+> 主索引地位由本文件承担；`review.index.md` 是辅助索引（稀疏关联律）。
+
+## 决策时序表
+
+| dXX | 决策标题 | accepted_at | review_ref | supersedes | derived_from | related_dXX |
+|:---:|---------|:-----------:|:----------:|:----------:|:-----------:|:-----------:|
+| — | _(暂无决策)_ | — | — | — | — | — |
+
+## frontmatter 依赖字段说明
+
+每个 dXX.md frontmatter 含三依赖字段：
+- `supersedes` — 推翻 / 取代了哪些 dXX（list[str]）
+- `derived_from` — 从哪些 dXX 派生（list[str]）
+- `related_dXX` — 关联但非派生 / 非推翻的 dXX（list[str]）
+```
+
+## review.index.md 模板（辅助索引）
 
 ```markdown
 ---
@@ -187,10 +222,15 @@ tags:
   - {topic-tag}
 related:                    # ⚠️ 仅用相对路径，禁止 [[wikilink]]
   - "./scope.md"
+  - "./decision.index.md"
 ---
 
-# 评审索引 — {专项标题}
+# 评审辅助索引 — {专项标题}
 
-| 轮次 | 文件 | 状态 | 说明 |
-|------|------|------|------|
+> **辅助索引（稀疏关联律）** — 仅列被某 dXX 引用的 review 轮次；探索 / 调研 / 辩证性 review 不在本表登记。
+> 决策链主索引地位由 decision.index.md 承担。
+
+| 轮次 | 文件 | 状态 | 决策 | 说明 |
+|------|------|------|------|------|
+| — | _(暂无被引用的 review)_ | — | — | — |
 ```

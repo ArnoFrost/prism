@@ -14,7 +14,7 @@ stability: experimental
 | **是什么** | 把混沌输入收进 topic 体系的入口控制器：判断新建/追加/迁移，生成或补全专项骨架 |
 | **不是什么** | 不是 scope — 不定正式边界、不写验收口径、不产出 plan 条目；不做评审；不替代 decision 记录路由裁决 |
 | **读取工件** | sniff 输出按 [topic-sniff-spec](../shared/topic-sniff-spec.md) 路由；另读 intake-templates.md、intake-fallback.md |
-| **写入工件** | intake.md（新建/追加）、README.md（按 [topic-readme 模板](../../workspace/templates/topic-readme.md)）、scope.md（草稿骨架）、plan.md（按 [topic-plan 模板](../../workspace/templates/topic-plan.md) 占位）、review.index.md（占位）、index.md（专项引用） |
+| **写入工件** | intake.md（新建/追加）、README.md（按 [topic-readme 模板](../../workspace/templates/topic-readme.md)）、scope.md（草稿骨架）、plan.md（按 [topic-plan 模板](../../workspace/templates/topic-plan.md) 占位）、decision.index.md（决策链主索引占位 — 事件链 SSOT，含时序表 + frontmatter 依赖字段说明）、review.index.md（评审辅助索引占位 — 稀疏关联律）、index.md（专项引用） |
 | **结束建议** | → `workflow-scope`（收敛边界） |
 | **设计模式** | Pattern 4 — Context-aware Tool Selection（根据 topic_affinity 路由到新建/追加/迁移） + Pattern 1 — Sequential Workflow（sniff→classify→route→initialize） |
 
