@@ -340,15 +340,15 @@ def cmd_sniff(args: argparse.Namespace) -> int:
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
-    """校验产物（dispatch 到 review/scripts/validate_product.py）"""
+    """校验产物（dispatch 到 shared/scripts/validate_product.py）"""
     json_mode = getattr(args, "json_mode", False)
 
-    review_scripts = os.path.join(WORKFLOW_DIR, "review", "scripts")
-    _add_to_path(review_scripts)
+    shared_scripts = os.path.join(WORKFLOW_DIR, "shared", "scripts")
+    _add_to_path(shared_scripts)
 
-    sys.path.insert(0, review_scripts)
+    sys.path.insert(0, shared_scripts)
     spec = importlib.util.spec_from_file_location(
-        "validate_product", os.path.join(review_scripts, "validate_product.py"))
+        "validate_product", os.path.join(shared_scripts, "validate_product.py"))
     vp = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(vp)
 
@@ -618,8 +618,8 @@ def cmd_finalize(args: argparse.Namespace) -> int:
         steps.append({"step": "tidy", "status": "skipped", "reason": "tidy.py 未找到"})
 
     # ── Step 2: validate ──
-    review_scripts = os.path.join(WORKFLOW_DIR, "review", "scripts")
-    validate_path = os.path.join(review_scripts, "validate_product.py")
+    shared_scripts = os.path.join(WORKFLOW_DIR, "shared", "scripts")
+    validate_path = os.path.join(shared_scripts, "validate_product.py")
     if os.path.isfile(validate_path):
         import subprocess
         validate_cmd = [sys.executable, validate_path, topic_dir, "--format", "ofm"]
