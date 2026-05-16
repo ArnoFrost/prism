@@ -13,7 +13,7 @@ stability: experimental
 |------|------|
 | **是什么** | topic 内的阶段性正式评审事件：多角色独立审查 → 合并仲裁 → 分级 findings → 落盘 → 触发人类决策 |
 | **不是什么** | 不直接改 scope、不直接改 plan、不隐式生成 decision、不替代人类裁决权、不是每轮对话都要重启的总入口 |
-| **写入工件** | `reviews/rXX_描述.md`（综合报告，必填）+ `reviews/raw/rXX-role-*.md`（条件落盘）+ `review.index.md`（追加）|
+| **写入工件** | `reviews/rXX_描述.md`（综合报告，必填）+ `reviews/raw/rXX-role-*.md`（条件落盘）+ `decision.index.md`（决策链主索引，决策 accept 后追加）+ `review.index.md`（评审辅助索引，仅当本 review 被新 dXX 引用时追加；稀疏关联律）|
 | **结束建议** | → 用户 Accept / Reject / Defer → `decisions/dXX.md` → `workflow-scope` 同步合同 |
 
 ---
@@ -74,7 +74,9 @@ stability: experimental
 │  ② 输出统一行动计划
 │  ③ 写综合报告 reviews/rXX_*.md
 │  ④ [条件] 写角色报告 reviews/raw/
-│  ⑤ 追加 review.index.md
+│  ⑤ 索引联动（按"稀疏关联律"）：
+│     - decision.index.md（主索引）：决策门 Gate 4 accept 后由后续 dXX 落盘步骤追加事件链行
+│     - review.index.md（辅助索引）：仅当本 review 被新 dXX 引用时才追加；探索/调研性 review 不上索引
 │  ⑥ 执行 prism finalize <topic_dir>
 │     → tidy / validate / validate-trace / validate-review-call / scope-hint
 │  ⑦ 输出 merge_artifact 痕迹
@@ -91,8 +93,8 @@ stability: experimental
 |------|-------------|-------|----------|
 | ⛔ Align→Explore | sniff 已执行；mode=full 时 task_probe 块字段齐全 | output_dir / format / mode 三字段 + task_probe `called`/`result`/`fallback_decision`/`fallback_reason` 齐全 | 重新 sniff 或真实发起 Task 调用补 task_probe |
 | ⛔ Explore→Merge | 所有角色已输出独立评审 | 角色报告数 = 预定角色数；每份含 TL;DR + Findings | 补缺失角色或说明跳过原因 |
-| ⛔ Merge→落盘 | 综合报告 + review.index 已写；角色报告按条件落盘 | `validate_product.py` 退出码 = 0 | 跑 `--fix`；仍失败列出未解决 ERROR |
-| ⛔ 落盘→决策 | 产物已落盘且校验通过 | review.index.md 含本轮记录 | 补 review.index.md |
+| ⛔ Merge→落盘 | 综合报告 + 索引联动按稀疏关联律落地；角色报告按条件落盘 | `validate_product.py` 退出码 = 0 | 跑 `--fix`；仍失败列出未解决 ERROR |
+| ⛔ 落盘→决策 | 产物已落盘且校验通过 | review.index 仅在被引用时含本轮记录；decision.index 在决策 accept 后落 | 探索性 review 无须补 review.index；被引用时补 review.index + 决策落盘时补 decision.index |
 | ⛔ Gate 4 关闭 | accept/reject 已写 dXX.md（defer 不写）| 响应含 `decision_artifact` 块，`written` 与 `path` 一致 | 补写 dXX.md + 重新输出 decision_artifact |
 
 ## Topic 路由决策（Align 阶段）
@@ -270,7 +272,8 @@ Merge 落盘且 Gate 3 通过后，**必须**触发结构化决策门（AskQuest
 |------|------|
 | `reviews/rXX_{title}.md` | 综合报告（mode=full 必填，mode=quick 单文件汇总）|
 | `reviews/raw/rXX-role-{A,B,C}.md` | 角色报告（条件落盘 — 独立发现率 ≥ 0.6 / 含被裁剪独立产物 / 用户要求 任一）|
-| `review.index.md` | 索引追加 |
+| `decision.index.md` | 决策链主索引（事件链 SSOT；决策 accept 时追加；含时序表 + frontmatter 依赖字段 `supersedes` / `derived_from` / `related_dXX`） |
+| `review.index.md` | 评审辅助索引（仅当本 review 被新 dXX 引用时追加；稀疏关联律 — 探索/调研性 review 不上索引） |
 | `references/{review-templates,review-ofm,parallel-execution,decision-gate}.md` | 命名规则 / OFM 映射 / 并行规范 / 决策门完整契约 |
 | `scripts/{sniff,validate_product}.py` | 环境探测 / 产物校验 |
 

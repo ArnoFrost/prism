@@ -30,9 +30,9 @@ uv run python {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> --fix
 **迁移后的目录结构：**
 
 ```
-reviews/r02_统一状态机.md          ← 主报告（从子目录提升）
-reviews/raw/r02-role-A.md          ← 角色报告（重命名）
-reviews/r02_统一状态机/.migrated   ← 原子目录保留标记
+reviews/rXX_{简短描述}.md           ← 主报告（从子目录提升）
+reviews/raw/rXX-role-A.md           ← 角色报告（重命名）
+reviews/rXX_{简短描述}/.migrated    ← 原子目录保留标记
 ```
 
 > 迁移是复制而非移动——原子目录保留并标记 `.migrated`，确保已有链接不断裂。
@@ -45,13 +45,13 @@ reviews/r02_统一状态机/.migrated   ← 原子目录保留标记
 ```
 topics/{NNN}_{topic}/
 ├── reviews/
-│   ├── r01_启动评审.md        # 综合报告（rXX_描述 按轮次递增）
-│   ├── r02_范围收敛.md
+│   ├── rXX_{简短描述}.md      # 综合报告（rXX_描述 按轮次递增）
 │   └── raw/                   # 原始角色报告（可选保留）
-│       ├── r01-role-A.md
-│       ├── r01-role-B.md
-│       └── r01-role-C.md
-├── review.index.md            # 自动追加本轮记录
+│       └── rXX-role-{A,B,C}.md
+├── decisions/
+│   └── dXX_{简短描述}.md      # 决策记录（accept/reject/defer）
+├── decision.index.md          # 决策链主索引（事件链 SSOT，决策 accept 后追加）
+├── review.index.md            # 评审辅助索引（仅当本 review 被新 dXX 引用时追加）
 ├── scope.md                   # 必要时更新
 └── plan.md                    # 从 review 收敛后更新
 ```
@@ -62,7 +62,9 @@ topics/{NNN}_{topic}/
 
 - `reviews/rXX_简短描述.md` — Merge 综合报告（**必须**）
 - `reviews/raw/rXX-role-{A|B|C}.md` — 独立角色报告（**条件落盘**：角色报告含合并时被裁剪的独立产物 / 独立发现率 ≥ 60% / 用户要求时写入）
-- 自动追加 `review.index.md` 记录
+- **索引联动**（稀疏关联律）：
+  - `decision.index.md`（主索引）：在 Gate 4 决策 accept 后由 dXX 落盘步骤追加（**不在 review 阶段自动追加**）
+  - `review.index.md`（辅助索引）：仅当本 review 被新 dXX 引用时才追加；探索 / 调研 / 辩证性 review 不上索引
 
 ## mode=quick 产物
 
@@ -96,7 +98,7 @@ topics/{NNN}_{topic}/
 |------|------|------|
 | `accepted_at` | decision | 决策被 accept 的时刻 ISO 8601（如 `2026-05-13T12:30:00+08:00`），与 `decision_artifact.timestamp` 对应 |
 | `merged_at` | review | mode=full Merge 阶段落盘完成时刻，与 `merge_artifact.raw_landed=true` 对应 |
-| `superseded_at` | review/decision | 被新一轮取代的时刻；同时填 `superseded_by: r05` 等指针 |
+| `superseded_at` | review/decision | 被新一轮取代的时刻；同时填 `superseded_by: rXX` / `dXX` 等指针 |
 | `archived_at` | topic-readme | topic 进入 `archive/` 的时刻 |
 
 ### 设计意图
