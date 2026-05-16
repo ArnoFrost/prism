@@ -26,7 +26,17 @@ stability: experimental
 
 > **路径变量**：本文中 `{skill_dir}` 指**此 SKILL.md 文件所在目录**的绝对路径。在 Cursor 中对应 skill 根目录，在 CodeBuddy / Claude Code 中对应 `{baseDir}`。执行脚本时请自行替换为实际路径。
 
-> **术语**：本 SKILL 中 OQ / goal / V / scope / topic 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + 14 组易混淆对比见 SSOT；**不字字复制本体定义**。
+> **术语**：本 SKILL 中 OQ / goal / V / scope / topic 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 11 术语 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
+
+## References 加载策略
+
+> ⚠️ **不要一次读取全部 references/**。按当前 Phase 只读必需文件。
+
+| 阶段 | 必读 | 按需（遇到相关场景时读） |
+|------|------|------------------------|
+| **Phase 1-2**（路由 + 分类） | intake-templates.md, vocabulary.md | topic-sniff-spec.md |
+| **Phase 3-4**（骨架 + Gate） | — | trace-artifacts-spec.md, askquestion-fallback.md |
+| **特殊场景** | — | obsidian-config.md（vault 配置问题时）, intake-fallback.md |
 
 ## 何时使用
 

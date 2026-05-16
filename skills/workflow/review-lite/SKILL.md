@@ -24,6 +24,16 @@ stability: experimental
 
 > **术语**：本 SKILL 中 OQ / scope / plan / AP / finding 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 11 术语 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
 
+## References 加载策略
+
+> ⚠️ **不要一次读取全部 references/**。按当前阶段只读必需文件。
+
+| 阶段 | 必读 | 按需（遇到相关场景时读） |
+|------|------|------------------------|
+| **Align** | lite-templates.md, vocabulary.md | review-ofm.md（仅 format=ofm） |
+| **Gate 4** | — | askquestion-fallback.md（仅无 AskQuestion 时） |
+| **异常排查** | — | review-templates.md, trace-artifacts-spec.md |
+
 ## 何时使用
 
 | 场景 | 用哪个 |

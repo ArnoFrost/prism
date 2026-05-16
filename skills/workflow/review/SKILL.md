@@ -22,7 +22,19 @@ stability: experimental
 
 > 管线定位：`intake → (scope) → review → archive`；`{skill_dir}` 指 SKILL.md 所在目录（按 IDE 平台映射）。
 
-> **术语**：本 SKILL 中 OQ / goal / V / AP / plan / scope / phase / wave / finding / Risks 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 8 术语 + 形态类型 + 14 组易混淆对比 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
+> **术语**：本 SKILL 中 OQ / goal / V / AP / plan / scope / phase / wave / finding / Risks 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 11 术语 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
+
+## References 加载策略
+
+> ⚠️ **不要一次读取全部 references/**。按当前阶段只读必需文件，其余遇到时再按需读取。
+
+| 阶段 | 必读 | 按需（遇到相关 Gate / 异常时读） |
+|------|------|-------------------------------|
+| **Align** | review-templates.md, vocabulary.md | review-ofm.md（仅 format=ofm） |
+| **Explore** | parallel-execution.md（仅 mode=full） | — |
+| **Merge** | review-merge-spec.md | trace-artifacts-spec.md |
+| **Gate 4** | decision-gate.md | askquestion-fallback.md（仅无 AskQuestion 时） |
+| **维护者参考** | — | review-maintainer.md, obsidian-config.md |
 
 ## 何时使用
 
