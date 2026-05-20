@@ -23,7 +23,7 @@
 **迁移命令（Agent 首选）：**
 
 ```bash
-prism migrate <topic_dir> [--dry-run]
+prism migrate <topic_dir>
 prism migrate <topic_dir> --fix
 ```
 

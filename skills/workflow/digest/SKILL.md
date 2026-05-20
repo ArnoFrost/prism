@@ -50,7 +50,7 @@ metadata:
 ```
 Phase 0  探测（workspace + topic 定位）
   ↓
-Phase 1  采集（运行 collect.py 提取结构化数据）
+Phase 1  采集（运行 prism digest，底层 collect.py 提取结构化数据）
   ↓
 Phase 2  生成（Agent 消费 JSON + 用户补充上下文，生成摘要）
   ↓
