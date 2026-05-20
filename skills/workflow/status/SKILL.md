@@ -50,7 +50,13 @@ Phase 3  建议（可选：针对问题给出修复建议）
 
 ### Phase 0：探测
 
-使用共享 `sniff_lib.py` 定位 workspace：
+优先使用 Prism 统一 CLI 定位 workspace 并输出报告：
+
+```bash
+prism status <project_dir> --format markdown
+```
+
+底层脚本仅作为 CLI 不可用时的维护者 / 调试 fallback：
 
 ```bash
 uv run python {skill_dir}/scripts/status.py <project_dir> --format markdown

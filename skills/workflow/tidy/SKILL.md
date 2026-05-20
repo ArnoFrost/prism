@@ -55,17 +55,23 @@ Phase 3  执行（--fix 模式下应用修改）
 
 ### Phase 0：探测
 
-使用共享 `sniff_lib.py` 定位 workspace：
+优先使用 Prism 统一 CLI 定位 workspace 并执行工件对齐：
 
 ```bash
 # 扫描所有活跃 topic（默认 dry-run）
-uv run python {skill_dir}/scripts/tidy.py <project_dir>
+prism tidy <project_dir>
 
 # 扫描并自动修复
-uv run python {skill_dir}/scripts/tidy.py <project_dir> --fix
+prism tidy <project_dir> --fix
 
 # 只扫描指定 topic
-uv run python {skill_dir}/scripts/tidy.py <project_dir> --topic 011_prism-generalization-fieldtest
+prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
+```
+
+底层脚本仅作为 CLI 不可用时的维护者 / 调试 fallback：
+
+```bash
+uv run python {skill_dir}/scripts/tidy.py <project_dir> [--fix] [--topic <topic_dirname>]
 ```
 
 ### Phase 1-2：扫描与报告

@@ -20,7 +20,14 @@
 历史评审可能使用子目录格式（如 `reviews/r02_统一状态机/task_review.md`）。
 自动化工具（tidy / status / validate）默认只识别单文件格式。
 
-**迁移命令：**
+**迁移命令（Agent 首选）：**
+
+```bash
+prism migrate <topic_dir> [--dry-run]
+prism migrate <topic_dir> --fix
+```
+
+**底层 fallback（维护者 / 调试入口）：**
 
 ```bash
 uv run python {skill_dir}/../shared/scripts/migrate_review.py <topic_dir> [--dry-run]

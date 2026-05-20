@@ -52,13 +52,13 @@ stability: experimental
 4. Decision（Gate 4 决策门 — AskQuestion 4 选项）
 ```
 
-> **编号契约**：`reviews/rXX_*.md` 流水编号由 sniff.py 返回，frontmatter `type: review-lite` 区分；不另起 r01 序列。`next_review_source = none` 触发边界澄清门（详见 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)）。
+> **编号契约**：`reviews/rXX_*.md` 流水编号由 `prism sniff` 返回；其底层实现调度 `review/scripts/sniff.py`，直调 `uv run python .../sniff.py` 仅作为维护 / 调试 fallback。frontmatter `type: review-lite` 区分；不另起 r01 序列。`next_review_source = none` 触发边界澄清门（详见 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)）。
 
 ## 执行步骤
 
 ### 1. Align
 
-1. **执行 sniff**：`prism sniff <project_dir> --topic <评审主题>`
+1. **执行 sniff**：`prism sniff <project_dir> --kind review --topic <评审主题>`
 2. **READ** `{skill_dir}/references/review-templates.md` → 提取命名规则
 3. 若 `format=ofm` → **READ** `{skill_dir}/references/review-ofm.md` → 提取 Callout 映射
 4. **Topic 路由决策**：基于 `topic_affinity.suggestion` 确定最终 `output_dir`

@@ -59,7 +59,13 @@ Phase 3  落盘（覆写 topic 根目录的 digest.md）
 
 ### Phase 0：探测
 
-确认目标 topic：
+确认目标 topic，并优先使用 Prism 统一 CLI 采集 topic 工件：
+
+```bash
+prism digest <project_dir> --topic <topic_dirname>
+```
+
+底层脚本仅作为 CLI 不可用时的维护者 / 调试 fallback：
 
 ```bash
 uv run python {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirname>
@@ -69,7 +75,7 @@ uv run python {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirnam
 
 ### Phase 1：采集
 
-`collect.py` 输出 JSON，包含：
+`prism digest` 输出 JSON（底层由 `collect.py` 实现），包含：
 
 | 字段 | 来源 | 用途 |
 |------|------|------|

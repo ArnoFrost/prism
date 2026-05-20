@@ -48,7 +48,7 @@ skills/workflow/
 └── fixtures/                   # 测试/示例数据（按需）
 ```
 
-- `scripts/`：Agent 可直接执行的脚本，用于减少 Agent context 消耗（如环境嗅探、数据聚合）
+- `scripts/`：底层脚本 / 维护者调试 / fallback 入口；Agent 主流程应优先使用 `prism <verb>`，仅在 CLI 不可用或需要调试实现细节时直调脚本
 - `references/`：SKILL.md 引用的参考文档、模板、样式表
 - `fixtures/`：示例输入/输出数据
 

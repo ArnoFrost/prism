@@ -15,6 +15,17 @@ Prism 的命令面分两层，职责正交：
 | **`bin/`** | 直接可执行脚本 | 仓库/环境级维护动作（一次性、跨 workspace、会碰到本地文件系统/shell 环境） | `bin/setup`、`bin/doctor`、`bin/relink`、`bin/setenv`、`bin/validate-skills`、`bin/create-skill`、`bin/clean`、`bin/rename-artifacts` |
 | **`prism <verb>`** | `bin/prism` 统一入口（bash 壳 → `prism_cli.py` 分派） | workspace/topic 级动作（作用于具体专项产物，可重复、面向 Agent） | `prism sniff`、`prism validate`、`prism archive`、`prism migrate`、`prism finalize` |
 
+### Agent 执行入口优先级
+
+面向 Agent 的 workflow 说明必须遵循以下优先级：
+
+| 优先级 | 入口 | 使用场景 | 文档写法 |
+|--------|------|----------|----------|
+| 1 | `prism <verb>` | Agent 执行 topic / workspace 主流程 | 直接写 `prism sniff` / `prism finalize` / `prism tidy` 等首选命令 |
+| 2 | `uv run python <script>` | 维护者直调、调试底层脚本、或 `bin/prism` 不可用时的 fallback | 必须显式标注为“底层脚本 / fallback / 调试入口” |
+
+因此，SKILL / workflow 文档里凡是同时存在高层 verb 与底层脚本的能力，必须以 `prism <verb>` 为主入口；底层 `uv run python ...` 只能作为实现说明或 fallback 示例，不能写成 Agent 的默认执行路径。
+
 ### 分层边界（判断树）
 
 新增一个命令时，按以下顺序判断归属：

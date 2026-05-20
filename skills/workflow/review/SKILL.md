@@ -69,7 +69,9 @@ stability: experimental
 ```
 ┌─────────────────────────────────┐
 │  1. Align（对齐 / 主 Agent）     │
-│  ① sniff → output_dir/format/next_review_number
+│  ① prism sniff <target> --kind review
+│     → output_dir/format/next_review_number
+│     （fallback: uv run python shared/scripts/sniff.py，仅维护/调试）
 │  ② READ review-templates.md / review-ofm.md (format=ofm 时)
 │  ③ topic_affinity 路由决策
 │  ④ 确认评审对象、范围、角色
@@ -103,9 +105,9 @@ stability: experimental
 
 | Gate | Precondition | Verify | Fallback |
 |------|-------------|-------|----------|
-| ⛔ Align→Explore | sniff 已执行；mode=full 时 task_probe 块字段齐全 | output_dir / format / mode 三字段 + task_probe `called`/`result`/`fallback_decision`/`fallback_reason` 齐全 | 重新 sniff 或真实发起 Task 调用补 task_probe |
+| ⛔ Align→Explore | 已执行 `prism sniff <target> --kind review`；mode=full 时 task_probe 块字段齐全 | output_dir / format / mode 三字段 + task_probe `called`/`result`/`fallback_decision`/`fallback_reason` 齐全 | 重新执行 `prism sniff`；仅 CLI 不可用时用 `uv run python shared/scripts/sniff.py` fallback；或真实发起 Task 调用补 task_probe |
 | ⛔ Explore→Merge | 所有角色已输出独立评审 | 角色报告数 = 预定角色数；每份含 TL;DR + Findings | 补缺失角色或说明跳过原因 |
-| ⛔ Merge→落盘 | 综合报告 + 索引联动按稀疏关联律落地；角色报告按条件落盘 | `validate_product.py` 退出码 = 0 | 跑 `--fix`；仍失败列出未解决 ERROR |
+| ⛔ Merge→落盘 | 综合报告 + 索引联动按稀疏关联律落地；角色报告按条件落盘 | `prism finalize <topic_dir>` 的 validate step 通过（底层实现为 `validate_product.py`） | 跑 `prism finalize <topic_dir> --fix`；仍失败列出未解决 ERROR |
 | ⛔ 落盘→决策 | 产物已落盘且校验通过 | review.index 仅在被引用时含本轮记录；decision.index 在决策 accept 后落 | 探索性 review 无须补 review.index；被引用时补 review.index + 决策落盘时补 decision.index |
 | ⛔ Gate 4 关闭 | accept/reject 已写 dXX.md（defer 不写）| 响应含 `decision_artifact` 块，`written` 与 `path` 一致 | 补写 dXX.md + 重新输出 decision_artifact |
 
