@@ -255,7 +255,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "type": "review_legacy_subdir",
             "file": "reviews/",
             "ids": index_scan["legacy"],
-            "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: uv run python migrate_review.py <topic_dir>",
+            "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: prism migrate <topic_dir>（fallback: uv run python migrate_review.py <topic_dir>）",
         })
 
     # 6. frontmatter updated 日期（scope.md, plan.md）
