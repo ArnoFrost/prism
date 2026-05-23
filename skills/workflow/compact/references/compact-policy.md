@@ -22,6 +22,8 @@
 - `review.index.md`
 - `decisions/*.md`
 - `reviews/r*.md`
+- `.compact_backups/`
+- 已生成的 `backup_manifest.json`
 - 被 `decision.index.md` 或 `review.index.md` 引用的任意文件
 
 ## Apply 前置条件
