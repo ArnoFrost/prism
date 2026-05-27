@@ -80,7 +80,7 @@ prism/skills/                         ← SDK 仓库内置
 
 **v1.1.7+ 硬约束**（已写入 SKILL.md / review-lite SKILL.md）：
 
-- format=ofm：产物**第一个 callout 必须**是 `> [!info]` 评审协议段（路由 / format / 已加载 references / 评审对象 四要素）；综合报告全篇 Callout ≥ 3（lite ≥ 2）；frontmatter 必填 `date / status / type / tags`
+- format=ofm：产物**第一个 callout 必须**是 `> [!NOTE]` 评审协议段（v2；兼容 `> [!info]`；四要素：路由 / format / 已加载 references / 评审对象）；综合报告全篇 Callout ≥ 3（lite ≥ 2）；frontmatter 必填 `date / status / type / tags`
 - format=standard：禁止 OFM Callout；不强制 frontmatter
 
 ### 4.2 跨脚本探测 SSOT 约束（v1.1.8 r17 PostFix）

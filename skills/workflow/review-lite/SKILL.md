@@ -67,7 +67,7 @@ stability: experimental
 
 > [!danger]
 > **二态产物契约**
-> - **format=ofm**：必须 READ `review-ofm.md`；产物顶部 `> [!info]` 协议段；全篇 Callout ≥ 2
+> - **format=ofm**：必须 READ `review-ofm.md`；产物顶部 `> [!NOTE]`（或兼容 `> [!info]`）协议段；全篇 Callout ≥ 2
 > - **format=standard**：禁止 OFM Callout，裸 Markdown 兼容 GitHub 渲染
 
 ### 2. Scan
@@ -76,8 +76,8 @@ stability: experimental
 
 | 字段 | 说明 | 必需 |
 |------|------|------|
-| **Summary / TL;DR** | 一句话结论；`format=ofm` 用 `> [!abstract]` Callout | 是 |
-| **Findings** | 按 P0/P1/P2 分级；`format=ofm` 时 P0 用 `[!danger]` / P1 用 `[!warning]` / P2 用 `[!note]-`（详见 `review-ofm.md`）| 是 |
+| **Summary / TL;DR** | 一句话结论；`format=ofm` 用 `> [!TIP]`（兼容 `[!abstract]`）| 是 |
+| **Findings** | 按 P0/P1/P2 分级；`format=ofm` 时 P0 `[!IMPORTANT]` / P1 `[!WARNING]` / P2 `[!NOTE]`（v1 别名见 `review-ofm.md`）| 是 |
 | **Actions** | 行动项（Owner / 优先级） | 有发现时必需 |
 | **Open Questions** | 未决问题；`format=ofm` 用 `[!question]` 或 task list | 按需 |
 

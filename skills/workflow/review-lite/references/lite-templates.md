@@ -30,26 +30,26 @@ related:
 ```markdown
 # rXX — {标题}（lite）
 
-> [!info]
+> [!NOTE]
 > **路由**：`topic_affinity.suggestion={cohesion|new_topic|ask_user}`，{output_dir}
 > **format**：`ofm`
 > **已加载 references**：`review-templates.md`、`review-ofm.md`
 > **评审对象**：{file/path/clauses}
 
-> [!abstract]
+> [!TIP]
 > **TL;DR**：{一句话结论}
 
 ## Findings
 
-> [!danger]
+> [!IMPORTANT]
 > **P0** {发现描述}
 > 证据：{证据要点}
 
-> [!warning]
+> [!WARNING]
 > **P1** {发现描述}
 
-> [!note]-
-> **P2** {发现描述}（折叠）
+> [!NOTE]
+> **P2** {发现描述}
 
 ## Actions
 

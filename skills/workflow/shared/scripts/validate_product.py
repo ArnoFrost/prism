@@ -214,9 +214,13 @@ def check_callout_format(lines: list[str], relpath: str) -> list[Issue]:
         m = callout_pattern.match(line)
         if m:
             ctype = m.group(1).lower()
-            valid = {"info", "abstract", "tldr", "danger", "warning", "note",
-                     "tip", "success", "quote", "example", "bug", "question",
-                     "failure", "todo"}
+            valid = {
+                # GFM Alerts（OFM v2 推荐）
+                "note", "tip", "important", "warning", "caution",
+                # Obsidian 扩展 / v1 兼容别名
+                "info", "abstract", "tldr", "danger", "success", "quote",
+                "example", "bug", "question", "failure", "todo", "warn",
+            }
             if ctype not in valid:
                 issues.append(Issue("WARN", relpath, i, "callout-type",
                                     f"非标准 callout 类型: {ctype}", False))
@@ -274,10 +278,15 @@ def _is_review_main_report(relpath: str) -> bool:
     return True
 
 
-def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
-    """[format=ofm] 主报告顶部必须有 `> [!info]` 评审协议段。
+_CALLOUT_HEAD_RE = re.compile(r"^>\s*\[!([\w-]+)\]", re.IGNORECASE)
+_PROTOCOL_TYPES = frozenset({"note", "info"})
 
-    扫描 frontmatter 之后的前 30 行，寻找 `> [!info]`；找到即通过。
+
+def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
+    """[format=ofm] 正文第一个 Callout 必须是评审协议段（v2: NOTE；兼容 info）。
+
+    扫描 frontmatter 之后前 30 行内**首个** `> [!type]`：须为 note/info。
+    （v2 下 P2 亦用 NOTE，故不能「窗口内任意 NOTE」即通过。）
     """
     if not _is_review_main_report(relpath):
         return []
@@ -288,19 +297,32 @@ def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
                 body_start = i + 1
                 break
     window = lines[body_start:body_start + 30]
-    if any(re.match(r"^>\s*\[!info\]", ln) for ln in window):
-        return []
-    return [Issue("WARN", relpath, body_start + 1, "ofm-missing-protocol",
-                  "OFM 主报告顶部缺少 `> [!info]` 评审协议段（应含 路由 / format / 已加载 references / 评审对象 四要素）",
-                  False)]
+    for ln in window:
+        m = _CALLOUT_HEAD_RE.match(ln)
+        if not m:
+            continue
+        if m.group(1).lower() in _PROTOCOL_TYPES:
+            return []
+        return [Issue(
+            "WARN", relpath, body_start + 1, "ofm-missing-protocol",
+            f"OFM 主报告首个 Callout 为 `[!{m.group(1)}]`，协议段须置顶且为 "
+            f"`> [!NOTE]` 或 `> [!info]`（路由 / format / 已加载 references / 评审对象）",
+            False,
+        )]
+    return [Issue(
+        "WARN", relpath, body_start + 1, "ofm-missing-protocol",
+        "OFM 主报告顶部缺少评审协议 Callout（`> [!NOTE]` 或兼容 `> [!info]`；"
+        "应含 路由 / format / 已加载 references / 评审对象 四要素）",
+        False,
+    )]
 
 
 def check_ofm_callout_density(lines: list[str], relpath: str) -> list[Issue]:
     """[format=ofm] 主报告 Callout 数阈值按 frontmatter `type` 分档。
 
     阈值（来源：029/r05 AP-3 P0 修复 SKILL ↔ validator 硬冲突）：
-    - `type: review` (full review) → ≥ 3（含 `[!info]` 协议段 + `[!danger]`/[!warning]` Findings）
-    - `type: review-lite` (单视角 lite) → ≥ 2（含 `[!info]` 协议段 + 至少 1 个 Findings/结论 callout）
+    - `type: review` (full review) → ≥ 3（含协议段 `[!NOTE]`/`[!info]` + Findings）
+    - `type: review-lite` (单视角 lite) → ≥ 2（含协议段 + 至少 1 个 Findings/结论 callout）
 
     历史背景：v1.0 → v1.1 引入 OFM 二态产物契约（6f1527b）时，review-lite/SKILL.md
     明确 Callout ≥ 2 即可（lite 单视角材料量小），但本函数当时统一写死 `>= 3`，
@@ -323,7 +345,7 @@ def check_ofm_callout_density(lines: list[str], relpath: str) -> list[Issue]:
     if count == 0:
         msg = (
             f"OFM 主报告完全无 Callout（A 档真退化），{kind} 建议至少 "
-            f"{threshold} 个 (`[!info]` 协议段 + `[!danger]`/[!warning] Findings)"
+            f"{threshold} 个（协议段 + Findings/结论 Callout）"
         )
     else:
         msg = (
