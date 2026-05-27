@@ -40,6 +40,21 @@ class TestValidateFile:
         errors = [i for i in issues if i.level == "ERROR"]
         assert any(i.rule == "frontmatter-missing" for i in errors)
 
+    def test_readme_missing_frontmatter_is_warn(self, tmp_path):
+        """038/OQ-5：README 缺 FM 不阻塞 finalize（WARN）。"""
+        md = tmp_path / "README.md"
+        md.write_text("# Topic\n\nNo yaml.\n")
+        issues = vp.validate_file(str(md), "ofm")
+        assert not any(i.rule == "frontmatter-missing" and i.level == "ERROR" for i in issues)
+        warns = [i for i in issues if i.rule == "frontmatter-readme-missing"]
+        assert len(warns) == 1
+
+    def test_scope_missing_frontmatter_still_error(self, tmp_path):
+        md = tmp_path / "scope.md"
+        md.write_text("# Scope\n\nNo yaml.\n")
+        issues = vp.validate_file(str(md), "ofm")
+        assert any(i.rule == "frontmatter-missing" and i.level == "ERROR" for i in issues)
+
     def test_missing_frontmatter_fields(self, tmp_path):
         md = tmp_path / "test.md"
         md.write_text("---\ndate: 2026-03-24\n---\n# Test\n")

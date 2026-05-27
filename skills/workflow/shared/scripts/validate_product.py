@@ -178,12 +178,32 @@ def check_mermaid_list_prefix(lines: list[str], relpath: str) -> list[Issue]:
 
 # --- OFM 专属规则 ---
 
+def _is_topic_readme(relpath: str) -> bool:
+    """专项根 README.md — 模板仍以正文属性表为主，L1 缺 FM 仅 WARN（038/OQ-5）。"""
+    return os.path.basename(relpath) == "README.md"
+
+
+def _is_topic_index(relpath: str) -> bool:
+    name = os.path.basename(relpath)
+    return name.endswith(".index.md")
+
+
 def check_frontmatter(lines: list[str], relpath: str) -> list[Issue]:
-    """检查 OFM frontmatter 必填字段"""
+    """检查 OFM frontmatter 必填字段。
+
+    038/OQ-5：README.md 缺 frontmatter → WARN；*.index.md 与合同面工件仍 ERROR。
+    """
     issues = []
+    strict = not _is_topic_readme(relpath)
+    level = "ERROR" if strict else "WARN"
     if not lines or lines[0].strip() != "---":
-        issues.append(Issue("ERROR", relpath, 1, "frontmatter-missing",
-                            "缺少 YAML frontmatter（文件须以 --- 开头）", False))
+        rule = "frontmatter-missing" if strict else "frontmatter-readme-missing"
+        msg = (
+            "缺少 YAML frontmatter（文件须以 --- 开头）"
+            if strict
+            else "README.md 建议补 frontmatter（type: topic-readme）；当前仅 WARN，不阻塞 finalize"
+        )
+        issues.append(Issue(level, relpath, 1, rule, msg, False))
         return issues
 
     # 找 frontmatter 结束（上限 200 行，兼容 tags/authors 列表展开）
@@ -193,7 +213,7 @@ def check_frontmatter(lines: list[str], relpath: str) -> list[Issue]:
             end_idx = i
             break
     if end_idx == -1:
-        issues.append(Issue("ERROR", relpath, 1, "frontmatter-unclosed",
+        issues.append(Issue(level, relpath, 1, "frontmatter-unclosed",
                             "frontmatter 未闭合（缺少第二个 ---）", False))
         return issues
 
@@ -201,7 +221,7 @@ def check_frontmatter(lines: list[str], relpath: str) -> list[Issue]:
     required = ["date", "status", "type", "tags"]
     for field in required:
         if not re.search(rf"^\s*{field}\s*:", fm_text, re.MULTILINE):
-            issues.append(Issue("ERROR", relpath, 1, f"frontmatter-{field}",
+            issues.append(Issue(level, relpath, 1, f"frontmatter-{field}",
                                 f"frontmatter 缺少必填字段: {field}", False))
     return issues
 
