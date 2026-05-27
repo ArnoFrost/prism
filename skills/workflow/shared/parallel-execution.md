@@ -55,7 +55,7 @@
 > [!important]
 > **IDE 类客户端（Cursor / Claude Code / CodeBuddy）原生支持并行子任务**，调用 skill 默认走"并行执行模式"。若 Agent 在 IDE 客户端但未识别到自身可用并行 API，应**先尝试调用 Task tool 一次**确认能力，**不要直接退化为串行**——见下方"串行 Fallback 触发条件白名单"。
 
-> [!danger]
+> [!IMPORTANT]
 > **CodeBuddy IDE 已确认原生支持 Task tool**（与 Cursor / Claude Code 同名同语义，参数兼容）。
 > Agent 在 CodeBuddy 内**禁止**未发起一次 Task 调用就声称"无可达条件 / 单 agent 串行 / 不支持并行"。
 > 自我反思 / 主观判断 / 经验断言**不等于探测**——只有 Task 调用真实返回 `tool_not_found` 或等价错误才算命中白名单 #1。
@@ -81,7 +81,7 @@
 > **B. 平台 / 能力误判类**
 > - "我看不到平台标识" / "不确定当前 IDE 支持" → IDE 客户端必须**先 try 一次 Task tool**，未 try 不算探测
 > - "当前环境是 IDE 内单 agent 串行执行" / "无 Task 并行子任务调度可达条件" → 无 Task 调用痕迹的断言，等同于未探测
-> - "CodeBuddy / Cursor / Claude Code 不支持并行" → 三者均已确认原生支持，见上方平台表与 [!danger] 块
+> - "CodeBuddy / Cursor / Claude Code 不支持并行" → 三者均已确认原生支持，见上方平台表与 [!IMPORTANT] 块
 >
 > **C. 主题 / 输入特性类**（v1.1.8 新增 — 来自 r16 真实绕过案例）
 > - "本主题归属 governance / 决策 / 治理 / 元规则 类" → 主题分类不影响调度方式

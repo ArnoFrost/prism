@@ -65,7 +65,7 @@ stability: experimental
 5. **确认评审对象、范围**
 6. **显式输出**：`format=?` / `output_dir=?` / `next_review_number=rXX` / `topic_route=?` + 已加载 references 清单
 
-> [!danger]
+> [!IMPORTANT]
 > **二态产物契约**
 > - **format=ofm**：必须 READ `review-ofm.md`；产物顶部 `> [!NOTE]`（或兼容 `> [!info]`）协议段；全篇 Callout ≥ 2
 > - **format=standard**：禁止 OFM Callout，裸 Markdown 兼容 GitHub 渲染
@@ -77,7 +77,7 @@ stability: experimental
 | 字段 | 说明 | 必需 |
 |------|------|------|
 | **Summary / TL;DR** | 一句话结论；`format=ofm` 用 `> [!TIP]`（兼容 `[!abstract]`）| 是 |
-| **Findings** | 按 P0/P1/P2 分级；`format=ofm` 时 P0 `[!IMPORTANT]` / P1 `[!WARNING]` / P2 `[!NOTE]`（v1 别名见 `review-ofm.md`）| 是 |
+| **Findings** | 按 P0/P1/P2 分级；`format=ofm` 时映射**不复制**，见 [review-ofm.md](references/review-ofm.md) | 是 |
 | **Actions** | 行动项（Owner / 优先级） | 有发现时必需 |
 | **Open Questions** | 未决问题；`format=ofm` 用 `[!question]` 或 task list | 按需 |
 
@@ -93,7 +93,7 @@ stability: experimental
 
 落盘且校验通过后**必须**触发结构化决策门：调用 `AskQuestion`（一次一个问题，4 选项 = 3 决策 + 1 自由文本兜底）。
 
-> [!danger]
+> [!IMPORTANT]
 > **决策摘要 5 要素硬契约**：`prompt` 字段禁止死字符串占位，必须实写：
 > 1. 📌 产物路径（含 rXX_xxx.md 实际文件名）
 > 2. 📊 量化摘要（Findings `P0×n0 / P1×n1 / P2×n2` ｜ 行动项 `M` 条）
@@ -135,7 +135,7 @@ question:
 | `defer` | 写 `decisions/dXX_暂缓XXX.md`（status=deferred），README latest decision 指针更新；不改 plan |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向，之后重新决策。**禁止**把含糊文本解释为 Accept |
 
-> [!danger]
+> [!IMPORTANT]
 > **decision_artifact 痕迹契约**：Gate 4 决策后必须在响应中输出 `decision_artifact` yaml 块（字段：`decision / decision_source / written / path / timestamp / user_text / review_kind: review-lite`）。
 > 完整字段表 + 校验规则见 [shared/trace-artifacts-spec.md §decision_artifact](references/trace-artifacts-spec.md)（4 族 SSOT），lite 唯一差异：`review_kind` 固定为 `review-lite`。
 

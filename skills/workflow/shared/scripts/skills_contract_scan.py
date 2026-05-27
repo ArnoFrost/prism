@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SKILL.md 契约扫描 — 警戒文件列表 + danger callout 占比统计
+"""SKILL.md 契约扫描 — 警戒文件列表 + 硬约束 callout 占比统计
 
 030/AP-73 r14 P0-5 incremental_only — 轻量实现版本。
 
@@ -12,7 +12,7 @@
 警戒线（v2.0 d11 与 OQ-4 D 闸门对齐，可由 CLI 覆盖）：
   - lines > 450：v2.0 OQ-4 D 用户裁决的 SKILL.md 行数闸门（v1.x 历史值为 350，
     在 030/AP-79 拆分 review/SKILL.md 后调高与用户标准对齐）
-  - danger_pct > 8%：danger callout 比例上限（r14 时 review/SKILL.md 触线点位）
+  - danger_pct > 8%：硬约束 callout（`[!IMPORTANT]` + 遗留 `[!danger]`）比例上限
 
 输出 JSON schema：
   {
@@ -46,17 +46,18 @@ DEFAULT_DANGER_PCT_THRESHOLD = 8.0
 
 
 def count_danger_callouts(text: str) -> int:
-    """统计 [!danger] callout 数量。
+    """统计 SKILL 内硬约束 callout 数量（JSON 字段仍名 danger_count，038/AP-9）。
 
-    匹配 obsidian / OFM `> [!danger]` 块语法（行首允许空白），
-    不区分大小写（[!DANGER] 也算）。
+    计 `[!IMPORTANT]`（GFM 推荐）与遗留 `[!danger]`（v1 教学块），
+    行首允许 `>` blockquote；大小写不敏感。
     """
     count = 0
     for line in text.splitlines():
         stripped = line.lstrip()
         if stripped.startswith(">"):
             stripped = stripped[1:].strip()
-        if stripped.lower().startswith("[!danger]"):
+        low = stripped.lower()
+        if low.startswith("[!important]") or low.startswith("[!danger]"):
             count += 1
     return count
 
