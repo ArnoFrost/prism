@@ -1,19 +1,17 @@
 ---
 name: workspace-init
-description: |
-  初始化新项目 Prism 工作区或重新对齐已有项目。读取 prism.local.yaml，创建 workspace 目录，注册项目，配置软链接。支持 vault 迁移与路径变更。
-  Use when: 初始化项目、新建工作区、创建 workspace、对齐规范、迁移 vault、路径变更、workspace-init
+description: "初始化新项目 Prism 工作区或重新对齐已有项目。读取 prism.local.yaml，创建 workspace 目录，注册项目，配置软链接。支持 vault 迁移与路径变更。 Use when: 初始化项目、新建工作区、创建 workspace、对齐规范、迁移 vault、路径变更、workspace-init"
 visibility: dev
 stability: experimental
-user_invocable: true
+user_invocable: True
 license: MIT
 metadata:
   author: ArnoFrost
   version: dev-01
   based_on: prism-workspace-init@0.5.0
   replaces_future: prism-workspace-init
+description_zh: "初始化新项目 Prism 工作区或重新对齐已有项目。读取 prism.local.yaml，创建 workspace 目录，注册项目，配置软链接。支持 vault 迁移与路径变更。"
 ---
-
 # 项目初始化 (Workspace Init)
 
 > 为项目初始化 Prism 工作区，或重新对齐到最新规范

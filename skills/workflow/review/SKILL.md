@@ -1,12 +1,10 @@
 ---
 name: workflow-review
-description: |
-  多角色协作评审，用于方向变更、范围调整或里程碑检查点。三阶段 Align-Explore-Merge，输出分级 findings + 行动计划到 reviews/rXX.md。
-  Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review
+description: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。三阶段 Align-Explore-Merge，输出分级 findings + 行动计划到 reviews/rXX.md。 Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review"
 visibility: dev
 stability: experimental
+description_zh: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。三阶段 Align-Explore-Merge，输出分级 findings + 行动计划到 reviews/rXX.md。"
 ---
-
 ## 职责边界
 
 | 维度 | 说明 |

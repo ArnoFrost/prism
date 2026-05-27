@@ -1,17 +1,15 @@
 ---
 name: workflow-tidy
-description: |
-  工件机械对齐 — review/decision 后同步 README 指针、review.index、frontmatter。
-  Use when: 工件对齐、状态同步、review 后收尾、workflow-tidy
+description: "工件机械对齐 — review/decision 后同步 README 指针、review.index、frontmatter。 Use when: 工件对齐、状态同步、review 后收尾、workflow-tidy"
 visibility: dev
 stability: experimental
-user_invocable: true
+user_invocable: True
 license: MIT
 metadata:
   author: ArnoFrost
   version: dev-01
+description_zh: "工件机械对齐 — review/decision 后同步 README 指针、review.index、frontmatter。"
 ---
-
 # 工件机械对齐 (Workspace Tidy)
 
 > 管线定位：辅助工具，review/decision/执行 之后的收尾步骤

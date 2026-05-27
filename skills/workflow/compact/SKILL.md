@@ -1,19 +1,15 @@
 ---
 name: workflow-compact
-description: |
-  Topic 活跃上下文压实与维护性瘦身。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案，
-  并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。
-  Use when: 压缩 topic、compact topic、整理 topic 工作区、剥离历史噪声、降低后续 Agent token、
-  维护长期 topic 当前态、workflow-compact。
-user_invocable: true
+description: "Topic 活跃上下文压实与维护性瘦身。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案， 并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。 Use when: 压缩 topic、compact topic、整理 topic 工作区、剥离历史噪声、降低后续 Agent token、 维护长期 topic 当前态、workflow-compact。"
+user_invocable: True
 license: MIT
 visibility: internal
 stability: experimental
 metadata:
   author: ArnoFrost
   version: 0.2.0
+description_zh: "Topic 活跃上下文压实与维护性瘦身。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案， 并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。"
 ---
-
 # Workflow Compact — Topic 活跃上下文压实
 
 > 定位：SDK dev experimental 的低频维护技能。默认不进入 mini/full 分发面，不替代 `workflow-digest`，不改变整 topic `archive` 生命周期。

@@ -1,17 +1,15 @@
 ---
 name: workflow-digest
-description: |
-  专项状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT）。
-  Use when: 总结 commit、生成 MR 摘要、技术同步、变更汇报、workflow-digest
+description: "专项状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT）。 Use when: 总结 commit、生成 MR 摘要、技术同步、变更汇报、workflow-digest"
 visibility: dev
 stability: experimental
-user_invocable: true
+user_invocable: True
 license: MIT
 metadata:
   author: ArnoFrost
   version: dev-01
+description_zh: "专项状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT）。"
 ---
-
 # 专项状态通报 (Workflow Digest)
 
 > 管线定位：辅助工具，需要对外沟通或自我回顾时按需调用

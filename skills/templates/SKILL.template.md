@@ -1,8 +1,7 @@
 ---
 name: skill-name
-description: |
-  技能功能描述。
-  Use when: 触发词1、触发词2、触发词3
+description: 技能功能描述（单行，含 Use when 触发词）。CodeBuddy IDE 列表依赖本字段 + description_zh。
+description_zh: 技能功能中文简述（CodeBuddy IDE 列表显示；必填）
 visibility: internal
 stability: experimental
 compatibility: backward-compatible
