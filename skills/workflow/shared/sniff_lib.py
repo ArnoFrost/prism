@@ -645,6 +645,58 @@ def check_review_density(reviews_dir: str, topic_created: str | None = None) -> 
     return None
 
 
+def enumerate_structures(topic_dir: str) -> dict:
+    """识别 topic 的 3.0 结构层 structures/（V4 / G1 结构契约）。
+
+    返回 dict：
+      present          - 是否存在 structures/ 目录
+      task_index       - structures/task.index.md 是否存在
+      tasks            - [{id, dir, scope_present, waves:[...], wave_count}]
+                         id = 路径命名空间派生的稳定 id（task-1 → "t1"）
+      task_count       - task 数
+
+    设计：structures/ 按需出现（无 task topic 不预建）；task-N 内仅 scope.md +
+    wave-N.md（单一决策链，task 内不开 reviews/decisions）。命名去冗余——
+    task 目录名即命名空间，文件不带 taskN 前缀。
+    """
+    result = {
+        "present": False,
+        "task_index": False,
+        "tasks": [],
+        "task_count": 0,
+    }
+    structures_dir = os.path.join(topic_dir, "structures")
+    if not os.path.isdir(structures_dir):
+        return result
+
+    result["present"] = True
+    result["task_index"] = os.path.isfile(os.path.join(structures_dir, "task.index.md"))
+
+    tasks = []
+    for entry in sorted(os.listdir(structures_dir)):
+        m = re.match(r"^task-(\d+)$", entry)
+        if not m:
+            continue
+        tdir = os.path.join(structures_dir, entry)
+        if not os.path.isdir(tdir):
+            continue
+        waves = sorted(
+            f for f in os.listdir(tdir)
+            if re.match(r"^wave-\d+\.md$", f)
+        )
+        tasks.append({
+            "id": f"t{m.group(1)}",  # 稳定 id（.tN 命名编码的 id 形态）
+            "dir": entry,
+            "scope_present": os.path.isfile(os.path.join(tdir, "scope.md")),
+            "waves": waves,
+            "wave_count": len(waves),
+        })
+
+    result["tasks"] = tasks
+    result["task_count"] = len(tasks)
+    return result
+
+
 def check_writable(path: str) -> bool:
     """检查路径是否可写（检查最近的已存在祖先目录）"""
     check = path

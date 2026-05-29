@@ -21,6 +21,7 @@
   topic             - 评审主题（null 表示未提供）
   topic_affinity    - 专项亲和检测结果
     .suggestion     - "cohesion" | "ask_user" | "new_topic"
+  structures        - 3.0 结构层探测（present / task_index / tasks[] / task_count）
 """
 
 import json
@@ -35,6 +36,7 @@ from sniff_lib import (
     determine_output_dir,
     detect_topic_affinity,
     enumerate_reviews,
+    enumerate_structures,
     check_review_density,
     check_writable,
     next_review_number_for_topic,
@@ -83,6 +85,14 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
     if reviews_dir_resolved:
         review_density_warning = check_review_density(reviews_dir_resolved)
 
+    # 3.0 结构层探测：从已解析的 topic 目录识别 structures/ + task 层 + .tN 编码
+    # topic_dir = reviews/ 的父级；未解析到则回退 project_dir 自身
+    if reviews_dir_resolved:
+        resolved_topic_dir = os.path.dirname(reviews_dir_resolved)
+    else:
+        resolved_topic_dir = project_dir
+    structures = enumerate_structures(resolved_topic_dir)
+
     # AP-41 / 029 r07 — 稀疏空态可消费语义化（empty_reason 枚举）
     # 让消费者能区分「合法空态」与「实现/参数路径问题」
     empty_reason = _compute_empty_reason(
@@ -108,6 +118,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         "next_review_source": next_review_source,  # "affinity" | "topic_hint" | "project_dir" | "none"
         "review_density_warning": review_density_warning,
         "empty_reason": empty_reason,
+        "structures": structures,  # V4：3.0 结构层（structures/ + task 层 + .tN）
     }
 
 
