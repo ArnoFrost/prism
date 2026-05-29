@@ -19,9 +19,9 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 
 - **协议级 SSOT**：[`skills/workflow/shared/vocabulary.md`](../skills/workflow/shared/vocabulary.md)（12 活跃 + 3 废弃，按 3.0 分层语义认知地图排序 + 中英对照 + 易混淆对比 + §kind 五元 / §retention 两根正交轴）
 
-术语速查表（顺序 = 3.0 认知地图；详细定义、示例见 SSOT）：
+术语速查表（顺序 = 3.0 认知地图；「排序视角」仅为阅读分组，**非分类体系**；详细定义见 SSOT）：
 
-| 缩写 | 中文 | 英文 | 认知层 |
+| 缩写 | 中文 | 英文 | 排序视角 |
 |:----:|------|------|:----:|
 | **scope** | 合同 | Scope (contract) | 合同边界 |
 | **goal / G** | 目标 | Goal | 合同边界 |

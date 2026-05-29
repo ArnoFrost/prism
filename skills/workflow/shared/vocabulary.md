@@ -7,7 +7,7 @@
 
 ## 设计原则
 
-- **双面分发**：本文件是 SDK 协议级 SSOT；`docs/glossary.md` 是人类阅读面（cite 本文件，不复制）
+- **三层分发**：本文件 = 协议级 **SSOT**（vocabulary）；`vocabulary-disambiguation.md` = **解释层**（易混淆对比 + 使用约定）；`docs/glossary.md` = **人类分发面**（cite SSOT，不复制）
 - **平铺 + 最小侵入**：永久平铺一张表，不分层分组；不强制重写 archive 产物；漂移检测最多 WARN（变更结构须走 dXX 决策门）
 - **形态三类**：`abbreviation`（OQ）/ `lowercase_word`（scope/focus/wave/action/structure）/ `letter_id`（V）；**双形态**（goal/G、phase/P、task/t、decision/d）按用法选
 
@@ -15,7 +15,7 @@
 
 ## 术语表（12 活跃 + 3 废弃）
 
-> 行顺序 = **3.0 分层语义认知地图**（入口→深入）：合同边界 → 注意力 → 结构三轴 → 执行 → 治理事件 → 废弃尾。「认知层」仅作排序依据，**不入表结构**（守平铺律）。
+> 行顺序 = **3.0 分层语义认知地图**（入口→深入）：合同边界 → 注意力 → 结构三轴 → 执行 → 治理事件 → 废弃尾。这只是**排序视角**，**非分类体系、不入表结构**（守平铺律）。
 
 | 缩写 | 形态类型 | 中文 | 英文 | 一句话定义 |
 |:----:|:--------:|------|------|------|
@@ -83,7 +83,7 @@
 |------|------|------|--------|
 | **governance** | 合同 / 规则 / 评审权 | scope / task-scope / decision / protocol / review | 必须手动 |
 | **execution** | 执行单位 | wave / phase / action | 用户驱动 |
-| **state** | 认知状态 / 导航 | focus / map / status / README / task.index | 允许提醒 |
+| **state** | 认知状态 / 导航 / 源记录 | focus / map / status / README / task.index / intake | 允许提醒 |
 | **derived** | 派生产物 | compact / digest / mermaid | 允许半自动 |
 | **structure** | 承载关系的容器（不直接承诺/执行/记录状态）| topic / task / dir | 不直接被自动化（容器非产物）|
 
@@ -104,7 +104,7 @@
 | review (rXX) | governance | **persistent** | append-only 事件，不改写 |
 | decision (dXX) | governance | **persistent** | append-only 事件，不改写 |
 | task-scope | governance | **persistent** | task 承诺 |
-| intake | references | **persistent** | 来源留档，不变 |
+| intake | state | **persistent** | 来源意图留档；置于 `references/`（认知阶段，**非 kind**）。`state × persistent` 正示范两轴正交——同为 state，README 是 mutable、intake 是 persistent |
 | **focus** | state | **rewrite（非沉淀）** | 可整体重写、不版本化、不归档、不保留历史 |
 | README / *.index / map | state | **mutable** | 导航面，原地更新、不版本化 |
 
