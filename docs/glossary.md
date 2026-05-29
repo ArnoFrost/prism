@@ -5,7 +5,7 @@
 
 ## 为什么需要受控词汇
 
-Prism 协作中频繁出现 **OQ / goal / V / AP / plan / scope / phase / wave** 等缩写。如果每次术语不一致，会导致：
+Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / wave** 等术语。如果每次术语不一致，会导致：
 
 - **AI token 浪费**：每次重新解析、推断含义
 - **心流断裂**：用户在不同会话间反复切换术语习惯
@@ -17,20 +17,27 @@ Prism 协作中频繁出现 **OQ / goal / V / AP / plan / scope / phase / wave**
 
 完整定义请直接查看 SSOT：
 
-- **协议级 SSOT**：[`skills/workflow/shared/vocabulary.md`](../skills/workflow/shared/vocabulary.md)（首批 8 术语 + 中英对照 + 14 组易混淆对比）
+- **协议级 SSOT**：[`skills/workflow/shared/vocabulary.md`](../skills/workflow/shared/vocabulary.md)（12 活跃 + 3 废弃，按 3.0 分层语义认知地图排序 + 中英对照 + 易混淆对比 + §kind 五元 / §retention 两根正交轴）
 
-首批术语速查表（详细定义、示例、易混淆对比见 SSOT）：
+术语速查表（顺序 = 3.0 认知地图；详细定义、示例见 SSOT）：
 
-| 缩写 | 中文 | 英文 |
-|:----:|------|------|
-| **OQ** | 开放问题 | Open Question |
-| **goal / G** | 目标 | Goal |
-| **V** | 验收口径 | Verification Criterion |
-| **AP** | 行动项 | Action Point |
-| **plan** | 执行计划 | Plan |
-| **scope** | 合同 | Scope (contract) |
-| **phase / P** | 阶段 | Phase |
-| **wave** | 批次 | Wave |
+| 缩写 | 中文 | 英文 | 认知层 |
+|:----:|------|------|:----:|
+| **scope** | 合同 | Scope (contract) | 合同边界 |
+| **goal / G** | 目标 | Goal | 合同边界 |
+| **V** | 验收口径 | Verification Criterion | 合同边界 |
+| **OQ** | 开放问题 | Open Question | 合同边界 |
+| **focus** | 注意力光标 / 当前工作集 | Focus | 注意力 |
+| **task / t** | 任务 / 问题切片 | Task | 结构三轴 |
+| **wave** | 批次（时间推进单元，3.0 重定义）| Wave | 结构三轴 |
+| **structure** | 结构（容器 kind）| Structure | 结构三轴 |
+| **phase / P** | 阶段 | Phase | 执行 |
+| **action** | 行动项（旧称 AP）| Action | 执行 |
+| **decision / d** | 决策 | Decision (event) | 治理事件 |
+| **decision-index** | 决策索引（含链语义）| Decision index | 治理事件 |
+| ⚠️ **plan** | 执行计划 → focus | Plan | 废弃尾 |
+| ⚠️ **AP** | 行动项（旧）→ action | Action Point | 废弃尾 |
+| ⚠️ **decision-chain** | 决策链 → decision-index | Decision chain | 废弃尾 |
 
 ## 使用规范
 
@@ -54,7 +61,7 @@ Prism 协作中频繁出现 **OQ / goal / V / AP / plan / scope / phase / wave**
 
 词典由专项 [034_flow-and-vocab-governance](../skills/workflow/shared/vocabulary.md#变更记录) 治理：
 
-- 首批 8 术语确定后，新增术语 / 修改定义需走 dXX 决策
+- 新增术语 / 修改定义需走 dXX 决策（首批 11 由 034 治理；Prism 3.0 第二批 task/focus/structure 于 2026-05-29 扩展落锚）
 - 漂移检测策略首版仅人工自检 checklist（OQ-6 推荐）
 - 脚本化 `validate_vocab.py` 留 v2.3+ 评估
 - 不引入 hard error；最多 WARN（继承 030 d10）
