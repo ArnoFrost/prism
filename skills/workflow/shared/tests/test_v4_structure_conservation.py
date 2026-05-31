@@ -165,6 +165,30 @@ class TestTopicVExtraction:
             {"task_v": "V2", "refs": ["V3"]},
         ]
 
+    def test_extract_task_v_refs_tv_prefix(self):
+        """task-V 列用 tV1 命名空间前缀（041 task-1 实际写法）应被识别。"""
+        text = (
+            "| task-V | ↑ 1:1 引用 topic-V | 收窄 |\n"
+            "|---|---|---|\n"
+            "| tV1 | topic-V9 | a |\n"
+            "| tV2 | topic-V9 | b |\n"
+        )
+        rows = vt.extract_task_v_refs(text)
+        assert rows == [
+            {"task_v": "tV1", "refs": ["V9"]},
+            {"task_v": "tV2", "refs": ["V9"]},
+        ]
+
+    def test_conservation_tv_prefix_valid(self, topic_with_tasks):
+        """tV* 前缀 + 投影存在的 topic-V → 无 error（守恒 lint 不再误报 empty）。"""
+        _write_task_scope(
+            topic_with_tasks / "structures" / "task-1",
+            "| tV1 | topic-V1 | 收窄 |\n| tV2 | topic-V2 | 收窄 |\n",
+        )
+        res = vt.validate_scope_conservation(topic_with_tasks, strict=True)
+        assert res["checked"] is True
+        assert res["errors"] == []
+
 
 # ============================================================
 # sniff structures 识别

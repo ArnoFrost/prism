@@ -440,11 +440,13 @@ def extract_task_v_refs(task_scope_text: str) -> list[dict]:
             in_table = False
             continue
         col0, col1 = cells[0], cells[1]
-        m_task = re.search(r"\bV\d+\b", col0)
+        # task-V 列：支持 `V1`（旧）与 `tV1`（task 命名空间前缀）两种写法
+        m_task = re.search(r"\bt?V\d+\b", col0)
         if not m_task:
             # 非数据行（可能是占位/说明）
             continue
         task_v = m_task.group(0)
+        # topic-V 引用列：取 V\d+（兼容 topic-V9 / V9）
         refs = re.findall(r"\bV\d+\b", col1)
         rows.append({"task_v": task_v, "refs": refs})
     return rows
