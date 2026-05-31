@@ -8,6 +8,10 @@ tags:
 
 # {NNN} — {topic-name}
 
+> [!warning] README 已 deprecate（focus 单入口）
+> 自 3.0 起 topic 入口为 [focus.md](./focus.md) 的**保留区**（见 `focus-derive-spec.md` §README-deprecate）。
+> 本文件为存量兜底，懒迁移、不强推；关键决策 SSOT = [decision.index.md](./decision.index.md)，参考资料归 `references/` 与 focus 保留区双链。
+
 | 属性 | 值 |
 |------|------|
 | **编号** | {NNN} |

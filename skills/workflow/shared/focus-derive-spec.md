@@ -29,6 +29,18 @@ focus 主体 = **顶部光标快读面**（当前态 / 下一步）+ **4 字段*
 3. ⛔ 禁 `focus-v2.md` / `focus-history.md`（与 scope skill 早禁的 `scope-v2.md` 同源）
 4. 主体超 30 行 = 信号：该升级 structures/task-N 或回收旧关注点
 
+## focus 双区契约（保留区 vs 聚焦区）
+
+README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templates/topic-focus.md`）：
+
+| 区 | 内容 | retention | rewrite 行为 |
+|----|------|-----------|-------------|
+| **保留区** | 入口导航：AI 规范入口 + scope/decision.index/review.index 双链 | rewrite 豁免 | 只随结构变化更新，每轮 rewrite **不动** |
+| **聚焦区** | 光标快读面（当前态/下一步）+ 4 字段（goal/input/output/non-goal） | rewrite | 每轮整体重写；**「主体 ≤30 行」只数本区** |
+
+- 「主体 ≤30 行」与分叉判据 **S1（连续 2 次 rewrite 仍超行）只数聚焦区**，保留区不计入。
+- 累积性内容**不进 focus 任何区**：关键决策归 `decision.index`，参考资料归 `references/` 或保留区双链。
+
 ## 长期工作分解去向（取代 plan「总计划」段）
 
 | topic 形态 | 长期分解 SSOT | 短期切片 |
@@ -59,10 +71,24 @@ focus 主体 = **顶部光标快读面**（当前态 / 下一步）+ **4 字段*
 ## 联动规则
 
 ```
-README.next_action = focus 光标快读面「下一步」的一句话摘要
+README.next_action = focus 光标快读面「下一步」的一句话摘要（README 在场时）
 ```
 
-focus 刷新后，workflow-scope Phase 4（同步）须将「下一步」写入 `README.md` 的 next action 字段；终态标记（⏸️暂停 / ✅完成 / 📦已归档）原样同步。
+focus 刷新后，workflow-scope Phase 4（同步）须将「下一步」写入 `README.md` 的 next action 字段；终态标记（⏸️暂停 / ✅完成 / 📦已归档）原样同步。README deprecate 的 topic（见下节）无需回写，「下一步」只存在于 focus 聚焦区。
+
+## README deprecate（focus 单入口）
+
+> d01 裁定：README 退役，focus 双区成 topic 唯一入口。**懒迁移**（grandfather，同 plan→focus）：存量 README 保留只读，新 topic 以 focus 保留区为入口；不强推批量迁移。
+
+| 维度 | README 在场（存量） | README deprecate 后 |
+|------|--------------------|--------------------|
+| **入口** | README 控制台 | focus 保留区 |
+| **关键决策 SSOT** | README 表 + decision.index | `decision.index`（删 README 表）|
+| **参考资料** | README 表 | `references/` + focus 保留区双链 |
+| **next_action** | 回写 README | 只在 focus 聚焦区，无需回写 |
+
+- **scaffold**：仍可生成 README 作存量兜底，但**入口语义归 focus 保留区**。
+- **消费脚本迁移**（status/digest/context_pack 改读 focus 保留区而非 README）= 后续机械阶段，需回归测试；本节先定口径，不在本轮强行改线（呼应 r01-P1-3 连锁回归风险 + 默认最小补丁）。
 
 ## scope.md 更新规则（focus-derive 的上游）
 
