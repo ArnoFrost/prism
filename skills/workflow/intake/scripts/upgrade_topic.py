@@ -104,13 +104,18 @@ def upgrade_topic(topic_dir: str, templates_dir: str | None = None,
     tag = _derive_tag(topic_dir)
 
     # 1. 补 focus.md 壳（从模板）
+    #    注入 `migration: pending` 标记：升级中间态（focus 仍占位、plan 仍有真内容）下，
+    #    消费脚本经 parse_utils.resolve_work_file 回退读 plan，不读空壳（focus-derive-spec §2.x）。
     if not has_focus:
         tmpl = _read(os.path.join(templates_dir, "topic-focus.md"))
         if tmpl is None:
             raise FileNotFoundError(f"模板缺失: {templates_dir}/topic-focus.md")
+        shell = _render(tmpl, title, tag)
+        if has_plan and shell.startswith("---"):
+            shell = shell.replace("---", "---\nmigration: pending", 1)
         if not dry_run:
             with open(focus_path, "w", encoding="utf-8") as f:
-                f.write(_render(tmpl, title, tag))
+                f.write(shell)
         created.append(focus_path)
 
     # 2. 根级 intake.md → references/intake.md（移动，不复制）
@@ -142,6 +147,7 @@ def upgrade_topic(topic_dir: str, templates_dir: str | None = None,
         manual_steps = [
             "把 plan.md 的「总计划/长期分解」拆到 scope.md 的 V 条目（或升级 structures/task.index.md）",
             "把 plan.md 的「当前焦点」收进 focus.md（主体≤30行，光标快读面 + goal/input/output/non-goal）",
+            "填实 focus 后删除 focus.md frontmatter 的 `migration: pending` 行（工作集即从 plan 切回 focus）",
             "确认无残留后删除 plan.md",
             "对照表见 shared/plan-derive-spec.md（deprecated 指针）与 shared/focus-derive-spec.md",
         ]

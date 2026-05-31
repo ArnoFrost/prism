@@ -77,16 +77,34 @@ workflow-scope Phase 3 执行时：
 
 **存量规模**：13 active + 20 archive topic 仍用 `plan.md`（截至 3.0 alpha）。
 
-**代码 grandfather**（无法删除，因 workspace 全量扫描工具必须容忍未升级 topic）：以下脚本统一**优先读 `focus.md`，回退 `plan.md`**——
-- `status/scripts/status.py`（骨架检查 + 工作集进度）
-- `tidy/scripts/tidy.py`（updated 日期 / frontmatter / wikilink / 焦点完成报告）
-- `digest/scripts/collect.py` + `shared/scripts/context_pack.py`（采集当前工作集，输出 `focus.source` 标明实际读到哪个）
-- `shared/scripts/prism_cli.py` finalize（`focus_exists` / `plan_exists` 并存提示）
+### 工作集解析算法（唯一 SSOT）
 
-**升级路径**（懒触发，不强推）：`/workflow-intake --upgrade <topic_dir>` 做机械补壳（建 focus + intake 归位 + README），plan 内容拆分人工执行。详见 intake SKILL §mode=upgrade。
+所有"读哪个工作集文件"的判定**必须**经唯一函数 `shared/scripts/parse_utils.py::resolve_work_file(topic_dir)`，
+**禁止**各脚本自行用「文件存在」或「内容非空」判断——否则 `status` 与 `digest` 会对同一 topic 报告矛盾焦点（r06.S P0-2）。
 
-**archive/ 永久 grandfather**：归档专项只读冻结，不升级、不重扫（平铺律「不强制重写 archive」）。
+判定顺序（返回 `migration_state`）：
 
-**sunset 条件**：当所有 active topic 升级完毕，提一个 cleanup commit 删除上述脚本的 plan 回退分支。
+| 顺序 | 条件 | 读取 | migration_state |
+|:----:|------|:----:|-----------------|
+| 1 | `focus.md` 有内容**且非迁移占位壳** | focus | `focus_active` |
+| 2 | `focus.md` 是迁移占位壳（frontmatter 含 `migration: pending`）且 `plan.md` 存在 | **plan** | `dual_pending` |
+| 3 | `focus.md` 空/缺，`plan.md` 存在 | plan | `plan_legacy` |
+| 4 | 都没有 | focus（缺省路径） | `none` |
+
+**迁移占位壳标记**：`upgrade_topic.py` 在 2.x→3.0 补 focus 壳时写入 frontmatter `migration: pending`。
+此标记存在 = focus 尚未人工填实 → 工具回退读 `plan.md`（升级中间态**不读空壳**，根治 r06.S P0-1）。
+人工把 plan「当前焦点」收进 focus 后**删除该行**，工作集即从 plan 切回 focus。
+
+**消费方**（全部经 `resolve_work_file`）：`status.py` / `tidy.py` / `collect.py` / `context_pack.py`；
+输出的 `focus.source` / `work_label` 标明实际读到哪个。`prism_cli.py` finalize 的 `scope_hint` 另报 `focus_exists` / `plan_exists` 存在标志（非读取点）。
+
+### 升级路径
+
+懒触发、不强推：`/workflow-intake --mode upgrade <topic_dir>` 做机械补壳（建带 `migration: pending` 的 focus + intake 归位 references/ + README 控制台行），plan 内容拆分人工执行。详见 intake SKILL §mode=upgrade。
+
+### archive 与 sunset
+
+- **archive/ 永久 grandfather**：归档专项只读冻结，不升级、不重扫（平铺律「不强制重写 archive」）。`resolve_work_file` 对 archive 仍按上表回退读 `plan.md`。
+- **sunset 条件（修订 r06.S P1-3）**：当所有 **active** topic 达到 `focus_active`（无 `plan.md`、无 `migration: pending`）后，可提 cleanup commit 收窄回退分支——**但 `resolve_work_file` 的顺序 3（`plan_legacy`）必须保留**，因为 20 个 archive topic 永久持有 `plan.md`；删除顺序 3 会使归档专项工作集归零。即 sunset 只删「为 active 升级中间态服务」的逻辑（顺序 2 的 `dual_pending` 可在 active 清零后简化），archive 回退路径不退役。
 
 旧 2.x 投影规则见 [plan-derive-spec.md](./plan-derive-spec.md)（deprecated）。

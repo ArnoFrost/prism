@@ -20,7 +20,7 @@ from datetime import date
 from sniff_lib import find_workspace, _find_topics_dir
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'shared', 'scripts'))
-from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section, count_checkboxes as _count_checkboxes
+from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section, count_checkboxes as _count_checkboxes, resolve_work_file
 
 
 def _collect_readme(topic_dir: str) -> dict:
@@ -60,13 +60,10 @@ def _collect_scope(topic_dir: str) -> dict:
 
 
 def _collect_focus(topic_dir: str) -> dict:
-    """当前工作集采集：优先 focus.md（3.0），回退 plan.md（2.x grandfather）。"""
-    focus_path = os.path.join(topic_dir, "focus.md")
-    content = _read(focus_path)
-    source = "focus.md"
-    if not content:
-        content = _read(os.path.join(topic_dir, "plan.md"))
-        source = "plan.md"
+    """当前工作集采集：经 resolve_work_file 统一选定（focus 3.0 / plan 2.x grandfather）。"""
+    info = resolve_work_file(topic_dir)
+    content = _read(info["path"])
+    source = info["source"]
     if not content:
         return {}
 

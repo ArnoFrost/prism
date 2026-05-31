@@ -51,6 +51,43 @@ def extract_section(content: str, heading: str, level: int = 2) -> str | None:
     return content[start:end].strip()
 
 
+def resolve_work_file(topic_dir: str) -> dict:
+    """统一工作集解析（grandfather 单一 SSOT，算法见 focus-derive-spec §2.x）。
+
+    所有消费脚本（status / tidy / context_pack / collect）必须经此函数选定「读哪个」，
+    禁止各自用「文件存在」或「内容非空」自判，避免 status 与 digest 报告矛盾焦点。
+
+    判定顺序：
+      1. focus.md 有内容且**非迁移占位壳** → focus（focus_active）
+      2. focus.md 是迁移占位壳（frontmatter 含 `migration: pending`）且 plan.md 存在 → plan（dual_pending）
+      3. focus.md 空/不存在但 plan.md 存在 → plan（plan_legacy）
+      4. 都没有 → focus 缺省路径（none）
+
+    迁移占位壳标记由 `upgrade_topic.py` 写入 focus.md frontmatter；人工填实 focus 后删除该行，
+    工作集即从 plan 切回 focus（升级中间态不再读空壳）。
+
+    返回: {path, label, source, migration_state}
+      migration_state ∈ {focus_active, dual_pending, plan_legacy, none}
+    """
+    focus_path = os.path.join(topic_dir, "focus.md")
+    plan_path = os.path.join(topic_dir, "plan.md")
+    focus_content = read_file(focus_path)
+    plan_exists = os.path.isfile(plan_path)
+
+    if focus_content:
+        pending = bool(re.search(r"^migration:\s*pending\b", focus_content, re.MULTILINE))
+        if pending and plan_exists:
+            return {"path": plan_path, "label": "plan", "source": "plan.md",
+                    "migration_state": "dual_pending"}
+        return {"path": focus_path, "label": "focus", "source": "focus.md",
+                "migration_state": "focus_active"}
+    if plan_exists:
+        return {"path": plan_path, "label": "plan", "source": "plan.md",
+                "migration_state": "plan_legacy"}
+    return {"path": focus_path, "label": "focus", "source": "focus.md",
+            "migration_state": "none"}
+
+
 def count_checkboxes(content: str) -> dict:
     """统计文件中未勾选和已勾选的 checkbox 数量。"""
     unchecked = re.findall(r"- \[ \] (.+)", content)

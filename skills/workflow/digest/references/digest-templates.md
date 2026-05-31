@@ -29,8 +29,8 @@ stale_after: 此摘要为快照，后续变更可能使其过时
 
 ## 进展
 
-- **已完成**：{从 scope 验收口径已勾选项 + plan 已完成项提炼}
-- **进行中**：{从 plan 当前焦点提炼}
+- **已完成**：{从 scope 验收口径已勾选项 + 近期 reviews/decisions 提炼}
+- **进行中**：{从 focus 当前态 / 下一步提炼}
 - **验收进度**：{X/Y}
 
 ## 关键决策
@@ -44,13 +44,13 @@ stale_after: 此摘要为快照，后续变更可能使其过时
 {从以下来源提取：}
 - scope 未决问题
 - 用户补充的沟通需求
-- plan 中明显被阻塞的条目
+- focus / scope 中明显被阻塞的条目
 
 无卡点时写"当前无阻塞"。
 
 ## 下一步
 
-{从 plan 当前焦点 + README next action 推导}
+{从 focus 下一步 + README next action 推导}
 
 > 生成时间：{YYYY-MM-DD HH:MM}　本文件每次执行 `/workflow-digest` 时覆写。
 ```

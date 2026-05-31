@@ -30,6 +30,15 @@ topic:
   structure:
     required:
       - README.md           # 主线导航（编号/created/updated/status + 控制台）
+    # tier 说明（r06.S d06.S 澄清）：structural `required` 仅 README（结构最小存活集）；
+    # 下列 intake_mandatory 是「创建期软 required」——intake Phase 3 必须补占位骨架，
+    # 缺失即 trace-artifacts-spec §intake_gate_out 判违约（intake_gate_out.*_present=false）。
+    # 二者不矛盾：required = 结构最小集；intake_mandatory = 入料完成门槛。
+    intake_mandatory:
+      - scope.md            # intake_gate_out.scope_md_present
+      - focus.md            # intake_gate_out.focus_md_present
+      - README.md           # intake_gate_out.readme_md_present
+      - review.index.md     # intake_gate_out.review_index_present
     recommended:
       - scope.md            # 合同面 SSOT（G/V/非目标/约束/未决/变更记录；persistent）
       - focus.md            # 当前工作集（3.0；kind=state，retention=rewrite，主体≤30行，光标快读面）— 取代 plan

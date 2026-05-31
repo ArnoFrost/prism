@@ -116,11 +116,15 @@ light 模式下 `intake`、`review_index`、`decisions`、`reviews` 统一输出
 
 > 兼容：脚本对 2.x topic 回退读 `plan.md`，口径见 [focus-derive-spec §2.x 兼容](./focus-derive-spec.md)。
 
+3.0 focus 结构 = 光标快读面（`**当前态**` / `**下一步**`）+ yaml 4 字段（goal/input/output/non-goal）；
+无 `### 待执行` / `### 已完成` 段（那是 2.x plan 时代混合体，已废弃）。
+
 | heading / 字段 | 输出字段 | 截断规则 |
 |---------|---------|---------|
-| 光标快读面 `**下一步**` / `## 当前焦点` | `current_focus` | 原文 |
-| `### 待执行` | `pending_summary` | 仅提取 `**Phase X — 标题**` 行 |
-| `### 已完成` | `completed_summary` | 仅提取 `~~Phase X — 标题~~` 行 |
+| 光标快读面 `**当前态**` | `current_state` | 原文（2.x plan 无此字段 → `null`）|
+| 光标快读面 `**下一步**` / `## 当前焦点`(2.x) | `current_focus` | 原文 |
+| `### 待执行`（2.x plan grandfather）| `pending_summary` | 仅提取 `**Phase X — 标题**` 行；3.0 focus 无此段 → 空 |
+| `### 已完成`（2.x plan grandfather）| `completed_summary` | 仅提取 `~~Phase X — 标题~~` 行；3.0 focus 无此段 → 空 |
 
 ### intake.md（仅 full）
 

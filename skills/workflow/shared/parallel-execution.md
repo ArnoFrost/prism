@@ -109,7 +109,7 @@
 > |---|---|---|
 > | `task_probe` | review/SKILL.md Align 步骤 8 | mode=full 真并行能力探测可观察化 |
 > | `decision_artifact` | review/SKILL.md Gate 4 | accept/reject 决策必须落 dXX.md 可观察化 |
-> | `intake_gate_out` | intake/SKILL.md Phase 3 | intake 完成后 scope/plan/README 占位齐全可观察化 |
+> | `intake_gate_out` | intake/SKILL.md Phase 3 | intake 完成后 scope/focus/README 占位齐全可观察化 |
 >
 > 共同原则：**无痕迹 = 未执行**。痕迹缺失即视为对应门未关闭，禁止宣布完成。
 >

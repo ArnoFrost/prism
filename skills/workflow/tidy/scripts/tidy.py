@@ -19,6 +19,9 @@ from datetime import date, datetime
 
 from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared", "scripts"))
+from parse_utils import resolve_work_file
+
 
 def _read(path: str) -> str | None:
     if not os.path.isfile(path):
@@ -321,12 +324,10 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "items": unchecked[:5],
         })
 
-    # 9. 当前焦点 vs 已完成（focus.md 3.0 优先，plan.md 2.x grandfather）
-    work_path = os.path.join(topic_dir, "focus.md")
-    work_name = "focus.md"
-    if not os.path.isfile(work_path):
-        work_path = os.path.join(topic_dir, "plan.md")
-        work_name = "plan.md"
+    # 9. 当前焦点 vs 已完成（经 resolve_work_file 统一选定：focus 3.0 / plan 2.x grandfather）
+    _work_info = resolve_work_file(topic_dir)
+    work_path = _work_info["path"]
+    work_name = _work_info["label"] + ".md"
     work_content = _read(work_path) or ""
     focus_done = re.findall(r"~~(.+?)~~\s*✅", work_content)
     if focus_done:

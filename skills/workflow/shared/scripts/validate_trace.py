@@ -63,9 +63,11 @@ WORKFLOW_TRACE_SCHEMA: dict[str, object] = {
         {
             "phase": "intake_gate_out",
             "family": "intake_gate_out",
-            "required_fields": {"scope_md_present"},
+            # 工作集字段（focus_md_present 3.0 / plan_md_present 2.x）不入硬必填集（grandfather：
+            # 旧 2.x intake 块用 plan_md_present）；机器只硬卡三个跨版本稳定项，工作集字段值由 Agent 自检。
+            "required_fields": {"scope_md_present", "readme_md_present", "review_index_present"},
             "applies_to": "intake_file",
-            "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失",
+            "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失（稳定三项硬卡；工作集 focus/plan present 字段 grandfather）",
         },
         {
             "phase": "merge_artifact",
@@ -596,8 +598,10 @@ def scan_topic(topic_dir: Path, strict: bool = True) -> dict:
             scanned.append(str(md))
             issues.extend(validate_decision_file(md, text, strict))
 
-    # 3. intake.md
-    intake = topic_dir / "intake.md"
+    # 3. intake.md — 3.0 优先 references/intake.md，回退根级（2.x grandfather）
+    intake = topic_dir / "references" / "intake.md"
+    if not intake.is_file():
+        intake = topic_dir / "intake.md"
     if intake.is_file():
         try:
             text = intake.read_text(encoding="utf-8")

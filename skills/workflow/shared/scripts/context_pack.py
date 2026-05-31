@@ -17,7 +17,7 @@ import re
 import sys
 from datetime import date
 
-from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section
+from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section, resolve_work_file
 
 
 def _count_acceptance(content: str) -> tuple[int, int, list[str]]:
@@ -93,20 +93,22 @@ def _pack_scope(topic_dir: str) -> dict | None:
 
 
 def _pack_focus(topic_dir: str) -> dict | None:
-    """当前工作集：优先 focus.md（3.0），回退 plan.md（2.x grandfather）。"""
-    content = _read(os.path.join(topic_dir, "focus.md"))
-    source = "focus.md"
-    if not content:
-        content = _read(os.path.join(topic_dir, "plan.md"))
-        source = "plan.md"
+    """当前工作集：经 resolve_work_file 统一选定（focus 3.0 / plan 2.x grandfather）。"""
+    info = resolve_work_file(topic_dir)
+    content = _read(info["path"])
+    source = info["source"]
     if not content:
         return None
 
     nxt = re.search(r"\*\*下一步\*\*[：:]\s*(.+)", content)
     current_focus = nxt.group(1).strip() if nxt else _extract_section(content, "当前焦点")
+    state = re.search(r"\*\*当前态\*\*[：:]\s*(.+)", content)
+    current_state = state.group(1).strip() if state else None
     return {
         "source": source,
+        "current_state": current_state,        # 3.0 focus 光标「当前态」（2.x plan 无 → None）
         "current_focus": current_focus,
+        # pending/completed 为 2.x plan 时代字段（### 待执行 / ### 已完成）；3.0 focus 无此段 → 空
         "pending_summary": _extract_phase_lines(content, "待执行"),
         "completed_summary": _extract_phase_lines(content, "已完成"),
     }

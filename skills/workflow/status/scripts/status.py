@@ -20,6 +20,9 @@ from datetime import date, datetime
 
 from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared", "scripts"))
+from parse_utils import resolve_work_file
+
 
 def _file_mtime(path: str) -> str | None:
     if not os.path.isfile(path):
@@ -57,11 +60,11 @@ def _count_decisions(decisions_dir: str) -> int:
 
 
 def _work_file(topic_dir: str) -> str:
-    """当前工作集文件路径：优先 focus.md（3.0），回退 plan.md（2.x grandfather）。"""
-    focus = os.path.join(topic_dir, "focus.md")
-    if os.path.isfile(focus):
-        return focus
-    return os.path.join(topic_dir, "plan.md")
+    """当前工作集文件路径：经 resolve_work_file 统一选定（focus 3.0 / plan 2.x grandfather）。
+
+    升级中间态（focus 占位壳含 `migration: pending` 且 plan 仍在）回退读 plan，不读空壳。
+    """
+    return resolve_work_file(topic_dir)["path"]
 
 
 def _check_skeleton(topic_dir: str) -> list[str]:

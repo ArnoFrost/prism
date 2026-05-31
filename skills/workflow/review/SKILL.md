@@ -12,7 +12,7 @@ stability: experimental
 | 维度 | 说明 |
 |------|------|
 | **是什么** | topic 内的阶段性正式评审事件：多角色独立审查 → 合并仲裁 → 分级 findings → 落盘 → 触发人类决策 |
-| **不是什么** | 不直接改 scope、不直接改 plan、不隐式生成 decision、不替代人类裁决权、不是每轮对话都要重启的总入口 |
+| **不是什么** | 不直接改 scope、不直接改 focus、不隐式生成 decision、不替代人类裁决权、不是每轮对话都要重启的总入口 |
 | **写入工件** | `reviews/rXX_描述.md`（综合报告，必填）+ `reviews/raw/rXX-role-*.md`（条件落盘）+ `decision.index.md`（决策链主索引，决策 accept 后追加）+ `review.index.md`（评审辅助索引，仅当本 review 被新 dXX 引用时追加；稀疏关联律）|
 | **结束建议** | → 用户 Accept / Reject / Defer → `decisions/dXX.md` → `workflow-scope` 同步合同 |
 
@@ -22,7 +22,7 @@ stability: experimental
 
 > 管线定位：`intake → (scope) → review → archive`；`{skill_dir}` 指 SKILL.md 所在目录（按 IDE 平台映射）。
 
-> **术语**：本 SKILL 中 OQ / goal / V / AP / plan / scope / phase / wave / finding / Risks 等术语遵循 [vocabulary.md](references/vocabulary.md) — 首批 11 术语 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
+> **术语**：本 SKILL 中 OQ / goal / V / action / focus / scope / phase / wave / finding / Risks 等术语遵循 [vocabulary.md](references/vocabulary.md) — 12 活跃 + 3 废弃术语 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
 
 ## References 加载策略
 
@@ -95,7 +95,7 @@ stability: experimental
 │     → tidy / validate / validate-trace / validate-review-call / scope-hint
 │  ⑦ 输出 merge_artifact 痕迹
 ├────────── ⛔ Gate 3 ────────────┤
-│  Gate 后同步：README "当前状态" 更新（不直接改 plan）
+│  Gate 后同步：README "当前状态" 更新（不直接改 focus）
 ├────────── ⛔ Gate 4 ────────────┤
 │  4. 决策触发 — AskQuestion 三选一 + Other 兜底
 └─────────────────────────────────┘
