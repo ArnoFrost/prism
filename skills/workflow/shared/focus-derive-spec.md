@@ -49,13 +49,13 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 | 无 task | scope 的 V 条目（验收口径） | focus 当前轮 |
 | 有 task | `structures/task.index.md`（导航 + 分解）+ `task-N/scope.md`（承诺）+ `task-N/wave-N.md`（推进）| focus 当前轮 |
 
-**升级触发器**（d02 D2-4）：focus 连续无法承载当前工作集 **OR** ≥2 长期并行结构议题 → 升级 `structures/task-N`。Alpha 初期不默认建 task。
+**升级触发器**：focus 连续无法承载当前工作集 **OR** ≥2 长期并行结构议题时，先检查 S3 是否成立；只有某个 scope-V 深化到自带 scope + wave 时，才升级 `structures/task-N`。Alpha 初期不默认建 task。
 
 ### 分叉判据决策表（scope-V vs task）— provisional · alpha
 
-> **单源声明**：本表是「何时升 task」的**唯一可操作 SSOT**（吸收 d02-D2-4 的个例触发器并普适化）。其它产物（scope 约束、SKILL）一律 cite 本表，不复述触发器，避免非单源漂移。
-> **task 性质（041 d02 命题 G 判定）**：task = **scope 的递归分解原语**——某 scope-V 深化到需要**自己的 scope + 自己的 wave** 时自然膨胀为 task，**非「复杂度兜底异常」**。默认不建，随深化按需膨胀。
-> ⚠️ **provisional**：41 样本基线实测**零 task**；041 task-1（d03，见下方校准）为**首个正样本**（正样本 0→1，S3 主触发口径验证通过）。本表临时有效，待再积累几例 + 泛化体验几轮后由后续 dXX 升 confirmed。Alpha 默认偏置 = **不升 task**。
+> **单源声明**：本表是「何时升 task」的**唯一可操作 SSOT**。其它产物（scope 约束、SKILL）一律 cite 本表，不复述触发器，避免非单源漂移。
+> **task 性质**：task = **scope 的递归分解原语**——某 scope-V 深化到需要**自己的 scope + 自己的 wave** 时自然膨胀为 task，**非「复杂度兜底异常」**。默认不建，随深化按需膨胀。
+> ⚠️ **provisional**：本表已通过首个 dogfood 正样本校准，但仍需更多异构项目观察后再升 confirmed。Alpha 默认偏置 = **不升 task**。
 
 | 角色 | 信号 | 机器可量定义 |
 |------|------|------|
@@ -70,19 +70,19 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 
 > 套用示例：某 topic 有主轴 + 次轴两个 G（S2≥2），但次轴未深化到自带 scope+wave（S3 不满足）→ **不升 task**，用 scope-V 承载；待某条线深化到需要自己的合同+批次时再膨胀。
 
-**首个正样本校准（041 task-1 / d03）**：041 V9「7 skill 对标」深化到——7 个 skill 各需独立对照 SSOT 审计 + gap 修复 + 多批次推进，单 V 需要自己的 `task-scope`（投影 V9，3 个 tV 切片）+ `wave`（3 批：产出/消费/评审）→ **S3 满足**，膨胀首个真实 `structures/task-1`。校准结论：S3 主触发口径**正样本验证通过**（深化信号 = "单 V 需自带 scope+wave + 多批次"），S1/S2 作伴随信号符合预期。正样本数 0→1；维持 provisional，待再积累几例后由后续 dXX 评估升 confirmed。
+**正样本校准口径**：当某个 topic 级 V 深化到需要独立审计、分批推进、并自带 task-scope 与 wave 时，视为 **S3 满足**。校准结论：S3 主触发口径已通过 dogfood 正样本验证，S1/S2 仅作伴随信号；仍维持 provisional，待更多异构样本后再评估是否升 confirmed。
 
-## 联动规则
+## README grandfather 联动规则
 
 ```
 README.next_action = focus 光标快读面「下一步」的一句话摘要（README 在场时）
 ```
 
-focus 刷新后，workflow-scope Phase 4（同步）须将「下一步」写入 `README.md` 的 next action 字段；终态标记（⏸️暂停 / ✅完成 / 📦已归档）原样同步。README deprecate 的 topic（见下节）无需回写，「下一步」只存在于 focus 聚焦区。
+本规则**仅适用于仍维护 README 的 grandfather topic**。focus 刷新后，workflow-scope Phase 4 可把「下一步」镜像到 `README.md` 的 next action 字段；README deprecate 的 topic（见下节）无需回写，「下一步」只存在于 focus 聚焦区。
 
 ## README deprecate（focus 单入口）
 
-> d01 裁定：README 退役，focus 双区成 topic 唯一入口。**懒迁移**（grandfather，同 plan→focus）：存量 README 保留只读，新 topic 以 focus 保留区为入口；不强推批量迁移。
+> README 退役后，focus 双区成 topic 唯一入口。**懒迁移**（grandfather，同 plan→focus）：存量 README 保留只读，新 topic 以 focus 保留区为入口；不强推批量迁移。
 
 | 维度 | README 在场（存量） | README deprecate 后 |
 |------|--------------------|--------------------|
@@ -92,7 +92,7 @@ focus 刷新后，workflow-scope Phase 4（同步）须将「下一步」写入 
 | **next_action** | 回写 README | 只在 focus 聚焦区，无需回写 |
 
 - **scaffold**：仍可生成 README 作存量兜底，但**入口语义归 focus 保留区**。
-- **消费脚本迁移**（status/digest/context_pack 改读 focus 保留区而非 README）= 后续机械阶段，需回归测试；本节先定口径，不在本轮强行改线（呼应 r01-P1-3 连锁回归风险 + 默认最小补丁）。
+- **消费脚本迁移**（status/digest/context_pack 改读 focus 保留区而非 README）= 后续机械阶段，需回归测试；本节先定口径，不强行改线。
 
 ## scope.md 更新规则（focus-derive 的上游）
 
@@ -116,7 +116,7 @@ workflow-scope Phase 3 执行时：
   → 读取本规范（focus-derive-spec.md）
   → 按映射规则更新 scope.md + 刷新 focus.md（rewrite）
   → 若 topic 有 structures/ → 同步 task.index.md
-  → 同步 README.md next_action
+  → 若 topic 仍维护 README → 最小镜像 next_action（grandfather only）
 ```
 
 ## 2.x 兼容（grandfather）— 唯一权威说明
@@ -128,7 +128,7 @@ workflow-scope Phase 3 执行时：
 ### 工作集解析算法（唯一 SSOT）
 
 所有"读哪个工作集文件"的判定**必须**经唯一函数 `shared/scripts/parse_utils.py::resolve_work_file(topic_dir)`，
-**禁止**各脚本自行用「文件存在」或「内容非空」判断——否则 `status` 与 `digest` 会对同一 topic 报告矛盾焦点（r06.S P0-2）。
+**禁止**各脚本自行用「文件存在」或「内容非空」判断——否则 `status` 与 `digest` 可能对同一 topic 报告矛盾焦点。
 
 判定顺序（返回 `migration_state`）：
 
@@ -140,7 +140,7 @@ workflow-scope Phase 3 执行时：
 | 4 | 都没有 | focus（缺省路径） | `none` |
 
 **迁移占位壳标记**：`upgrade_topic.py` 在 2.x→3.0 补 focus 壳时写入 frontmatter `migration: pending`。
-此标记存在 = focus 尚未人工填实 → 工具回退读 `plan.md`（升级中间态**不读空壳**，根治 r06.S P0-1）。
+此标记存在 = focus 尚未人工填实 → 工具回退读 `plan.md`（升级中间态**不读空壳**）。
 人工把 plan「当前焦点」收进 focus 后**删除该行**，工作集即从 plan 切回 focus。
 
 **消费方**（全部经 `resolve_work_file`）：`status.py` / `tidy.py` / `collect.py` / `context_pack.py`；
@@ -153,6 +153,6 @@ workflow-scope Phase 3 执行时：
 ### archive 与 sunset
 
 - **archive/ 永久 grandfather**：归档专项只读冻结，不升级、不重扫（平铺律「不强制重写 archive」）。`resolve_work_file` 对 archive 仍按上表回退读 `plan.md`。
-- **sunset 条件（修订 r06.S P1-3）**：当所有 **active** topic 达到 `focus_active`（无 `plan.md`、无 `migration: pending`）后，可提 cleanup commit 收窄回退分支——**但 `resolve_work_file` 的顺序 3（`plan_legacy`）必须保留**，因为 20 个 archive topic 永久持有 `plan.md`；删除顺序 3 会使归档专项工作集归零。即 sunset 只删「为 active 升级中间态服务」的逻辑（顺序 2 的 `dual_pending` 可在 active 清零后简化），archive 回退路径不退役。
+- **sunset 条件**：当所有 **active** topic 达到 `focus_active`（无 `plan.md`、无 `migration: pending`）后，可提 cleanup commit 收窄回退分支——**但 `resolve_work_file` 的顺序 3（`plan_legacy`）必须保留**，因为 archive topic 可能永久持有 `plan.md`；删除顺序 3 会使归档专项工作集归零。即 sunset 只删「为 active 升级中间态服务」的逻辑（顺序 2 的 `dual_pending` 可在 active 清零后简化），archive 回退路径不退役。
 
 旧 2.x 投影规则见 [plan-derive-spec.md](./plan-derive-spec.md)（deprecated）。

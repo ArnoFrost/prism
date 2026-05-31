@@ -1,6 +1,6 @@
 # Topic 格式规范 SSOT
 
-> topic **整体形态**的对标基准（041 d03）。定义 topic 解剖 / 入口模型 / 递归结构 / 各工件形态契约。
+> topic **整体形态**的对标基准。定义 topic 解剖 / 入口模型 / 递归结构 / 各工件形态契约。
 > **cite 不复制**：术语·kind·retention → [vocabulary.md](./vocabulary.md)；scope→focus 刷新·双区·README-deprecate·分叉判据 → [focus-derive-spec.md](./focus-derive-spec.md)；scope 段落规范 → `scope-templates.md`；focus 可读性 → [focus-readability-checklist.md](./focus-readability-checklist.md)；痕迹 → [trace-artifacts-spec.md](./trace-artifacts-spec.md)。
 > 本 SSOT 只定义"topic 长什么样"，细节一律 cite 详规，避免漂移。
 
@@ -51,6 +51,9 @@ flowchart TD
 |------|----------------|-----------|
 | `focus` | 双区（保留区 rewrite 豁免 / 聚焦区 rewrite）+ 光标块固定 2 行 + 4 字段白名单 + 禁 callout 包裹（[topic-focus.md](../../../workspace/templates/topic-focus.md) 模板）| M1-M4 见 [focus-readability-checklist.md](./focus-readability-checklist.md) |
 | `scope` | 6 段（目标/非目标/验收口径/关键约束/未决问题/变更记录）+ 段落白名单 + 形态约束（详规 `scope-templates.md`）| 行数 ≤60 / 段落合规 / 单行密度 / V·OQ 可溯源（详规 `scope-templates.md`）|
+| `task.index` | task 导航表：task 路径 / 稳定 id / status / 问题切片 / 授权来源；只在出现 task 时存在 | task id 稳定、授权来源可追溯 |
+| `task-scope` | task 内 `scope.md`，1:1 投影 topic 级 V；只收窄不新增承诺；task 内不开独立 reviews/decisions | task-V 每行引用一个存在的 topic-V |
+| `wave` | task 内推进批次；记录本批目标 / 推进记录 / 批次出口；无 task 时不落独立 wave 文件 | status 与 task.index 一致 |
 | `decision` / `review` | append-only 事件，frontmatter 依赖字段（`supersedes`/`derived_from`/`related_dXX`）| — |
 | `*.index` | mutable 导航面，原地更新 | — |
 
@@ -65,4 +68,4 @@ flowchart TD
 | 痕迹工件（intake_gate_out / task_probe / merge_artifact / decision_artifact）| [trace-artifacts-spec.md](./trace-artifacts-spec.md) |
 | 上下文装配 | [context-pack-spec.md](./context-pack-spec.md) |
 
-> 各 workflow skill 的能力须对标本 SSOT（041 V9）：入口语义归 focus 保留区、产出/消费遵循上表形态契约。
+> 各 workflow skill 的能力须对标本 SSOT：入口语义归 focus 保留区，产出/消费遵循上表形态契约。
