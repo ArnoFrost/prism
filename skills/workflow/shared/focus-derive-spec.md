@@ -54,20 +54,21 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 ### 分叉判据决策表（scope-V vs task）— provisional · alpha
 
 > **单源声明**：本表是「何时升 task」的**唯一可操作 SSOT**（吸收 d02-D2-4 的个例触发器并普适化）。其它产物（scope 约束、SKILL）一律 cite 本表，不复述触发器，避免非单源漂移。
-> ⚠️ **provisional**：本表临时有效，待**命题 G 验证**（≥5 样本 + 三指标：强原语 / 弱模式 / 待观察）批准或修订。Alpha 初期默认偏置 = **不升 task**。
+> **task 性质（041 d02 命题 G 判定）**：task = **scope 的递归分解原语**——某 scope-V 深化到需要**自己的 scope + 自己的 wave** 时自然膨胀为 task，**非「复杂度兜底异常」**。默认不建，随深化按需膨胀。
+> ⚠️ **provisional**：41 样本（active+archive）实测**零 task**，正样本=0 → 三信号阈值尚无真实 task 校准。本表临时有效，待首个真实 task 出现 + 泛化体验几轮后由后续 dXX 升 confirmed。Alpha 默认偏置 = **不升 task**。
 
-| 信号 | 机器可量定义 |
-|------|------|
-| **S1** focus 撑不下 | focus **连续 2 次** rewrite 后主体仍 >30 行（行数为现成机器代理，呼应「主体超 30 行=信号」）|
-| **S2** 并行结构议题数 | scope 中本轮 **active 且互不阻塞**的 G 数（用 G 计数当代理，不引入新概念）|
-| **S3** 需独立承诺/推进 | 议题是否各需独立 `task-scope` 承诺 + 独立 `wave` 批次推进 |
+| 角色 | 信号 | 机器可量定义 |
+|------|------|------|
+| **主触发** | **S3** scope 深化 | 某 scope-V 深化到各需独立 `task-scope`（承诺）+ 独立 `wave`（推进批次）——即「该 V 长出自己的一层 scope+wave」|
+| 伴随信号 | S1 focus 撑不下 | focus **连续 2 次** rewrite 后主体仍 >30 行（提示去查 S3 是否已满足，非独立硬门槛）|
+| 伴随信号 | S2 并行议题数 | scope 中本轮 **active 且互不阻塞**的 G 数 ≥2（提示去查 S3，非独立硬门槛）|
 
-**判定步骤（短路）**：
-1. **S1 命中** → 升 `structures/task-N`（硬信号：focus 装不下）
-2. 否则 **S2 ≥ 2 且满足 S3**（每个议题各需独立多步推进）→ 升 task
-3. 否则 → **留 scope-V + focus**（默认偏置：Alpha 不默认建 task）
+**判定**：
+1. **S3 满足**（某 V 深化到自带 scope+wave）→ 升 `structures/task-N`（task 的本质 = scope 递归）
+2. 否则 → **留 scope-V + focus**（默认偏置：多数 V 不深化到此）
+3. S1/S2 命中 = **提示信号**：去检查 S3 是否已满足，**不单独触发** task
 
-> 套用示例：某 topic 有主轴 + 次轴两个 G，但次轴是兜底、非独立多步承诺（S3 不满足），且 focus 未超行（S1 否）→ **判定不升 task**，用 scope-V 承载即可。
+> 套用示例：某 topic 有主轴 + 次轴两个 G（S2≥2），但次轴未深化到自带 scope+wave（S3 不满足）→ **不升 task**，用 scope-V 承载；待某条线深化到需要自己的合同+批次时再膨胀。
 
 ## 联动规则
 
