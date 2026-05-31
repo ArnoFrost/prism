@@ -95,7 +95,7 @@ stability: experimental
 │     → tidy / validate / validate-trace / validate-review-call / scope-hint
 │  ⑦ 输出 merge_artifact 痕迹
 ├────────── ⛔ Gate 3 ────────────┤
-│  Gate 后同步：README "当前状态" 更新（不直接改 focus）
+│  Gate 后同步：状态归索引（decision.index/review.index）；存量 README "当前状态" 兜底更新（grandfather；不直接改 focus，focus 由 scope 刷新）
 ├────────── ⛔ Gate 4 ────────────┤
 │  4. 决策触发 — AskQuestion 三选一 + Other 兜底
 └─────────────────────────────────┘
