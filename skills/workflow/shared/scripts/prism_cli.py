@@ -851,12 +851,15 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
     # ── Step 3: scope 更新提示 ──
     scope_path = os.path.join(topic_dir, "scope.md")
+    focus_path = os.path.join(topic_dir, "focus.md")
     plan_path = os.path.join(topic_dir, "plan.md")
     scope_hint = {
         "step": "scope_hint",
         "status": "info",
         "message": "请确认是否需要更新 scope.md（review 结论是否改变了项目边界？）",
         "scope_exists": os.path.isfile(scope_path),
+        "focus_exists": os.path.isfile(focus_path),
+        # plan_exists 保留供 2.x grandfather topic 识别
         "plan_exists": os.path.isfile(plan_path),
     }
 

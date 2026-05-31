@@ -22,7 +22,7 @@ metadata:
 
 | 场景 | 做法 |
 |------|------|
-| 完成了一轮工作，plan 状态需要同步 | `/workflow-tidy` |
+| 完成了一轮工作，focus/README 状态需要同步 | `/workflow-tidy` |
 | review 落盘后，README 指针过时 | `/workflow-tidy` |
 | 归档前检查工件一致性 | `/workflow-tidy` |
 | 日常推进后随手对齐 | `/workflow-tidy --fix` |
@@ -35,11 +35,11 @@ metadata:
 
 | 允许 | 禁止 |
 |------|------|
-| 刷新 README updated 日期 | 新增 plan 条目 |
+| 刷新 README updated 日期 | 新增 focus 条目 |
 | 同步 latest review/decision 指针 | 修改 scope 目标或验收口径 |
 | 补全 review.index.md 缺失行 | 调整优先级 |
 | 修复 frontmatter updated | 勾选 scope 验收（需人工确认） |
-| 报告 plan 可能已完成的条目 | 自动勾选 plan checkbox |
+| 报告 focus 可能已完成的条目 | 自动勾选 focus checkbox |
 
 ## 执行流程
 
@@ -85,7 +85,7 @@ uv run python {skill_dir}/scripts/tidy.py <project_dir> [--fix] [--topic <topic_
 | README `latest decision` 指针 | decisions/ 最新文件 | 是 |
 | review.index.md 缺失条目 | reviews/ 目录扫描 | 是 |
 | frontmatter `updated` 日期 | 各 md 文件 mtime vs frontmatter | 是 |
-| plan 已完成条目未移动 | plan.md 结构分析 | 仅报告 |
+| focus 已完成条目未移动 | focus.md 结构分析（2.x 回退 plan.md）| 仅报告 |
 | scope 未勾选提醒 | scope.md checkbox | 仅报告 |
 | `[[wikilink]]` 残留 | 全文扫描 | 是 |
 

@@ -5,7 +5,7 @@
   uv run python tidy.py <project_dir> [--fix] [--topic <topic_dirname>]
 
 默认 dry-run（只报告），--fix 时自动修复安全项。
-语义变更项（scope checkbox、plan 条目移动）始终仅报告。
+语义变更项（scope checkbox、focus/plan 条目移动）始终仅报告。
 
 零外部依赖，纯 stdlib。
 """
@@ -152,9 +152,11 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
         current_updated = _extract_readme_field(readme, "updated")
         readme_mtime = _file_mtime_date(readme_path)
         scope_mtime = _file_mtime_date(os.path.join(topic_dir, "scope.md"))
+        # 当前工作集：focus.md（3.0）与 plan.md（2.x grandfather）都纳入最新时间计算
+        focus_mtime = _file_mtime_date(os.path.join(topic_dir, "focus.md"))
         plan_mtime = _file_mtime_date(os.path.join(topic_dir, "plan.md"))
 
-        latest_mtime = max(filter(None, [readme_mtime, scope_mtime, plan_mtime, today]),
+        latest_mtime = max(filter(None, [readme_mtime, scope_mtime, focus_mtime, plan_mtime, today]),
                           default=today)
 
         if current_updated and current_updated != latest_mtime:
@@ -258,8 +260,8 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: prism migrate <topic_dir>（fallback: uv run python migrate_review.py <topic_dir>）",
         })
 
-    # 6. frontmatter updated 日期（scope.md, plan.md）
-    for fname in ("scope.md", "plan.md"):
+    # 6. frontmatter updated 日期（scope.md, focus.md, plan.md grandfather）
+    for fname in ("scope.md", "focus.md", "plan.md"):
         fpath = os.path.join(topic_dir, fname)
         content = _read(fpath)
         if not content:
@@ -289,8 +291,8 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
                     _write(fpath, content)
                     changes_made.append(fname)
 
-    # 7. wikilink 扫描（scope.md, plan.md, intake.md）
-    for fname in ("scope.md", "plan.md", "intake.md"):
+    # 7. wikilink 扫描（scope.md, focus.md, plan.md grandfather, intake.md + references/intake.md）
+    for fname in ("scope.md", "focus.md", "plan.md", "intake.md", "references/intake.md"):
         fpath = os.path.join(topic_dir, fname)
         content = _read(fpath)
         if not content:
@@ -319,15 +321,19 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "items": unchecked[:5],
         })
 
-    # 9. plan 当前焦点 vs 已完成
-    plan_path = os.path.join(topic_dir, "plan.md")
-    plan_content = _read(plan_path) or ""
-    focus_done = re.findall(r"~~(.+?)~~\s*✅", plan_content)
+    # 9. 当前焦点 vs 已完成（focus.md 3.0 优先，plan.md 2.x grandfather）
+    work_path = os.path.join(topic_dir, "focus.md")
+    work_name = "focus.md"
+    if not os.path.isfile(work_path):
+        work_path = os.path.join(topic_dir, "plan.md")
+        work_name = "plan.md"
+    work_content = _read(work_path) or ""
+    focus_done = re.findall(r"~~(.+?)~~\s*✅", work_content)
     if focus_done:
         reports.append({
-            "type": "plan_focus_done",
-            "file": "plan.md",
-            "message": f"当前焦点区域有 {len(focus_done)} 项已标记完成（用删除线+✅），确认是否需要清理",
+            "type": "focus_done",
+            "file": work_name,
+            "message": f"当前焦点区域有 {len(focus_done)} 项已标记完成（删除线+✅）；focus retention=rewrite，确认是否清理（历史归 reviews/decisions）",
             "items": focus_done[:5],
         })
 
@@ -433,8 +439,8 @@ def to_markdown(report: dict) -> str:
             for r in t["reports"]:
                 if r["type"] == "scope_unchecked":
                     lines.append(f"- `scope.md` {r['unchecked_count']} 项未勾选 / {r['checked_count']} 项已勾选")
-                elif r["type"] == "plan_focus_done":
-                    lines.append(f"- `plan.md` {r['message']}")
+                elif r["type"] == "focus_done":
+                    lines.append(f"- `{r['file']}` {r['message']}")
                 elif r["type"] == "review_index_stale":
                     lines.append(f"- `review.index.md` 疑似过期条目：{', '.join(r['stale_ids'])}")
                 elif r["type"] == "review_legacy_subdir":

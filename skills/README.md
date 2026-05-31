@@ -49,8 +49,8 @@ init（项目容器）→ intake（入料路由）→ scope（合同收敛）→
 | Skill | 触发 | 输入 | 产出 |
 |-------|------|------|------|
 | `workspace-init` | `/workspace-init` | 项目路径 + 用户信息 | workspace 骨架 + 注册 + 软链接 |
-| `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + intake.md + scope 草稿 |
-| `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + plan.md 派生 |
+| `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + references/intake.md + scope 草稿 |
+| `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + focus.md 刷新 |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
 | `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |

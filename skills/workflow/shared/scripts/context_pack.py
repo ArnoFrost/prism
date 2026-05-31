@@ -92,20 +92,31 @@ def _pack_scope(topic_dir: str) -> dict | None:
     }
 
 
-def _pack_plan(topic_dir: str) -> dict | None:
-    content = _read(os.path.join(topic_dir, "plan.md"))
+def _pack_focus(topic_dir: str) -> dict | None:
+    """当前工作集：优先 focus.md（3.0），回退 plan.md（2.x grandfather）。"""
+    content = _read(os.path.join(topic_dir, "focus.md"))
+    source = "focus.md"
+    if not content:
+        content = _read(os.path.join(topic_dir, "plan.md"))
+        source = "plan.md"
     if not content:
         return None
 
+    nxt = re.search(r"\*\*下一步\*\*[：:]\s*(.+)", content)
+    current_focus = nxt.group(1).strip() if nxt else _extract_section(content, "当前焦点")
     return {
-        "current_focus": _extract_section(content, "当前焦点"),
+        "source": source,
+        "current_focus": current_focus,
         "pending_summary": _extract_phase_lines(content, "待执行"),
         "completed_summary": _extract_phase_lines(content, "已完成"),
     }
 
 
 def _pack_intake(topic_dir: str) -> str | None:
-    content = _read(os.path.join(topic_dir, "intake.md"))
+    # 3.0 intake 归 references/，2.x 在根级（grandfather）
+    content = _read(os.path.join(topic_dir, "references", "intake.md"))
+    if not content:
+        content = _read(os.path.join(topic_dir, "intake.md"))
     if not content:
         return None
 
@@ -212,7 +223,7 @@ def pack(topic_dir: str, mode: str = "light") -> dict:
         "collected_at": date.today().isoformat(),
         "readme": _pack_readme(topic_dir),
         "scope": _pack_scope(topic_dir),
-        "plan": _pack_plan(topic_dir),
+        "focus": _pack_focus(topic_dir),
         "intake": None,
         "review_index": None,
         "decisions": [],

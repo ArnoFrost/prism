@@ -10,12 +10,15 @@ workspace.{PROJECT_CODE_LOWER}.local/
 ├── README.md         # 协作规范
 ├── topics/
 │   └── {NNN}_{topic}/
-│       ├── README.md         # 专项主线
-│       ├── intake.md         # 输入
-│       ├── scope.md          # 合同
-│       ├── plan.md           # 总计划 + 当前焦点
-│       ├── reviews/rXX.md    # 评审轮次
-│       └── decisions/dXX.md  # 决策记录
+│       ├── README.md            # 专项主线
+│       ├── scope.md             # 合同（persistent）
+│       ├── focus.md             # 当前工作集（rewrite，主体≤30行）
+│       ├── references/          # 依据/来源（含 intake.md）
+│       ├── reviews/rXX.md       # 评审轮次
+│       ├── decisions/dXX.md     # 决策记录
+│       └── structures/          # 结构分解（按需出现）
+│           ├── task.index.md    # task 导航 + 长期分解
+│           └── task-N/{scope.md, wave-N.md}
 └── docs/
 ```
 
@@ -36,15 +39,15 @@ workspace.{PROJECT_CODE_LOWER}.local/
 | 条件 | 动作 |
 |------|------|
 | 有新需求，或不确定该归入哪个专项 | 先执行 `/workflow-intake` 路由 |
-| 接受了评审决策（dXX），需更新边界或派生 plan | 执行 `/workflow-scope` 同步 |
+| 接受了评审决策（dXX），需更新边界或刷新 focus | 执行 `/workflow-scope` 同步 |
 | 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
-| 日常迭代、小改动确认、scope/plan 快速对齐 | 执行 `/workflow-review-lite` |
+| 日常迭代、小改动确认、scope/focus 快速对齐 | 执行 `/workflow-review-lite` |
 
 ## 决策记录约定
 
 对话中出现以下情况时，主动询问用户是否记录决策：
 - 用户明确说"就这样做"/"accept"/"用方案 X" 等确认性表达
-- 讨论产生了影响 scope/plan/schema 的结论
+- 讨论产生了影响 scope/focus/schema 的结论
 - 路由选择（新建专项、合并、拆分）
 
 记录方式：在当前专项 `decisions/dXX.md` 中写入，编号递增。

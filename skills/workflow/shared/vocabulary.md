@@ -137,7 +137,8 @@ focus 不归档 / 不版本化 / 不保留历史
 
 | SSOT | 关系 |
 |------|------|
-| `plan-derive-spec.md` | 引用本词典中的 scope / plan / V / phase 术语 |
+| `focus-derive-spec.md` | 引用本词典中的 scope / focus / V / phase / task / structure 术语（取代 plan-derive-spec）|
+| `plan-derive-spec.md` | 引用本词典中的 scope / plan / V / phase 术语（deprecated，2.x grandfather）|
 | `trace-artifacts-spec.md` | 引用本词典中的 OQ / decision / decision_artifact 等术语 |
 | `topic-sniff-spec.md` | 引用本词典中的 scope / intake / topic 等术语 |
 | `review-spec-skeleton.md` | 引用本词典中的 review / finding / action 等术语（review / finding 待候选批纳入；`AP`→`action` 已正名）|

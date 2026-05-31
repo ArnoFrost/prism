@@ -121,20 +121,20 @@ intake_gate_out:
   topic_dir: <topic 目录相对路径>
   intake_md_lines: <int>
   scope_md_present: true | false           # scope.md 至少占位
-  plan_md_present: true | false            # plan.md 至少占位
+  focus_md_present: true | false           # focus.md 至少占位（2.x grandfather: plan.md）
   readme_md_present: true | false          # README.md 至少占位
   review_index_present: true | false       # review.index.md 至少占位
   intake_size_ok: true | false             # intake.md 行数 ≤ 100（建议阈值）
 ```
 
 **校验规则**（任一违反 → intake 未完成）：
-- `scope_md_present` / `plan_md_present` / `readme_md_present` / `review_index_present` 任一为 `false` → **违约**：intake 必须补占位骨架；intake 完成前**禁止**进入下游 scope/review 阶段
-- `intake_size_ok: false`（intake.md > 100 行）→ **强警示**：intake 正在吞噬合同面内容，应当把 scope 边界 / plan 时间线 / 验收门槛拆出到对应文件
+- `scope_md_present` / `focus_md_present` / `readme_md_present` / `review_index_present` 任一为 `false` → **违约**：intake 必须补占位骨架；intake 完成前**禁止**进入下游 scope/review 阶段（2.x grandfather topic 以 plan.md 满足 focus 槽）
+- `intake_size_ok: false`（intake.md > 100 行）→ **强警示**：intake 正在吞噬合同面内容，应当把 scope 边界 / focus 当前轮 / 验收门槛拆出到对应文件
 
 **SSOT 分工**（intake_size_ok 设计意图）：
 - `intake.md` — 入料事件 + 路由判定 + 派生背景（**轻量**）
 - `scope.md` — 边界 / 合同 / 验收 / 非目标（合同面 SSOT）
-- `plan.md` — 时间线 / 检查点 / 编排（执行面 SSOT）
+- `focus.md` — 当前工作集 / 注意力光标（执行面，rewrite；2.x grandfather: plan.md）
 - `README.md` — 当前状态 / 轮次索引（指针面 SSOT）
 - `decisions/dXX.md` — 路由 / 边界 / 方向决策（决策面 SSOT）
 

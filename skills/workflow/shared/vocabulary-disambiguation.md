@@ -37,9 +37,9 @@
 | 形态 | 含义 |
 |------|------|
 | `V` (在 scope 内) | 勾选项条目，定义「什么条件成立算完」 |
-| `verify/` (目录名) | 存放 V 关联的执行细节文件（`v01_xxx.md`），由 plan 条目按需关联 |
+| `verify/` (目录名) | 存放 V 关联的执行细节文件（`v01_xxx.md`），由 scope 的 V 条目按需关联 |
 
-> 关系：scope 里的 `V1` 是合同条目；`verify/v01_xxx.md` 是它的执行细节（含命令 / 数据 / 步骤），由 `plan.md` 条目通过 `verify: [v01_xxx](./verify/v01_xxx.md)` 关联。
+> 关系：scope 里的 `V1` 是合同条目；`verify/v01_xxx.md` 是它的执行细节（含命令 / 数据 / 步骤），由 scope 的 V 条目通过 `verify: [v01_xxx](./verify/v01_xxx.md)` 关联。
 
 ### action vs action-L-N / action-Z-N
 
@@ -61,21 +61,21 @@
 | 来源 | review / decision 衍生 | scope 直接收敛 |
 | 生命周期 | done / postponed / cancelled / superseded | `[ ]` / `[x]` |
 
-### plan vs plan.md
+### plan vs plan.md（⚠️ deprecated → focus，2.x 历史词条）
 
 | 形态 | 含义 |
 |------|------|
-| `plan`（小写英文） | 抽象概念 = 执行计划 / 执行过程 |
-| `plan.md` | 承载文件，是 plan 的物化形式 |
-| 用户原话「执行 plan 的过程」 | 按 plan.md 中各 phase（`P-V1~P-VN`）推进的动作序列 |
+| `plan`（小写英文） | 抽象概念 = 执行计划 / 执行过程（3.0 已并入 focus + structures/task.index）|
+| `plan.md` | 承载文件，是 plan 的物化形式（2.x grandfather 保留）|
+| 用户原话「执行 plan 的过程」 | 按各 phase（`P-V1~P-VN`）推进的动作序列 |
 
-### plan vs scope
+### plan/focus vs scope
 
 | 关系 | 说明 |
 |------|------|
-| 上下游 | **scope 是 plan 的唯一上游 SSOT**；plan 不独立漂移 |
-| review 影响路径 | review → finding → dXX 决策 → scope 更新 → plan **派生** |
-| 直接改 plan | ❌ 禁止；只能通过 scope 更新触发 plan 派生 |
+| 上下游 | **scope 是 focus 与 structures/task.index 的唯一上游 SSOT**（2.x：scope 是 plan 唯一上游）；下游不独立漂移 |
+| review 影响路径 | review → finding → dXX 决策 → scope 更新 → focus **刷新** |
+| 直接改 focus | ❌ 禁止；只能通过 scope 更新触发 focus 刷新 |
 
 ### scope（动词）vs scope（名词）
 
@@ -197,4 +197,4 @@
 | 列举目标 | `## 目标\n- **G1** — ...` | `## 我想做的事\n- ...` |
 | 列举验收 | `## 验收口径\n- [ ] **V1** — ...` | `## checklist\n- [ ] 看起来差不多` |
 | 列举行动 | `**action-N** {具体行动描述}` | `应该加一个 ...`（含糊未编号） |
-| 派生 plan | `**P-V1 → V1** — 落地 SSOT` | `### 第一步` |
+| 派生 focus 的 phase | `**P-V1 → V1** — 落地 SSOT` | `### 第一步` |

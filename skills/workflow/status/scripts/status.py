@@ -4,7 +4,7 @@
 用法: uv run python status.py <project_dir> [--format markdown|json]
 
 指标设计原则（008 scope 约束）：
-- 绑定真实存在的工件（scope/plan/README/reviews）
+- 绑定真实存在的工件（scope/focus/README/reviews；plan.md 为 2.x grandfather 回退）
 - 不依赖 verify（当前创建数为 0）
 - report-first：只输出报告，不自动修改
 
@@ -56,10 +56,25 @@ def _count_decisions(decisions_dir: str) -> int:
     return len([f for f in os.listdir(decisions_dir) if f.endswith(".md")])
 
 
+def _work_file(topic_dir: str) -> str:
+    """当前工作集文件路径：优先 focus.md（3.0），回退 plan.md（2.x grandfather）。"""
+    focus = os.path.join(topic_dir, "focus.md")
+    if os.path.isfile(focus):
+        return focus
+    return os.path.join(topic_dir, "plan.md")
+
+
 def _check_skeleton(topic_dir: str) -> list[str]:
-    """检查骨架完整性，返回缺失文件列表"""
-    expected = ["README.md", "intake.md", "scope.md", "plan.md", "review.index.md"]
-    return [f for f in expected if not os.path.isfile(os.path.join(topic_dir, f))]
+    """检查骨架完整性，返回缺失文件列表（3.0：focus 或 plan 二选一，grandfather）"""
+    missing = []
+    for f in ("README.md", "scope.md", "review.index.md"):
+        if not os.path.isfile(os.path.join(topic_dir, f)):
+            missing.append(f)
+    # 当前工作集：focus.md（3.0）或 plan.md（2.x grandfather）二选一
+    if not (os.path.isfile(os.path.join(topic_dir, "focus.md"))
+            or os.path.isfile(os.path.join(topic_dir, "plan.md"))):
+        missing.append("focus.md")
+    return missing
 
 
 def _extract_status(readme_path: str) -> str | None:
@@ -81,13 +96,14 @@ def scan_topic(topic_dir: str) -> dict:
     name = os.path.basename(topic_dir)
     readme = os.path.join(topic_dir, "README.md")
     scope = os.path.join(topic_dir, "scope.md")
-    plan = os.path.join(topic_dir, "plan.md")
+    work = _work_file(topic_dir)  # focus.md（3.0）或 plan.md（2.x grandfather）
+    work_label = os.path.basename(work).replace(".md", "")
 
     scope_unchecked, scope_checked = _count_unchecked(scope)
-    plan_unchecked, plan_checked = _count_unchecked(plan)
+    work_unchecked, work_checked = _count_unchecked(work)
 
     scope_mtime = _file_mtime(scope)
-    plan_mtime = _file_mtime(plan)
+    work_mtime = _file_mtime(work)
     readme_mtime = _file_mtime(readme)
 
     review_count = _count_reviews(os.path.join(topic_dir, "reviews"))
@@ -103,8 +119,8 @@ def scan_topic(topic_dir: str) -> dict:
         issues.append(f"scope 验收全部未勾选（{scope_unchecked} 项）")
     if _days_since(scope_mtime) is not None and _days_since(scope_mtime) > 7:
         issues.append(f"scope 超过 7 天未更新（{_days_since(scope_mtime)} 天）")
-    if _days_since(plan_mtime) is not None and _days_since(plan_mtime) > 7:
-        issues.append(f"plan 超过 7 天未更新（{_days_since(plan_mtime)} 天）")
+    if _days_since(work_mtime) is not None and _days_since(work_mtime) > 7:
+        issues.append(f"{work_label} 超过 7 天未更新（{_days_since(work_mtime)} 天）")
     if review_count == 0:
         issues.append("无评审记录")
 
@@ -124,11 +140,12 @@ def scan_topic(topic_dir: str) -> dict:
             "checked": scope_checked,
             "progress": f"{scope_checked}/{scope_checked + scope_unchecked}" if (scope_checked + scope_unchecked) > 0 else "N/A",
         },
-        "plan": {
-            "mtime": plan_mtime,
-            "unchecked": plan_unchecked,
-            "checked": plan_checked,
-            "progress": f"{plan_checked}/{plan_checked + plan_unchecked}" if (plan_checked + plan_unchecked) > 0 else "N/A",
+        "focus": {
+            "label": work_label,
+            "mtime": work_mtime,
+            "unchecked": work_unchecked,
+            "checked": work_checked,
+            "progress": f"{work_checked}/{work_checked + work_unchecked}" if (work_checked + work_unchecked) > 0 else "N/A",
         },
         "readme_mtime": readme_mtime,
         "review_count": review_count,
@@ -205,7 +222,7 @@ def _append_topic_block(lines: list[str], t: dict) -> None:
     lines.append(f"| status | {t.get('status', 'N/A')} |")
     lines.append(f"| 位置 | {t.get('location', 'N/A')} |")
     lines.append(f"| scope 进度 | {t['scope']['progress']} |")
-    lines.append(f"| plan 进度 | {t['plan']['progress']} |")
+    lines.append(f"| {t['focus'].get('label', 'focus')} 进度 | {t['focus']['progress']} |")
     lines.append(f"| 评审轮次 | {t['review_count']} |")
     lines.append(f"| 决策记录 | {t['decision_count']} |")
     lines.append(f"")
