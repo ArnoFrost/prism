@@ -41,6 +41,24 @@
 
 > 关系：scope 里的 `V1` 是合同条目；`verify/v01_xxx.md` 是它的执行细节（含命令 / 数据 / 步骤），由 scope 的 V 条目通过 `verify: [v01_xxx](./verify/v01_xxx.md)` 关联。
 
+### V（验收项）vs v3.0（协议版本号）
+
+| 形态 | 含义 | 编号空间 |
+|------|------|---------|
+| `V` / `V1`…（**大写 V**） | scope 内验收口径项（Verification Criterion） | 单 topic 内自增 |
+| `v3.0` / `v3.0-canary`（**小写 v**） | Prism 协议 / SDK 版本号 | 全局版本线 |
+
+> **判别**：大写 `V`+数字 = 某 topic 内部「算不算做完」的勾选项；小写 `v`+点分 = 整套规范的版本。一个 v3.0 dogfood topic 内部拆成 V1…V6 验收项，**不存在「升 v4」**。口语避免裸说「V4」，写「V4 验收项」或直接用名字防混。
+
+### 聚焦区（主体）vs 保留区（导航）— focus 双区
+
+| 区 | 内容 | 计入「≤30 行」 | rewrite |
+|----|------|:------------:|:-------:|
+| **聚焦区**（主体） | 光标快读面 + 4 字段 | ✅ 数 | ✅ 每轮重写 |
+| **保留区** | 入口导航 / AI 规范入口双链 | ❌ 不数 | ❌ 豁免 |
+
+> 「主体 ≤30 行」「分叉判据 S1」只数**聚焦区**；保留区是 README deprecate 后的入口承载，rewrite 不动。定义单源见 `vocabulary.md` focus 词条 + `focus-derive-spec.md` §双区契约。
+
 ### action vs action-L-N / action-Z-N
 
 > `action` 是行动项术语（旧称 `AP`，已 deprecated）。老 topic 的 `AP-*` grandfather 不 retrofit；新产物用 `action-*`。
