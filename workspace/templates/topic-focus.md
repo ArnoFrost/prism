@@ -14,6 +14,12 @@ related:
 > topic 级**唯一入口 + 唯一注意力光标**。双区结构：**保留区**（导航/规范，rewrite 豁免）+ **聚焦区**（当前态，rewrite ≤30 行）。
 > README 已 deprecate（见 `focus-derive-spec.md` §README-deprecate）；新 topic 以本文为入口，累积内容归 `decision.index` / `references/`。
 
+> [!important] canonical form（形态唯一，不可偏离）
+> 1. **光标块固定 2 行**：`> **当前态**` + `> **下一步**`，各一句话（禁加「再下一步」等第 3 行）。
+> 2. **4 字段名固定**：`goal` / `input` / `output` / `non-goal`，不增删、不改名、不换语言。
+> 3. **不用 callout 包裹聚焦区**（如 `[!IMPORTANT]`）——光标块用纯 blockquote，保持样本可机器解析。
+> 4. **单行密度 ≤120 字符**（见 `focus-readability-checklist.md` M3）——长内容拆行或归索引，勿单行塞满。
+
 <!-- ╔═══ 保留区（rewrite 豁免）═══╗ 导航与规范入口；只随结构变化更新，不随每轮 rewrite 清空 -->
 
 ## 入口导航
