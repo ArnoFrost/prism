@@ -71,6 +71,22 @@ workflow-scope Phase 3 执行时：
   → 同步 README.md next_action
 ```
 
-## 2.x 兼容（grandfather）
+## 2.x 兼容（grandfather）— 唯一权威说明
 
-存量 topic（13 active + 20 archive）仍用 `plan.md`。脚本（status / tidy / digest / context_pack）**优先读 focus.md，回退 plan.md**；不强制迁移存量。旧规则见 [plan-derive-spec.md](./plan-derive-spec.md)（deprecated）。
+> 本节是 plan→focus 兼容口径的**单一落点**。其它 SKILL / spec 正文一律用纯 `focus` 口径，不再逐处加「回退 plan」限定语；需要兼容细节时 cite 本节。
+
+**存量规模**：13 active + 20 archive topic 仍用 `plan.md`（截至 3.0 alpha）。
+
+**代码 grandfather**（无法删除，因 workspace 全量扫描工具必须容忍未升级 topic）：以下脚本统一**优先读 `focus.md`，回退 `plan.md`**——
+- `status/scripts/status.py`（骨架检查 + 工作集进度）
+- `tidy/scripts/tidy.py`（updated 日期 / frontmatter / wikilink / 焦点完成报告）
+- `digest/scripts/collect.py` + `shared/scripts/context_pack.py`（采集当前工作集，输出 `focus.source` 标明实际读到哪个）
+- `shared/scripts/prism_cli.py` finalize（`focus_exists` / `plan_exists` 并存提示）
+
+**升级路径**（懒触发，不强推）：`/workflow-intake --upgrade <topic_dir>` 做机械补壳（建 focus + intake 归位 + README），plan 内容拆分人工执行。详见 intake SKILL §mode=upgrade。
+
+**archive/ 永久 grandfather**：归档专项只读冻结，不升级、不重扫（平铺律「不强制重写 archive」）。
+
+**sunset 条件**：当所有 active topic 升级完毕，提一个 cleanup commit 删除上述脚本的 plan 回退分支。
+
+旧 2.x 投影规则见 [plan-derive-spec.md](./plan-derive-spec.md)（deprecated）。

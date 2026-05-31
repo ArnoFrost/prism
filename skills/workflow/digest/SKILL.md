@@ -84,8 +84,8 @@ uv run python {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirnam
 | `scope.goals` | scope.md | 目标列表 |
 | `scope.acceptance_progress` | scope.md | 验收进度（X/Y） |
 | `scope.open_questions` | scope.md | 未决问题 |
-| `focus.current_focus` | focus.md（2.x 回退 plan.md）| 当前焦点「下一步」 |
-| `focus.progress` | focus.md（2.x 回退 plan.md）| 进度（X/Y） |
+| `focus.current_focus` | focus.md | 当前焦点「下一步」 |
+| `focus.progress` | focus.md | 进度（X/Y） |
 | `decisions` | decisions/ | 最近 3 个决策 |
 | `reviews` | reviews/ | 最近 2 轮评审 TL;DR |
 

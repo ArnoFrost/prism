@@ -85,7 +85,7 @@ uv run python {skill_dir}/scripts/tidy.py <project_dir> [--fix] [--topic <topic_
 | README `latest decision` 指针 | decisions/ 最新文件 | 是 |
 | review.index.md 缺失条目 | reviews/ 目录扫描 | 是 |
 | frontmatter `updated` 日期 | 各 md 文件 mtime vs frontmatter | 是 |
-| focus 已完成条目未移动 | focus.md 结构分析（2.x 回退 plan.md）| 仅报告 |
+| focus 已完成条目未移动 | focus.md 结构分析 | 仅报告 |
 | scope 未勾选提醒 | scope.md checkbox | 仅报告 |
 | `[[wikilink]]` 残留 | 全文扫描 | 是 |
 
