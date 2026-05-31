@@ -14,7 +14,7 @@ stability: experimental
 | **是什么** | 把混沌输入收进 topic 体系的入口控制器：判断新建/追加/迁移，生成或补全专项骨架 |
 | **不是什么** | 不是 scope — 不定正式边界、不写验收口径、不刷新 focus；不做评审；不替代 decision 记录路由裁决 |
 | **读取工件** | sniff 输出按 [topic-sniff-spec](references/topic-sniff-spec.md) 路由；另读 intake-templates.md、intake-fallback.md |
-| **写入工件** | references/intake.md（新建/追加；3.0 归 references/）、README.md（按 [topic-readme 模板](../../workspace/templates/topic-readme.md)）、scope.md（草稿骨架）、focus.md（按 [topic-focus 模板](../../workspace/templates/topic-focus.md) 占位）、decision.index.md（决策链主索引占位 — 事件链 SSOT，含时序表 + frontmatter 依赖字段说明）、review.index.md（评审辅助索引占位 — 稀疏关联律）、index.md（专项引用）。骨架由 `scaffold.py` 模板驱动生成（消费 workspace/templates/）|
+| **写入工件** | references/intake.md（新建/追加；3.0 归 references/）、scope.md（草稿骨架）、focus.md（按 [topic-focus 模板](../../workspace/templates/topic-focus.md) 占位 — **保留区双链 = topic 入口**）、decision.index.md（决策链主索引占位 — 事件链 SSOT，含时序表 + frontmatter 依赖字段说明）、review.index.md（评审辅助索引占位 — 稀疏关联律）、index.md（专项引用）；README.md 按 [topic-readme 模板](../../workspace/templates/topic-readme.md) 生成 **deprecated 兜底壳**（见 [topic-format-spec](../shared/topic-format-spec.md) §2，入口归 focus 保留区）。骨架由 `scaffold.py` 模板驱动生成（消费 workspace/templates/）|
 | **结束建议** | → `workflow-scope`（收敛边界） |
 | **设计模式** | Pattern 4 — Context-aware Tool Selection（根据 topic_affinity 路由到新建/追加/迁移） + Pattern 1 — Sequential Workflow（sniff→classify→route→initialize） |
 
@@ -154,7 +154,7 @@ uv run python {skill_dir}/scripts/upgrade_topic.py <topic_dir> [--dry-run]
 
 | 技能 | 职责 | 交接点 |
 |------|------|--------|
-| **intake**（本技能）| 入料 → 路由 → 初始化 | 产出专项目录 + README |
+| **intake**（本技能）| 入料 → 路由 → 初始化 | 产出专项目录（focus 入口 + scope + 双索引；README deprecated 兜底）|
 | **review** | 评审 → 仲裁 → 行动计划 | 消费 intake 创建的专项，追加评审轮次 |
 | **init** | 项目级初始化 | 创建 workspace，intake 在 workspace 内工作 |
 | **scope** | 边界收敛与合同维护 | intake 产出初始 scope，scope 是 focus/structures 唯一上游 SSOT |
