@@ -1,3 +1,11 @@
+---
+date: YYYY-MM-DD
+status: in-progress
+type: topic-readme
+tags:
+  - {topic-tag}
+---
+
 # {NNN} — {topic-name}
 
 | 属性 | 值 |

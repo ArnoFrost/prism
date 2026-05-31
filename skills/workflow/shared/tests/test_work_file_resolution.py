@@ -129,3 +129,12 @@ def test_scaffold_produces_focus_not_plan(tmp_path):
     assert "focus.md" in created
     assert "plan.md" not in created
     assert os.path.join("references", "intake.md") in created or "references/intake.md" in created
+
+
+def test_scaffold_readme_has_frontmatter(tmp_path):
+    """r07.S d07.S 回归：scaffold 产出的 README 必须有 frontmatter（否则新 topic validate 红）。"""
+    ws = str(tmp_path)
+    scaffold.scaffold(ws, 88, "fm-probe", templates_dir=TEMPLATES_DIR, dry_run=False)
+    readme = open(os.path.join(ws, "topics", "088_fm-probe", "README.md"), encoding="utf-8").read()
+    assert readme.startswith("---"), "README 缺 YAML frontmatter"
+    assert "type: topic-readme" in readme
