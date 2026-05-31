@@ -40,6 +40,7 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 
 - 「主体 ≤30 行」与分叉判据 **S1（连续 2 次 rewrite 仍超行）只数聚焦区**，保留区不计入。
 - 累积性内容**不进 focus 任何区**：关键决策归 `decision.index`，参考资料归 `references/` 或保留区双链。
+- 可读性机器度量（行数 / 字段合规 / 单行密度 / 双链完整）见 [focus-readability-checklist.md](./focus-readability-checklist.md)。
 
 ## 长期工作分解去向（取代 plan「总计划」段）
 
