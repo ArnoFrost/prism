@@ -68,12 +68,17 @@ def _work_file(topic_dir: str) -> str:
 
 
 def _check_skeleton(topic_dir: str) -> list[str]:
-    """检查骨架完整性，返回缺失文件列表（3.0：focus 或 plan 二选一，grandfather）"""
+    """检查骨架完整性，返回缺失文件列表。
+
+    入口面 = focus.md（3.0）/ plan.md（2.x grandfather）二选一，必需。
+    README.md 已 deprecate（topic-format-spec §2，入口归 focus 保留区）→ **不作必需项**，
+    缺失不算骨架缺陷（存量 grandfather 才有 README）。
+    """
     missing = []
-    for f in ("README.md", "scope.md", "review.index.md"):
+    for f in ("scope.md", "review.index.md"):
         if not os.path.isfile(os.path.join(topic_dir, f)):
             missing.append(f)
-    # 当前工作集：focus.md（3.0）或 plan.md（2.x grandfather）二选一
+    # 当前工作集（入口）：focus.md（3.0）或 plan.md（2.x grandfather）二选一
     if not (os.path.isfile(os.path.join(topic_dir, "focus.md"))
             or os.path.isfile(os.path.join(topic_dir, "plan.md"))):
         missing.append("focus.md")

@@ -74,11 +74,17 @@ def _collect_focus(topic_dir: str) -> dict:
         current_focus = nxt.group(1).strip()
     if not current_focus:
         current_focus = _extract_section(content, "当前焦点")
+    # README deprecate 后的状态源回退：focus 光标快读面「当前态」
+    current_state = None
+    cur = re.search(r"\*\*当前态\*\*[：:]\s*(.+)", content)
+    if cur:
+        current_state = cur.group(1).strip()
     checkboxes = _count_checkboxes(content)
 
     return {
         "source": source,
         "current_focus": current_focus,
+        "current_state": current_state,
         "progress": f"{checkboxes['checked']}/{checkboxes['total']}",
         "unchecked_items": checkboxes.get("unchecked_items", []),
     }

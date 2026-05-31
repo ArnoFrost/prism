@@ -79,11 +79,12 @@ uv run python {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirnam
 
 | 字段 | 来源 | 用途 |
 |------|------|------|
-| `readme.status` | README.md | 当前阶段 |
-| `readme.current_state` | README.md | 主线任务描述 |
+| `readme.status` | README.md（deprecated，仅 grandfather）| 当前阶段；缺失时降级 |
+| `readme.current_state` | README.md（deprecated，仅 grandfather）| 主线任务；缺失降级 `focus.current_state` |
 | `scope.goals` | scope.md | 目标列表 |
 | `scope.acceptance_progress` | scope.md | 验收进度（X/Y） |
 | `scope.open_questions` | scope.md | 未决问题 |
+| `focus.current_state` | focus.md | 光标快读面「当前态」（README 缺失时主状态源）|
 | `focus.current_focus` | focus.md | 当前焦点「下一步」 |
 | `focus.progress` | focus.md | 进度（X/Y） |
 | `decisions` | decisions/ | 最近 3 个决策 |

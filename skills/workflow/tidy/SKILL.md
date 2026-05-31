@@ -1,7 +1,7 @@
 ---
 name: workflow-tidy
 description: |
-  工件机械对齐 — review/decision 后同步 README 指针、review.index、frontmatter。
+  工件机械对齐 — review/decision 后同步 review.index/decision.index、frontmatter，并兜底刷新存量 README 指针（grandfather）。
   Use when: 工件对齐、状态同步、review 后收尾、workflow-tidy
 visibility: dev
 stability: experimental
@@ -22,8 +22,8 @@ metadata:
 
 | 场景 | 做法 |
 |------|------|
-| 完成了一轮工作，focus/README 状态需要同步 | `/workflow-tidy` |
-| review 落盘后，README 指针过时 | `/workflow-tidy` |
+| 完成了一轮工作，focus/索引状态需要同步 | `/workflow-tidy` |
+| review 落盘后，review.index/decision.index（及存量 README）指针过时 | `/workflow-tidy` |
 | 归档前检查工件一致性 | `/workflow-tidy` |
 | 日常推进后随手对齐 | `/workflow-tidy --fix` |
 
@@ -78,11 +78,13 @@ uv run python {skill_dir}/scripts/tidy.py <project_dir> [--fix] [--topic <topic_
 
 脚本输出 JSON，包含每个 topic 的 diff 项：
 
+> README 已 deprecate（[topic-format-spec](../shared/topic-format-spec.md) §2）。README 指针类检查**仅对存量 grandfather topic 生效**——focus-entry topic 无 README 时自动跳过。决策/评审的 SSOT 是 `decision.index` / `review.index`，README 指针只是兜底镜像。
+
 | 检查项 | 数据源 | 自动修复？ |
 |--------|--------|-----------|
-| README `updated` 日期 | README.md vs 目录 mtime | 是 |
-| README `latest review` 指针 | reviews/ 最新文件 | 是 |
-| README `latest decision` 指针 | decisions/ 最新文件 | 是 |
+| README `updated` 日期（grandfather）| README.md vs 目录 mtime | 是（无 README 跳过）|
+| README `latest review` 指针（grandfather）| reviews/ 最新文件 | 是（无 README 跳过）|
+| README `latest decision` 指针（grandfather）| decisions/ 最新文件 | 是（无 README 跳过）|
 | review.index.md 缺失条目 | reviews/ 目录扫描 | 是 |
 | frontmatter `updated` 日期 | 各 md 文件 mtime vs frontmatter | 是 |
 | focus 已完成条目未移动 | focus.md 结构分析 | 仅报告 |
