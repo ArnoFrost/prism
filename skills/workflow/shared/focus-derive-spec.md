@@ -55,7 +55,7 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 
 > **单源声明**：本表是「何时升 task」的**唯一可操作 SSOT**（吸收 d02-D2-4 的个例触发器并普适化）。其它产物（scope 约束、SKILL）一律 cite 本表，不复述触发器，避免非单源漂移。
 > **task 性质（041 d02 命题 G 判定）**：task = **scope 的递归分解原语**——某 scope-V 深化到需要**自己的 scope + 自己的 wave** 时自然膨胀为 task，**非「复杂度兜底异常」**。默认不建，随深化按需膨胀。
-> ⚠️ **provisional**：41 样本（active+archive）实测**零 task**，正样本=0 → 三信号阈值尚无真实 task 校准。本表临时有效，待首个真实 task 出现 + 泛化体验几轮后由后续 dXX 升 confirmed。Alpha 默认偏置 = **不升 task**。
+> ⚠️ **provisional**：41 样本基线实测**零 task**；041 task-1（d03，见下方校准）为**首个正样本**（正样本 0→1，S3 主触发口径验证通过）。本表临时有效，待再积累几例 + 泛化体验几轮后由后续 dXX 升 confirmed。Alpha 默认偏置 = **不升 task**。
 
 | 角色 | 信号 | 机器可量定义 |
 |------|------|------|
@@ -69,6 +69,8 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 3. S1/S2 命中 = **提示信号**：去检查 S3 是否已满足，**不单独触发** task
 
 > 套用示例：某 topic 有主轴 + 次轴两个 G（S2≥2），但次轴未深化到自带 scope+wave（S3 不满足）→ **不升 task**，用 scope-V 承载；待某条线深化到需要自己的合同+批次时再膨胀。
+
+**首个正样本校准（041 task-1 / d03）**：041 V9「7 skill 对标」深化到——7 个 skill 各需独立对照 SSOT 审计 + gap 修复 + 多批次推进，单 V 需要自己的 `task-scope`（投影 V9，3 个 tV 切片）+ `wave`（3 批：产出/消费/评审）→ **S3 满足**，膨胀首个真实 `structures/task-1`。校准结论：S3 主触发口径**正样本验证通过**（深化信号 = "单 V 需自带 scope+wave + 多批次"），S1/S2 作伴随信号符合预期。正样本数 0→1；维持 provisional，待再积累几例后由后续 dXX 评估升 confirmed。
 
 ## 联动规则
 
