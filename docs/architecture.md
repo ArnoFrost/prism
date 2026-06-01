@@ -103,7 +103,7 @@ intake ──→ scope(v1) ──→ focus(当前工作集)
                  │                         │
                  │                    scope(v2) ← 决策驱动
                  │                         │
-                 └── structures/task-N ←───┘  # 仅当某个 V 深化到自带 scope + wave
+                 └── structures/task-N_slug ←─┘  # 仅当某个 V 深化到自带 scope + wave
 
 status ── 任意阶段可用，report-first 健康巡检
 tidy ──── 决策/评审后，工件机械对齐
@@ -138,8 +138,8 @@ digest ── 需要沟通时，生成状态通报
 | `references/intake.md` | 混沌输入 → 结构化摘要（来源意图留档） | 写一次 + 追加 |
 | `scope.md` | 合同面 SSOT（目标 / 非目标 / 验收口径 / 约束 / 未决） | 原地更新 |
 | `structures/task.index.md` | 长期结构分解导航，仅当出现 task 时存在 | 按需更新 |
-| `structures/task-N/scope.md` | 单个 task 的收窄合同，1:1 投影 topic 级 V | 按需创建 |
-| `structures/task-N/wave-N.md` | task 内时间推进批次 | 按需推进 |
+| `structures/task-N_slug/scope.md` | 单个 task 的收窄合同，1:1 投影 topic 级 V；`tN` 仍是稳定 id | 按需创建 |
+| `structures/task-N_slug/wave-N_slug.md` | task 内时间推进批次；数字 N 表顺序，slug 只做人读 | 按需推进 |
 | `reviews/rXX.md` | 综合评审报告（P0/P1/P2 分级 + Actions） | 每轮新建 |
 | `decisions/dXX.md` | 人类裁决记录 | 每次决策新建 |
 | `verify/vXX.md` | 验收细则（`[auto]`/`[human]` 标记） | 按需创建 |
@@ -274,7 +274,7 @@ prism/
 
 - [x] `focus.md` 成为 topic 入口与当前工作集，README 降为 grandfather 兜底
 - [x] `scope.md` → `focus.md` 刷新规则沉淀为 `focus-derive-spec.md`
-- [x] `structures/task-N/` 作为按需递归分解：task-scope 1:1 投影 topic 级 V，wave 承载推进批次
+- [x] `structures/task-N_slug/` 作为按需递归分解：task-scope 1:1 投影 topic 级 V，wave 承载推进批次
 - [x] `topic-format-spec.md` 成为 topic 形态对标基准
 - [x] `workflow-compact` 作为 preview-only 上下文熵治理能力进入 dev experimental
 - [x] `docs/prism-3.0.md` / `docs/workspace-v3-upgrade.md` / `docs/topic-lifecycle.md` / `docs/skill-taxonomy.md` 承接默认文档叙事

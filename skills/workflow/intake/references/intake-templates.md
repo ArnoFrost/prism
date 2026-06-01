@@ -48,8 +48,8 @@ scaffold.py 从下列模板渲染产物（占位符替换 `{NNN}` / `{topic-name
 | `decision.index.md` | [topic-decision-index.md](../../../../workspace/templates/topic-decision-index.md) |
 | `review.index.md` | [topic-review-index.md](../../../../workspace/templates/topic-review-index.md) |
 | `structures/task.index.md`（按需）| [task-index.md](../../../../workspace/templates/task-index.md) |
-| `structures/task-N/scope.md`（按需）| [task-scope.md](../../../../workspace/templates/task-scope.md) |
-| `structures/task-N/wave-N.md`（按需）| [task-wave.md](../../../../workspace/templates/task-wave.md) |
+| `structures/task-N_slug/scope.md`（按需）| [task-scope.md](../../../../workspace/templates/task-scope.md) |
+| `structures/task-N_slug/wave-N_slug.md`（按需）| [task-wave.md](../../../../workspace/templates/task-wave.md) |
 | `plan.md`（2.x grandfather，deprecated）| [topic-plan.md](../../../../workspace/templates/topic-plan.md) |
 
 ## 内聚到已有专项

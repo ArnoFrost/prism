@@ -794,7 +794,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
     # ── Step 2.7: validate-scope-conservation — 双层 scope 1:1 守恒（task 层）──
     # finalize「双级」的第二级：topic 级走 Step 2.5/2.6（痕迹 + review schema），
-    # task 级走本步（structures/task-N/scope.md 的 task-V 是否 1:1 投影 topic-V）。
+    # task 级走本步（structures/task-N_slug/scope.md 的 task-V 是否 1:1 投影 topic-V）。
     # 与 Step 2.5 同 mode 决议；无 structures/ 时为合法空态（checked=false，不阻塞）。
     if trace_mode != "off":
         try:

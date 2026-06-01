@@ -52,7 +52,7 @@ topic:
       - decisions/          # 决策记录（dXX.S / dXX.tN_short-desc.md）
       - structures/         # 结构分解（按需出现，条件第 4 环；kind=structure 容器）
       - "structures/task.index.md"  # task 导航 + 长期结构分解（kind=state，retention=mutable）
-      - "structures/task-N/"        # 单个 task（scope.md=governance / wave-N.md=execution）
+      - "structures/task-N_slug/"   # 单个 task（scope.md=governance / wave-N_slug.md=execution）
       - verify/             # 验证规格（V 条目按需关联，[auto]/[human] 标记）
       - artifacts/          # 产出工件
       - snapshots/          # 历史快照（scope 旧版本；focus 非沉淀不入此）
@@ -77,7 +77,7 @@ topic_frontmatter:
   optional:
     related: "list[string]"
     kind: "string — 自动化性质轴；取值见 vocabulary.md §kind 五元（governance/execution/state/derived/structure）"
-    governs: "string — 治理归属层级（topic / task-N）；vocabulary.md 三轴正交之一"
+    governs: "string — 治理归属层级（topic / task-N_slug）；vocabulary.md 三轴正交之一"
 
 # Topic artifacts — 专项内工件分类
 topic_artifacts:
@@ -185,14 +185,14 @@ topic_artifacts:
     description: "task 导航 + 长期结构性工作分解 SSOT；按需出现（无 task 不预建空 index）。task 稳定 id tN 跨 reviews/decisions/focus 全局一致"
     producer: "workflow-scope / 手动（topic 升级出 task 时）"
   task_scope:
-    filename_pattern: "structures/task-N/scope.md"
+    filename_pattern: "structures/task-N_slug/scope.md"
     template: "workspace/templates/task-scope.md"
     kind: "governance"
     retention: "persistent"
     description: "task 承诺面 — 单个被授权问题切片的合同（从 topic 级 review→decision 领授权）"
     producer: "workflow-scope / 手动"
   task_wave:
-    filename_pattern: "structures/task-N/wave-N.md"
+    filename_pattern: "structures/task-N_slug/wave-N_slug.md"
     template: "workspace/templates/task-wave.md"
     kind: "execution"
     retention: "mutable"
@@ -208,7 +208,7 @@ axes:
     values: [governance, execution, state, derived, structure]
   governs:
     role: "治理归属层级"
-    values: ["topic", "task-N"]
+    values: ["topic", "task-N_slug"]
   retention:
     role: "Artifact 生命周期（vocabulary.md §retention 律）"
     values: [persistent, rewrite, mutable]

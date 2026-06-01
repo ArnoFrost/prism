@@ -27,7 +27,7 @@ focus 主体 = **顶部光标快读面**（当前态 / 下一步）+ **4 字段*
 1. focus 是注意力光标，每次刷新**整体重写主体**，不局部增量累积
 2. 完成的工作**移出** focus，不堆积；回看历史去 reviews/ decisions/
 3. ⛔ 禁 `focus-v2.md` / `focus-history.md`（与 scope skill 早禁的 `scope-v2.md` 同源）
-4. 主体超 30 行 = 信号：该升级 structures/task-N 或回收旧关注点
+4. 主体超 30 行 = 信号：该升级 structures/task-N_slug 或回收旧关注点
 
 ## focus 双区契约（保留区 vs 聚焦区）
 
@@ -47,9 +47,9 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 | topic 形态 | 长期分解 SSOT | 短期切片 |
 |-----------|--------------|---------|
 | 无 task | scope 的 V 条目（验收口径） | focus 当前轮 |
-| 有 task | `structures/task.index.md`（导航 + 分解）+ `task-N/scope.md`（承诺）+ `task-N/wave-N.md`（推进）| focus 当前轮 |
+| 有 task | `structures/task.index.md`（导航 + 分解）+ `task-N_slug/scope.md`（承诺）+ `task-N_slug/wave-N_slug.md`（推进）| focus 当前轮 |
 
-**升级触发器**：focus 连续无法承载当前工作集 **OR** ≥2 长期并行结构议题时，先检查 S3 是否成立；只有某个 scope-V 深化到自带 scope + wave 时，才升级 `structures/task-N`。Alpha 初期不默认建 task。
+**升级触发器**：focus 连续无法承载当前工作集 **OR** ≥2 长期并行结构议题时，先检查 S3 是否成立；只有某个 scope-V 深化到自带 scope + wave 时，才升级 `structures/task-N_slug`。Alpha 初期不默认建 task。
 
 ### 分叉判据决策表（scope-V vs task）— provisional · alpha
 
@@ -64,7 +64,7 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 | 伴随信号 | S2 并行议题数 | scope 中本轮 **active 且互不阻塞**的 G 数 ≥2（提示去查 S3，非独立硬门槛）|
 
 **判定**：
-1. **S3 满足**（某 V 深化到自带 scope+wave）→ 升 `structures/task-N`（task 的本质 = scope 递归）
+1. **S3 满足**（某 V 深化到自带 scope+wave）→ 升 `structures/task-N_slug`（task 的本质 = scope 递归）
 2. 否则 → **留 scope-V + focus**（默认偏置：多数 V 不深化到此）
 3. S1/S2 命中 = **提示信号**：去检查 S3 是否已满足，**不单独触发** task
 

@@ -19,10 +19,10 @@ related:
 
 | task | 稳定 id | label（显示名） | status | 问题切片（一句话） | 授权来源 |
 |------|:------:|---------------|:------:|--------------------|---------|
-| [task-1](./task-1/scope.md) | t1 | {短标签} | active | {…} | dXX |
-| [task-2](./task-2/scope.md) | t2 | {短标签} | active | {…} | dXX |
+| [task-1_{slug}](./task-1_{slug}/scope.md) | t1 | {短标签} | active | {…} | dXX |
+| [task-2_{slug}](./task-2_{slug}/scope.md) | t2 | {短标签} | active | {…} | dXX |
 
-> `task-N/` 是稳定物理路径；`label` 只做人类可读展示，不参与路径解析，不替代稳定 id `tN`。
+> `task-N_{slug}/` 是人类可读物理路径；稳定 id 只取数字 N（`tN`）。`slug` / `label` 不参与稳定引用，不替代 `tN`。
 
 ## 升级触发器（回填）
 
@@ -34,5 +34,5 @@ related:
   ❌ 列入非 task 的并行结构维度（map/wiki 等）—— task.index 只列 task；其它结构槽是 alpha 后期占位
   ❌ 把它当全局 Map 写死宪法级结构 —— Alpha 阶段兼任 map，但不在宪法层钉死「Map = Task Index」
   ❌ 稳定 id 跟着重排变动 —— id（t1/t2…）一经分配即稳定，不随列表顺序改
-  ❌ 把 label 写进目录名并要求存量迁移 —— 路径保持 task-N，语义进导航面
+  ❌ 用 slug 替代稳定 id —— `tN` 只来自数字 N，slug 改名不应改变引用身份
 -->

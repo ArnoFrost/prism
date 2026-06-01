@@ -384,7 +384,7 @@ def validate_intake_file(
 # test_trace_families_capped.py）。conservation Issue 的 family 字段固定为
 # "scope_conservation"，但 TRACE_FAMILIES 不收录它——封顶不破。
 #
-# 校验对象：structures/task-N/scope.md 的 task-V 是否 1:1 投影 topic 根 scope.md
+# 校验对象：structures/task-N_slug/scope.md 的 task-V 是否 1:1 投影 topic 根 scope.md
 # 的某条 topic-V（承诺单源 / 1:1 引用 / 投影存在）。
 
 CONSERVATION_FAMILY = "scope_conservation"
@@ -489,7 +489,8 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
 
     tasks_out: list[dict] = []
     task_dirs = sorted(
-        d for d in structures_dir.glob("task-*") if d.is_dir()
+        d for d in structures_dir.glob("task-*")
+        if d.is_dir() and re.fullmatch(r"task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?", d.name)
     )
     for tdir in task_dirs:
         task_name = tdir.name

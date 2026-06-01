@@ -43,7 +43,7 @@ archive
 | 聚焦 | `focus.md` | 声明当前只看什么，作为 topic 入口 | rewrite |
 | 评审 | `reviews/rXX_*.md` | 暴露问题、风险、行动项 | append-only |
 | 决策 | `decisions/dXX_*.md` / `decision.index.md` | 固化裁决，避免重复争论 | append-only / mutable index |
-| 结构 | `structures/task-N/` | 当某个 scope-V 深化到自带 scope + wave 时出现 | 按需 |
+| 结构 | `structures/task-N_slug/` | 当某个 scope-V 深化到自带 scope + wave 时出现 | 按需 |
 | 归档 | `archive/` | topic 结束或废弃后移出热区 | terminal |
 
 ---
@@ -92,9 +92,9 @@ focus 不沉淀历史，不保留版本。完成后整体 rewrite；历史进入
 只有当某个 scope-V 深化到需要自己的 scope + wave 时，才升级：
 
 ```text
-structures/task-N/
+structures/task-N_slug/
 ├── scope.md
-└── wave-N.md
+└── wave-N_slug.md
 ```
 
 不要因为“复杂”就拆 task。先问：

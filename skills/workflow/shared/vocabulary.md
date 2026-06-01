@@ -24,8 +24,8 @@
 | **V** | letter_id | 验收口径 | Verification Criterion | scope 中 goal 的可勾选判定项（`[ ]` / `[x]`）；scope 合同面最核心段落，回答「什么条件成立算完」 |
 | **OQ** | abbreviation | 开放问题 | Open Question | scope 阶段记录、需后续 review/decision 裁决的待定议题；`[ ]` 未决 / `[x]` + 决策编号 已解决 |
 | **focus** | lowercase_word | 注意力光标 / 当前工作集 | Focus (attention cursor) | topic 级**唯一**注意力光标；kind=state，retention=**rewrite（非沉淀）**。声明"现在只看什么"，主体 ≤30 行（顶部光标快读面 + 4 字段 goal/input/output/non-goal，不含 frontmatter 与导航）；完成即重写不累积，历史进 reviews/decisions。3.0 正式取代 plan |
-| **task** / **t** | lowercase_word + letter_id | 任务 / 问题切片 | Task | **被授权的问题切片**（Problem Slice）；kind=structure，只做"切分问题"——不决策 / 不执行 / 不记录状态。从 topic 级 review→decision 领授权，落 `structures/task-N/`；稳定 id `tN`（缩写 `t`）跨 reviews/decisions/structures/focus 全局一致（改名不破链）；推进中的新发现冒泡回 topic 根 `reviews/`（单一决策链）|
-| **wave** | lowercase_word | 批次 | Wave | **时间推进批次单元**（3.0 重定义，向前兼容）。抽象 = task / topic 的时间空间推进。两种物化语境：**2.x** = topic/plan 级跨 phase release 批次（`Wave 1~N`，grandfather 保留）；**3.0** = `structures/task-N/wave-N`，无 task 时不落独立文件、只体现在 focus 当前轮。详见 disambiguation §wave-2.x vs wave-3.0 |
+| **task** / **t** | lowercase_word + letter_id | 任务 / 问题切片 | Task | **被授权的问题切片**（Problem Slice）；kind=structure，只做"切分问题"——不决策 / 不执行 / 不记录状态。从 topic 级 review→decision 领授权，落 `structures/task-N_slug/`；稳定 id `tN`（缩写 `t`，只取数字 N）跨 reviews/decisions/structures/focus 全局一致（slug 改名不破链）；推进中的新发现冒泡回 topic 根 `reviews/`（单一决策链）|
+| **wave** | lowercase_word | 批次 | Wave | **时间推进批次单元**（3.0 重定义，向前兼容）。抽象 = task / topic 的时间空间推进。两种物化语境：**2.x** = topic/plan 级跨 phase release 批次（`Wave 1~N`，grandfather 保留）；**3.0** = `structures/task-N_slug/wave-N_slug.md`，无 task 时不落独立文件、只体现在 focus 当前轮。详见 disambiguation §wave-2.x vs wave-3.0 |
 | **structure** | lowercase_word | 结构（容器 kind）| Structure | **承载关系的容器**：不直接承诺 / 执行 / 记录状态。kind 五元第五元；实体 = topic / task / dir；容器非产物，不直接被自动化。进 `structures/` 的准入判据：只有回答"如何组织"的对象才能进 |
 | **phase** / **P** | lowercase_word + letter_id | 阶段 | Phase | plan/focus 中的执行单位；推荐用 `P-VN` 表示（与验收项 VN 1:1 派生强溯源）；也可指生命周期段（启动 / 收敛 / 执行 / 归档） |
 | **action** | lowercase_word | 行动项 | Action | review / decision 中识别的具体待办，用 `action-N` **全局递增**编号；可带 `-L`(LOCAL) / `-Z`(ZERO-COST) / `-meta`(跨 topic) 子族前缀。**旧称 `AP`（deprecated，见废弃尾）**，老 topic `AP-N` grandfather |
@@ -35,7 +35,7 @@
 | ⚠️ **AP** | abbreviation | 行动项（旧）| Action Point | **deprecated → action**：行动项旧缩写。老 topic `AP-N` / `AP-L-N` / `AP-Z-N` grandfather 不 retrofit；新产物用 `action-N` |
 | ⚠️ **decision-chain** | lowercase_word | 决策链 | Decision chain | **deprecated → decision-index**：链语义已并入 decision-index（index/chain 不再分立）。frontmatter 依赖字段表达的依赖图由 decision-index 承载 |
 
-> **编号规约**：N = 自然数（≥ 1）；XX = 两位零填充（dXX / rXX）；前缀字面量（scope 的 V / G、action、d / r）；缩写 `t` = task id（`tN`）。3.0 命名编码限定符 `.S`（topic/scope 级）/ `.tN`（task 级，引用稳定 id）。`AP` 为 action 旧称（deprecated）。
+> **编号规约**：N = 自然数（≥ 1）；XX = 两位零填充（dXX / rXX）；前缀字面量（scope 的 V / G、action、d / r）；缩写 `t` = task id（`tN`，只取 `task-N_slug` 的数字 N）。3.0 命名编码限定符 `.S`（topic/scope 级）/ `.tN`（task 级，引用稳定 id）。`AP` 为 action 旧称（deprecated）。
 
 ---
 

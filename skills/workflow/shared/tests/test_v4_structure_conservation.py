@@ -202,22 +202,22 @@ class TestEnumerateStructures:
 
     def test_tasks_and_waves(self, tmp_path):
         struct = tmp_path / "structures"
-        (struct / "task-1").mkdir(parents=True)
-        (struct / "task-1" / "scope.md").write_text("x", encoding="utf-8")
-        (struct / "task-1" / "wave-1.md").write_text("x", encoding="utf-8")
-        (struct / "task-1" / "wave-2.md").write_text("x", encoding="utf-8")
-        (struct / "task-2").mkdir()
+        (struct / "task-1_skill-alignment").mkdir(parents=True)
+        (struct / "task-1_skill-alignment" / "scope.md").write_text("x", encoding="utf-8")
+        (struct / "task-1_skill-alignment" / "wave-1_output.md").write_text("x", encoding="utf-8")
+        (struct / "task-1_skill-alignment" / "wave-2_consume.md").write_text("x", encoding="utf-8")
+        (struct / "task-2_docs").mkdir()
         (struct / "task.index.md").write_text("# idx", encoding="utf-8")
 
         res = sniff_lib.enumerate_structures(str(tmp_path))
         assert res["present"] is True
         assert res["task_index"] is True
         assert res["task_count"] == 2
-        t1 = next(t for t in res["tasks"] if t["dir"] == "task-1")
+        t1 = next(t for t in res["tasks"] if t["dir"] == "task-1_skill-alignment")
         assert t1["id"] == "t1"
         assert t1["scope_present"] is True
         assert t1["wave_count"] == 2
-        t2 = next(t for t in res["tasks"] if t["dir"] == "task-2")
+        t2 = next(t for t in res["tasks"] if t["dir"] == "task-2_docs")
         assert t2["id"] == "t2"
         assert t2["scope_present"] is False
 

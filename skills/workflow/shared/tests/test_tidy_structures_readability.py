@@ -46,7 +46,7 @@ date: 2026-06-01
 """,
     )
     _write(
-        topic / "structures" / "task-1" / "wave-1.md",
+        topic / "structures" / "task-1_demo" / "wave-1_demo.md",
         """---
 date: 2026-06-01
 ---
@@ -80,7 +80,7 @@ date: 2026-06-01
 """,
     )
     _write(
-        topic / "structures" / "task-1" / "wave-1.md",
+        topic / "structures" / "task-1_demo" / "wave-1_demo.md",
         """---
 date: 2026-06-01
 ---

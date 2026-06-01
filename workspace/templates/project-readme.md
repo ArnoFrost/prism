@@ -27,7 +27,7 @@
 │   │   ├── references/     # 依据/来源（intake.md 归此）
 │   │   ├── reviews/        # 评审轮次（rXX.md）
 │   │   ├── decisions/      # 决策记录
-│   │   ├── structures/     # 结构分解（按需；task.index.md + task-N/）
+│   │   ├── structures/     # 结构分解（按需；task.index.md + task-N_slug/）
 │   │   ├── verify/         # 验证规格（按需）
 │   │   ├── artifacts/      # 产出工件
 │   │   └── snapshots/      # 历史快照（scope 旧版；focus 非沉淀不入此）

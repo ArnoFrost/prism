@@ -56,5 +56,5 @@ non-goal: {本轮明确不碰什么}
   ❌ 新建 focus-v2.md / focus-history.md —— focus 非沉淀，注意力只有"现在"，无版本无历史
   ❌ 光标块写成历史流水账（"先做了 A，又做了 B…"）—— 它是当前态快照，历史归 reviews/decisions
   ❌ 4 字段堆待办清单 / 进度百分比 —— 那是已废弃的 plan 混合体；focus 只声明"关注什么"，不记"做到哪"
-  ❌ 聚焦区主体超 30 行 —— 超了说明该拆 task（升级 structures/task-N，见 focus-derive 分叉判据表）或回收旧关注点
+  ❌ 聚焦区主体超 30 行 —— 超了说明该拆 task（升级 structures/task-N_slug，见 focus-derive 分叉判据表）或回收旧关注点
 -->

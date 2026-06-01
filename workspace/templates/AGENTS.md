@@ -18,7 +18,7 @@ workspace.{PROJECT_CODE_LOWER}.local/
 │       ├── decisions/dXX.md     # 决策记录
 │       └── structures/          # 结构分解（按需出现）
 │           ├── task.index.md    # task 导航 + 长期分解
-│           └── task-N/{scope.md, wave-N.md}
+│           └── task-N_slug/{scope.md, wave-N_slug.md}
 └── docs/
 ```
 

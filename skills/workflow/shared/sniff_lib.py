@@ -652,12 +652,12 @@ def enumerate_structures(topic_dir: str) -> dict:
       present          - 是否存在 structures/ 目录
       task_index       - structures/task.index.md 是否存在
       tasks            - [{id, dir, scope_present, waves:[...], wave_count}]
-                         id = 路径命名空间派生的稳定 id（task-1 → "t1"）
+                         id = 路径命名空间派生的稳定 id（task-1_xxx → "t1"）
       task_count       - task 数
 
-    设计：structures/ 按需出现（无 task topic 不预建）；task-N 内仅 scope.md +
-    wave-N.md（单一决策链，task 内不开 reviews/decisions）。命名去冗余——
-    task 目录名即命名空间，文件不带 taskN 前缀。
+    设计：structures/ 按需出现（无 task topic 不预建）；task-N_slug 内仅 scope.md +
+    wave-N_slug.md（单一决策链，task 内不开 reviews/decisions）。
+    数字 N 派生稳定 id；slug 只做人类可读信息。
     """
     result = {
         "present": False,
@@ -674,7 +674,7 @@ def enumerate_structures(topic_dir: str) -> dict:
 
     tasks = []
     for entry in sorted(os.listdir(structures_dir)):
-        m = re.match(r"^task-(\d+)$", entry)
+        m = re.match(r"^task-(\d+)(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?$", entry)
         if not m:
             continue
         tdir = os.path.join(structures_dir, entry)
@@ -682,7 +682,7 @@ def enumerate_structures(topic_dir: str) -> dict:
             continue
         waves = sorted(
             f for f in os.listdir(tdir)
-            if re.match(r"^wave-\d+\.md$", f)
+            if re.match(r"^wave-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\.md$", f)
         )
         tasks.append({
             "id": f"t{m.group(1)}",  # 稳定 id（.tN 命名编码的 id 形态）

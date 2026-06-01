@@ -3,19 +3,19 @@ date: YYYY-MM-DD
 status: active
 type: scope
 kind: governance
-governs: task-{N}
+governs: task-{N}_{slug}
 tags:
   - {topic-tag}
 related:
   - "../../scope.md"
 ---
 
-# Scope — task-{N}：{问题切片一句话}
+# Scope — task-{N}_{slug}：{问题切片一句话}
 
 > task-scope = topic-scope 的**收窄投影**（约束「双层 scope 守恒」）。
 > **不创造新承诺**：每条 task-V 必须 1:1 引用某条 topic-V，task-scope 只把它收窄到本切片。
-> **命名去冗余**：本文件就叫 `scope.md`——路径 `structures/task-{N}/` 已是命名空间，不写 `task{N}-scope.md`。
-> **展示名归导航面**：task 的人类可读短名写在 `task.index.md` 的 `label` 列或本文件标题中，不写进目录名。
+> **命名去冗余**：本文件就叫 `scope.md`——路径 `structures/task-{N}_{slug}/` 已是命名空间，不写 `task{N}-scope.md`。
+> **稳定 id 规则**：稳定 id 只取数字 N（`tN`）；`slug` 只做人类可读，不参与身份判断。
 > **单一决策链**：task 内不开 `reviews/` `decisions/`，治理需求冒泡回 topic 根。
 
 ## 授权来源（mandate）
@@ -43,6 +43,6 @@ related:
 反例（≥2，双层守恒 + 命名去冗余 + 单一决策链）：
   ❌ 凭空长出 topic-scope 没有的承诺 —— 破 1:1 守恒；新承诺该回 topic review 立项再下放
   ❌ 文件名写成 task{N}-scope.md —— 路径已是命名空间，前缀冗余
-  ❌ 在 task-{N}/ 内开 reviews/ 或 decisions/ —— 单一决策链；评审/决策一律回 topic 根
+  ❌ 在 task-{N}_{slug}/ 内开 reviews/ 或 decisions/ —— 单一决策链；评审/决策一律回 topic 根
   ❌ task-V 不标所投影的 topic-V —— 承诺断源，无法回溯守恒
 -->

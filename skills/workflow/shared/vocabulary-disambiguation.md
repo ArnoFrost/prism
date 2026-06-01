@@ -141,12 +141,12 @@
 
 | 维度 | wave（2.x 物化） | wave（3.0 物化） |
 |------|------|------|
-| 落点 | topic/plan 级跨 phase release 批次 | `structures/task-N/wave-N.md`；无 task 时**不落文件**，只体现在 focus 当前轮 |
-| 与 task 关系 | 无 task 概念 | 绑定 task 出现（持久化 wave 落点 = task-N 内） |
-| 编号 | `Wave 1~N`（topic 级）| `wave-1.md ~ wave-N.md`（task 内，路径即命名空间） |
+| 落点 | topic/plan 级跨 phase release 批次 | `structures/task-N_slug/wave-N_slug.md`；无 task 时**不落文件**，只体现在 focus 当前轮 |
+| 与 task 关系 | 无 task 概念 | 绑定 task 出现（持久化 wave 落点 = task-N_slug 内） |
+| 编号 | `Wave 1~N`（topic 级）| `wave-1_slug.md ~ wave-N_slug.md`（task 内，数字 N 是顺序，slug 只做人读） |
 | 兼容 | grandfather 保留，旧 topic 不 retrofit | 新 topic 默认 |
 
-> **判别**：看 topic 有没有 `structures/task-N/`——有则 wave 在 task 内物化；没有则 wave 只是 focus 当前轮的时间推进，不存独立文件。
+> **判别**：看 topic 有没有 `structures/task-N_slug/`——有则 wave 在 task 内物化；没有则 wave 只是 focus 当前轮的时间推进，不存独立文件。
 
 ### task vs topic
 

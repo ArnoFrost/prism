@@ -181,7 +181,7 @@ def _find_task_table(lines: list[str]) -> tuple[list[str], list[list[str]]]:
 def _scan_structures_readability(topic_dir: str) -> list[dict]:
     """扫描 structures/ 的可读性问题，只报告，不修复。
 
-    d11 约束：物理路径保持 task-N / wave-N.md；展示语义放 label、问题切片和标题。
+    d12 约束：物理路径可为 task-N_slug / wave-N_slug.md；稳定 id 仍只取数字 N。
     """
     structures_dir = os.path.join(topic_dir, "structures")
     task_index_path = os.path.join(structures_dir, "task.index.md")
@@ -207,12 +207,12 @@ def _scan_structures_readability(topic_dir: str) -> list[dict]:
                 issues.append({
                     "rule": "task-index-label-column-missing",
                     "file": "structures/task.index.md",
-                    "message": "task.index 缺少可选 label/显示名列；建议新增展示字段，不改 task-N 路径",
+                    "message": "task.index 缺少可选 label/显示名列；建议新增展示字段；路径 slug 只做人读信息，不替代稳定 id",
                 })
 
             for row in rows:
                 task_cell = row[task_idx] if task_idx is not None and task_idx < len(row) else "task"
-                task_name_match = re.search(r"(task-\d+)", task_cell)
+                task_name_match = re.search(r"(task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?)", task_cell)
                 task_name = task_name_match.group(1) if task_name_match else task_cell
 
                 if label_idx is not None and label_idx < len(row) and _is_placeholder(row[label_idx]):
@@ -226,7 +226,7 @@ def _scan_structures_readability(topic_dir: str) -> list[dict]:
                 if problem_idx is not None and problem_idx < len(row):
                     problem = row[problem_idx]
                     plain_problem = re.sub(r"`|\*|\[|\]|\(|\)", "", problem).strip()
-                    if _is_placeholder(problem) or re.fullmatch(r"task-\d+|t\d+", plain_problem, re.IGNORECASE):
+                    if _is_placeholder(problem) or re.fullmatch(r"task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?|t\d+", plain_problem, re.IGNORECASE):
                         issues.append({
                             "rule": "task-problem-slice-weak",
                             "file": "structures/task.index.md",
@@ -235,22 +235,23 @@ def _scan_structures_readability(topic_dir: str) -> list[dict]:
                         })
 
     for entry in sorted(os.listdir(structures_dir)):
-        if not re.fullmatch(r"task-\d+", entry):
+        if not re.fullmatch(r"task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?", entry):
             continue
         task_dir = os.path.join(structures_dir, entry)
         if not os.path.isdir(task_dir):
             continue
         for fname in sorted(os.listdir(task_dir)):
-            if not re.fullmatch(r"wave-\d+\.md", fname):
+            if not re.fullmatch(r"wave-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\.md", fname):
                 continue
             rel_path = f"structures/{entry}/{fname}"
             content = _read(os.path.join(task_dir, fname)) or ""
             title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
             title = title_match.group(1).strip() if title_match else ""
-            wave_num_match = re.search(r"wave-(\d+)\.md", fname)
+            wave_num_match = re.search(r"wave-(\d+)", fname)
             wave_num = wave_num_match.group(1) if wave_num_match else ""
             generic_patterns = [
                 rf"^Wave-{wave_num}\s+—\s+{entry}\s+第\s*{wave_num}\s*批推进$",
+                rf"^Wave-{wave_num}\s+—\s+task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\s+第\s*{wave_num}\s*批推进$",
                 rf"^Wave-{wave_num}\s+—\s*第\s*{wave_num}\s*批推进$",
                 rf"^Wave-{wave_num}$",
             ]

@@ -35,7 +35,7 @@ topics/{NNN}_{topic}/
 ├── decisions/
 └── structures/           # 按需出现
     ├── task.index.md
-    └── task-N/{scope.md,wave-N.md}
+    └── task-N_slug/{scope.md,wave-N_slug.md}
 ```
 
 `README.md` / `plan.md` 是 2.x grandfather：
@@ -52,7 +52,7 @@ topics/{NNN}_{topic}/
 
 更新项目根：
 
-- `AGENTS.md`：让 Agent 知道默认使用 `focus`、`references/intake`、`structures/task-N`。
+- `AGENTS.md`：让 Agent 知道默认使用 `focus`、`references/intake`、`structures/task-N_slug`。
 - `README.md`：说明 3.0 topic 入口模型和 grandfather 规则。
 
 不要一开始批量改所有 topic。
@@ -84,9 +84,9 @@ focus 不是历史，不保留 `focus-v2.md` 或 `focus-history.md`。历史进 
 只有当某个 scope-V 深化到需要自己的 scope + wave 时，才创建：
 
 ```text
-structures/task-N/
+structures/task-N_slug/
 ├── scope.md
-└── wave-N.md
+└── wave-N_slug.md
 ```
 
 不要因为“复杂”就默认拆 task。先检查是否真的满足 S3：该 V 已经长出自己的合同和推进批次。
@@ -142,7 +142,7 @@ structures/task-N/
   ↓
 观察恢复成本 / 误路由 / 重复解释
   ↓
-再决定是否升级 structures/task-N
+再决定是否升级 structures/task-N_slug
 ```
 
 如果试点结果有效，再考虑把口径回收到 workspace 模板；不要先改模板再找样本证明。
