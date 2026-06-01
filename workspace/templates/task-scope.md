@@ -15,6 +15,7 @@ related:
 > task-scope = topic-scope 的**收窄投影**（约束「双层 scope 守恒」）。
 > **不创造新承诺**：每条 task-V 必须 1:1 引用某条 topic-V，task-scope 只把它收窄到本切片。
 > **命名去冗余**：本文件就叫 `scope.md`——路径 `structures/task-{N}/` 已是命名空间，不写 `task{N}-scope.md`。
+> **展示名归导航面**：task 的人类可读短名写在 `task.index.md` 的 `label` 列或本文件标题中，不写进目录名。
 > **单一决策链**：task 内不开 `reviews/` `decisions/`，治理需求冒泡回 topic 根。
 
 ## 授权来源（mandate）

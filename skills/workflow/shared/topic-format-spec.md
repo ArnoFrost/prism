@@ -30,6 +30,7 @@
 
 - **单层**（默认）：`scope`（合同）→ `focus`（每轮注意力，rewrite）；长期分解压在 scope 的 **V 条目**。
 - **递归**（按需）：某 scope-V **深化到自带 scope+wave（S3）** → 膨胀 `structures/task-N`——`task-scope` **1:1 投影** topic-V（双层守恒，不创造新承诺）+ `wave-N` 推进批次。
+- **路径稳定，语义展示**：`task-N/` 与 `wave-N.md` 是稳定物理路径；人类可读语义由 `task.index` 的 `label` / 问题切片、task-scope 标题、wave 标题承载。不要把 slug 写进目录名或文件名。
 - **单一决策链**：task 内**不开** `reviews/` `decisions/`；治理需求冒泡回 topic 根。
 - 分叉判据（**S3 主触发**，provisional）见 [focus-derive-spec.md](./focus-derive-spec.md) §分叉判据决策表。
 
@@ -51,9 +52,9 @@ flowchart TD
 |------|----------------|-----------|
 | `focus` | 双区（保留区 rewrite 豁免 / 聚焦区 rewrite）+ 光标块固定 2 行 + 4 字段白名单 + 禁 callout 包裹（[topic-focus.md](../../../workspace/templates/topic-focus.md) 模板）| M1-M4 见 [focus-readability-checklist.md](./focus-readability-checklist.md) |
 | `scope` | 6 段（目标/非目标/验收口径/关键约束/未决问题/变更记录）+ 段落白名单 + 形态约束（详规 `scope-templates.md`）| 行数 ≤60 / 段落合规 / 单行密度 / V·OQ 可溯源（详规 `scope-templates.md`）|
-| `task.index` | task 导航表：task 路径 / 稳定 id / status / 问题切片 / 授权来源；只在出现 task 时存在 | task id 稳定、授权来源可追溯 |
+| `task.index` | task 导航表：task 路径 / 稳定 id / 可选 label / status / 问题切片 / 授权来源；只在出现 task 时存在 | task id 稳定、授权来源可追溯；label 只做展示，不参与路径解析 |
 | `task-scope` | task 内 `scope.md`，1:1 投影 topic 级 V；只收窄不新增承诺；task 内不开独立 reviews/decisions | task-V 每行引用一个存在的 topic-V |
-| `wave` | task 内推进批次；记录本批目标 / 推进记录 / 批次出口；无 task 时不落独立 wave 文件 | status 与 task.index 一致 |
+| `wave` | task 内推进批次；标题写清本批目标，并记录推进记录 / 批次出口；无 task 时不落独立 wave 文件 | status 与 task.index 一致；文件名保持 `wave-N.md` |
 | `decision` / `review` | append-only 事件，frontmatter 依赖字段（`supersedes`/`derived_from`/`related_dXX`）| — |
 | `*.index` | mutable 导航面，原地更新 | — |
 
