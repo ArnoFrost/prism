@@ -94,6 +94,14 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-24"
     rationale: "Topic status digest — human-readable snapshot for stakeholder sync, not SSOT."
+  - id: workflow-compact
+    visibility: dev
+    stability: experimental
+    source_repo: prism
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-06-01"
+    rationale: "Preview-only context entropy governance for long-lived topics; no apply, no CLI, no default distribution."
   - id: prism-dist
     visibility: dev
     stability: experimental
