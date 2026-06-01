@@ -39,8 +39,11 @@ v3.0 canary 不改变 Prism 的 core contract：SDK + Vault Workspace + `uv` 仍
 | `review` | 隐性判断、发现不可追溯 |
 | `task / structures` | 长期问题切片失控 |
 | `status / next`（候选） | 不知道下一步该做什么 |
+| `compact`（preview） | 长期 topic 上下文膨胀、接续成本过高 |
 
 这也是 `focus` 成为 topic 单入口、`task` 只在某个 scope-V 深化到自带 scope + wave 时才出现的原因：Prism 不追求把目录变复杂，而是让复杂问题在有限上下文里仍可恢复。
+
+`compact` 当前只是 dev experimental 的 preview 能力：只输出上下文熵治理建议，不写 workspace、不 apply、不进入 CLI 或默认分发。
 
 ---
 
@@ -70,6 +73,8 @@ OpenSpec 产出的 spec、design、tasks 可以进入 Prism topic；Prism 负责
 - 不把 OpenSpec 写成替代对象
 
 这些边界需要更多异构项目 dogfood 之后，再由 review / decision 决定是否进入公共协议层。
+
+已有 workspace 不需要批量迁移。渐进采用 `focus` / `references` / `structures` 的接入口径见 [Workspace v3.0 Canary 接入口径](./workspace-v3-upgrade.md)。
 
 ---
 

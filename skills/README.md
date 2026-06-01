@@ -36,9 +36,9 @@ skills/
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
-## Workflow 管线（v2.0）
+## Workflow 管线（v3.0 canary）
 
-八个内置技能组成完整的人机协作管线：
+内置 workflow skills 组成完整的人机协作管线：
 
 ```
 init（项目容器）→ intake（入料路由）→ scope（合同收敛）→ review（评审）→ decision（决策）→ scope（更新）→ ...
