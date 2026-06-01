@@ -268,87 +268,15 @@ prism/
 
 ## 当前状态
 
-**Phase 1 — 基础设施与三正交分离** ✅
+历史阶段详见 [CHANGELOG.md](../CHANGELOG.md)。架构页只保留当前主线状态。
 
-- [x] 协作契约确立 + 首次推送
-- [x] Workspace / Skills 系统层：schema + 模板
-- [x] 桥接模式 + iCloud Vault 结构
-- [x] `bin/setenv` + `bin/relink` 工具链
-- [x] Skills 独立仓库 + IDE 多平台分发
-
-**Phase 2 — 规范收敛与开源准备** ✅
-
-- [x] `prism-review`（现 `prism-workflow-review`）IDE 并行适配（Cursor 实战验证）
-- [x] 工具加固：`--prune` / `--validate` / `--non-interactive` / 覆盖保护
-- [x] 模板占位符统一 + `prism.local.yaml` schema
-- [x] `ai-task.local` 退出计划
-- [x] Agent 一键开箱引导（`SETUP.md` 多平台自适应）
-- [x] `bin/clean` 测试循环工具
-- [x] 三层产物模型（Review → Plan → Steps）
-- [x] `bin/rename-artifacts` 批量重命名
-- [x] `.local` 后缀收敛 + 全局 gitignore 零侵入对齐
-
-**Phase 3 — Workflow Beta（v0.7.0）** ✅
-
-- [x] Topic 内聚结构确立（006_task-cohesion-evolution）
-- [x] `topics/` 目录轴迁移 + `task` 概念收窄为 plan 条目
-- [x] Workflow 五技能管线：init / intake / scope / review / review-lite
-- [x] scope-SSOT 机制：scope → plan 派生链
-- [x] `shared/sniff_lib.py` 共享库，消除 sniff 重复
-- [x] plan 单文件双区（当前焦点 + 总计划）
-- [x] verify 分层设计（scope 合同大项 + plan verify 文件）
-- [x] dist 白名单对齐 workflow 命名 + 注释解析修复
-- [x] SDK 全文档统一到 workflow 命名
-
-**Phase 4 — Agent Workflow Patterns（008 专项）** ✅
-
-- [x] AGENTS.md mandatory skill triggers（if/then 条件触发 + 可被用户否决）
-- [x] Routing-grade description（5 个 workflow skills 改写，≤ 80 tokens + Use when:）
-- [x] 确定性脚本提取（scaffold.py + index_update.py → intake skill scripts/）
-- [x] `prism-workflow-status` 巡检 skill（report-first, JSON + Markdown 双格式）
-- [x] `archive.py` 手动归档脚本 + status 弱提醒（按设计降级，不做独立 skill）
-
-**Phase 5 — Workflow SDK 收敛（009 专项）** ✅
-
-- [x] 5 workflow skills + shared 搬入 SDK `skills/workflow/`
-- [x] workspace-init 搬入 SDK `skills/workspace/`（吸收 migrate 能力）
-- [x] SKILL.md 统一命名 `workflow-{verb}` / `workspace-init`
-- [x] 双套 relink 实现（SDK 内置 + 外部个人）
-- [x] AGENTS.md / architecture.md 全链路对齐
-- [x] prism-skills 清理（删除 9 个已迁移/废弃目录 + shared 转 SDK symlink）
-- [x] v0.9.0 tag 双仓库 + smoke test 通过
-
-**Phase 6 — v1.0 验证与 CLI 收敛** ✅
-
-- [x] 跨项目验证（完整跑通 13 轮评审 + 8 个决策的实证案例）
-- [x] 周期性设计哲学回顾 + 远期愿景校准（独立 topic）
-- [x] CLI contract hardening：outer schema / manifest / contract sync gate 收敛
-- [x] CLI evolution（v1.1.x 阶段）：`finalize / tidy / status / digest` 上收为 `prism <verb>`，`pipeline` 降级为 deprecated alias（自 v2.0 起物理移除）
-- [x] `bin/doctor` 补齐 `--rollback` / `--output` 与 release health 输出
-
-**Phase 7 — v2.0 简化与对外面收敛** ✅
-
-- [x] **历史包袱清偿**：产物校验按日期降噪、SKILL.md 复杂度警戒列表、SSOT 边界澄清
-- [x] **deprecated 别名物理移除**：`prism pipeline` 一次性切到 `prism finalize`（v1.1.4 起多轮预告，v2.0 由 argparse 直接 reject）
-- [x] **治理路径默认弱化**：workflow / 痕迹义务家族明确为可选项；core contract 仅 `SDK + Vault Workspace + uv`，开箱即用不强制接入
-- [x] **workflow 复杂度简化**：review skill 主文 −14% (515→442)、痕迹义务家族永久封顶为 4 族、`detect_review_mode` SSOT 反位修复
-- [x] **对外面收敛**：默认路径脱敏（README / AGENTS / CLI argparse / cli-contract / SKILL 主文）+ pipeline 残留扫除 + maintainer 文档跳转弱化
-- [x] **dogfood 实证**：用 v2.0 简化后的默认 lenient 行为完成非主线场景验证，进入后续持续试点
-- [x] **GA 节奏**：`v2.0.0-rc1` tag → alpha 口径对齐 → beta 阶段持续改进
-
-**Phase 8 — 文档矩阵 5 件套（v2.0-alpha 阶段，2026-05-15）** ✅
-
-- [x] `docs/migration.md`：v1.x → v2.0 用户感知变化清单 + Breaking 表 + 替换脚本指引
-- [x] `audience: maintainer` 元数据：maintainer 文档与用户文档显性分层（配套 `public_surface_scan.py` 豁免逻辑）
-- [x] 机械守门 WARN：`skills/workflow/shared/scripts/public_surface_scan.py` 默认路径集合扫描器，对内部 ID 模式输出 WARN（audience=maintainer 豁免）
-- [x] `docs/contributing.md`：贡献者层入口 + 对外写作 checklist + 跨仓 commit 引用边界 + 链接禁用规则
-- [x] 发布门禁约束：`skills/workflow/shared/scripts/release_gate.py` + CI 步骤检测 BREAKING change 与 `CHANGELOG.md` + `docs/migration.md` 是否同步更新；CI step 显式 `shell: bash` 启用 pipefail，`actions/checkout` `fetch-depth: 0` 让 base SHA 可达
-
-**Phase 9 — v3.0 canary：focus 入口与 task 递归分解** 🟡
+**v3.0 canary：focus 入口与 task 递归分解** 🟡
 
 - [x] `focus.md` 成为 topic 入口与当前工作集，README 降为 grandfather 兜底
 - [x] `scope.md` → `focus.md` 刷新规则沉淀为 `focus-derive-spec.md`
 - [x] `structures/task-N/` 作为按需递归分解：task-scope 1:1 投影 topic 级 V，wave 承载推进批次
 - [x] `topic-format-spec.md` 成为 topic 形态对标基准
+- [x] `workflow-compact` 作为 preview-only 上下文熵治理能力进入 dev experimental
+- [x] `docs/prism-3.0.md` / `docs/workspace-v3-upgrade.md` / `docs/topic-lifecycle.md` / `docs/skill-taxonomy.md` 承接默认文档叙事
 - [ ] schema / context pack / archive 等机器链路仍按后续迁移推进
 
