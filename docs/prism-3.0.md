@@ -76,6 +76,8 @@ OpenSpec 产出的 spec、design、tasks 可以进入 Prism topic；Prism 负责
 
 已有 workspace 不需要批量迁移。渐进采用 `focus` / `references` / `structures` 的接入口径见 [Workspace v3.0 Canary 接入口径](./workspace-v3-upgrade.md)。
 
+如果想看实际运转方式，读 [Topic Lifecycle](./topic-lifecycle.md)；如果想看每个 workflow skill 分别治理哪类熵，读 [Skill Taxonomy](./skill-taxonomy.md)。
+
 ---
 
 ## 现在还差什么

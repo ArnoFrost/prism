@@ -130,7 +130,7 @@ digest ── 需要沟通时，生成状态通报
 
 ### Topic 工件
 
-已有 workspace 的 v3.0 canary 接入口径见 [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)：它强调新 topic 默认 `focus`，存量 `README` / `plan` grandfather，不批量迁移旧 topic。
+已有 workspace 的 v3.0 canary 接入口径见 [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)：它强调新 topic 默认 `focus`，存量 `README` / `plan` grandfather，不批量迁移旧 topic。topic 生命周期的阅读版说明见 [topic-lifecycle.md](./topic-lifecycle.md)，skill 全景图见 [skill-taxonomy.md](./skill-taxonomy.md)。
 
 | 文件 | 职责 | 操作模式 |
 |------|------|---------|

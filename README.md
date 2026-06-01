@@ -101,112 +101,23 @@ Prism 的交付术语分三层：
 
 ---
 
-## 核心概念
+## 读什么
 
-### 设计锚点：认知熵治理
+README 只负责入口导航。想深入某一层，请读对应文档：
 
-Prism 关注的不是“让 AI 多生成一点内容”，而是降低长期协作中的认知熵：人和 Agent 在多轮、跨会话、跨设备推进复杂问题时，会反复遭遇理解发散、上下文遗忘、决策漂移、结构膨胀与重复重建。Prism 用 `scope`、`focus`、`decision`、`review`、`task`、`status/next` 等机制分别治理这些熵源。
+| 你想了解 | 入口 |
+|----------|------|
+| Prism 3.0 为什么是认知熵治理 | [docs/prism-3.0.md](docs/prism-3.0.md) |
+| 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
+| topic 从 intake 到 archive 怎么走 | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |
+| 每个 workflow skill 治理什么熵 | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) |
+| 完整架构与部署视图 | [docs/architecture.md](docs/architecture.md) |
+| 术语速查 | [docs/glossary.md](docs/glossary.md) |
+| v1.x → v2.0 历史迁移 | [docs/migration.md](docs/migration.md) |
 
-这个定位与 Spec workflow / OpenSpec 是互补关系：后者更偏向把想法变成 spec、design、tasks；Prism 更偏向把这些产物纳入长期认知资产治理，让它们在数周或数月之后仍能被恢复、审计和继续推进。
+Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Skills 承载可复用能力，Env 承载个人环境，Workspace 承载项目状态。详细分层见 [docs/architecture.md](docs/architecture.md)。
 
-### 四层分离
-
-Prism 当前以四个正交载体协同工作，各自独立版控：
-
-
-| 仓库            | 默认路径                 | 职责                         | 典型内容                                              |
-| ------------- | -------------------- | -------------------------- | ------------------------------------------------- |
-| **SDK**       | `~/prism`               | 协议 + 模板 + CLI + 内置 workflow | `bin/relink`, `bin/doctor`, `prism finalize` |
-| **Skills**    | `~/prism-skills`        | 可复用的自然语言能力（可分享）              | `commit`, `digest`, `log-triage`, `learnnote` |
-| **Env**       | `~/ArnoDotFiles`（可选）    | 个人/设备专属配置与技能            | `sync-dot`, `codex-sync`, hooks |
-| **Workspace** | iCloud Vault / 本地 Vault | 项目状态（topic、评审、上下文）     | `topics/`, `project.yaml` |
-
-
-四者通过 `prism.local.yaml` + `bin/relink` 桥接。Skills 和 Env 均可选；core contract 不要求外部 Skills / Env 存在。
-
-**什么放哪层？**
-
-
-| 场景              | 放哪层        | 理由          |
-| --------------- | ---------- | ----------- |
-| 跨项目通用，可分享给他人    | **Skills** | 版本独立，可独立分发  |
-| 个人习惯、设备专属、含私密配置 | **Env**    | 不影响主干，按设备定制 |
-| 核心流程、协议定义、工具脚本  | **SDK**    | 基础设施，慎重变更   |
-
-
-### 多设备同步
-
-```bash
-# 拉取所有仓库最新（自动 relink + 变更扫描 + 影响分析）
-/prism-pull --all
-
-# 推送本地变更到远程
-/prism-push --all
-
-# 环境健康检查 / 重配置检测（仅检查，不修改）
-bin/setup --check
-```
-
-`prism.local.yaml` 按设备独立维护（`device_id` 由 hostname 生成），不入版本控制。新设备执行 `bin/setup` 即可一键初始化。
-
-### 软链接桥接
-
-Prism 通过 `.local` 后缀将 Workspace 挂载到工作仓库，全局 gitignore 覆盖——接入项目零侵入。
-
-```
-工作仓库/
-└── workspace.{code}.local  →  Vault Workspace/{CODE}/
-```
-
-> 详细架构说明见 [docs/architecture.md](docs/architecture.md)。
-
----
-
-## 术语表
-
-Prism 部分关键词保留英文以保证语义精确，首次接触时可参照下表：
-
-
-| 术语            | 含义                                             | 类比                       |
-| ------------- | ---------------------------------------------- | ------------------------ |
-| **SDK**       | `~/prism` 仓库；承载工具脚本、schema、模板                  | 像 npm 包的核心代码             |
-| **Skills**    | 独立仓 `~/prism-skills`，按技能（skill）组织的能力集合         | 像插件市场                    |
-| **Env**       | 可选 dotfiles 层，承载个人 shell/IDE 偏好                | 像 `.zshrc`/`.vimrc`      |
-| **core contract** | Prism 最小运行合同：SDK 内置 workflow/workspace + Vault Workspace + `uv` | 像最小系统需求 |
-| **mini profile / package** | 基于 core contract 的轻量分发/安装形态，不要求外部 Skills / Env | 像精简安装包 |
-| **full profile** | core contract + 外部 Skills / Env 等扩展组合 | 像完整安装包 |
-| **Vault**     | Obsidian 笔记库路径（承载 Workspace 的物理位置）             | 像"笔记本电脑的硬盘"之"笔记本"        |
-| **Workspace** | Vault 下的 `Prism/Workspace/` 子目录，承载所有项目的工作台     | 像"笔记本中的项目章节"             |
-| **Topic**     | Workspace 中一个专项目录 `topics/{NNN}_{name}/`，有生命周期 | 像 GitHub Issue / 迭代单位    |
-| **Scope**     | Topic 内的边界合同文件 `scope.md`，唯一上游 SSOT            | 像 RFC / 需求书              |
-| **Focus**     | Topic 内的当前工作集 `focus.md`，也是 3.0 的 topic 入口       | 像当前注意力光标              |
-| **Task**      | 当某个 scope 验收项深化到自带 scope + wave 时出现的递归问题切片 | 像子课题，但仍回到 topic 决策链 |
-| **Plan**      | 2.x 执行方案 `plan.md`，3.0 起由 focus + task 取代，存量 grandfather | 像旧版任务拆解                |
-| **Review**    | 多角色评审机制（架构师/SRE/用户代言人等）                        | 像 code review            |
-| **Decision**  | 对 review 结论的裁决记录 `dXX.md`                      | 像 ADR（架构决策记录）            |
-| **Relink**    | 把 Skills 分发到各 IDE 技能目录的软链接操作                   | 像 `npm link`             |
-| **Sniff**     | 探测环境/亲和度/状态的统一语义                               | 像 `git status` + `which` |
-| **SSOT**      | Single Source of Truth，单一权威来源                  | —                        |
-
-
----
-
-## Skills
-
-
-| 技能                     | 触发                      | 说明                       |
-| ---------------------- | ----------------------- | ------------------------ |
-| `workspace-init`       | `/workspace-init`       | 项目初始化 / 工作区创建            |
-| `workflow-intake`      | `/workflow-intake`      | 入料 → 路由 → 专项初始化          |
-| `workflow-scope`       | `/workflow-scope`       | 合同收敛 → focus 刷新 / task 同步 |
-| `workflow-review`      | `/workflow-review`      | 多角色协作评审（总分总结构）           |
-| `workflow-review-lite` | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描           |
-| `workflow-tidy`        | `/workflow-tidy`        | 工件机械对齐 — 自动同步产物状态        |
-| `workflow-digest`      | `/workflow-digest`      | 专项状态通报 — 面向协作者           |
-| `workflow-status`      | `/workflow-status`      | 专项健康巡检 — scope 进度 + 过期检测 |
-
-
-`bin/relink` 自动将技能软链接到 IDE 目录（Cursor · Claude Code · CodeBuddy · Codex），无需手动配置。
+`bin/relink` 会将 SDK 内置 workflow skills 分发到 IDE 目录（Cursor · Claude Code · CodeBuddy · Codex），无需手动配置。
 
 > **workflow / 痕迹义务家族都是可选项**
 >
