@@ -40,6 +40,21 @@ class TestValidateFile:
         errors = [i for i in issues if i.level == "ERROR"]
         assert any(i.rule == "frontmatter-missing" for i in errors)
 
+    def test_readme_missing_frontmatter_is_warn(self, tmp_path):
+        """038/OQ-5：README 缺 FM 不阻塞 finalize（WARN）。"""
+        md = tmp_path / "README.md"
+        md.write_text("# Topic\n\nNo yaml.\n")
+        issues = vp.validate_file(str(md), "ofm")
+        assert not any(i.rule == "frontmatter-missing" and i.level == "ERROR" for i in issues)
+        warns = [i for i in issues if i.rule == "frontmatter-readme-missing"]
+        assert len(warns) == 1
+
+    def test_scope_missing_frontmatter_still_error(self, tmp_path):
+        md = tmp_path / "scope.md"
+        md.write_text("# Scope\n\nNo yaml.\n")
+        issues = vp.validate_file(str(md), "ofm")
+        assert any(i.rule == "frontmatter-missing" and i.level == "ERROR" for i in issues)
+
     def test_missing_frontmatter_fields(self, tmp_path):
         md = tmp_path / "test.md"
         md.write_text("---\ndate: 2026-03-24\n---\n# Test\n")
@@ -127,6 +142,21 @@ class TestOfmDualStateContract:
         rules = {i.rule for i in issues}
         assert "ofm-missing-protocol" not in rules
         assert "ofm-low-callout-density" not in rules
+
+    def test_ofm_main_report_note_protocol_v2_passes(self, tmp_path):
+        """OFM v2：协议段可用 GFM `[!NOTE]`（大小写不敏感）。"""
+        path = self._write_review(
+            tmp_path, "r02b_test.md",
+            "# r02b — v2 协议段\n\n"
+            "> [!NOTE]\n> 路由 / format=ofm / 已加载 references\n\n"
+            "> [!IMPORTANT]\n> P0\n\n"
+            "> [!WARNING]\n> P1\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        rules = {i.rule for i in issues}
+        assert "ofm-missing-protocol" not in rules
+        assert "ofm-low-callout-density" not in rules
+        assert "callout-type" not in rules
 
     def test_ofm_main_report_zero_callout_is_A_grade_regression(self, tmp_path):
         path = self._write_review(

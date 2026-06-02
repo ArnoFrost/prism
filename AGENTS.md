@@ -221,7 +221,7 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Prism 内置技能
 
-SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检（与 README §Skills 表保持一致）。
+SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实（与 README §Skills 表保持一致）。
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
@@ -244,6 +244,7 @@ Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`]
 |--------|------|------|
 | **SDK 协议级 SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 唯一 SSOT；其他面 cite 不复制 |
 | **人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
+| **OFM / GFM callout 速查** | [`docs/ofm-cheatsheet.md`](docs/ofm-cheatsheet.md) | G0 词汇 + review 主报告映射；cite `obsidian-config` + `review-ofm` |
 | **各 workflow SKILL 子目录软链** | `skills/workflow/{review,review-lite,intake,scope,digest}/references/vocabulary.md` | `bin/relink` 分发到 IDE；SKILL.md 用 `references/vocabulary.md` 相对路径引用 |
 
 所有 SKILL / 文档 / topic 产物**不字字复制术语定义**（避免漂移），按需 cite 即可。词典演进走 dXX 决策门（详见 vocabulary.md §演进规则）。

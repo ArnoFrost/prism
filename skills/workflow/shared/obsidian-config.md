@@ -31,22 +31,29 @@ Prism 环境下，vault 路径优先从 `prism.local.yaml` 读取：
 - 若存在 → 优先遵循其中的目录结构和命名规则
 - 若不存在 → 使用下方默认规范
 
-## Callout 语义规范
+## Prism 默认 callout（G0 · OFM v2）
 
-| 语义 | Callout | 用法 |
-|------|---------|------|
-| 摘要/元信息 | `> [!info]` | 文档开头概述 |
-| TL;DR | `> [!abstract]` 或 `> [!tldr]` | 结论摘要 |
-| 阻塞问题 | `> [!danger]` | 必须修复的严重问题 |
-| 重要发现 | `> [!warning]` | 功能缺陷、设计不一致 |
-| 改善建议 | `> [!note]-`（折叠） | 非阻塞的优化建议 |
-| 行动计划 | `> [!tip]` | 建议性行动项 |
-| 最终结论 | `> [!success]` | 一句话结论 |
-| 引用/参考 | `> [!quote]-`（折叠） | 参考资料 |
+> **SSOT 分层**：本节 = 全仓**默认 callout 词汇**；`format=ofm` 二态与 vault frontmatter 见 sniff / `validate_product`；**评审协议段 + Findings 映射**见 `review/references/review-ofm.md`（仅 `rXX_*.md` 主报告）。
 
-### 格式原则
+跨端优先 [GitHub Alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts)（GFM 五类）。Obsidian 与 Android Studio 2025.3.4+ 对五类均为全样式渲染；Obsidian-only 扩展在 IDE 预览中多为半样式。
 
-- 每个章节最多 1-2 个 callout，不过度装饰
+| GFM 类型 | 典型用途（非强制） |
+|----------|-------------------|
+| `NOTE` | 元信息、改善建议、协议段（review 须置顶，见 review-ofm） |
+| `TIP` | TL;DR、结论、建议性行动 |
+| `IMPORTANT` | 阻塞 / P0 级发现 |
+| `WARNING` | 重要 / P1 级发现 |
+| `CAUTION` | 风险、与 WARNING 同族（慎用 Obsidian-only 别名） |
+
+**v1 兼容别名**（新产物不推荐，validator 仍接受）：`info` / `abstract` / `danger` / `warning` / `note` / `success` / `tip` / `warn`。
+
+人类速查：[docs/ofm-cheatsheet.md](../../../docs/ofm-cheatsheet.md)。
+
+### 格式原则（G0）
+
+- Callout 类型**大小写不敏感**
+- 跨端产物**禁止** GFM 类型上的 Obsidian 折叠修饰（`[!note]-` / `[!quote]+`）
+- 每个章节最多 1–2 个 callout，不过度装饰
 - 高亮 `==文本==` 每段最多 1-2 处
 - 表格优于嵌套列表
 - 中英文之间加空格

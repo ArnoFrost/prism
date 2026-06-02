@@ -22,8 +22,11 @@ class TestCountDangerCallouts:
         assert scs.count_danger_callouts("# Title\n\nbody\n") == 0
 
     def test_single_danger_callout(self):
-        text = "> [!danger]\n> warning text\n"
+        text = "> [!IMPORTANT]\n> hard constraint text\n"
         assert scs.count_danger_callouts(text) == 1
+
+    def test_legacy_danger_still_counted(self):
+        assert scs.count_danger_callouts("> [!danger]\n") == 1
 
     def test_multiple_danger_callouts(self):
         text = "\n".join([
@@ -38,11 +41,15 @@ class TestCountDangerCallouts:
         assert scs.count_danger_callouts("> [!Danger]\n") == 1
 
     def test_indented_callout(self):
-        assert scs.count_danger_callouts("    > [!danger]\n") == 1
+        assert scs.count_danger_callouts("    > [!IMPORTANT]\n") == 1
 
     def test_other_callouts_ignored(self):
-        text = "> [!warning]\n> [!important]\n> [!note]\n"
+        text = "> [!warning]\n> [!note]\n> [!tip]\n"
         assert scs.count_danger_callouts(text) == 0
+
+    def test_important_counted(self):
+        text = "> [!important]\n> [!IMPORTANT]\n"
+        assert scs.count_danger_callouts(text) == 2
 
 
 class TestScanSkillFile:

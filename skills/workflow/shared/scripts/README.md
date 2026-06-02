@@ -46,6 +46,7 @@ review 产物格式 lint  → validate_product    （review/scripts/，finalize 
 | **Manifest / 版本** | `prism_changelog_scan.py` / `release_gate.py` | breaking change 检测 / CI 发布门禁 |
 | **CI 检查** | `check_cli_contract_sync.py` / `check_skill_deprecation.py` / `public_surface_scan.py` / `skills_contract_scan.py` | docs vs VERB_REGISTRY 同步 / DEPRECATED_VERBS 守门 / 用户可见面扫描 / SKILL 行数闸门 |
 | **迁移** | `archive.py` / `migrate_review.py` | topic 归档 / review 子目录格式迁移（v1.2 评估退役）|
+| **Skills 分发** | `normalize_skill_codebuddy.py` | 为 SKILL frontmatter 补 `description_zh`、压平 `description`（CodeBuddy IDE 列表）|
 | **Context / Utility** | `context_pack.py` / `parse_utils.py` | review 上下文装配 / markdown 解析工具 |
 
 ## 命名约定

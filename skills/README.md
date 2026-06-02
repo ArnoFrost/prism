@@ -57,7 +57,7 @@ init（项目容器）→ intake（入料路由）→ scope（合同收敛）→
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |
 | `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
 | `workflow-status` | `/workflow-status` | 无 | 健康度 JSON + Markdown 报告 |
-| `workflow-compact` | `/workflow-compact` | topic 上下文 | 上下文熵治理 preview（0 写入，不 apply） |
+| `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁 |
 
 共享依赖位于 `workflow/shared/`：`sniff_lib.py`、`obsidian-config.md`、`parallel-execution.md`、`scripts/archive.py`。
 

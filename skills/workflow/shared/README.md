@@ -61,11 +61,13 @@ skills/workflow/
 
 | 文件 | 用途 | 引用方 |
 |------|------|--------|
-| `obsidian-config.md` | Obsidian vault 路径探测 + callout/mermaid 规范 | workflow-review, note, deposit, log-triage 等 |
+| `obsidian-config.md` | Obsidian vault 路径探测 + **G0 默认 callout（GFM）** + mermaid 规范 | workflow-review, note, deposit, log-triage 等 |
+| （分发） | [`docs/ofm-cheatsheet.md`](../../docs/ofm-cheatsheet.md) | OFM/GFM 人类速查；cite `obsidian-config` + `review-ofm` |
 | `parallel-execution.md` | 并行子任务调度规范 + 平台探测 | workflow-review, doc-sync 等 |
 | `scripts/sniff_lib.py` | 环境嗅探公共库（workspace 探测、topic 扫描） | workflow-intake, workflow-status |
 | `scripts/archive.py` | 专项归档（移目录 + 更新索引） | workflow-status（hint 引用） |
 | `scripts/prism_sync_sniff.py` | Prism 仓库 Git 状态嗅探（dirty/ahead/behind） | prism-push, prism-pull |
+| `scripts/normalize_skill_codebuddy.py` | CodeBuddy 技能列表：`description_zh` + 单行 `description` | `bin/relink` 后 `--from-relink` 批量规范化 |
 | `context-pack-spec.md` | topic 上下文装配规范（light/full 两档） | 全部 workflow skills |
 | `scripts/parse_utils.py` | 共享 Markdown 解析工具（read_file / extract_section / extract_field / count_checkboxes） | context_pack.py, collect.py |
 | `scripts/context_pack.py` | context-pack 规范的脚本实现 | 支持 shell 的 IDE 可调用 |

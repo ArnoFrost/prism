@@ -5,8 +5,8 @@ description: |
   Use when: 接受决策后同步、scope 偏移修正、边界收敛、focus 刷新、workflow-scope
 visibility: dev
 stability: experimental
+description_zh: "在决策后更新 scope.md 并刷新 focus.md，确保合同面一致性。当接受评审决策或发现 scope 与执行偏移时触发。scope 是 focus 与 structures/task.index 的唯一上游。"
 ---
-
 ## 职责边界
 
 | 维度 | 说明 |

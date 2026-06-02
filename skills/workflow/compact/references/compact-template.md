@@ -1,15 +1,15 @@
-# Compact Template — Preview 输出骨架
+# Compact Templates
 
-## Markdown 骨架
+## Preview 输出模板
 
 ```markdown
 # Compact Preview — {topic}
 
 ## 结论
 
-- 是否建议 compact：否 / 继续观察 / 需要 review
+- 是否建议 compact：否 / 继续观察 / 需要 review / 可进入 apply
 - 原因：{一句话}
-- 写入：0（preview-only）
+- 写入风险：低 / 中 / 高
 
 ## 认知熵来源
 
@@ -20,21 +20,29 @@
 
 ## 分类结果
 
-| 类别 | 文件 / 目录 | 理由 | 建议 |
-|------|-------------|------|------|
+| 类别 | 文件 / 目录 | 理由 | 建议动作 |
+|------|-------------|------|----------|
 | protected | `scope.md` | 合同面 SSOT | 只读 |
 | active | `focus.md` | 当前工作集 | 保留 |
-| cold | `references/old.md` | 历史输入，当前不必读 | 仅列候选 |
-| summarize | `reviews/r01_*.md` | 长评审，可保留 TL;DR 指针 | 建议摘要，不改原文 |
-| delete-candidate | `tmp.md` | 临时重复文件 | 仅列出，不删除 |
+| cold | `reviews/raw/` | 原始角色报告，平时不必读取 | 备份后冷存 |
+| summarize | `reviews/r01_*.md` | 长评审，可保留 TL;DR 指针 | 生成摘要，不改原文 |
+| delete-candidate | `temp/foo.md` | 临时重复文件 | 仅列出，不删除 |
 
-## Next Step
+## Proposed Writes
 
-- 建议：observe / review / defer
-- 若要写入任何文件：先发起 review / decision，不在 compact preview 中执行。
+| 文件 | 动作 | 风险 |
+|------|------|------|
+| — | — | — |
+
+## Apply 前置门禁
+
+- [ ] 用户确认 apply 范围
+- [ ] 已运行 compact backup
+- [ ] 已记录 backup manifest 路径
+- [ ] 无 hard delete
 ```
 
-## YAML 骨架
+## Preview YAML 骨架
 
 ```yaml
 compact_plan:
@@ -49,6 +57,8 @@ compact_plan:
   cold: []
   summarize: []
   delete_candidates: []
+  proposed_writes: []
+  requires_backup: true
   next_step: observe
 ```
 
@@ -65,4 +75,37 @@ compact_plan:
 | 正样本 | 是否降低恢复或误路由成本 |
 | 负样本 | 是否增加解释或维护成本 |
 | 代理指标 | 恢复耗时 / 误路由 / 重复解释 / focus rewrite / scope 密度 |
-| 后续建议 | observe / review / defer |
+| 后续建议 | observe / review / defer / apply |
+
+## Apply 结果模板
+
+```markdown
+# Compact Result — {topic}
+
+## Backup
+
+- manifest: `{backup_manifest}`
+- backup_dir: `{backup_dir}`
+- restore: `{restore_hint}`
+
+## Changes
+
+| 文件 | 动作 | 说明 |
+|------|------|------|
+| — | — | — |
+
+## Untouched Delete Candidates
+
+- `{path}` — 首版只列出，不删除
+
+```yaml
+compact_result:
+  topic: "{topic}"
+  mode: apply
+  backup_manifest: "{backup_manifest}"
+  files_changed: []
+  files_moved: []
+  delete_candidates_left_untouched: []
+  restore_hint: "{restore_hint}"
+```
+```
