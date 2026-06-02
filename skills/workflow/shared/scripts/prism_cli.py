@@ -446,18 +446,25 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     return 0
 
 
+# 内置默认 strict 前缀（可扩展）。
+# 历史上曾硬编码 `029_`（r07/AP-43 当年的治理 dogfood 主战场）；现 dogfood 主战场已移至
+# 041，不再硬编码任何 topic 编号——默认空，strict 改为纯显式 opt-in（frontmatter/env/flag）。
+# 如需恢复"按前缀自动 strict"，在此元组加语义前缀（如 "release-"），或后续改为读 prism.local.yaml。
+_STRICT_DEFAULT_PREFIXES: tuple[str, ...] = ()
+
+
 def _resolve_trace_strict(topic_dir: str, cli_override: str | None) -> tuple[str, str]:
     """决定 finalize Step 2.5 (validate-trace) 的执行模式。
 
     返回 (mode, source) 二元组：
       mode: "off" | "lenient" | "strict"
-      source: 决策来源（cli / env / frontmatter / default-029 / default）
+      source: 决策来源（cli / env / frontmatter / default-prefix:<前缀> / default）
 
     优先级（高到低）：
       1. CLI flag: --trace-strict / --trace-lenient / --no-trace-validate
       2. ENV: PRISM_TRACE_VALIDATE=off|lenient|strict
       3. README.md / scope.md frontmatter `trace_strict: true|false`
-      4. topic 路径以特定前缀（如 `029_`）开头 → strict（内置默认）
+      4. topic 路径以 `_STRICT_DEFAULT_PREFIXES` 中任一前缀开头 → strict（默认空集，可配置）
       5. 默认 lenient（不破坏其他 topic 历史产物）
     """
     # 1. CLI flag
@@ -485,10 +492,11 @@ def _resolve_trace_strict(topic_dir: str, cli_override: str | None) -> tuple[str
             except OSError:
                 pass
 
-    # 4. 特定前缀 topic 默认 strict（内置规则，可被 frontmatter 关闭）
+    # 4. 配置前缀 topic 默认 strict（可被 frontmatter 关闭；默认空集 → 跳过）
     topic_name = os.path.basename(os.path.normpath(topic_dir))
-    if topic_name.startswith("029_"):
-        return "strict", "default-029"
+    for prefix in _STRICT_DEFAULT_PREFIXES:
+        if topic_name.startswith(prefix):
+            return "strict", f"default-prefix:{prefix}"
 
     # 5. 默认 lenient
     return "lenient", "default"
@@ -545,7 +553,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
     --trace-strict / --trace-lenient / --no-trace-validate：
       - 默认 lenient（不破坏其他 topic 历史产物）
-      - 特定前缀（如 `029_`）topic 默认 strict（内置规则）
+      - `_STRICT_DEFAULT_PREFIXES` 内的前缀 topic 默认 strict（默认空集；strict 改为显式 opt-in）
       - README.md/scope.md frontmatter `trace_strict: true|false` 显式覆盖
       - ENV PRISM_TRACE_VALIDATE=off|lenient|strict 全局覆盖
       - CLI flag 最高优先级

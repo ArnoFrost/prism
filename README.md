@@ -122,7 +122,7 @@ Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Sk
 > - **不用 workflow 技能**：项目状态可纯手写到 `workspace.{code}.local/` 下，Prism 不强制 review/decision/scope 三件套
 > - **不用痕迹义务（默认行为）**：`prism finalize` Step 2.5 默认 lenient — 只 WARN 不 ERR，不阻塞 `success: true`；`bin/prism validate-trace --lenient` 同效
 > - **完全跳过痕迹**：`finalize --no-trace-validate` 或 `PRISM_TRACE_VALIDATE=off`（CI 渐进接入用）
-> - **strict 模式启用**：通过 frontmatter `trace_strict: true` / `PRISM_TRACE_VALIDATE=strict` / `--trace-strict` 升级为 strict（任一族 missing 即 ERR）。完整优先级：CLI flag > ENV > frontmatter > 内置默认（详见 `prism_cli._resolve_trace_strict` 实现，特定前缀的 topic 目录会按内置规则启用 strict）
+> - **strict 模式启用**：通过 frontmatter `trace_strict: true` / `PRISM_TRACE_VALIDATE=strict` / `--trace-strict` 升级为 strict（任一族 missing 即 ERR）。完整优先级：CLI flag > ENV > frontmatter > 配置前缀默认（`prism_cli._STRICT_DEFAULT_PREFIXES`，**默认空集** — strict 为显式 opt-in，不再硬编码任何 topic 编号）
 >
 > 仅当你需要"多角色独立评审 + 决策可审计 + 入料路由防膨胀"等结构化协作场景时，workflow + trace 才进入产品默认行为。心智门槛不要把它当作 Prism 的硬入口。
 
