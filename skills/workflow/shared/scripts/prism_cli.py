@@ -402,7 +402,12 @@ def cmd_validate_trace(args: argparse.Namespace) -> int:
             print(f"错误: {msg}", file=sys.stderr)
         return 1
 
-    result = vt.scan_topic(topic_dir, strict=not getattr(args, "lenient", False))
+    strict = not getattr(args, "lenient", False)
+    result = vt.scan_topic(topic_dir, strict=strict)
+    # 双层 scope 1:1 守恒（独立维度，不属 4 族封顶）
+    conservation = vt.validate_scope_conservation(topic_dir, strict=strict)
+    result["scope_conservation"] = conservation
+    result["ok"] = result["ok"] and (len(conservation["errors"]) == 0)
 
     if json_mode:
         _print_outer(_outer_envelope(command="validate-trace", data=result))
@@ -441,18 +446,25 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     return 0
 
 
+# 内置默认 strict 前缀（可扩展）。
+# 历史上曾硬编码 `029_`（r07/AP-43 当年的治理 dogfood 主战场）；现 dogfood 主战场已移至
+# 041，不再硬编码任何 topic 编号——默认空，strict 改为纯显式 opt-in（frontmatter/env/flag）。
+# 如需恢复"按前缀自动 strict"，在此元组加语义前缀（如 "release-"），或后续改为读 prism.local.yaml。
+_STRICT_DEFAULT_PREFIXES: tuple[str, ...] = ()
+
+
 def _resolve_trace_strict(topic_dir: str, cli_override: str | None) -> tuple[str, str]:
     """决定 finalize Step 2.5 (validate-trace) 的执行模式。
 
     返回 (mode, source) 二元组：
       mode: "off" | "lenient" | "strict"
-      source: 决策来源（cli / env / frontmatter / default-029 / default）
+      source: 决策来源（cli / env / frontmatter / default-prefix:<前缀> / default）
 
     优先级（高到低）：
       1. CLI flag: --trace-strict / --trace-lenient / --no-trace-validate
       2. ENV: PRISM_TRACE_VALIDATE=off|lenient|strict
       3. README.md / scope.md frontmatter `trace_strict: true|false`
-      4. topic 路径以特定前缀（如 `029_`）开头 → strict（内置默认）
+      4. topic 路径以 `_STRICT_DEFAULT_PREFIXES` 中任一前缀开头 → strict（默认空集，可配置）
       5. 默认 lenient（不破坏其他 topic 历史产物）
     """
     # 1. CLI flag
@@ -480,10 +492,11 @@ def _resolve_trace_strict(topic_dir: str, cli_override: str | None) -> tuple[str
             except OSError:
                 pass
 
-    # 4. 特定前缀 topic 默认 strict（内置规则，可被 frontmatter 关闭）
+    # 4. 配置前缀 topic 默认 strict（可被 frontmatter 关闭；默认空集 → 跳过）
     topic_name = os.path.basename(os.path.normpath(topic_dir))
-    if topic_name.startswith("029_"):
-        return "strict", "default-029"
+    for prefix in _STRICT_DEFAULT_PREFIXES:
+        if topic_name.startswith(prefix):
+            return "strict", f"default-prefix:{prefix}"
 
     # 5. 默认 lenient
     return "lenient", "default"
@@ -526,8 +539,9 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     执行流程：
       1. tidy --fix（README 指针同步 + review.index 补全）
       2. validate --fix（产物格式校验 + 自动修复）
-      2.5. validate-trace（痕迹义务家族机器抽检）
+      2.5. validate-trace（痕迹义务家族机器抽检 — topic 级）
       2.6. validate-review-call（review schema 字段值校验 — mode/roles/fallback_reason；r01 AP-2）
+      2.7. validate-scope-conservation（双层 scope 1:1 守恒 — task 级；无 structures/ 时空态跳过）
       3. 输出 scope 更新提示（需要人工确认）
 
     --decision 与非交互式守门：
@@ -539,7 +553,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
     --trace-strict / --trace-lenient / --no-trace-validate：
       - 默认 lenient（不破坏其他 topic 历史产物）
-      - 特定前缀（如 `029_`）topic 默认 strict（内置规则）
+      - `_STRICT_DEFAULT_PREFIXES` 内的前缀 topic 默认 strict（默认空集；strict 改为显式 opt-in）
       - README.md/scope.md frontmatter `trace_strict: true|false` 显式覆盖
       - ENV PRISM_TRACE_VALIDATE=off|lenient|strict 全局覆盖
       - CLI flag 最高优先级
@@ -786,14 +800,74 @@ def cmd_finalize(args: argparse.Namespace) -> int:
             })
             # 守门：内部异常不阻塞 finalize（与 Step 2.5 同心态）
 
+    # ── Step 2.7: validate-scope-conservation — 双层 scope 1:1 守恒（task 层）──
+    # finalize「双级」的第二级：topic 级走 Step 2.5/2.6（痕迹 + review schema），
+    # task 级走本步（structures/task-N_slug/scope.md 的 task-V 是否 1:1 投影 topic-V）。
+    # 与 Step 2.5 同 mode 决议；无 structures/ 时为合法空态（checked=false，不阻塞）。
+    if trace_mode != "off":
+        try:
+            import importlib.util
+            vt_path = os.path.join(SHARED_DIR, "scripts", "validate_trace.py")
+            if os.path.isfile(vt_path):
+                spec = importlib.util.spec_from_file_location("_validate_trace_cons_inproc", vt_path)
+                vt_cons = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(vt_cons)
+                from pathlib import Path as _Path
+                cons = vt_cons.validate_scope_conservation(
+                    _Path(topic_dir), strict=(trace_mode == "strict"))
+                cons_errors = len(cons.get("errors", []))
+                cons_warnings = len(cons.get("warnings", []))
+
+                if not cons.get("checked"):
+                    step_status = "skipped"
+                elif cons_errors > 0:
+                    step_status = "error"
+                    has_error = True  # strict 模式守恒破坏阻塞 finalize
+                elif cons_warnings > 0:
+                    step_status = "warn"
+                else:
+                    step_status = "ok"
+
+                steps.append({
+                    "step": "validate-scope-conservation",
+                    "status": step_status,
+                    "mode": trace_mode,
+                    "structures_present": cons.get("structures_present", False),
+                    "tasks_scanned": len(cons.get("tasks", [])),
+                    "errors": cons_errors,
+                    "warnings": cons_warnings,
+                    "details": {
+                        "errors": cons.get("errors", [])[:10],
+                        "warnings": cons.get("warnings", [])[:10],
+                    },
+                })
+            else:
+                steps.append({
+                    "step": "validate-scope-conservation",
+                    "status": "skipped",
+                    "reason": "validate_trace.py 未找到",
+                    "mode": trace_mode,
+                })
+        except Exception as exc:
+            steps.append({
+                "step": "validate-scope-conservation",
+                "status": "error",
+                "mode": trace_mode,
+                "error": f"{type(exc).__name__}: {exc}",
+            })
+            # 守门：内部异常不阻塞 finalize（与 Step 2.5/2.6 同心态）
+
     # ── Step 3: scope 更新提示 ──
     scope_path = os.path.join(topic_dir, "scope.md")
+    focus_path = os.path.join(topic_dir, "focus.md")
     plan_path = os.path.join(topic_dir, "plan.md")
     scope_hint = {
         "step": "scope_hint",
         "status": "info",
         "message": "请确认是否需要更新 scope.md（review 结论是否改变了项目边界？）",
         "scope_exists": os.path.isfile(scope_path),
+        "focus_exists": os.path.isfile(focus_path),
+        # plan_exists 保留供 2.x grandfather topic 识别
         "plan_exists": os.path.isfile(plan_path),
     }
 

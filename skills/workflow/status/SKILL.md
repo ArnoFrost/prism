@@ -10,8 +10,8 @@ description_zh: "扫描活跃专项的健康度，输出结构化报告。当需
 | 维度 | 说明 |
 |------|------|
 | **是什么** | 只读健康度巡检工具：扫描全部活跃 topic 的骨架完整性、进度、活跃度，输出结构化报告 + 建议 |
-| **不是什么** | 不写关键工件、不自动发起 review、不重构 scope/plan、不自动执行修复（report-first） |
-| **读取工件** | workspace 全部 topic 按 [context-pack-spec](references/context-pack-spec.md) light 档逐 topic 采集（README.md / scope.md / plan.md）；另统计 reviews/ + decisions/ 文件数 |
+| **不是什么** | 不写关键工件、不自动发起 review、不重构 scope/focus、不自动执行修复（report-first） |
+| **读取工件** | workspace 全部 topic 按 [context-pack-spec](references/context-pack-spec.md) light 档逐 topic 采集（scope.md / focus.md 入口；README.md 仅存量 grandfather）；另统计 reviews/ + decisions/ 文件数 |
 | **写入工件** | 无（只读报告） |
 | **结束建议** | 根据问题类型建议 → `workflow-scope`（scope 过期）/ `workflow-review`（无评审）/ scaffold（骨架不完整） |
 | **设计模式** | Pattern 4 — Context-aware Tool Selection（根据健康度状态和问题类型建议不同的下一步 skill） |
@@ -66,10 +66,10 @@ uv run python {skill_dir}/scripts/status.py <project_dir> --format markdown
 
 | 维度 | 数据源 | 说明 |
 |------|--------|------|
-| 骨架完整性 | 目录扫描 | README/intake/scope/plan/review.index 是否齐全 |
+| 骨架完整性 | 目录扫描 | scope/focus（入口）/review.index 是否齐全；README deprecate 不作必需项 |
 | scope 进度 | checkbox 统计 | 验收口径勾选比例 |
-| plan 进度 | checkbox 统计 | 待执行/已完成比例 |
-| 更新活跃度 | 文件 mtime | scope/plan/README 最近修改时间 |
+| focus 进度 | checkbox 统计 | 待执行/已完成比例 |
+| 更新活跃度 | 文件 mtime | scope/focus 最近修改时间（README mtime 仅存量参考）|
 | 评审轮次 | reviews/ 文件数 | 已完成的评审轮次 |
 | 决策记录 | decisions/ 文件数 | 已记录的决策数 |
 
@@ -117,7 +117,7 @@ uv run python {skill_dir}/scripts/status.py <project_dir> --format markdown
 | 维度 | 值 |
 |------|------|
 | scope 进度 | 3/6 |
-| plan 进度 | 3/8 |
+| focus 进度 | 3/8 |
 | 评审轮次 | 1 |
 | 决策记录 | 1 |
 

@@ -10,6 +10,9 @@ related:
 
 # Plan — {topic-name}
 
+> ⚠️ **deprecated → focus**：3.0 起 `plan` 已被 `focus`（当前工作集，retention=rewrite）取代，新 topic 用 [topic-focus.md](./topic-focus.md)。
+> 本模板仅为已落地的 2.x topic 保留（grandfather，不强制迁移）。
+>
 > 本文件由 scope.md 驱动更新，review 不直接修改此处。
 > 派生规则详见 shared/plan-derive-spec.md。
 

@@ -1,14 +1,14 @@
 ---
 name: workflow-compact
-description: "Topic 活跃上下文压实与维护性瘦身。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案， 并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。 Use when: 压缩 topic、compact topic、整理 topic 工作区、剥离历史噪声、降低后续 Agent token、 维护长期 topic 当前态、workflow-compact。"
+description: "Topic 活跃上下文压实与上下文熵治理。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案，并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。 Use when: 压缩 topic、compact topic、整理 topic 工作区、剥离历史噪声、降低后续 Agent token、维护长期 topic 当前态、上下文瘦身、workflow-compact。"
 user_invocable: True
 license: MIT
-visibility: internal
+visibility: dev
 stability: experimental
 metadata:
   author: ArnoFrost
-  version: 0.2.0
-description_zh: "Topic 活跃上下文压实与维护性瘦身。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案， 并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。"
+  version: dev-01
+description_zh: "Topic 活跃上下文压实与上下文熵治理。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案，并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。"
 ---
 # Workflow Compact — Topic 活跃上下文压实
 
@@ -22,6 +22,7 @@ description_zh: "Topic 活跃上下文压实与维护性瘦身。用于在独立
 | 长期 topic 完成一个阶段，需要保留当前态并冷存历史噪声 | `/workflow-compact <topic_dir> --preview` |
 | 准备执行有损或可能误整理的压实动作 | 先运行备份门禁，再进入 apply |
 | 只是给协作者/产品看当前状态 | 使用 `workflow-digest`，不要用 compact |
+| 只是检查健康度或下一步 | 使用 `workflow-status` / `next` 候选能力，不要用 compact |
 | 整个 topic 已结束要移入 workspace archive | 使用 `prism archive`，不要用 compact |
 
 ## 核心边界
@@ -31,7 +32,7 @@ description_zh: "Topic 活跃上下文压实与维护性瘦身。用于在独立
 | `workflow-digest` | 对外交接切片，输出 `digest.md`，非 SSOT | compact 不写 `digest.md`，不把 digest 当长期事实源 |
 | `prism archive` | 整 topic 生命周期归档 | compact 不移动整个 topic，不改变 topic status |
 | `workflow-tidy` | 机械对齐，不改 what | compact 只提出指针修复建议；元数据修复交给 tidy |
-| `workflow-scope` | scope → plan 合同派生 | compact 不直接改 scope / plan 语义 |
+| `workflow-scope` | scope → focus 合同派生 | compact 不直接改 scope / focus 语义 |
 | `workflow-compact` | 对内维护性压实，降低接续成本 | preview-first，apply 前强制备份 |
 
 ## 参数
@@ -49,7 +50,7 @@ description_zh: "Topic 活跃上下文压实与维护性瘦身。用于在独立
 ```
 Phase 0  定位 topic
   ↓
-Phase 1  只读盘点：读取 README / scope / plan / decision.index / review.index / 最近 dXX/rXX
+Phase 1  只读盘点：读取 scope / focus or plan / decision.index / review.index / 最近 dXX/rXX / references
   ↓
 Phase 2  分类预案：protected / active / cold / summarize / delete-candidate
   ↓
@@ -67,7 +68,7 @@ Phase 4  记录：写 manifest 或 dXX，列出备份路径、改动文件、恢
 - **未 preview 不 apply**：没有展示 compact plan 时禁止写入。
 - **未备份不 apply**：任何 apply 前必须先运行 `scripts/compact_backup.py` 并确认备份成功。
 - **首版不 hard delete**：`delete-candidate` 只列出，不执行删除。
-- **不压缩权威工件正文**：`scope.md`、`plan.md`、`decisions/*.md`、`reviews/r*.md` 默认只读。
+- **不压缩权威工件正文**：`scope.md`、`focus.md`、`plan.md`、`decisions/*.md`、`reviews/r*.md` 默认只读。
 - **不新增 trace family**：使用 dXX / manifest / README 指针记录，不创建第 5 类痕迹义务。
 - **不调用 `prism archive`**：compact 是 topic 内部维护，不是生命周期归档。
 
@@ -106,6 +107,10 @@ preview 输出 `compact_plan`：
 compact_plan:
   topic: <topic_dir>
   mode: preview
+  writes: 0
+  recommend_apply: false
+  entropy_sources:
+    - context_entropy
   protected: []
   active: []
   cold: []
@@ -113,6 +118,7 @@ compact_plan:
   delete_candidates: []
   proposed_writes: []
   requires_backup: true
+  next_step: observe | review | defer | apply
 ```
 
 apply 输出 `compact_result`：

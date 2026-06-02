@@ -153,7 +153,8 @@ mkdir -p "$WS_ROOT/{CODE}/topics" "$WS_ROOT/{CODE}/docs" "$WS_ROOT/{CODE}/archiv
 | 模板 | 用途 | 消费方 |
 |------|------|--------|
 | `topic-readme.md` | 专项 README 段落规范（属性表/控制台/状态/恢复指引/决策表） | workflow-intake |
-| `topic-plan.md` | 专项 plan 段落规范（焦点/待执行/留后续/已完成/不做） | workflow-scope（派生） |
+| `topic-focus.md` | 专项 focus 段落规范（光标快读面 + goal/input/output/non-goal；rewrite，≤30行） | workflow-scope（刷新） |
+| `topic-plan.md` | 专项 plan 段落规范（deprecated → focus，2.x grandfather） | （legacy） |
 
 **2.3 注册项目**
 
@@ -231,7 +232,7 @@ prism.local.yaml
 |------|------|--------|
 | **init**（本技能）| 项目级初始化 / 工作区创建 | 产出 workspace 目录 + 模板文件 |
 | **intake** | 入料 → 路由 → 专项初始化 | init 创建 workspace 后，intake 在其中创建专项 |
-| **scope** | 合同收敛 → plan 派生 | intake 产出初始 scope |
+| **scope** | 合同收敛 → focus 刷新 | intake 产出初始 scope |
 | **review** / **review-lite** | 评审 → 行动计划 | 在 workspace 内工作 |
 
 ## 降级策略

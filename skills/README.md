@@ -15,6 +15,7 @@ skills/
 │   └── SKILL.template.md             # 技能编写模板
 ├── workflow/                          # ★ 内置工作流技能（v2.0）
 │   ├── digest/
+│   ├── compact/                   # dev experimental：上下文熵治理 preview（不 apply）
 │   ├── intake/
 │   ├── review/
 │   ├── review-lite/
@@ -30,14 +31,14 @@ skills/
 
 | 类别 | 位置 | 技能 |
 |------|------|------|
-| workflow | `skills/workflow/` | intake, review, review-lite, scope, status, tidy, digest |
+| workflow | `skills/workflow/` | intake, review, review-lite, scope, status, tidy, digest, compact (preview-only) |
 | workspace | `skills/workspace/` | init（含 migrate 能力） |
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
-## Workflow 管线（v2.0）
+## Workflow 管线（v3.0 canary）
 
-八个内置技能组成完整的人机协作管线：
+内置 workflow skills 组成完整的人机协作管线：
 
 ```
 init（项目容器）→ intake（入料路由）→ scope（合同收敛）→ review（评审）→ decision（决策）→ scope（更新）→ ...
@@ -49,14 +50,14 @@ init（项目容器）→ intake（入料路由）→ scope（合同收敛）→
 | Skill | 触发 | 输入 | 产出 |
 |-------|------|------|------|
 | `workspace-init` | `/workspace-init` | 项目路径 + 用户信息 | workspace 骨架 + 注册 + 软链接 |
-| `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + intake.md + scope 草稿 |
-| `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + plan.md 派生 |
+| `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + references/intake.md + scope 草稿 |
+| `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + focus.md 刷新 |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
 | `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |
 | `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
 | `workflow-status` | `/workflow-status` | 无 | 健康度 JSON + Markdown 报告 |
-| `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的活跃上下文压实方案 + apply 前备份门禁 |
+| `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁 |
 
 共享依赖位于 `workflow/shared/`：`sniff_lib.py`、`obsidian-config.md`、`parallel-execution.md`、`scripts/archive.py`。
 

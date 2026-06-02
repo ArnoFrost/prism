@@ -115,7 +115,7 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 | **intake** | 在 topics/ 下创建新专项目录 | `next_topic_number` |
 | **review** | 在已有 topic 的 reviews/ 下追加评审 | `next_review_number`, `review_density_warning` |
 | **review-lite** | 同 review | 同 review |
-| **scope** | 读写已有 topic 的 scope.md + plan.md | 无额外字段 |
+| **scope** | 读写已有 topic 的 scope.md + focus.md | 无额外字段 |
 | **status** | 扫描已有 topic 的健康度 | 无额外字段 |
 
 ## sniff 输出标准字段

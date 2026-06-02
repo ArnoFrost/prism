@@ -1,11 +1,11 @@
-# Compact Policy — topic 压实策略
+# Compact Policy — 上下文熵治理分类
 
 ## 分类矩阵
 
 | 类别 | 定义 | 默认动作 | 备注 |
 |------|------|----------|------|
-| `protected` | 决策链、正式评审、scope/plan 等权威工件 | 只读，不移动，不删 | 仅可生成指针或建议 |
-| `active` | 当前恢复工作必读内容 | 保留在热区 | 通常来自 README next action、latest dXX/rXX |
+| `protected` | 合同、当前入口、决策链、正式评审等权威工件 | 只读，不移动，不删 | 仅可生成指针或建议 |
+| `active` | 当前恢复工作必读内容 | 保留在热区 | 通常来自 `focus.md`、latest dXX/rXX、active task |
 | `cold` | 历史材料、旧 raw、旧草稿、过期附件 | 可建议移入 topic 内冷存 | apply 前必须备份 + 用户确认 |
 | `summarize` | 长叙事但仍需保留入口的材料 | 生成摘要 + 原文路径 | 摘要不是 SSOT |
 | `delete-candidate` | 明显重复或临时产物 | 首版只列出 | 不执行删除 |
@@ -16,15 +16,41 @@
 
 - `README.md`
 - `scope.md`
+- `focus.md`
 - `plan.md`
 - `intake.md`
 - `decision.index.md`
 - `review.index.md`
 - `decisions/*.md`
 - `reviews/r*.md`
+- `structures/task.index.md`
+- `structures/task-*/scope.md`
+- `structures/task-*/wave-*.md`
+- `references/intake.md`
 - `.compact_backups/`
 - 已生成的 `backup_manifest.json`
-- 被 `decision.index.md` 或 `review.index.md` 引用的任意文件
+- 被 `decision.index.md`、`review.index.md` 或 `focus.md` 引用的任意文件
+
+## Grandfather 兼容
+
+2.x topic 可能仍用：
+
+- `README.md` 作为控制台
+- `plan.md` 作为工作集
+- 根级 `intake.md`
+
+这些文件在 preview 中仍按 protected / active 处理，但输出时标记为 `grandfather`，不得要求批量迁移。
+
+## 认知熵判断
+
+compact 是否有价值，不看“文件多不多”，而看是否降低：
+
+- 恢复上下文耗时
+- 误路由次数
+- 重复解释次数
+- 决策重演成本
+- focus rewrite 负担
+- scope / references 阅读密度
 
 ## Apply 前置条件
 

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-"""scaffold.py — 在 workspace 的 topics/ 下一键创建完整专项骨架。
+"""scaffold.py — 在 workspace 的 topics/ 下一键创建完整专项骨架（3.0，模板驱动）。
 
-用法: uv run python scaffold.py <workspace_path> <number> <topic_name> [--title <标题>] [--tag <tag>] [--dry-run]
+用法: uv run python scaffold.py <workspace_path> <number> <topic_name> [--title <标题>] [--tag <tag>] [--templates-dir <dir>] [--dry-run]
+
+3.0 行为：
+  - 产 focus.md（不产 plan.md）；intake 落 references/intake.md（不占根级）
+  - 所有产物从 workspace/templates/ 读取并占位符替换（不再内联复制结构 = 治"模板孤儿"）
+  - structures/ 按需出现，scaffold 不预建
 
 幂等：已存在的文件/目录跳过，只创建缺失的部分。
 输出 JSON：{ created: [...], skipped: [...], topic_dir: "..." }
@@ -18,200 +23,43 @@ def _today() -> str:
     return date.today().strftime("%Y-%m-%d")
 
 
-TEMPLATES = {
-    "README.md": lambda ctx: f"""# {ctx['nnn']} — {ctx['title']}
+def _default_templates_dir() -> str:
+    """从本脚本位置回溯到 <repo>/workspace/templates/。
 
-| 属性 | 值 |
-|------|------|
-| **编号** | {ctx['nnn']} |
-| **created** | {ctx['date']} |
-| **updated** | {ctx['date']} |
-| **status** | in-progress |
+    scaffold.py 位于 skills/workflow/intake/scripts/ → 回溯 4 级到仓库根。
+    """
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    repo_root = os.path.abspath(os.path.join(script_dir, "..", "..", "..", ".."))
+    return os.path.join(repo_root, "workspace", "templates")
 
-## 控制台
 
-| 维度 | 当前 |
-|------|------|
-| **scope** | [scope.md](./scope.md) |
-| **plan** | [plan.md](./plan.md) |
-| **latest review** | — |
-| **latest decision** | — |
-| **next action** | 完成 intake，收敛 scope |
-
-## 当前状态
-
-- **主线任务**：_待填写_
-- **阶段**：启动
-
-## 关键决策
-
-| 决策 | 结论 | 时间 |
-|------|------|------|
-""",
-
-    "intake.md": lambda ctx: f"""---
-date: {ctx['date']}
-status: done
-type: intake
-tags:
-  - {ctx['tag']}
-related:
-  - "./scope.md"
----
-
-# Intake — {ctx['title']}
-
-## 原始输入
-
-_待填写_
-
-## 结构化摘要
-
-- **核心诉求**：
-- **已知约束**：
-- **关键上下文**：
-
-## 未决问题
-
-- [ ]
-""",
-
-    "scope.md": lambda ctx: f"""---
-date: {ctx['date']}
-status: active
-type: scope
-tags:
-  - {ctx['tag']}
-related:
-  - "./intake.md"
----
-
-# Scope — {ctx['title']}
-
-## 目标
-
--
-
-## 非目标
-
--
-
-## 验收口径
-
--
-
-## 关键约束
-
--
-
-## 未决问题
-
-- [ ]
-""",
-
-    "plan.md": lambda ctx: f"""---
-date: {ctx['date']}
-status: active
-type: plan
-tags:
-  - {ctx['tag']}
-related:
-  - "./scope.md"
----
-
-# Plan — {ctx['title']}
-
-> 本文件由 scope.md 驱动更新，review 不直接修改此处。
-
-## 当前焦点
-
-_本轮正在推进的事项（plan 的时间切片）_
-
--
-
-## 总计划
-
-_完整工作分解与里程碑（长期 SSOT）_
-
-### 待执行
-
--
-
-### 已完成
-
-_（无）_
-
-## 明确不做
-
--
-""",
-
-    "decision.index.md": lambda ctx: f"""---
-date: {ctx['date']}
-status: active
-type: decision-index
-tags:
-  - {ctx['tag']}
-related:
-  - "./scope.md"
-  - "./README.md"
----
-
-# 决策链主索引 — {ctx['title']}
-
-> **事件链 SSOT** — topic 内所有决策事件的时序索引；含时序表 + frontmatter 依赖字段。
-> 主索引地位由本文件承担；`review.index.md` 是辅助索引（仅列被 decision 引用的 review；稀疏关联律）。
-
-## 决策时序表
-
-| dXX | 决策标题 | accepted_at | review_ref | supersedes | derived_from | related_dXX |
-|:---:|---------|:-----------:|:----------:|:----------:|:-----------:|:-----------:|
-| — | _(暂无决策)_ | — | — | — | — | — |
-
-## frontmatter 依赖字段说明
-
-每个 dXX.md 的 frontmatter 应包含三个依赖字段：
-
-| 字段 | 类型 | 含义 |
-|------|------|------|
-| `supersedes` | list[str] | 本决策推翻 / 取代了哪些 dXX；空表示无推翻 |
-| `derived_from` | list[str] | 本决策从哪些 dXX 派生；空表示无派生（intake-derived 或元层决策）|
-| `related_dXX` | list[str] | 关联但非派生 / 非推翻的 dXX；用于 cross-reference |
-
-## 维护规范
-
-- 新增决策：写 dXX.md 后追加本表一行；填齐 7 列；frontmatter 依赖字段就位
-- 推翻决策：新决策 frontmatter `supersedes: [dXX]`；本表保留旧 dXX 行（不删）
-- 派生决策：新决策 frontmatter `derived_from: [dXX]`；本表表达派生链
-""",
-
-    "review.index.md": lambda ctx: f"""---
-date: {ctx['date']}
-status: active
-type: review-index
-tags:
-  - {ctx['tag']}
-related:
-  - "./scope.md"
-  - "./decision.index.md"
----
-
-# 评审辅助索引 — {ctx['title']}
-
-> **辅助索引（稀疏关联律）** — 仅列出被某 dXX 引用的 review 轮次；探索 / 调研 / 辩证性 review 不在本表登记。
-> 决策链主索引地位由 [decision.index.md](./decision.index.md) 承担。
-
-| 轮次 | 文件 | 状态 | 决策 | 说明 |
-|------|------|------|------|------|
-| — | _(暂无被引用的 review)_ | — | — | — |
-""",
+# 产物文件 → workspace/templates/ 模板文件名
+# 注：structures/task 三件按需出现，不在 topic 创建时落盘。
+TEMPLATE_FILES = {
+    "README.md": "topic-readme.md",
+    "scope.md": "topic-scope.md",
+    "focus.md": "topic-focus.md",
+    "references/intake.md": "topic-intake.md",
+    "decision.index.md": "topic-decision-index.md",
+    "review.index.md": "topic-review-index.md",
 }
 
-DIRS = ["reviews", "decisions"]
+DIRS = ["references", "reviews", "decisions"]
+
+
+def _render(template_text: str, ctx: dict) -> str:
+    """占位符替换。仅替换结构性占位符；正文里的 {中文填空提示} 原样保留供用户填写。"""
+    out = template_text
+    out = out.replace("YYYY-MM-DD", ctx["date"])
+    out = out.replace("{NNN}", ctx["nnn"])
+    out = out.replace("{topic-name}", ctx["title"])
+    out = out.replace("{topic-tag}", ctx["tag"])
+    return out
 
 
 def scaffold(workspace_path: str, number: int, topic_name: str,
              title: str | None = None, tag: str | None = None,
+             templates_dir: str | None = None,
              dry_run: bool = False) -> dict:
     nnn = f"{number:03d}"
     dir_name = f"{nnn}_{topic_name}"
@@ -222,6 +70,8 @@ def scaffold(workspace_path: str, number: int, topic_name: str,
         title = topic_name.replace("-", " ").replace("_", " ").title()
     if tag is None:
         tag = topic_name.split("-")[0] if "-" in topic_name else topic_name
+    if templates_dir is None:
+        templates_dir = _default_templates_dir()
 
     ctx = {"nnn": nnn, "title": title, "tag": tag, "date": _today(),
            "topic_name": topic_name}
@@ -252,27 +102,36 @@ def scaffold(workspace_path: str, number: int, topic_name: str,
                 os.makedirs(sub_path, exist_ok=True)
             created.append(sub_path)
 
-    for filename, tmpl_fn in TEMPLATES.items():
-        file_path = os.path.join(topic_dir, filename)
+    for out_rel, tmpl_name in TEMPLATE_FILES.items():
+        file_path = os.path.join(topic_dir, out_rel)
         if os.path.isfile(file_path):
             skipped.append(file_path)
-        else:
-            if not dry_run:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write(tmpl_fn(ctx))
-            created.append(file_path)
+            continue
+        tmpl_path = os.path.join(templates_dir, tmpl_name)
+        if not os.path.isfile(tmpl_path):
+            raise FileNotFoundError(
+                f"模板缺失: {tmpl_path}（scaffold 模板驱动，需 workspace/templates/{tmpl_name}）"
+            )
+        if not dry_run:
+            with open(tmpl_path, "r", encoding="utf-8") as f:
+                rendered = _render(f.read(), ctx)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(rendered)
+        created.append(file_path)
 
     return {
         "topic_dir": topic_dir,
         "created": created,
         "skipped": skipped,
         "dry_run": dry_run,
+        "templates_dir": templates_dir,
     }
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="创建完整专项骨架（幂等）",
+        description="创建完整专项骨架（3.0 模板驱动，幂等）",
         usage="uv run python scaffold.py <workspace_path> <number> <topic_name> [options]",
     )
     parser.add_argument("workspace_path", help="Workspace 根目录")
@@ -280,6 +139,8 @@ def main():
     parser.add_argument("topic_name", help="专项名（小写连字符，如 agent-workflow-patterns）")
     parser.add_argument("--title", default=None, help="专项标题（中文，默认从 topic_name 生成）")
     parser.add_argument("--tag", default=None, help="frontmatter tag（默认取 topic_name 首段）")
+    parser.add_argument("--templates-dir", default=None,
+                        help="模板目录（默认 <repo>/workspace/templates/）")
     parser.add_argument("--dry-run", action="store_true", help="只输出计划，不创建文件")
 
     args = parser.parse_args()
@@ -290,7 +151,8 @@ def main():
 
     result = scaffold(
         args.workspace_path, args.number, args.topic_name,
-        title=args.title, tag=args.tag, dry_run=args.dry_run,
+        title=args.title, tag=args.tag,
+        templates_dir=args.templates_dir, dry_run=args.dry_run,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

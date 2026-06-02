@@ -26,23 +26,39 @@ topic:
   numbering:
     digits: 3
     scope: "topics/ + archive/ 共享编号空间，全局递增"
-  # 专项内部结构定义
+  # 专项内部结构定义（3.0 恒在链 = references → reviews → decisions；structures/ 为条件第 4 环）
   structure:
     required:
-      - README.md           # 主线导航（编号/created/updated/status + 索引）
+      - README.md           # 主线导航（编号/created/updated/status + 控制台）
+    # tier 说明（r06.S d06.S 澄清）：structural `required` 仅 README（结构最小存活集）；
+    # 下列 intake_mandatory 是「创建期软 required」——intake Phase 3 必须补占位骨架，
+    # 缺失即 trace-artifacts-spec §intake_gate_out 判违约（intake_gate_out.*_present=false）。
+    # 二者不矛盾：required = 结构最小集；intake_mandatory = 入料完成门槛。
+    intake_mandatory:
+      - scope.md            # intake_gate_out.scope_md_present
+      - focus.md            # intake_gate_out.focus_md_present
+      - README.md           # intake_gate_out.readme_md_present
+      - review.index.md     # intake_gate_out.review_index_present
     recommended:
-      - intake.md           # 输入整形（混沌输入 → 结构化）
-      - scope.md            # 合同收敛（目标/非目标/验收口径/约束/未决）
-      - plan.md             # 总计划 + 当前焦点（单文件双区，跨轮次更新）
+      - scope.md            # 合同面 SSOT（G/V/非目标/约束/未决/变更记录；persistent）
+      - focus.md            # 当前工作集（3.0；kind=state，retention=rewrite，主体≤30行，光标快读面）— 取代 plan
       - decision.index.md   # 决策链主索引（事件链 SSOT — 时序表 + frontmatter 依赖字段）
     optional:
+      - references/         # 依据/来源（3.0 起 intake = 来源留档归此；含 vocabulary 软链等）
+      - "references/intake.md"  # 来源意图留档（kind=state，retention=persistent）
       - review.index.md     # 评审辅助索引（仅列被 decision 引用的 review，主索引由 decision.index 承担）
-      - reviews/            # 评审轮次产物（rXX_short-desc.md）
+      - reviews/            # 评审轮次产物（rXX.S / rXX.tN_short-desc.md）
       - "reviews/raw/"      # 原始角色报告（可选保留）
-      - decisions/          # 决策记录（dXX_short-desc.md）
-      - verify/             # 验证规格（plan 条目按需关联，[auto]/[human] 标记）
+      - decisions/          # 决策记录（dXX.S / dXX.tN_short-desc.md）
+      - structures/         # 结构分解（按需出现，条件第 4 环；kind=structure 容器）
+      - "structures/task.index.md"  # task 导航 + 长期结构分解（kind=state，retention=mutable）
+      - "structures/task-N_slug/"   # 单个 task（scope.md=governance / wave-N_slug.md=execution）
+      - verify/             # 验证规格（V 条目按需关联，[auto]/[human] 标记）
       - artifacts/          # 产出工件
-      - snapshots/          # 历史快照（scope/plan 旧版本）
+      - snapshots/          # 历史快照（scope 旧版本；focus 非沉淀不入此）
+    deprecated:
+      - plan.md             # 2.x 总计划+焦点；3.0 由 focus（短期）+ structures/task.index（长期）取代。存量 13 active+20 archive topic grandfather，不强制迁移；脚本优先 focus.md 回退 plan.md
+      - intake.md           # 2.x 根级 intake；3.0 移入 references/intake.md（grandfather）
 
 # Topic status lifecycle
 topic_status:
@@ -51,7 +67,7 @@ topic_status:
     in-progress: [done]
     done: []
 
-# Topic frontmatter schema (for topic root files: intake/scope/plan/review.index)
+# Topic frontmatter schema (for topic root files: scope/focus/review.index/...)
 topic_frontmatter:
   required:
     date: "YYYY-MM-DD"
@@ -60,6 +76,8 @@ topic_frontmatter:
     tags: "list[string]"
   optional:
     related: "list[string]"
+    kind: "string — 自动化性质轴；取值见 vocabulary.md §kind 五元（governance/execution/state/derived/structure）"
+    governs: "string — 治理归属层级（topic / task-N_slug）；vocabulary.md 三轴正交之一"
 
 # Topic artifacts — 专项内工件分类
 topic_artifacts:
@@ -69,19 +87,33 @@ topic_artifacts:
     description: "专项主线导航（属性表 + 控制台 + 当前状态 + 恢复指引 + 参考资料 + 关键决策）"
     producer: "workflow-intake / 手动"
   intake:
-    filename: "intake.md"
-    description: "输入整形 — 把混沌材料变成结构化输入"
+    filename: "references/intake.md"
+    legacy_filename: "intake.md"
+    kind: "state"
+    retention: "persistent"
+    description: "来源意图留档 — 把混沌材料变成结构化输入（3.0 起归 references/；2.x 根级 intake.md grandfather）"
     producer: "workflow-intake"
   scope:
     filename: "scope.md"
-    description: "合同收敛 — 目标/非目标/验收口径/关键约束/未决问题（plan 唯一上游 SSOT）"
+    kind: "governance"
+    retention: "persistent"
+    description: "合同收敛 — G/V/非目标/关键约束/未决问题/变更记录（focus 与 structures/task.index 的唯一上游 SSOT）"
     producer: "workflow-scope / workflow-intake(初稿)"
+  focus:
+    filename: "focus.md"
+    template: "workspace/templates/topic-focus.md"
+    kind: "state"
+    retention: "rewrite"
+    derive_spec: "skills/workflow/shared/focus-derive-spec.md"
+    description: "当前工作集 — topic 级唯一注意力光标（主体≤30行，光标快读面 + goal/input/output/non-goal）。retention=rewrite：完成即原地重写，不归档/不版本化；历史进 reviews/decisions。3.0 正式取代 plan"
+    producer: "workflow-scope(派生/刷新)"
   plan:
     filename: "plan.md"
     template: "workspace/templates/topic-plan.md"
-    description: "总计划（工作分解 + 里程碑）+ 当前焦点（时间切片）— 由 scope.md 驱动更新，review 不直接修改"
-    derive_spec: "skills/workflow/shared/plan-derive-spec.md"
-    producer: "workflow-scope(派生)"
+    status: "deprecated"
+    superseded_by: "focus + structures/task.index"
+    description: "【deprecated → focus】2.x 总计划 + 当前焦点。3.0 起短期切片归 focus、长期分解归 structures/task.index。存量 topic grandfather，脚本优先 focus.md 回退 plan.md"
+    producer: "(legacy) workflow-scope(派生)"
   review:
     filename_pattern: "reviews/rXX_short-desc.md"
     naming_rule: "rXX_{简短描述}.md — 中英文均可，禁止空格/子目录"
@@ -118,7 +150,7 @@ topic_artifacts:
       ## 备选方案
       {考虑过但放弃的选项，简述理由}
       ## 影响
-      {这个决策改变了什么：scope/plan/schema/skill}
+      {这个决策改变了什么：scope/focus/schema/skill}
       ## 后续动作
       - [ ] {需要执行的动作}
   review_index:
@@ -129,7 +161,7 @@ topic_artifacts:
   verify:
     filename_pattern: "verify/vXX_{short-desc}.md"
     naming_rule: "vXX_{简短描述}.md — 中英文均可，禁止空格"
-    description: "验证规格 — 由 plan.md 条目按需关联，承载 scope 验收大项的具体判定标准"
+    description: "验证规格 — 由 scope 的 V 条目按需关联，承载验收大项的具体判定标准"
     markers:
       auto: "[auto] — Agent 可独立执行验证，后跟命令 + 预期输出"
       human: "[human] — 需人工操作验收，后跟步骤 + 预期结果"
@@ -144,6 +176,43 @@ topic_artifacts:
       - supersedes        # 本决策推翻 / 取代了哪些 dXX（list[str]）
       - derived_from      # 本决策从哪些 dXX 派生（list[str]）
       - related_dXX       # 关联但非派生 / 非推翻的 dXX（list[str]）
+  # —— 3.0 结构分解三件（structures/ 按需出现；kind/retention 见 vocabulary.md，此处仅登记不复制定义）——
+  task_index:
+    filename: "structures/task.index.md"
+    template: "workspace/templates/task-index.md"
+    kind: "state"
+    retention: "mutable"
+    description: "task 导航 + 长期结构性工作分解 SSOT；按需出现（无 task 不预建空 index）。task 稳定 id tN 跨 reviews/decisions/focus 全局一致"
+    producer: "workflow-scope / 手动（topic 升级出 task 时）"
+  task_scope:
+    filename_pattern: "structures/task-N_slug/scope.md"
+    template: "workspace/templates/task-scope.md"
+    kind: "governance"
+    retention: "persistent"
+    description: "task 承诺面 — 单个被授权问题切片的合同（从 topic 级 review→decision 领授权）"
+    producer: "workflow-scope / 手动"
+  task_wave:
+    filename_pattern: "structures/task-N_slug/wave-N_slug.md"
+    template: "workspace/templates/task-wave.md"
+    kind: "execution"
+    retention: "mutable"
+    description: "task 内时间推进批次；无 task 的 topic 不落独立 wave 文件，只体现在 focus 当前轮（vocabulary §wave-3.0）"
+    producer: "手动 / 执行推进"
+
+# 三正交轴登记（type / kind / governs）— 定义 SSOT 在 vocabulary.md，此处仅声明取值域供 schema 引用
+axes:
+  type:
+    role: "产物类别（schema topic_artifacts 的键）"
+  kind:
+    role: "自动化性质轴（vocabulary.md §kind 五元）"
+    values: [governance, execution, state, derived, structure]
+  governs:
+    role: "治理归属层级"
+    values: ["topic", "task-N_slug"]
+  retention:
+    role: "Artifact 生命周期（vocabulary.md §retention 律）"
+    values: [persistent, rewrite, mutable]
+    note: "focus = rewrite（非沉淀，禁 focus-v2/focus-history）；scope/review/decision/task-scope/intake = persistent；README/*.index/map = mutable"
 
 # Archive rules
 archive:
@@ -160,3 +229,4 @@ constraints:
   doc_max_lines: 300
   max_active_topics: 10
   archive_after_days: 7
+  focus_body_max_lines: 30   # focus 主体（光标快读面 + 4 字段，不含 frontmatter 与四眼导航）

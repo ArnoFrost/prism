@@ -3,12 +3,12 @@
 
 OQ-1 B+C 混合方案验证：
 - 默认 lenient（不破坏其他 topic 历史产物）
-- 029_ 前缀 topic 默认 strict（治理 dogfooding 主战场）
+- `_STRICT_DEFAULT_PREFIXES` 内前缀 topic 默认 strict（默认空集；硬编码 029_ 已清理为显式 opt-in）
 - frontmatter `trace_strict: true|false` 显式覆盖
 - ENV PRISM_TRACE_VALIDATE=off|lenient|strict 全局覆盖
 - CLI flag 最高优先级（--trace-strict / --trace-lenient / --no-trace-validate）
 
-覆盖优先级：CLI > ENV > frontmatter > default-029 > default
+覆盖优先级：CLI > ENV > frontmatter > default-prefix > default
 """
 
 import importlib.util
@@ -47,12 +47,22 @@ class TestResolveTraceStrict:
         assert mode == "lenient"
         assert source == "default"
 
-    def test_default_strict_for_029(self, tmp_path: Path):
+    def test_legacy_029_prefix_now_lenient(self, tmp_path: Path):
+        """清理回归守卫：`029_` 硬编码默认已移除 → 现回退 lenient（strict 改显式 opt-in）。"""
         topic = tmp_path / "029_test_dogfooding"
         topic.mkdir()
         mode, source = prism_cli._resolve_trace_strict(str(topic), None)
+        assert mode == "lenient"
+        assert source == "default"
+
+    def test_default_strict_for_configured_prefix(self, tmp_path: Path, monkeypatch):
+        """配置前缀机制：在 _STRICT_DEFAULT_PREFIXES 注入前缀后，匹配 topic 默认 strict。"""
+        monkeypatch.setattr(prism_cli, "_STRICT_DEFAULT_PREFIXES", ("release-",))
+        topic = tmp_path / "release-2026h1"
+        topic.mkdir()
+        mode, source = prism_cli._resolve_trace_strict(str(topic), None)
         assert mode == "strict"
-        assert source == "default-029"
+        assert source == "default-prefix:release-"
 
     def test_frontmatter_overrides_default(self, tmp_path: Path):
         topic = tmp_path / "100_other"
@@ -68,8 +78,10 @@ class TestResolveTraceStrict:
         assert mode == "strict"
         assert source == "frontmatter:README.md"
 
-    def test_frontmatter_false_overrides_029_default(self, tmp_path: Path):
-        topic = tmp_path / "029_test_off"
+    def test_frontmatter_false_overrides_prefix_default(self, tmp_path: Path, monkeypatch):
+        """frontmatter false 覆盖配置前缀默认 strict（优先级 3 > 4）。"""
+        monkeypatch.setattr(prism_cli, "_STRICT_DEFAULT_PREFIXES", ("release-",))
+        topic = tmp_path / "release-test_off"
         topic.mkdir()
         (topic / "README.md").write_text(
             "---\ntrace_strict: false\n---\n# README\n",

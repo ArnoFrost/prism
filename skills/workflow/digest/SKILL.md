@@ -77,13 +77,14 @@ uv run python {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirnam
 
 | 字段 | 来源 | 用途 |
 |------|------|------|
-| `readme.status` | README.md | 当前阶段 |
-| `readme.current_state` | README.md | 主线任务描述 |
+| `readme.status` | README.md（deprecated，仅 grandfather）| 当前阶段；缺失时降级 |
+| `readme.current_state` | README.md（deprecated，仅 grandfather）| 主线任务；缺失降级 `focus.current_state` |
 | `scope.goals` | scope.md | 目标列表 |
 | `scope.acceptance_progress` | scope.md | 验收进度（X/Y） |
 | `scope.open_questions` | scope.md | 未决问题 |
-| `plan.current_focus` | plan.md | 当前焦点 |
-| `plan.progress` | plan.md | 计划进度（X/Y） |
+| `focus.current_state` | focus.md | 光标快读面「当前态」（README 缺失时主状态源）|
+| `focus.current_focus` | focus.md | 当前焦点「下一步」 |
+| `focus.progress` | focus.md | 进度（X/Y） |
 | `decisions` | decisions/ | 最近 3 个决策 |
 | `reviews` | reviews/ | 最近 2 轮评审 TL;DR |
 
@@ -132,7 +133,7 @@ workflow/digest/
 
 | 技能 | 职责 | 交接点 |
 |------|------|--------|
-| **digest**（本技能）| topic 状态 → 面向协作者的摘要 | 消费 scope/plan/reviews/decisions |
+| **digest**（本技能）| topic 状态 → 面向协作者的摘要 | 消费 scope/focus/reviews/decisions |
 | **status** | 健康度指标 → 面向 Agent 的报告 | status 给机器，digest 给人 |
 | **review** | 深度评审 → 仲裁 → 行动计划 | review 是决策工具，digest 是通报工具 |
 | **tidy** | 工件机械对齐 | tidy 对齐元数据，digest 生成叙事 |
@@ -141,7 +142,7 @@ workflow/digest/
 
 | 维度 | 个人 digest | workflow-digest（本技能） |
 |------|-------------|--------------------------|
-| 输入 | commit / MR / diff | topic 工件（scope/plan/reviews） |
+| 输入 | commit / MR / diff | topic 工件（scope/focus/reviews） |
 | 输出 | 技术变更摘要 | 专项状态通报 |
 | 读者 | 技术负责人 | 产品 / 协作者 / 自己 |
 | 触发 | 代码变更后 | 需要对外沟通时 |

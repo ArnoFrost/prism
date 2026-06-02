@@ -5,7 +5,7 @@
   uv run python tidy.py <project_dir> [--fix] [--topic <topic_dirname>]
 
 默认 dry-run（只报告），--fix 时自动修复安全项。
-语义变更项（scope checkbox、plan 条目移动）始终仅报告。
+语义变更项（scope checkbox、focus/plan 条目移动）始终仅报告。
 
 零外部依赖，纯 stdlib。
 """
@@ -18,6 +18,9 @@ import sys
 from datetime import date, datetime
 
 from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared", "scripts"))
+from parse_utils import resolve_work_file
 
 
 def _read(path: str) -> str | None:
@@ -136,6 +139,132 @@ def _scan_reviews_for_index(topic_dir: str) -> dict:
     return result
 
 
+def _split_markdown_row(line: str) -> list[str]:
+    """拆分 markdown 表格行，返回去空白后的 cell。"""
+    stripped = line.strip()
+    if not (stripped.startswith("|") and stripped.endswith("|")):
+        return []
+    return [cell.strip() for cell in stripped.strip("|").split("|")]
+
+
+def _is_placeholder(value: str) -> bool:
+    stripped = value.strip()
+    if not stripped:
+        return True
+    if stripped in {"—", "-", "...", "…"}:
+        return True
+    if "{" in stripped and "}" in stripped:
+        return True
+    return False
+
+
+def _find_task_table(lines: list[str]) -> tuple[list[str], list[list[str]]]:
+    """从 task.index.md 中提取 Task 列表表头与数据行。"""
+    for i, line in enumerate(lines):
+        headers = _split_markdown_row(line)
+        if not headers:
+            continue
+        normalized = {h.lower() for h in headers}
+        if "task" not in normalized or "稳定 id" not in headers:
+            continue
+        rows: list[list[str]] = []
+        for row_line in lines[i + 2:]:
+            cells = _split_markdown_row(row_line)
+            if not cells:
+                break
+            if len(cells) >= len(headers):
+                rows.append(cells[:len(headers)])
+        return headers, rows
+    return [], []
+
+
+def _scan_structures_readability(topic_dir: str) -> list[dict]:
+    """扫描 structures/ 的可读性问题，只报告，不修复。
+
+    d12 约束：物理路径可为 task-N_slug / wave-N_slug.md；稳定 id 仍只取数字 N。
+    """
+    structures_dir = os.path.join(topic_dir, "structures")
+    task_index_path = os.path.join(structures_dir, "task.index.md")
+    issues: list[dict] = []
+
+    if not os.path.isdir(structures_dir):
+        return issues
+
+    index_content = _read(task_index_path)
+    if index_content:
+        headers, rows = _find_task_table(index_content.splitlines())
+        if headers:
+            label_idx = None
+            for idx, header in enumerate(headers):
+                header_lower = header.lower()
+                if header_lower in {"label", "display name", "short name"} or "显示名" in header:
+                    label_idx = idx
+                    break
+            problem_idx = next((i for i, h in enumerate(headers) if "问题切片" in h), None)
+            task_idx = next((i for i, h in enumerate(headers) if h.lower() == "task"), None)
+
+            if label_idx is None:
+                issues.append({
+                    "rule": "task-index-label-column-missing",
+                    "file": "structures/task.index.md",
+                    "message": "task.index 缺少可选 label/显示名列；建议新增展示字段；路径 slug 只做人读信息，不替代稳定 id",
+                })
+
+            for row in rows:
+                task_cell = row[task_idx] if task_idx is not None and task_idx < len(row) else "task"
+                task_name_match = re.search(r"(task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?)", task_cell)
+                task_name = task_name_match.group(1) if task_name_match else task_cell
+
+                if label_idx is not None and label_idx < len(row) and _is_placeholder(row[label_idx]):
+                    issues.append({
+                        "rule": "task-label-placeholder",
+                        "file": "structures/task.index.md",
+                        "task": task_name,
+                        "message": f"{task_name} 的 label/显示名为空或仍是占位符",
+                    })
+
+                if problem_idx is not None and problem_idx < len(row):
+                    problem = row[problem_idx]
+                    plain_problem = re.sub(r"`|\*|\[|\]|\(|\)", "", problem).strip()
+                    if _is_placeholder(problem) or re.fullmatch(r"task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?|t\d+", plain_problem, re.IGNORECASE):
+                        issues.append({
+                            "rule": "task-problem-slice-weak",
+                            "file": "structures/task.index.md",
+                            "task": task_name,
+                            "message": f"{task_name} 的问题切片缺少描述性语义",
+                        })
+
+    for entry in sorted(os.listdir(structures_dir)):
+        if not re.fullmatch(r"task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?", entry):
+            continue
+        task_dir = os.path.join(structures_dir, entry)
+        if not os.path.isdir(task_dir):
+            continue
+        for fname in sorted(os.listdir(task_dir)):
+            if not re.fullmatch(r"wave-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\.md", fname):
+                continue
+            rel_path = f"structures/{entry}/{fname}"
+            content = _read(os.path.join(task_dir, fname)) or ""
+            title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
+            title = title_match.group(1).strip() if title_match else ""
+            wave_num_match = re.search(r"wave-(\d+)", fname)
+            wave_num = wave_num_match.group(1) if wave_num_match else ""
+            generic_patterns = [
+                rf"^Wave-{wave_num}\s+—\s+{entry}\s+第\s*{wave_num}\s*批推进$",
+                rf"^Wave-{wave_num}\s+—\s+task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\s+第\s*{wave_num}\s*批推进$",
+                rf"^Wave-{wave_num}\s+—\s*第\s*{wave_num}\s*批推进$",
+                rf"^Wave-{wave_num}$",
+            ]
+            if not title or any(re.fullmatch(p, title) for p in generic_patterns) or ("{" in title and "}" in title):
+                issues.append({
+                    "rule": "wave-title-generic",
+                    "file": rel_path,
+                    "message": f"{rel_path} 标题未说明本批目标；建议形如 `# Wave-{wave_num} — {{本批目标短语}}`",
+                })
+
+    return issues
+
+
 def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
     name = os.path.basename(topic_dir)
     today = date.today().isoformat()
@@ -152,9 +281,11 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
         current_updated = _extract_readme_field(readme, "updated")
         readme_mtime = _file_mtime_date(readme_path)
         scope_mtime = _file_mtime_date(os.path.join(topic_dir, "scope.md"))
+        # 当前工作集：focus.md（3.0）与 plan.md（2.x grandfather）都纳入最新时间计算
+        focus_mtime = _file_mtime_date(os.path.join(topic_dir, "focus.md"))
         plan_mtime = _file_mtime_date(os.path.join(topic_dir, "plan.md"))
 
-        latest_mtime = max(filter(None, [readme_mtime, scope_mtime, plan_mtime, today]),
+        latest_mtime = max(filter(None, [readme_mtime, scope_mtime, focus_mtime, plan_mtime, today]),
                           default=today)
 
         if current_updated and current_updated != latest_mtime:
@@ -258,8 +389,8 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: prism migrate <topic_dir>（fallback: uv run python migrate_review.py <topic_dir>）",
         })
 
-    # 6. frontmatter updated 日期（scope.md, plan.md）
-    for fname in ("scope.md", "plan.md"):
+    # 6. frontmatter updated 日期（scope.md, focus.md, plan.md grandfather）
+    for fname in ("scope.md", "focus.md", "plan.md"):
         fpath = os.path.join(topic_dir, fname)
         content = _read(fpath)
         if not content:
@@ -289,8 +420,8 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
                     _write(fpath, content)
                     changes_made.append(fname)
 
-    # 7. wikilink 扫描（scope.md, plan.md, intake.md）
-    for fname in ("scope.md", "plan.md", "intake.md"):
+    # 7. wikilink 扫描（scope.md, focus.md, plan.md grandfather, intake.md + references/intake.md）
+    for fname in ("scope.md", "focus.md", "plan.md", "intake.md", "references/intake.md"):
         fpath = os.path.join(topic_dir, fname)
         content = _read(fpath)
         if not content:
@@ -319,16 +450,29 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "items": unchecked[:5],
         })
 
-    # 9. plan 当前焦点 vs 已完成
-    plan_path = os.path.join(topic_dir, "plan.md")
-    plan_content = _read(plan_path) or ""
-    focus_done = re.findall(r"~~(.+?)~~\s*✅", plan_content)
+    # 9. 当前焦点 vs 已完成（经 resolve_work_file 统一选定：focus 3.0 / plan 2.x grandfather）
+    _work_info = resolve_work_file(topic_dir)
+    work_path = _work_info["path"]
+    work_name = _work_info["label"] + ".md"
+    work_content = _read(work_path) or ""
+    focus_done = re.findall(r"~~(.+?)~~\s*✅", work_content)
     if focus_done:
         reports.append({
-            "type": "plan_focus_done",
-            "file": "plan.md",
-            "message": f"当前焦点区域有 {len(focus_done)} 项已标记完成（用删除线+✅），确认是否需要清理",
+            "type": "focus_done",
+            "file": work_name,
+            "message": f"当前焦点区域有 {len(focus_done)} 项已标记完成（删除线+✅）；focus retention=rewrite，确认是否清理（历史归 reviews/decisions）",
             "items": focus_done[:5],
+        })
+
+    # 10. structures 可读性 report-only（d11：路径稳定，语义展示层增强）
+    structure_issues = _scan_structures_readability(topic_dir)
+    if structure_issues:
+        reports.append({
+            "type": "structures_readability",
+            "file": "structures/",
+            "issue_count": len(structure_issues),
+            "issues": structure_issues[:8],
+            "message": f"structures 有 {len(structure_issues)} 个可读性提示（report-only，不自动修复）",
         })
 
     return {
@@ -433,12 +577,17 @@ def to_markdown(report: dict) -> str:
             for r in t["reports"]:
                 if r["type"] == "scope_unchecked":
                     lines.append(f"- `scope.md` {r['unchecked_count']} 项未勾选 / {r['checked_count']} 项已勾选")
-                elif r["type"] == "plan_focus_done":
-                    lines.append(f"- `plan.md` {r['message']}")
+                elif r["type"] == "focus_done":
+                    lines.append(f"- `{r['file']}` {r['message']}")
                 elif r["type"] == "review_index_stale":
                     lines.append(f"- `review.index.md` 疑似过期条目：{', '.join(r['stale_ids'])}")
                 elif r["type"] == "review_legacy_subdir":
                     lines.append(f"- `reviews/` {r['message']}")
+                elif r["type"] == "structures_readability":
+                    lines.append(f"- `structures/` {r['message']}")
+                    for issue in r.get("issues", [])[:5]:
+                        target = issue.get("task") or issue.get("file")
+                        lines.append(f"  - {target}: {issue['message']}")
             lines.append("")
 
         if t["changes_made"]:

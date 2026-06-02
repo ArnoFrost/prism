@@ -60,7 +60,7 @@ topics/{NNN}_{topic}/
 ├── decision.index.md          # 决策链主索引（事件链 SSOT，决策 accept 后追加）
 ├── review.index.md            # 评审辅助索引（仅当本 review 被新 dXX 引用时追加）
 ├── scope.md                   # 必要时更新
-└── plan.md                    # 从 review 收敛后更新
+└── focus.md                   # 从 review 收敛后刷新
 ```
 
 > 产物落盘需要文件写入能力。若 Agent 无法写文件，将产物内容直接输出到对话中。

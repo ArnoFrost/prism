@@ -20,7 +20,7 @@ from datetime import date
 from sniff_lib import find_workspace, _find_topics_dir
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'shared', 'scripts'))
-from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section, count_checkboxes as _count_checkboxes
+from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section, count_checkboxes as _count_checkboxes, resolve_work_file
 
 
 def _collect_readme(topic_dir: str) -> dict:
@@ -59,16 +59,32 @@ def _collect_scope(topic_dir: str) -> dict:
     }
 
 
-def _collect_plan(topic_dir: str) -> dict:
-    content = _read(os.path.join(topic_dir, "plan.md"))
+def _collect_focus(topic_dir: str) -> dict:
+    """当前工作集采集：经 resolve_work_file 统一选定（focus 3.0 / plan 2.x grandfather）。"""
+    info = resolve_work_file(topic_dir)
+    content = _read(info["path"])
+    source = info["source"]
     if not content:
         return {}
 
-    current_focus = _extract_section(content, "当前焦点")
+    # 3.0 focus：顶部光标快读面「下一步」；2.x plan：「当前焦点」段
+    current_focus = None
+    nxt = re.search(r"\*\*下一步\*\*[：:]\s*(.+)", content)
+    if nxt:
+        current_focus = nxt.group(1).strip()
+    if not current_focus:
+        current_focus = _extract_section(content, "当前焦点")
+    # README deprecate 后的状态源回退：focus 光标快读面「当前态」
+    current_state = None
+    cur = re.search(r"\*\*当前态\*\*[：:]\s*(.+)", content)
+    if cur:
+        current_state = cur.group(1).strip()
     checkboxes = _count_checkboxes(content)
 
     return {
+        "source": source,
         "current_focus": current_focus,
+        "current_state": current_state,
         "progress": f"{checkboxes['checked']}/{checkboxes['total']}",
         "unchecked_items": checkboxes.get("unchecked_items", []),
     }
@@ -152,7 +168,7 @@ def collect_topic(topic_dir: str) -> dict:
         "collected_at": date.today().isoformat(),
         "readme": _collect_readme(topic_dir),
         "scope": _collect_scope(topic_dir),
-        "plan": _collect_plan(topic_dir),
+        "focus": _collect_focus(topic_dir),
         "decisions": _collect_decisions(topic_dir),
         "reviews": _collect_reviews(topic_dir),
         "digest_path": os.path.join(topic_dir, "digest.md"),

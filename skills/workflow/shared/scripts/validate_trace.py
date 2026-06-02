@@ -63,9 +63,11 @@ WORKFLOW_TRACE_SCHEMA: dict[str, object] = {
         {
             "phase": "intake_gate_out",
             "family": "intake_gate_out",
-            "required_fields": {"scope_md_present"},
+            # 工作集字段（focus_md_present 3.0 / plan_md_present 2.x）不入硬必填集（grandfather：
+            # 旧 2.x intake 块用 plan_md_present）；机器只硬卡三个跨版本稳定项，工作集字段值由 Agent 自检。
+            "required_fields": {"scope_md_present", "readme_md_present", "review_index_present"},
             "applies_to": "intake_file",
-            "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失",
+            "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失（稳定三项硬卡；工作集 focus/plan present 字段 grandfather）",
         },
         {
             "phase": "merge_artifact",
@@ -376,6 +378,188 @@ def validate_intake_file(
     return issues
 
 
+# --- 双层 scope 1:1 守恒 lint（V4 / scope 约束 2）---
+#
+# 注意：这是**独立维度**，不属于痕迹义务家族（4 族永久封顶，见
+# test_trace_families_capped.py）。conservation Issue 的 family 字段固定为
+# "scope_conservation"，但 TRACE_FAMILIES 不收录它——封顶不破。
+#
+# 校验对象：structures/task-N_slug/scope.md 的 task-V 是否 1:1 投影 topic 根 scope.md
+# 的某条 topic-V（承诺单源 / 1:1 引用 / 投影存在）。
+
+CONSERVATION_FAMILY = "scope_conservation"
+
+
+def extract_topic_v_ids(scope_text: str) -> set[str]:
+    """从 topic 根 scope.md 验收口径提取 topic-V id 集合（如 {"V0","V1",...}）。
+
+    锚定 `- [ ] **V1** ...` / `- [x] **V0** ...` 形态（验收口径行）。
+    """
+    ids: set[str] = set()
+    for m in re.finditer(r"^\s*-\s*\[[ xX]\]\s*\*\*(V\d+)\*\*", scope_text, re.MULTILINE):
+        ids.add(m.group(1))
+    return ids
+
+
+def _split_md_row(line: str) -> list[str]:
+    """拆 markdown 表格行为单元格列表（剥首尾 | 与空白）。"""
+    s = line.strip()
+    if s.startswith("|"):
+        s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    return [c.strip() for c in s.split("|")]
+
+
+def extract_task_v_refs(task_scope_text: str) -> list[dict]:
+    """从 task-scope.md 的承诺表提取 [{task_v, refs:[topic-V...]}]。
+
+    识别表头同时含 "task-V" 与 "topic-V" 的承诺表；
+    数据行 col0 = task-V（取首个 V\\d+），col1 = 投影的 topic-V 引用列（取其中所有 V\\d+）。
+    """
+    lines = task_scope_text.splitlines()
+    rows: list[dict] = []
+    in_table = False
+    for line in lines:
+        if "|" not in line:
+            if in_table:
+                in_table = False
+            continue
+        cells = _split_md_row(line)
+        joined = " ".join(cells).lower()
+        # 表头：进入承诺表
+        if ("task-v" in joined) and ("topic-v" in joined):
+            in_table = True
+            continue
+        if not in_table:
+            continue
+        # 分隔行 |---|---|
+        if all(set(c) <= {"-", ":"} and c for c in cells if c):
+            continue
+        if len(cells) < 2:
+            in_table = False
+            continue
+        col0, col1 = cells[0], cells[1]
+        # task-V 列：支持 `V1`（旧）与 `tV1`（task 命名空间前缀）两种写法
+        m_task = re.search(r"\bt?V\d+\b", col0)
+        if not m_task:
+            # 非数据行（可能是占位/说明）
+            continue
+        task_v = m_task.group(0)
+        # topic-V 引用列：取 V\d+（兼容 topic-V9 / V9）
+        refs = re.findall(r"\bV\d+\b", col1)
+        rows.append({"task_v": task_v, "refs": refs})
+    return rows
+
+
+def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
+    """双层 scope 守恒 lint：每条 task-V 须 1:1 投影一条存在的 topic-V。
+
+    返回 dict：
+      checked            - 是否实际执行了校验（无 structures/ 时 False）
+      structures_present - 是否存在 structures/ 目录
+      topic_v_ids        - topic 根 scope.md 的 V 集合（排序）
+      tasks              - [{task, task_scope_present, task_vs:[{task_v,refs}]}]
+      errors / warnings  - Issue.to_dict() 列表（family=scope_conservation）
+    """
+    level = "ERROR" if strict else "WARN"
+    issues: list[Issue] = []
+
+    structures_dir = topic_dir / "structures"
+    result_base = {
+        "checked": False,
+        "structures_present": structures_dir.is_dir(),
+        "topic_v_ids": [],
+        "tasks": [],
+        "errors": [],
+        "warnings": [],
+    }
+    if not structures_dir.is_dir():
+        # 无 task 结构层 → 守恒律对本 topic 无适用对象（合法空态）
+        return result_base
+
+    # topic 根 scope.md 的 V 集合
+    topic_scope = topic_dir / "scope.md"
+    topic_v_ids: set[str] = set()
+    if topic_scope.is_file():
+        try:
+            topic_v_ids = extract_topic_v_ids(topic_scope.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            topic_v_ids = set()
+
+    tasks_out: list[dict] = []
+    task_dirs = sorted(
+        d for d in structures_dir.glob("task-*")
+        if d.is_dir() and re.fullmatch(r"task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?", d.name)
+    )
+    for tdir in task_dirs:
+        task_name = tdir.name
+        task_scope = tdir / "scope.md"
+        rel = str(task_scope)
+        if not task_scope.is_file():
+            issues.append(Issue(
+                level, str(tdir), CONSERVATION_FAMILY, "task-scope-missing",
+                f"{task_name}/ 缺 scope.md（task 层须有 task-scope 锚定 1:1 投影）",
+            ))
+            tasks_out.append({"task": task_name, "task_scope_present": False, "task_vs": []})
+            continue
+
+        try:
+            task_text = task_scope.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            issues.append(Issue("ERROR", rel, "io", "read-error", str(e)))
+            continue
+
+        task_vs = extract_task_v_refs(task_text)
+        tasks_out.append({
+            "task": task_name,
+            "task_scope_present": True,
+            "task_vs": task_vs,
+        })
+
+        if not task_vs:
+            issues.append(Issue(
+                level, rel, CONSERVATION_FAMILY, "task-v-table-empty",
+                f"{task_name}/scope.md 未解析到承诺表（表头须含 task-V 与 topic-V 两列）",
+            ))
+            continue
+
+        for row in task_vs:
+            tv = row["task_v"]
+            refs = row["refs"]
+            if not refs:
+                issues.append(Issue(
+                    level, rel, CONSERVATION_FAMILY, "conservation-ref-missing",
+                    f"task-V {tv} 未标投影的 topic-V（承诺断源，破双层守恒）",
+                ))
+                continue
+            if len(refs) > 1:
+                issues.append(Issue(
+                    "WARN", rel, CONSERVATION_FAMILY, "conservation-not-1to1",
+                    f"task-V {tv} 引用多条 topic-V {refs}（应 1:1 单源收窄）",
+                ))
+            # 投影存在性（仅当 topic scope 解析出 V 集合时才校验，避免空集误报）
+            if topic_v_ids:
+                for ref in refs:
+                    if ref not in topic_v_ids:
+                        issues.append(Issue(
+                            level, rel, CONSERVATION_FAMILY, "conservation-ref-not-found",
+                            f"task-V {tv} 投影的 topic-{ref} 在 topic 根 scope 不存在"
+                            f"（现有: {sorted(topic_v_ids)}）",
+                        ))
+
+    errors = [i.to_dict() for i in issues if i.level == "ERROR"]
+    warnings = [i.to_dict() for i in issues if i.level == "WARN"]
+    return {
+        "checked": True,
+        "structures_present": True,
+        "topic_v_ids": sorted(topic_v_ids),
+        "tasks": tasks_out,
+        "errors": errors,
+        "warnings": warnings,
+    }
+
+
 # --- 主入口 ---
 
 def scan_topic(topic_dir: Path, strict: bool = True) -> dict:
@@ -417,8 +601,10 @@ def scan_topic(topic_dir: Path, strict: bool = True) -> dict:
             scanned.append(str(md))
             issues.extend(validate_decision_file(md, text, strict))
 
-    # 3. intake.md
-    intake = topic_dir / "intake.md"
+    # 3. intake.md — 3.0 优先 references/intake.md，回退根级（2.x grandfather）
+    intake = topic_dir / "references" / "intake.md"
+    if not intake.is_file():
+        intake = topic_dir / "intake.md"
     if intake.is_file():
         try:
             text = intake.read_text(encoding="utf-8")
@@ -454,7 +640,12 @@ def main():
     args = parser.parse_args()
 
     topic_dir = Path(args.topic_dir).resolve()
-    result = scan_topic(topic_dir, strict=not args.lenient)
+    strict = not args.lenient
+    result = scan_topic(topic_dir, strict=strict)
+    conservation = validate_scope_conservation(topic_dir, strict=strict)
+    result["scope_conservation"] = conservation
+    # 守恒 errors 同样影响整体 ok（与 4 族并列的独立维度）
+    result["ok"] = result["ok"] and (len(conservation["errors"]) == 0)
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -469,6 +660,15 @@ def main():
         for w in result["warnings"]:
             print(f"  ⚠️  [{w['family']}] {w['file']}")
             print(f"     {w['rule']}: {w['message']}")
+        if conservation["checked"]:
+            print(f"  scope 守恒: structures✓ / tasks={len(conservation['tasks'])} "
+                  f"/ ERR={len(conservation['errors'])} WARN={len(conservation['warnings'])}")
+            for e in conservation["errors"]:
+                print(f"  ❌ [{e['family']}] {e['file']}")
+                print(f"     {e['rule']}: {e['message']}")
+            for w in conservation["warnings"]:
+                print(f"  ⚠️  [{w['family']}] {w['file']}")
+                print(f"     {w['rule']}: {w['message']}")
 
     sys.exit(0 if result["ok"] else 1)
 
