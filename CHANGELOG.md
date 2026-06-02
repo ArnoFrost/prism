@@ -423,7 +423,7 @@ _当前无未发布变更。_
 
 ## [v1.0.0-beta] — 2026-03-30
 
-Beta release. Internal testing on git.woa.com before public open source.
+Beta release. Internal testing completed before public open source.
 
 ### Phase 7 — Beta 验证与加固
 
