@@ -1,14 +1,14 @@
-**治理长期人机协作中的认知熵。**
+**轻量管理长期人机协作中的认知熵。**
 
 
 
 # Prism
 
-Prism 是一套**本地优先、无侵入**的人机认知熵治理框架。它把共享规则、CLI、技能分发与项目状态容器组合成一个可长期运转的个人协作系统；通过软链接桥接将共享规则折射进本地工作区——不接管目录结构，不污染版本历史。
+Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它把共享规则、CLI、技能分发与项目状态容器组合成一个可长期运转的个人协作基座；通过软链接桥接将共享规则折射进本地工作区——不接管目录结构，不污染版本历史。
 
 > 共享规则，本地状态，清晰边界。
 
-当前阶段口径：**v3.0-canary**（dogfood 验证期）。v2.0 阶段完成历史包袱清偿、`prism pipeline` 物理移除、治理路径默认弱化、workflow 复杂度简化与文档矩阵收敛；v3.0 canary 聚焦 `focus` 单入口、按需 `task` 递归分解、README grandfather 兼容，以及“认知熵”作为上层叙事锚点的跨项目泛化验证。已有 workspace 的渐进接入口径见 [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md)。
+当前阶段口径：**v3.0-canary**（dogfood 验证期）。v2.0 阶段完成历史包袱清偿、`prism pipeline` 物理移除、治理路径默认弱化、workflow 复杂度简化与文档矩阵收敛；v3.0 canary 聚焦 `focus` 单入口、按需 `task` 递归分解、README grandfather 兼容，以及“认知熵”作为上层叙事锚点的跨项目泛化验证。这里的分层是：**Prism 是轻量认知熵管理框架，内置 workflow 是一套可选的认知熵治理工作流**。已有 workspace 的渐进接入口径见 [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md)。
 
 如果你想先快速判断"Prism 现在到底是什么、为什么已经成立、还差什么"，可直接阅读 [docs/prism-3.0.md](docs/prism-3.0.md)；v2.0 的历史定位见 [docs/prism-2.0.md](docs/prism-2.0.md)。
 
@@ -78,7 +78,7 @@ README 只负责入口导航。想深入某一层，请读对应文档：
 
 | 你想了解 | 入口 |
 |----------|------|
-| Prism 3.0 为什么是认知熵治理 | [docs/prism-3.0.md](docs/prism-3.0.md) |
+| Prism 3.0 为什么是轻量认知熵管理框架 | [docs/prism-3.0.md](docs/prism-3.0.md) |
 | 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
 | topic 从 intake 到 archive 怎么走 | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |
 | 每个 workflow skill 治理什么熵 | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) |
@@ -86,13 +86,13 @@ README 只负责入口导航。想深入某一层，请读对应文档：
 | 术语速查 | [docs/glossary.md](docs/glossary.md) |
 | 历史迁移 | [docs/migration.md](docs/migration.md) |
 
-Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Skills 承载可复用能力，Env 承载个人环境，Workspace 承载项目状态。详细分层见 [docs/architecture.md](docs/architecture.md)。
+Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Skills 承载可复用能力，Env 承载个人环境，Workspace 承载项目状态。其中 workflow skills 是内置的认知熵治理工作流，用来把混沌需求收敛成可恢复、可追踪、可协作的状态。详细分层见 [docs/architecture.md](docs/architecture.md)。
 
 `bin/relink` 会将 SDK 内置 workflow skills 分发到 IDE 目录（Cursor · Claude Code · CodeBuddy · Codex），无需手动配置。
 
 > **workflow / 痕迹义务家族都是可选项**
 >
-> Prism 的 core contract（最小运行合同）只要求 SDK + Vault Workspace + `uv`。**workflow 系列技能** 与配套的 **痕迹义务家族**（`task_probe` / `decision_artifact` / `intake_gate_out` / `merge_artifact`，自 v2.0 起永久封顶在 4 族）是治理框架的可选增强：
+> Prism 的 core contract（最小运行合同）只要求 SDK + Vault Workspace + `uv`。**workflow 系列技能** 与配套的 **痕迹义务家族**（`task_probe` / `decision_artifact` / `intake_gate_out` / `merge_artifact`，自 v2.0 起永久封顶在 4 族）是认知熵治理工作流的可选增强：
 >
 > - **不用 workflow 技能**：项目状态可纯手写到 `workspace.{code}.local/` 下，Prism 不强制 review/decision/scope 三件套
 > - **不用痕迹义务（默认行为）**：`prism finalize` Step 2.5 默认 lenient — 只 WARN 不 ERR，不阻塞 `success: true`；`bin/prism validate-trace --lenient` 同效
