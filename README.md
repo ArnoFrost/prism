@@ -1,16 +1,60 @@
-**轻量管理长期人机协作中的认知熵。**
-
-
+<div align="center">
 
 # Prism
+
+**轻量管理长期人机协作中的认知熵。**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Stage](https://img.shields.io/badge/stage-v3.0--canary-orange)](docs/prism-3.0.md)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
+
+[快速开始](#快速开始) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
+
+</div>
 
 Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它把共享规则、CLI、技能分发与项目状态容器组合成一个可长期运转的个人协作基座；通过软链接桥接将共享规则折射进本地工作区——不接管目录结构，不污染版本历史。
 
 > 共享规则，本地状态，清晰边界。
 
-当前阶段口径：**v3.0-canary**（dogfood 验证期）。v2.0 阶段完成历史包袱清偿、`prism pipeline` 物理移除、治理路径默认弱化、workflow 复杂度简化与文档矩阵收敛；v3.0 canary 聚焦 `focus` 单入口、按需 `task` 递归分解、README grandfather 兼容，以及“认知熵”作为上层叙事锚点的跨项目泛化验证。这里的分层是：**Prism 是轻量认知熵管理框架，内置 workflow 是一套可选的认知熵治理工作流**。已有 workspace 的渐进接入口径见 [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md)。
+**当前阶段**：`v3.0-canary`（dogfood 验证期）— `focus` 单入口、按需 `task` 递归分解、README grandfather 兼容；内置 **workflow** 是一套可选的认知熵治理工作流。  
+**快速判断 Prism 是否成立** → [docs/prism-3.0.md](docs/prism-3.0.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **v2.0 历史** → [docs/prism-2.0.md](docs/prism-2.0.md)
 
-如果你想先快速判断"Prism 现在到底是什么、为什么已经成立、还差什么"，可直接阅读 [docs/prism-3.0.md](docs/prism-3.0.md)；v2.0 的历史定位见 [docs/prism-2.0.md](docs/prism-2.0.md)。
+---
+
+## 开源生态
+
+近期与 [FrostAtlas](https://github.com/ArnoFrost/FrostAtlas) 一并开源的两套工具，解决长程 AI 协作里不同层面的失控问题：
+
+| | **Prism**（本仓库） | **[FrostAtlas](https://github.com/ArnoFrost/FrostAtlas)** |
+|---|---|---|
+| **一句话** | 轻量认知熵管理框架 | 治具优先的长程 Agent 控制面 |
+| **管什么** | 边界、注意力、决策链、跨会话恢复 | 完成合同、证据验证、关口、执行审计 |
+| **核心工件** | `scope` / `focus` / `decision` / `review` | `scope`（合同）/ `handover` / `evidence` / `gate` |
+| **典型场景** | 专项推进、评审收敛、多人/多 Agent 协作状态 | 数十步工程任务、自动化迭代、断点恢复 |
+| **立场** | 降低“忘了为什么、重复争论、读不懂下一步” | 降低“Agent 自称完成、无检查点漂移、状态只在上下文里” |
+
+```mermaid
+flowchart TB
+  subgraph governance ["认知治理层 · Prism"]
+    I[intake] --> S[scope]
+    S --> F[focus]
+    F --> R[review / decision]
+  end
+  subgraph harness ["执行控制层 · FrostAtlas"]
+    O[observe] --> D[decide] --> A[act]
+    A --> V[verify] --> G[gate]
+  end
+  governance -->|"定义做什么、验收什么"| harness
+  harness -->|"证据与关口回流"| governance
+```
+
+**怎么组合用**：在 Prism 里把目标、边界和决策链治理清楚；当任务需要 Agent 长程自动执行时，用 FrostAtlas 包裹执行循环，用合同 + 证据 + 关口约束“真的完成”。二者互补，不互相替代。
+
+| 你想… | 优先看 |
+|--------|--------|
+| 治理 topic 状态、评审与决策 | 本仓库 + [skill-taxonomy](docs/skill-taxonomy.md) |
+| 治理 Agent 多轮执行与完成判定 | [FrostAtlas README](https://github.com/ArnoFrost/FrostAtlas) |
+| 从 v2 迁到 v3 focus 入口 | [workspace-v3-upgrade](docs/workspace-v3-upgrade.md) |
 
 ## 快速开始
 
