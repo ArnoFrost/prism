@@ -26,6 +26,17 @@
 | `ask_user` | 展示新 topic 默认项 + 候选 append 项，等待用户选择 |
 | `null` | 走 new topic fallback；必要时询问命名 |
 
+### 3.1 route_decision 映射（Phase 2 YAML SSOT）
+
+| `topic_affinity.suggestion` | `route_decision` | `user_confirmation` | 备注 |
+|-----------------------------|------------------|---------------------|------|
+| `new_topic` | `new_topic` | `required` | 轻确认后创建 |
+| `cohesion` | `new_topic` | `required` | 默认仍新建；matched topic 仅作可选 append 候选展示 |
+| `ask_user` | `ask_user` | `required` | 等待用户在新 topic / append 间选择 |
+| `null` | `new_topic` | `required` | fallback 到新建 |
+| （`--append <topic>`） | `append` | `skipped_by_explicit_target` | 强入口 |
+| （NL append + §4.3 白名单） | `append` | `skipped_by_explicit_target` | 无 slash 前缀 |
+
 ## 4. Explicit Append Guard
 
 `--append <topic>` 是 `mode=append` 的唯一强入口。相关 ≠ append；sniff 命中、语义相近、用户说“有点相关”，都不能单独触发 append。
@@ -42,6 +53,14 @@
 - 用户自然语言中有 append/cohere 关键词，并且目标 topic 紧随其后、可审计（**无** `/workflow-intake` slash 前缀）
 
 低置信候选、候选首项、`matched_topic`、当前对话所在 topic 上下文，都不能单独作为 append 目标。
+
+### 4.3 NL append 关键词白名单（askquestion-fallback §6.3.3）
+
+intake 专属同义短语（命中 + 可审计目标紧随才可跳过 AskQuestion）：
+
+`聚合到` / `合并到` / `归入` / `放进` / `内聚到` / `append to` / `add to existing` / `cohere to` / `merge into`
+
+正例与反例表见 [askquestion-fallback.md §6.3](../../shared/references/askquestion-fallback.md)；本文件不复制。
 
 ## 5. Compatibility Boundary
 
