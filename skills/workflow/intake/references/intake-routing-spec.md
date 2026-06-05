@@ -30,13 +30,18 @@
 
 `--append <topic>` 是 `mode=append` 的唯一强入口。相关 ≠ append；sniff 命中、语义相近、用户说“有点相关”，都不能单独触发 append。
 
+### 4.1 Slash 硬规则（d06 / OQ-r04-2）
+
+`/workflow-intake`（含在已有 topic 对话内再次调用）**永远**走 `mode=new`，不得因对话上下文、follow-up 语气或 sniff cohesion 改为 append。要在已有 topic 补料，必须用 `--append <topic>` 或带 append/cohere 关键词且目标可审计的自然语言——且**不得**用 slash 调用表达 append。
+
+### 4.2 Append 合法条件
+
 只有满足以下任一条件，才可写入已有 topic：
 
 - 用户使用 `--append <topic>` 或等价明确参数
-- 用户自然语言中有 append/cohere 关键词，并且目标 topic 紧随其后、可审计
-- 当前对话已在某 topic 内，且用户表达的是 follow-up 而非新需求入口
+- 用户自然语言中有 append/cohere 关键词，并且目标 topic 紧随其后、可审计（**无** `/workflow-intake` slash 前缀）
 
-低置信候选、候选首项、`matched_topic` 都不能单独作为 append 目标。
+低置信候选、候选首项、`matched_topic`、当前对话所在 topic 上下文，都不能单独作为 append 目标。
 
 ## 5. Compatibility Boundary
 
@@ -52,6 +57,7 @@
 | fixture | pass condition |
 |---------|----------------|
 | FI-new-default | 用户调用 `/workflow-intake X`，即使 sniff 命中已有 topic，也默认创建新 topic 候选 |
+| FI-slash-always-new | 在已有 topic 对话内调用 `/workflow-intake Y`，仍走 new topic，不得 append 到当前 topic |
 | FI-explicit-append | 用户调用 `/workflow-intake --append 044 X`，可追加到 044 |
 | FI-low-confidence | `affinity_strength=low` 不得默认 append/cohesion |
 | FI-migrate-no-interactive | `PRISM_NO_INTERACTIVE=1` + migrate 必须 fail |
