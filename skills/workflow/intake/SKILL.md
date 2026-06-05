@@ -1,6 +1,6 @@
 ---
 name: workflow-intake
-description: "接收新需求并默认创建新的 3.0 topic；仅在显式 append/migrate/upgrade 时追加、聚合或升级已有 topic。输出专项骨架 + index 更新。 Use when: 新需求入料、创建专项、任务路由、散落任务聚合、workflow-intake"
+description: "接收新需求并默认创建新的 3.0 topic；仅在显式 append/migrate/upgrade 时追加、聚合或升级已有 topic。输出专项骨架 + index 更新。 Use when: 新需求入料、创建新 topic、2.x topic 升级、显式 append、显式 migrate、workflow-intake"
 visibility: dev
 stability: experimental
 description_zh: "接收新需求并默认创建新的 3.0 topic；仅在显式 append/migrate/upgrade 时追加、聚合或升级已有 topic。输出专项骨架 + index 更新。"
@@ -17,7 +17,7 @@ description_zh: "接收新需求并默认创建新的 3.0 topic；仅在显式 a
 
 ---
 
-# 专项入料与任务路由 (Workflow Intake)
+# 专项入料与 Topic 创建 (Workflow Intake)
 
 > 管线定位：`intake → (scope) → review → archive`
 > intake 路由语义遵循 [intake-routing-spec.md](references/intake-routing-spec.md)；术语遵循 [vocabulary.md](references/vocabulary.md)，不在主入口复制定义。
@@ -48,11 +48,13 @@ description_zh: "接收新需求并默认创建新的 3.0 topic；仅在显式 a
 | mode | 输入 | 行为 |
 |------|------|------|
 | `new` | 需求描述 / topic 关键词 | sniff → 默认创建 3.0 topic 骨架 |
-| `append` | 显式目标 topic | 追加 intake 来源，补 scope OQ，刷新 README 兜底 |
+| `append` | `--append <topic>` | 追加 intake 来源，补 scope OQ，刷新 README 兜底 |
 | `migrate` | 扫描 topics | 聚类散落任务 → 用户确认 → 迁移 |
 | `upgrade` | 单个 topic_dir | 机械补 3.0 壳；不做判断性内容迁移 |
 
 默认 mode = `new`。
+
+相关 ≠ append；`--append <topic>` 是 `mode=append` 的唯一强入口。自然语言 append/cohere 只有在目标 topic 紧随且可审计时才可进入 append。
 
 ## 4. Happy Path
 

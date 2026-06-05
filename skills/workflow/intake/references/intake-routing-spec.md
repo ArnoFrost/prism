@@ -13,7 +13,7 @@
 | mode | 触发 | 默认行为 | 是否需要确认 |
 |------|------|----------|--------------|
 | `new` | `/workflow-intake` 或新需求描述 | 创建新 3.0 topic；已有候选只作为可选 append 提示 | 创建前轻确认 |
-| `append` | `--append <topic>` / `追加到 X` / `归入 X` | 追加 `references/intake.md`，补 scope OQ，刷新 README 兜底 | 目标可审计时可跳过 AskQuestion |
+| `append` | `--append <topic>` | 追加 `references/intake.md`，补 scope OQ，刷新 README 兜底 | 目标可审计时可跳过 AskQuestion |
 | `migrate` | `--mode migrate` | 扫描散落任务并生成迁移建议 | 必须确认；无交互必须 fail |
 | `upgrade` | `--mode upgrade <topic_dir>` | 机械补 3.0 壳；不做判断性内容迁移 | 单目标可执行；异常时 fail |
 
@@ -27,6 +27,8 @@
 | `null` | 走 new topic fallback；必要时询问命名 |
 
 ## 4. Explicit Append Guard
+
+`--append <topic>` 是 `mode=append` 的唯一强入口。相关 ≠ append；sniff 命中、语义相近、用户说“有点相关”，都不能单独触发 append。
 
 只有满足以下任一条件，才可写入已有 topic：
 
