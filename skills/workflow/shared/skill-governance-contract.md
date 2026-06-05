@@ -157,16 +157,11 @@ skill wave 关闭时，应有一份 `workflow-{skill}-d{N}-regression.md` 声明
 - 新的 skill-governance wave 可以扩展 prefix 模式和 fixture，但不应重写历史 evidence。
 - per-skill 适配优先放入该 skill maintainer 或 task 工件；只有跨多个 skill 复用时才上浮 shared。
 
-## Evidence Pointers
+## Evidence Handling
 
-| Contract 章节 | 实证类型 | Topic 044 SSOT |
-|---------------|----------|----------------|
-| §2 周期 / 两刀模型 | intake dogfood | `workspace.prism.local/topics/044_skill-hot-path-compression/structures/task-1_complexity-mvp/workflow-intake-d05-regression.md` |
-| §2 决策链 | intake 决策映射 | `workspace.prism.local/topics/044_skill-hot-path-compression/decision.index.md` d03-d07 |
-| §3 量尺 | Wave-1 baseline | `workspace.prism.local/topics/044_skill-hot-path-compression/structures/task-1_complexity-mvp/complexity-report-mvp.md` |
-| §3-§4 scope 样本 | scope dogfood | `workspace.prism.local/topics/044_skill-hot-path-compression/structures/task-2_scope-dogfood/workflow-scope-d10-regression.md` |
-| §5 FS-* 模式 | scope fixtures | `workspace.prism.local/topics/044_skill-hot-path-compression/structures/task-2_scope-dogfood/workflow-scope-fs-fixtures.md` |
-| §3-§4 review-lite 样本 | review-lite dogfood | `workspace.prism.local/topics/044_skill-hot-path-compression/structures/task-3_review-lite-dogfood/workflow-review-lite-d14-regression.md` |
-| §5 FR-* 模式 | review-lite fixtures | `workspace.prism.local/topics/044_skill-hot-path-compression/structures/task-3_review-lite-dogfood/workflow-review-lite-fr-fixtures.md` |
-| §6 反模式 | topic 044 实测历史 | `workspace.prism.local/topics/044_skill-hot-path-compression/references/skill-governance-cycle-spec.md` §10 |
-| §7 演进 | Wave-4 uplift | `workspace.prism.local/topics/044_skill-hot-path-compression/structures/task-4_shared-spec-governance/methodology-uplift-proposal.md` 与 r09 |
+本 contract 可以由 workspace dogfood、评审与决策产物验证，但 SDK 层不暴露这些隐含状态。
+
+- SDK / shared / skill 文档只沉淀稳定规则、接口与 SSOT 引用。
+- workspace topic id、dXX/rXX、topic 本地路径与阶段痕迹只保留在 Workspace 实例层。
+- 需要表达来源时，使用抽象描述，例如 "intake / scope / review-lite dogfood" 或 "skill-governance wave 验证"。
+- 需要追溯具体证据时，在对应 workspace topic 的 review、decision、structure 或 digest 产物中维护。
