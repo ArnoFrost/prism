@@ -39,7 +39,7 @@ stability: experimental
 
 | 阶段 | 必读 | 按需 |
 |------|------|------|
-| **Align** | `lite-templates.md`, `vocabulary.md`, `review-templates.md` | `review-ofm.md`（仅 format=ofm）；`context-pack-spec.md`（topic / scope-focus 场景） |
+| **Align** | `lite-templates.md`, `vocabulary.md`, `review-templates.md` | `review-ofm.md`（仅 format=ofm）；`../shared/context-pack-spec.md`（topic / scope-focus 场景） |
 | **Gate 4** | — | `askquestion-fallback.md`（无 AskQuestion / 边界门 / 需完整 yaml 时） |
 | **痕迹校验** | — | `trace-artifacts-spec.md`（decision_artifact 字段歧义时） |
 | **Maintainer** | — | [review-lite-maintainer.md](references/review-lite-maintainer.md) |
@@ -66,7 +66,7 @@ Phase 4  Gate 4 — AskQuestion 4 选项 → decision_artifact
 2. **READ** `review-templates.md` → 命名规则
 3. 若 `format=ofm` → **READ** `review-ofm.md`
 4. 基于 `topic_affinity.suggestion` 确定 `output_dir`；显式输出路由结论
-5. 若评审对象是 topic、scope/focus 快速对齐，或 sniff 已定位 topic：按 `context-pack-spec.md` light 档装配上下文；不支持脚本时手动读 `scope.md` + `focus.md`
+5. 若评审对象是 topic、scope/focus 快速对齐，或 sniff 已定位 topic：按 `../shared/context-pack-spec.md` light 档装配上下文；不支持脚本时手动读 `scope.md` + `focus.md`
 6. 显式输出：`format` / `output_dir` / `next_review_number` / `topic_route` + 已加载 references + `context_pack: light|skipped`
 
 > **编号契约**：`reviews/rXX_*.md` 由 sniff 返回；`type: review-lite` 区分序列。`next_review_source = none` → 边界澄清门见 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)。sniff 维护 fallback 见 review-lite-maintainer。
@@ -146,7 +146,7 @@ lite Accept **不得**直改 scope/focus；2.x 细则不内联 — 见 [review-l
 
 ### FR-context-pack-light
 
-topic / scope-focus 场景必须装配 context-pack light 或手动读 `scope.md` + `focus.md`；缺上下文不得输出 scope/focus 对齐结论。
+topic / scope-focus 场景必须按 `../shared/context-pack-spec.md` 装配 light context，或手动读 `scope.md` + `focus.md`；缺上下文不得输出 scope/focus 对齐结论。
 
 ### FR-boundary-gate / FR-fallback-degrade / FR-no-interactive-fail
 
