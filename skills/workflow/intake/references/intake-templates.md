@@ -1,6 +1,6 @@
 # Intake 产物模板与硬性规则
 
-> 被 SKILL.md Phase 3 按需引用。新建专项时读取全文；cohesion 时只需遵循顶部规则表。
+> 被 SKILL.md Phase 3 按需引用。新建专项时读取全文；显式 append 时只需遵循顶部规则表。
 > **3.0 起模板单一 SSOT = `workspace/templates/`**；本文件不再内联复制模板体（避免漂移），骨架由 `scaffold.py` 模板驱动生成。
 
 ## 产物硬性规则（所有文件适用）
@@ -52,6 +52,6 @@ scaffold.py 从下列模板渲染产物（占位符替换 `{NNN}` / `{topic-name
 | `structures/task-N_slug/wave-N_slug.md`（按需）| [task-wave.md](../../../../workspace/templates/task-wave.md) |
 | `plan.md`（2.x grandfather，deprecated）| [topic-plan.md](../../../../workspace/templates/topic-plan.md) |
 
-## 内聚到已有专项
+## Append 到已有专项
 
 只更新专项根目录文件：补骨架、追加 `references/intake.md`、补 `scope.md` 未决问题、刷新 `README.md`。不得创建额外子目录。

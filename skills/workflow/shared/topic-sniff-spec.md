@@ -28,13 +28,14 @@
 
 | Skill | 频率 | 默认 cohesion 行为 | 默认 ask_user 行为 | 默认 new_topic 行为 |
 |---|---|---|---|---|
-| **intake** | 低频启动事件 | **不直接落盘**——展示 AskQuestion 候选 | 必须 AskQuestion | 候选首项「全新专题（默认推荐）」 |
+| **intake** | 低频启动事件 | **不直接落盘**——候选只作为可选 append，默认仍新建 | 新 topic 默认项 + append 候选，必须 AskQuestion | 候选首项「全新专题（默认推荐）」 |
 | **review** | 高频持续事件 | 直接落盘到 matched_topic（轻确认） | 必须 AskQuestion | 沿 sniff 推荐 |
 | **review-lite** | 高频持续事件 | 同 review | 必须 AskQuestion | 沿 sniff 推荐 |
 | **scope / status / digest** | 视触发场景 | 沿 review 默认（同一 topic 内累计动作） | 必须 AskQuestion | 通常不进入新建分支 |
 
 > **设计立意**：
 > - **路由门**频率随 skill 而异：intake 低频启动（偏 Ask 保护）、review/review-lite 高频持续（偏 cohesion 顺滑）。**不能笼统按「路由门=高频」一档处理**——该误差是 r13 P0 finding F1。
+> - **intake 专属语义**：`/workflow-intake` 的默认意图是创建新 3.0 topic；已有 topic 追加需要显式 append/cohere 目标。详见 [intake-routing-spec.md](../intake/references/intake-routing-spec.md)。
 > - **决策门**（低频锚点，如 review Gate 4 / review-lite §4 Accept-Reject-Defer / intake migrate 聚合方案确认）所有 skill 统一改用 `AskQuestion` 三选一模板。
 > - **边界澄清门**（review/review-lite Align 阶段 sniff 失败 / mode 决策 / `next_review_source=none` 编号确认）也是低频锚点，与决策门同级严格度（错选会覆盖已有评审，不可逆）。
 > - 三类门完整频率分档表与错选成本梯度详见 SSOT [shared/references/askquestion-fallback.md](references/askquestion-fallback.md) §7。
@@ -112,7 +113,7 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 
 | Skill | 路由后行为 | 特有字段 |
 |-------|----------|---------|
-| **intake** | 在 topics/ 下创建新专项目录 | `next_topic_number` |
+| **intake** | 默认创建新专项目录；显式 append 时才追加到已有 topic | `next_topic_number` |
 | **review** | 在已有 topic 的 reviews/ 下追加评审 | `next_review_number`, `review_density_warning` |
 | **review-lite** | 同 review | 同 review |
 | **scope** | 读写已有 topic 的 scope.md + focus.md | 无额外字段 |
