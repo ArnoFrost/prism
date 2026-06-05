@@ -116,6 +116,7 @@ Prism vault (iCloud)/
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
 - **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + Vault + `uv`；review / decision / `task_probe` 等只在结构化协作场景启用。Agent 不应当把"必须先用 workflow"作为协作前置条件。
+- **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（slash 调用永远 new，不因 cohesion 静默 append）；`workflow-review` / `workflow-review-lite` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic。持续上下文类 skill（如 compact、digest）跟随 review 频率档。路由语义 SSOT 见 `intake-routing-spec.md` 与 `topic-sniff-spec.md` §0.1 — cite 不复制。
 
 ---
 

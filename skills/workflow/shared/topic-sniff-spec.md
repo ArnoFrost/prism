@@ -26,6 +26,9 @@
 
 不同 skill 对**同一 `topic_affinity.suggestion`** 可有不同默认动作，由该 skill 的频率特征决定。这是有意为之的设计差异，不是待对齐的不一致：
 
+> [!note]
+> Protocol 层一句分流见仓库根 `AGENTS.md`「行为预期」：intake 属 Container Creation；review / review-lite / 持续上下文类 skill 属 Container Evolution。本文保留路由矩阵 SSOT，AGENTS 只做可发现入口。
+
 | Skill | 频率 | 默认 cohesion 行为 | 默认 ask_user 行为 | 默认 new_topic 行为 |
 |---|---|---|---|---|
 | **intake** | 低频启动事件 | **不直接落盘**——候选只作为可选 append，默认仍新建 | 新 topic 默认项 + append 候选，必须 AskQuestion | 候选首项「全新专题（默认推荐）」 |
