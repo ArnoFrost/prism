@@ -54,7 +54,7 @@ description_zh: "接收新需求并默认创建新的 3.0 topic；仅在显式 a
 
 默认 mode = `new`。
 
-相关 ≠ append；`--append <topic>` 是 `mode=append` 的唯一强入口。`/workflow-intake` slash 调用**永远**新建 topic（即使在已有 topic 对话内）；自然语言 append/cohere 只有在**无 slash**、目标 topic 紧随且可审计时才可进入 append。
+相关 ≠ append；`--append <topic>` 是 `mode=append` 的唯一强入口，优先于裸 slash 默认。裸 `/workflow-intake` 调用**永远**新建 topic（即使在已有 topic 对话内）；自然语言 append/cohere 只有在**无 slash**、目标 topic 紧随且可审计时才可进入 append。
 
 ## 4. Happy Path
 

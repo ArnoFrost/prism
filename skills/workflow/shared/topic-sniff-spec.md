@@ -27,7 +27,7 @@
 不同 skill 对**同一 `topic_affinity.suggestion`** 可有不同默认动作，由该 skill 的频率特征决定。这是有意为之的设计差异，不是待对齐的不一致：
 
 > [!note]
-> Protocol 层一句分流见仓库根 `AGENTS.md`「行为预期」：intake 属 Container Creation；review / review-lite / 持续上下文类 skill 属 Container Evolution。本文保留路由矩阵 SSOT，AGENTS 只做可发现入口。
+> Protocol 层一句分流见仓库根 `AGENTS.md`「行为预期」：intake 属 Container Creation；review / review-lite 属 Container Evolution；compact 属 explicit-topic-only 维护动作。本文保留路由矩阵 SSOT，AGENTS 只做可发现入口。
 
 | Skill | 频率 | 默认 cohesion 行为 | 默认 ask_user 行为 | 默认 new_topic 行为 |
 |---|---|---|---|---|
@@ -35,6 +35,7 @@
 | **review** | 高频持续事件 | 直接落盘到 matched_topic（轻确认） | 必须 AskQuestion | 沿 sniff 推荐 |
 | **review-lite** | 高频持续事件 | 同 review | 必须 AskQuestion | 沿 sniff 推荐 |
 | **scope / status / digest** | 视触发场景 | 沿 review 默认（同一 topic 内累计动作） | 必须 AskQuestion | 通常不进入新建分支 |
+| **compact** | 低频维护事件 | **不消费 cohesion**；必须显式 topic_dir | 必须 AskQuestion / preview gate | 不适用 |
 
 > **设计立意**：
 > - **路由门**频率随 skill 而异：intake 低频启动（偏 Ask 保护）、review/review-lite 高频持续（偏 cohesion 顺滑）。**不能笼统按「路由门=高频」一档处理**——该误差是 r13 P0 finding F1。

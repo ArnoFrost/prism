@@ -45,7 +45,7 @@
 
 完整 `question:` yaml 与决策摘要 5 要素展开见 [askquestion-fallback.md §4.2](../../shared/references/askquestion-fallback.md)。
 
-热路径只保留 **5 行编号清单**（d12 OQ-r07-1 Option B）：
+热路径只保留 **5 行编号清单**；完整模板留在 fallback SSOT：
 
 ```text
 1. 📌 产物路径（含 rXX 实际文件名）
