@@ -9,7 +9,7 @@ tags:
   - skill-compression
 ---
 
-# Skill Governance Contract
+# 技能治理契约
 
 > Prism 3.0 workflow skill 压缩与语义边界治理契约。
 > Evidence / dogfood 实证留在 topic workspace；本文件只保留可复用治理规则。
