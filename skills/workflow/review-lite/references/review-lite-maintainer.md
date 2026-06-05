@@ -39,7 +39,7 @@
 | **scope** | 决策后合同更新；lite **不得**直改 scope/focus |
 | **tidy / finalize** | 机械对齐索引；不改合同 what |
 
-> **路由分叉（cite，非 AGENTS 硬约束）**：review cohesion 可落盘 ≠ intake 默认 new — 升格门 d15 再裁决 AGENTS 分流句。
+> **路由分叉（cite，不复制）**：review/review-lite cohesion 可落盘 ≠ intake 默认 new。Protocol 层分流句已由 topic 044 d18 落入 `AGENTS.md`；路由矩阵 SSOT 仍见 [topic-sniff-spec.md §0.1](../../shared/topic-sniff-spec.md)。
 
 ## Gate 4 完整模板（Maintainer only）
 
