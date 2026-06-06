@@ -1,128 +1,122 @@
 ---
 name: workflow-archive
 description: |
-  Topic 生命周期归档 — 将已验收专项从 topics/ 移入 archive/，冻结只读、释放注意力；preview-first，不可逆移目录须用户确认。Use when: 归档 topic、prism archive、尘封专项、降低 focus 噪声、workflow-archive
+  Topic 生命周期治理 — archive 移入 archive/ 释放注意力；reactivate 拉回 topics/ 继续跟踪。preview-first，移目录须用户确认。Use when: 归档 topic、prism archive、prism reactivate、尘封专项、workflow-archive
 visibility: dev
 stability: experimental
 user_invocable: True
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
-description_zh: "Topic 生命周期归档 — topics/ → archive/ 冻结只读；治理注意力熵，非 Memory。preview-first，移目录须用户确认。"
+  version: dev-02
+description_zh: "Topic Attention Lifecycle — archive/reactivate 双向；preview-first，移目录须用户确认。"
 ---
 
 ## 职责边界
 
 | 维度 | 说明 |
 |------|------|
-| **是什么** | **Attention Lifecycle** 终态：`topics/` → `archive/` · 索引更新 · 冻结只读 |
-| **不是什么** | 不是 compact（topic 内减熵）；不是 Memory（全保留活跃）；不是 tidy（机械对齐）|
-| **读什么** | Happy path 本文件；Phase 1 前条件 cite 交接规则（§6 Handoff / maintainer lifecycle cite）|
+| **是什么** | **Attention Lifecycle**：`topics/` ⇄ `archive/` · 索引更新 · 冻结/恢复活跃 |
+| **不是什么** | 不是 compact（topic 内减熵）；不是 Memory；不是 tidy；**reactivate ≠ compact restore** |
+| **读什么** | Happy path 本文件；Phase 1 / R1 前 cite §6 Handoff |
 | **写什么** | 无 topic 内 SSOT 改写；CLI JSON 输出 |
-| **结束建议** | frozen 只读；若用户要继续跟踪尘封 topic → **reactivate 未实现**（§5 诚实门）|
+| **结束建议** | archive → frozen；reactivate → 建议 `/workflow-status`；合同变更 → `/workflow-scope` |
 
 ---
 
-# Topic 生命周期归档 (Workflow Archive)
+# Topic Attention Lifecycle (Workflow Archive)
 
-> 定位：SDK **dev experimental** 生命周期治理技能 — 治理 **注意力熵**（Topic 何时退出活跃工作集）。
-> 管线：`… → tidy（可选预检）→ archive`；脚本 SSOT：`skills/workflow/shared/scripts/archive.py`。
+> 定位：SDK **dev experimental** 生命周期治理 — **注意力熵**。
+> 脚本：`archive.py` · `reactivate.py`；verb：`prism archive` · `prism reactivate`。
 
 ## 0. Attention Lifecycle
 
 ```text
 Archive ≠ Memory
-  Memory  = 保留一切于活跃工作集
-  Archive = 主动退出工作集（证据冻结，注意力释放）
-
-活跃 ──→ 维护（status/tidy/compact）──→ 归档 ──→ [可选] 重激活
+活跃 ──→ 维护（status/tidy/compact）──→ archive ──→ [可选] reactivate
 ```
 
 ## 1. 何时使用
 
 | 场景 | 做法 |
 |------|------|
-| topic 验收完成，需移出活跃区 | `/workflow-archive` + Phase 0 preview |
-| status/next 建议「可归档」 | 仍须本 skill preview + Gate A 确认 |
-| 降低 workspace focus 噪声 | archive 已尘封专项 |
-| topic 太长想「整理后归档」 | **先** compact **或** archive — 不混为一步 |
-| archive/ 内 topic 只读查询 | 禁止 upgrade / scope 改写 |
-| 用户要从 archive 拉回继续跟踪 | **reactivate SDK 未实现** — §5 诚实门 |
+| topic 验收完成，移出活跃区 | §3 archive · Phase 0 `--dry-run` |
+| 尘封 topic 要继续跟踪 | §8 reactivate · Phase R0 `--dry-run` |
+| status 建议「可归档」 | 仍须 preview + Gate 确认 |
+| compact restore 请求 | **redirect** — 不是 reactivate |
 
 ## 2. 核心边界
 
-| 能力 | 本质 | archive 边界 |
-|------|------|--------------|
-| `workflow-compact` | topic **内部**上下文减熵 | **不**移动整 topic；整 topic 结束用 archive |
-| `workflow-tidy` | 工件机械对齐 | 可作归档**前预检**；**不替代**移目录 |
-| `workflow-status` / next | 健康巡检 / 路由 | **可建议**归档；**不**自动 execute |
-| `workflow-intake` | 入料与路由 | **禁止**未确认移动至 archive |
-| `workflow-scope` | scope → focus 合同 | archive **后** frozen；**不**在 archive/ 内改 scope |
+| 能力 | archive / reactivate 边界 |
+|------|---------------------------|
+| `workflow-compact` | 不移动整 topic；≠ backup restore |
+| `workflow-tidy` | 可预检；不替代移目录 |
+| `workflow-status` | 可建议归档；不 auto execute |
+| `workflow-intake` | 禁止未确认移动 |
+| `workflow-scope` | 不自动 rewrite 合同 |
 
-## 3. Happy Path
+## 3. Archive — Happy Path
 
 ```text
-Phase 0  定位 workspace + topic_dir → 强制 --dry-run 预览 JSON
-  ↓
-Phase 1  只读就绪检查（gardening warnings · 是否适合归档）
-  ↓
-Gate A   展示 actions/warnings；用户显式确认是否 execute
-  ↓
-Phase 2  prism archive（非 dry-run）→ 移目录 · 索引 · README status
-  ↓
-Phase 3  Handoff（frozen 只读 · reactivate 说明）
+Phase 0  --dry-run → Phase 1 就绪检查 → Gate A 确认 → Phase 2 execute → Phase 3 frozen handoff
 ```
-
-### Phase 0 — 强制 preview
-
-> **Contract ≠ Implementation**：CLI 裸调用默认 **真移动**；Agent **必须**先 `--dry-run`。
 
 ```bash
 bin/prism archive <workspace_path> <topic_dirname> --dry-run
+bin/prism archive <workspace_path> <topic_dirname>   # Gate A 后
 ```
-
-### Phase 2 — execute（仅 Gate A 后）
-
-```bash
-bin/prism archive <workspace_path> <topic_dirname>
-```
-
-CLI fallback 与参数见 [archive-maintainer.md](references/archive-maintainer.md)。
 
 ## 4. 输出契约
 
 ```yaml
-archive_result:
-  success: bool          # 是否成功（含 dry-run 预览成功）
-  actions: []            # 将执行 / 已执行的动作描述
-  warnings: []           # gardening 等警告（scope 未勾选等）
-  dry_run: bool          # 预览时为 true（dry-run 响应）
+lifecycle_result:
+  success: bool
+  actions: []
+  warnings: []
+  dry_run: bool   # 预览时
+  error: string   # 失败时
 ```
 
-## 5. Safety Gates
+## 5. Safety Gates（archive + reactivate 共用）
 
 | Gate | 规则 |
 |------|------|
-| **preview-first** | Phase 0 **必须** `--dry-run`；无 preview 禁止 execute |
-| **user-confirm** | Gate A 前禁止非 dry-run；移目录**不可逆** |
-| **no-compact-substitute** | 整 topic 生命周期结束 → archive，不用 compact 代替 |
-| **frozen-grandfather** | archive/ 内禁止 intake upgrade、scope/focus 合同改写 |
-| **reactivate-honest** | 用户请求 reactivate → ① 说明 SDK **未实现** ② cite §6 / maintainer ③ **禁止**静默 `mv` 或伪装 success |
+| **preview-first** | 无 `--dry-run` preview 禁止 execute |
+| **user-confirm** | Gate A / Gate R 显式确认 |
+| **no-compact-substitute** | 整 topic 生命周期 → archive |
+| **frozen-grandfather** | archive/ 内禁止 upgrade / scope 改写 |
+| **no-auto-scope** | reactivate **不**自动改 scope/focus |
+| **no-compact-restore** | reactivate ≠ `.compact_backups` 恢复 |
 
 ## 6. Handoff
 
 | # | 规则 |
 |---|------|
-| 1 | compact **不**调用 archive — topic 内冷存 ≠ workspace `archive/` |
-| 2 | tidy **可**作 archive 前预检 — 不替代移目录 |
-| 3 | status/next **可建议**「可归档」— 不自动 execute |
-| 4 | archive 后 **grandfather 只读** — 不 block 用户发起 reactivate（未来 Track B）|
-| 5 | reactivate 后（未来）回到 active 维护三角 — **不**自动 rewrite scope |
-| 6 | reactivate **≠** compact `.compact_backups` 恢复 |
-
-与 status/tidy/compact 分工见 [status](../status/SKILL.md) / [tidy](../tidy/SKILL.md) / [compact](../compact/SKILL.md)（active 维护）；lifecycle 详表见 maintainer。
+| 1–6 | 见 [archive-maintainer.md](references/archive-maintainer.md) lifecycle 表 |
 
 ## 7. Maintainer
 
-CLI 参数、json 字段、gardening、045 replay、分发面 → [archive-maintainer.md](references/archive-maintainer.md)
+CLI · json · index 双向 · 045 → [archive-maintainer.md](references/archive-maintainer.md)
+
+## 8. Reactivate — Happy Path
+
+> **继续跟踪**尘封 topic；**不是** compact restore。
+
+```text
+Phase R0  --dry-run → Phase R1 冲突检查 → Gate R「继续跟踪」→ Phase R2 execute → Phase R3 active handoff
+```
+
+```bash
+bin/prism reactivate <workspace_path> <topic_dirname> --dry-run
+bin/prism reactivate <workspace_path> <topic_dirname>   # Gate R 后
+```
+
+| 步骤 | 动作 |
+|------|------|
+| 移目录 | `archive/` → `topics/` |
+| README | `status` → **in-progress**（无 README 跳过）|
+| index | 活跃区块 **add** + 归档表 **remove** |
+| archive/README | 索引行 **remove** |
+| scope/focus | **不改** — 可选 `/workflow-scope` |
+
+**结束建议**：`/workflow-status` 或 active 维护三角（tidy/compact/status）。

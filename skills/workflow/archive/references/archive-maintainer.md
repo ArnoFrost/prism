@@ -1,106 +1,90 @@
 # Archive Maintainer Reference
 
-> 第三层维护面 — CLI、json 契约、gardening 边缘、lifecycle cite、045 双轨。Happy path **不必读取**本文件。
+> CLI、json、index 双向、lifecycle。Happy path **不必读取**本文件。
 
 ## CLI
 
-### 标准入口
+### archive
 
 ```bash
 bin/prism archive <workspace_path> <topic_dirname> [--dry-run]
 ```
 
-### fallback（`prism` 不可用时）
+### reactivate
 
 ```bash
-uv run python skills/workflow/shared/scripts/archive.py \
-  <workspace_path> <topic_dirname> [--dry-run]
+bin/prism reactivate <workspace_path> <topic_dirname> [--dry-run]
 ```
 
-| 参数 | 说明 |
+### fallback
+
+```bash
+uv run python skills/workflow/shared/scripts/archive.py <workspace> <topic> [--dry-run]
+uv run python skills/workflow/shared/scripts/reactivate.py <workspace> <topic> [--dry-run]
+```
+
+> **Contract ≠ Implementation**：省略 `--dry-run` 时 **真移动**。Agent Phase 0 / R0 **必须** preview。
+
+## JSON 输出
+
+| 字段 | 说明 |
 |------|------|
-| `workspace_path` | Workspace 根（含 `topics/`、`archive/`）|
-| `topic_dirname` | 目录名，如 `046_maintenance-skills-governance` |
-| `--dry-run` | 只预览 JSON，**不移动**目录 |
+| `success` | 含 dry-run 预览成功 |
+| `actions` | 步骤描述 |
+| `warnings` | 非阻塞 |
+| `dry_run` | 预览时为 true |
+| `error` | 失败时 |
 
-> **现行行为**：省略 `--dry-run` 时脚本 **真移动**。Skill 契约要求 Agent Phase 0 强制 preview（Maintenance Skill Contract · preview-first）。
+## index 双向（index_update.py）
 
-## JSON 输出契约
+| verb | 活跃区块 `prism:topics` | index `## 历史归档` 表 | archive/README |
+|------|-------------------------|------------------------|----------------|
+| **archive** | remove | **append** 行 | append |
+| **reactivate** | **add** | **remove** 行 | remove 行 |
 
-SSOT：`archive.py` 模块 docstring + `archive_topic()` 返回值。
+```bash
+uv run python skills/workflow/intake/scripts/index_update.py <ws> reactivate <num> <name> [--desc]
+```
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `success` | bool | 操作是否成功（dry-run 预览成功也为 true）|
-| `actions` | string[] | 将执行 / 已执行步骤 |
-| `warnings` | string[] | 非阻塞警告 |
-| `dry_run` | bool? | 预览响应时为 true |
-| `error` | string? | `success=false` 时错误信息 |
-
-### gardening（warnings-only）
-
-| 检查 | 行为 |
-|------|------|
-| scope 验收项未勾选 | warning，**不阻塞**归档 |
-| README 含 `next_action` 残留 | warning |
-| focus-only topic 无 README | **不** fatal；无 README 则跳过 README 更新 |
-
-## archive.py 行为摘要
+## archive.py 摘要
 
 ```text
-1. topics/{dirname} → archive/{dirname}（shutil.move，幂等）
-2. archive/README.md 索引追加
-3. topic README status → archived（grandfather，无 README 跳过）
-4. index_update.archive_topic 从活跃区移除
-5. gardening → warnings only
+topics/ → archive/ · README archived · index archive · archive/README append
 ```
 
-## Lifecycle cite
+## reactivate.py 摘要
 
-**Attention Lifecycle**（设计 SSOT 在 vault topic 046）：
+```text
+archive/ → topics/ · README in-progress · index reactivate · archive/README remove
+```
 
-- **正向 archive**：本 skill + `archive.py` ✅
-- **反向 reactivate**：**SDK 未实现** — Agent 须 FA-reactivate-not-implemented 三步，不得伪装成功
-- **reactivate ≠ compact restore**
+## Lifecycle 交接（6 条）
+
+1. compact 不调用 archive
+2. tidy 可预检 archive
+3. status 可建议归档，不 auto execute
+4. archive 后 frozen，不 block reactivate
+5. reactivate 后回 active 三角，不 auto scope
+6. reactivate ≠ compact restore
 
 ## 与 compact / tidy
 
 | 技能 | 关系 |
 |------|------|
-| compact | FC-no-archive / FA-no-compact-substitute — 整 topic 结束用 archive |
-| tidy | 归档前可选预检；不替代移目录 |
-| intake | 禁止未确认移动 archive |
+| compact | 整 topic 结束 → archive；restore ≠ reactivate |
+| tidy | 归档/再激活前后可选预检 |
+| intake | 禁止未确认移动 |
 
-## 045 Harness（双轨）
+## 045 / 分发
 
-| 面 | 归属 |
-|----|------|
-| FA-* 判据 | vault `046` task-4 `workflow-archive-fa-fixtures.md` |
-| 体感 replay | 045 archive 场景（implement 后填 run id）|
-| 禁止 | 把 harness 模板迁入 SDK SSOT |
-
-## 分发面
-
-| 项 | 值 |
-|----|-----|
-| visibility | dev |
-| stability | experimental |
-| mini/full | **默认不注入**（OQ-t4-3）；与 compact 对齐 |
+- FA-* 判据：vault 046 `workflow-archive-fa-fixtures.md`
+- visibility: dev · mini/full 默认不注入
 
 ## 目录结构
 
 ```
-workflow/archive/
-├── SKILL.md
-└── references/
-    └── archive-maintainer.md    # 本文件
-
-workflow/shared/scripts/
-└── archive.py                   # 执行面 SSOT（本 wave 不改行为）
+workflow/archive/SKILL.md          # §3 archive + §8 reactivate
+workflow/shared/scripts/archive.py
+workflow/shared/scripts/reactivate.py
+workflow/intake/scripts/index_update.py
 ```
-
-## Track B — reactivate（未授权 implement）
-
-设计目标：`prism reactivate` 独立 verb · `archive/` → `topics/` · 恢复 index。
-
-**现行**：无脚本。用户请求时 SKILL §5 reactivate-honest 三步。

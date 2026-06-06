@@ -167,7 +167,7 @@ def archive_topic(workspace_path: str, topic_dirname: str, dry_run: bool = False
         actions.append(f"[dry-run] 将移动 {src} → {dst}")
         actions.append(f"[dry-run] 更新 archive/README.md")
         actions.append(f"[dry-run] 更新 README.md status → archived")
-        actions.append(f"[dry-run] 调用 index_update archive")
+        actions.append(f"[dry-run] 调用 index_update archive（含归档表）")
         return {"success": True, "actions": actions, "warnings": warnings, "dry_run": True}
 
     try:

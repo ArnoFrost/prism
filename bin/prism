@@ -16,6 +16,7 @@
 #   validate        校验产物格式（frontmatter / 命名规范）
 #   validate-trace  扫描痕迹义务家族（task_probe/decision_artifact/...）
 #   archive         归档 topic 到 archive/
+#   reactivate      将 archive topic 移回 topics/
 #   migrate         迁移子目录评审格式
 #   sync            嗅探 Prism 三仓 Git 状态
 #   finalize        Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示
