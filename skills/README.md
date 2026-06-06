@@ -16,6 +16,7 @@ skills/
 ├── workflow/                          # ★ 内置工作流技能（v2.0）
 │   ├── digest/
 │   ├── compact/                   # dev experimental：上下文熵治理 preview（不 apply）
+│   ├── archive/                   # dev experimental：topic 生命周期归档
 │   ├── intake/
 │   ├── review/
 │   ├── review-lite/
@@ -31,7 +32,7 @@ skills/
 
 | 类别 | 位置 | 技能 |
 |------|------|------|
-| workflow | `skills/workflow/` | intake, review, review-lite, scope, status, tidy, digest, compact (preview-only) |
+| workflow | `skills/workflow/` | intake, review, review-lite, scope, status, tidy, digest, compact, archive |
 | workspace | `skills/workspace/` | init（含 migrate 能力） |
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
@@ -58,6 +59,7 @@ init（项目容器）→ intake（入料路由）→ scope（合同收敛）→
 | `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
 | `workflow-status` | `/workflow-status` | 无 | 健康度 JSON + Markdown 报告 |
 | `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁 |
+| `workflow-archive` | `/workflow-archive` | workspace + topic | preview-first 生命周期归档（topics/ → archive/）|
 
 共享依赖位于 `workflow/shared/`：`sniff_lib.py`、`obsidian-config.md`、`parallel-execution.md`、`scripts/archive.py`。
 
