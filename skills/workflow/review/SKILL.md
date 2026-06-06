@@ -32,9 +32,18 @@ description_zh: "多角色协作评审，用于方向变更、范围调整或里
 | 沿上一轮产物继续推进 | 直接追问，无需重启 review |
 判断：单视角足够 → lite；需多角色对冲、merge 仲裁或里程碑裁决 → full review。
 
+### `--incremental` 最小协议
+
+| 项 | 规则 |
+|----|------|
+| prior source | 最近被 accept 的 review（`decision.index` / `review.index`）；用户显式指定时优先 |
+| unclosed 判定 | prior review Actions 中未标记完成、且未在后续 dXX / review 关闭的条目 |
+| 无 prior | 降级为常规 review；Align 显式说明「无 prior review，`--incremental` 不适用」 |
+| 输出 | Findings 标注「复验 / 新开」；**Prior Unclosed Items** 必填 |
+
 ## 2. References 加载策略
 
-> 不要一次读取全部 `references/`；按阶段渐进加载。S2 口径：**5 core 不增加**，conditional reads 不得变成 mandatory。
+> 不要一次读取全部 `references/`；按阶段渐进加载。S2 口径：**核心 reference 数量上限不增加**，conditional reads 不得变成 mandatory。
 
 | 阶段 | 必读 | 按需 |
 |------|------|------|
@@ -54,6 +63,7 @@ description_zh: "多角色协作评审，用于方向变更、范围调整或里
 | 自动判定 | Align 显式输出 mode + 理由；环境不支持并行时说明降级理由 |
 | `format=ofm` | READ `review-ofm.md`；顶部 NOTE 协议段；主报告 Callout ≥3 |
 | `format=standard` | 禁止 OFM Callout；裸 Markdown 兼容 GitHub |
+
 ## 4. Full Review State Machine
 
 ```text
@@ -113,6 +123,7 @@ Merge 必须保留理由，而不是只做摘要：
 | Actions（Owner / priority / acceptance） | 是 |
 | Prior Unclosed Items | 是（`--incremental`） |
 | Open Questions | 按需 |
+
 P0 = 阻塞级；P1 = 重要缺陷 / 不一致；P2 = 改善项。`format=ofm` 的 callout 映射见 `review-ofm.md`，不复制。
 
 ## 6. Gate 4 决策门
