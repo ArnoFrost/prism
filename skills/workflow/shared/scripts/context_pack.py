@@ -142,7 +142,7 @@ def _pack_decisions(topic_dir: str, limit: int = 3) -> list[dict]:
 
     results = []
     for f in files:
-        content = _read(os.path.join(decisions_dir, f), limit=15)
+        content = _read(os.path.join(decisions_dir, f), limit=60)
         if not content:
             continue
 
@@ -150,15 +150,26 @@ def _pack_decisions(topic_dir: str, limit: int = 3) -> list[dict]:
         title = title_match.group(1).strip() if title_match else f
 
         conclusion = None
-        for pattern in [
-            r"结论[：:]\s*(.+)",
-            r"决策[：:]\s*(.+)",
-            r"\*\*结论\*\*[：:]*\s*(.+)",
-        ]:
-            m = re.search(pattern, content)
-            if m:
-                conclusion = m.group(1).strip()
-                break
+        quote_match = re.search(r"^>\s*(.+)$", content, re.MULTILINE)
+        if quote_match:
+            conclusion = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", quote_match.group(1).strip())
+        summary = _extract_section(content, "决策摘要")
+        if summary:
+            for line in summary.splitlines():
+                stripped = line.strip()
+                if stripped and not stripped.startswith("|") and stripped != "---":
+                    conclusion = re.sub(r"^>\s*", "", stripped)
+                    break
+        if not conclusion:
+            for pattern in [
+                r"结论[：:]\s*(.+)",
+                r"决策[：:]\s*(.+)",
+                r"\*\*结论\*\*[：:]*\s*(.+)",
+            ]:
+                m = re.search(pattern, content)
+                if m:
+                    conclusion = m.group(1).strip()
+                    break
 
         results.append({"file": f, "title": title, "conclusion": conclusion})
 
@@ -181,7 +192,7 @@ def _pack_reviews(topic_dir: str, limit: int = 2) -> list[dict]:
 
     results = []
     for f in files:
-        content = _read(os.path.join(reviews_dir, f), limit=30)
+        content = _read(os.path.join(reviews_dir, f), limit=120)
         if not content:
             continue
 
@@ -189,14 +200,22 @@ def _pack_reviews(topic_dir: str, limit: int = 2) -> list[dict]:
         title = title_match.group(1).strip() if title_match else f
 
         tldr = None
-        tldr_match = re.search(
-            r"(?:TL;DR|tldr)[^\n]*\n(.+?)(?:\n\n|\n#)",
-            content,
-            re.DOTALL | re.IGNORECASE,
-        )
-        if tldr_match:
-            tldr = tldr_match.group(1).strip()
-            tldr = re.sub(r"^>\s*", "", tldr, flags=re.MULTILINE).strip()
+        tldr_section = _extract_section(content, "TL;DR")
+        if tldr_section:
+            for line in tldr_section.splitlines():
+                stripped = re.sub(r"^>\s*", "", line.strip())
+                if stripped and not stripped.startswith("|"):
+                    tldr = stripped
+                    break
+        if not tldr:
+            tldr_match = re.search(
+                r"(?:TL;DR|tldr)[^\n]*\n(.+?)(?:\n\n|\n#)",
+                content,
+                re.DOTALL | re.IGNORECASE,
+            )
+            if tldr_match:
+                tldr = tldr_match.group(1).strip()
+                tldr = re.sub(r"^>\s*", "", tldr, flags=re.MULTILINE).strip()
 
         results.append({"file": f, "title": title, "tldr": tldr})
 
