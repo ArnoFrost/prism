@@ -1,201 +1,154 @@
 ---
 name: workflow-review
-description: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。三阶段 Align-Explore-Merge，输出分级 findings + 行动计划到 reviews/rXX.md。 Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review"
+description: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。四阶段 Align-Explore-Merge-Gate4，输出分级 findings + 行动计划到 reviews/rXX.md。 Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review"
 visibility: dev
 stability: experimental
-description_zh: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。三阶段 Align-Explore-Merge，输出分级 findings + 行动计划到 reviews/rXX.md。"
+description_zh: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。四阶段 Align-Explore-Merge-Gate4，输出分级 findings + 行动计划到 reviews/rXX.md。"
 ---
 ## 职责边界
 
 | 维度 | 说明 |
 |------|------|
-| **是什么** | topic 内的阶段性正式评审事件：多角色独立审查 → 合并仲裁 → 分级 findings → 落盘 → 触发人类决策 |
-| **不是什么** | 不直接改 scope、不直接改 focus、不隐式生成 decision、不替代人类裁决权、不是每轮对话都要重启的总入口 |
-| **写入工件** | `reviews/rXX_描述.md`（综合报告，必填）+ `reviews/raw/rXX-role-*.md`（条件落盘）+ `decision.index.md`（决策链主索引，决策 accept 后追加）+ `review.index.md`（评审辅助索引，仅当本 review 被新 dXX 引用时追加；稀疏关联律）|
-| **结束建议** | → 用户 Accept / Reject / Defer → `decisions/dXX.md` → `workflow-scope` 同步合同 |
+| **是什么** | topic 内的正式多角色评审：Align → Explore → Merge → Gate 4 |
+| **不是什么** | 不直接改 scope/focus、不隐式生成 decision、不替代人类裁决、不是每轮对话都要重启的总入口 |
+| **读什么** | 5 core references 渐进加载；topic / milestone / 方法论评审装配 context-pack full 或等价输入包 |
+| **写什么** | `reviews/rXX_描述.md`；条件 `reviews/raw/`；decision accept 后联动 `decision.index.md` / `review.index.md` |
+| **结束建议** | → Accept / Reject / Defer / Other（Gate 4）→ `decisions/dXX.md` → 必要时 `/workflow-scope` |
 
 ---
+# 多角色协作评审 (Workflow Review)
 
-# 面向专项的多角色协作评审 (Workflow Review)
+> 管线定位：`intake → scope → review → decision`；`{skill_dir}` 指 SKILL.md 所在目录。
+> 术语遵循 [vocabulary.md](references/vocabulary.md)，不在主入口复制定义。
 
-> 管线定位：`intake → (scope) → review → archive`；`{skill_dir}` 指 SKILL.md 所在目录（按 IDE 平台映射）。
+## 1. 何时使用
 
-> **术语**：本 SKILL 中 OQ / goal / V / action / focus / scope / phase / wave / finding / Risks 等术语遵循 [vocabulary.md](references/vocabulary.md) — 12 活跃 + 3 废弃术语 + Prefix dispatch 表见 SSOT；**不字字复制本体定义**。
-
-## References 加载策略
-
-> ⚠️ **不要一次读取全部 references/**。按当前阶段只读必需文件，其余遇到时再按需读取。
-
-| 阶段 | 必读 | 按需（遇到相关 Gate / 异常时读） |
-|------|------|-------------------------------|
-| **Align** | review-templates.md, vocabulary.md | review-ofm.md（仅 format=ofm） |
-| **Explore** | parallel-execution.md（仅 mode=full） | — |
-| **Merge** | review-merge-spec.md | trace-artifacts-spec.md |
-| **Gate 4** | decision-gate.md | askquestion-fallback.md（仅无 AskQuestion 时） |
-| **维护者参考** | — | review-maintainer.md, obsidian-config.md |
-
-## 何时使用
-
-阶段性正式收敛工具，**不是**每轮对话都要重启的总入口。
-
-| 场景 | 做法 |
-|------|------|
-| 方向变更、范围调整、里程碑检查点 | `/workflow-review` |
-| 评审方案/规范/代码（需多视角） | `/workflow-review` |
-| 上次评审 Actions 已执行完毕，需验证效果 | `/workflow-review --incremental` |
-| 日常迭代、小改动确认、快速对齐 | `/workflow-review-lite` |
+| 场景 | 用哪个 |
+|------|--------|
+| 方向变更、范围调整、里程碑检查点 | **workflow-review** |
+| 方案/规范/代码需要多视角独立发现盲区 | **workflow-review** |
+| 上次评审 Actions 已执行完毕，需验证效果 | `workflow-review --incremental` |
+| 日常迭代、小改动确认、快速对齐 | `workflow-review-lite` |
 | 沿上一轮产物继续推进 | 直接追问，无需重启 review |
+判断：单视角足够 → lite；需多角色对冲、merge 仲裁或里程碑裁决 → full review。
 
-## 参数
+## 2. References 加载策略
 
-| 参数 | 可选值 | 默认 | 说明 |
-|------|--------|------|------|
-| `--mode` | `full` / `quick` | 自动 | full = 并行 + 多文件 + 深度审查；quick = 串行 + 单文件 + 快速扫描 |
+> 不要一次读取全部 `references/`；按阶段渐进加载。S2 口径：**5 core 不增加**，conditional reads 不得变成 mandatory。
 
-> ⚠️ 取值合法性由 `validate_review_call.py` 在 finalize Step 2.6 校验。
-
-### 动态决策（用户未指定 mode 时）
-
-- 评审材料 > 200 行 **或** 涉及 3+ 文件 → `mode=full`
-- 否则 → `mode=quick`
-- 环境不支持并行子任务 → `mode=quick`（降级，告知用户）
-
-决策结果**必须在 Align 阶段显式输出**（如"判定 mode=full，原因：..."），不得隐式跳过。
-
-## 协作骨架 (Align → Explore → Merge)
-
-```
-┌─────────────────────────────────┐
-│  1. Align（对齐 / 主 Agent）     │
-│  ① prism sniff <target> --kind review
-│     → output_dir/format/next_review_number
-│     （fallback: uv run python shared/scripts/sniff.py，仅维护/调试）
-│  ② READ review-templates.md / review-ofm.md (format=ofm 时)
-│  ③ topic_affinity 路由决策
-│  ④ 确认评审对象、范围、角色
-│  ⑤ 输出 mode 决策 + 理由
-│  ⑥ 输出「已加载 references」清单
-│  ⑦ 【mode=full 强制】输出 task_probe 探测痕迹（真实发起 Task 调用）
-├────────── ⛔ Gate 1 ────────────┤
-│  2. Explore（独立评审 / 各角色） │
-│  各角色独立输出评审章节；角色之间禁止互相引用
-│  subagent 落盘前自检 subagent_self_check yaml 块
-├────────── ⛔ Gate 2 ────────────┤
-│  3. Merge（综合仲裁 / 主 Agent） │
-│  ① 去重仲裁 + 独立发现率计算
-│  ② 输出统一行动计划
-│  ③ 写综合报告 reviews/rXX_*.md
-│  ④ [条件] 写角色报告 reviews/raw/
-│  ⑤ 索引联动（按"稀疏关联律"）：
-│     - decision.index.md（主索引）：决策门 Gate 4 accept 后由后续 dXX 落盘步骤追加事件链行
-│     - review.index.md（辅助索引）：仅当本 review 被新 dXX 引用时才追加；探索/调研性 review 不上索引
-│  ⑥ 执行 prism finalize <topic_dir>
-│     → tidy / validate / validate-trace / validate-review-call / scope-hint
-│  ⑦ 输出 merge_artifact 痕迹
-├────────── ⛔ Gate 3 ────────────┤
-│  Gate 后同步：状态归索引（decision.index/review.index）；存量 README "当前状态" 兜底更新（grandfather；不直接改 focus，focus 由 scope 刷新）
-├────────── ⛔ Gate 4 ────────────┤
-│  4. 决策触发 — AskQuestion 三选一 + Other 兜底
-└─────────────────────────────────┘
-```
-
-### Gate 校验
-
-- **Align→Explore**：`prism sniff <target> --kind review` 已执行；mode=full 时 `task_probe` 四字段齐全。
-- **Explore→Merge**：角色报告数与预定角色一致，且每份含 TL;DR + Findings。
-- **Merge→落盘**：综合报告、条件 raw、稀疏索引联动完成，并通过 `prism finalize <topic_dir>`。
-- **落盘→决策 / Gate 4**：accept/reject/defer/type_something 路径按 [decision-gate.md](references/decision-gate.md) 执行；写 dXX 时必须回填 `decision_artifact`。
-
-详细 fallback、痕迹字段与校验规则见 [parallel-execution.md](references/parallel-execution.md)、[trace-artifacts-spec.md](references/trace-artifacts-spec.md) 与 [decision-gate.md](references/decision-gate.md)。
-
-## Topic 路由决策（Align 阶段）
-
-sniff 返回 `topic_affinity.suggestion` 后：
-
-| suggestion | 行为 | output_dir |
-|------------|------|------------|
-| `cohesion` | 内聚到已有专项，显式声明 | `{topic_dir}/reviews/rXX.md` |
-| `ask_user` | 展示候选列表询问用户 | 用户确认后确定 |
-| `new_topic` | 新建专项 | `topics/{NNN}_{topic-name}/reviews/rXX.md` |
-| `null` | 无 workspace | 当前目录或用户指定 |
-
-决策结果**必须**显式输出。`next_review_source` 处理：`affinity` / `topic_hint` / `project_dir` 可信直接用；`none` 触发边界澄清门（详见 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)）。
-
-## 默认角色（3 角色）
-
-用户可根据场景增减（上限 5）。自定义角色须含 Identity / Scope / Anti-patterns / Output-Format 四字段。
-
-| 角色 | 评审重点 | 禁止项 | 特有字段 |
-|------|----------|--------|----------|
-| A 结构与一致性 | 目录、命名、入口完整性、引用一致性、SSOT | 不评业务逻辑 / 实现细节 | Actions |
-| B 可执行性 | 行动项可落地性、验收标准、依赖、优先级、最小交付 | 不纠结格式、不重设架构 | Actions |
-| C 风险与边界 | 安全、范围漂移、过度工程、兼容、依赖、滥用 | 不扩写方案，只识别风险与边界 | Risks |
-
-所有角色均按 `{format}` 输出 TL;DR / Findings(P0-P2) / 角色特有字段。
-
-## 输出契约
-
-| 字段 | 说明 | 必需 |
+| 阶段 | 必读 | 按需 |
 |------|------|------|
-| **TL;DR** | 结论摘要，≤ 3 句 | 是 |
-| **Findings** | 客观发现，按 P0/P1/P2 分级 | 是 |
-| **Risks** | 未来影响预判（概率 / 严重度 / 缓解建议）| 是 |
-| **Actions** | 行动项（Owner / 优先级 / 验收标准）| 是 |
-| **Prior Unclosed Items** | 上次未关闭行动项复检 | 是（re-review）|
-| **Open Questions** | 未决问题 | 按需 |
+| **Align** | `review-templates.md`, `vocabulary.md` | `review-ofm.md`（仅 format=ofm）；`../shared/context-pack-spec.md`（topic / milestone） |
+| **Explore** | `parallel-execution.md`（仅 mode=full） | — |
+| **Merge** | `review-merge-spec.md` | `trace-artifacts-spec.md`（字段表 / raw 判定歧义） |
+| **Gate 4** | `decision-gate.md` | `askquestion-fallback.md`（无 AskQuestion / 边界门） |
+| **Maintainer** | — | `review-maintainer.md`, `obsidian-config.md` |
+`context-pack full` / equivalent input pack 最小包：scope/focus、相关 decisions、目标工件、prior review/index。缺上下文不得输出全局判断。
 
-### Findings 分级
+## 3. Mode 与 Format
 
-- **P0** 阻塞级：安全问题、核心逻辑错误、阻塞后续工作
-- **P1** 重要：功能缺陷、设计不一致、用户体验显著影响
-- **P2** 改善：规范对齐、体验优化、可延后处理
+| 项 | 规则 |
+|----|------|
+| `mode=full` | 评审材料 >200 行、涉及 3+ 文件，或用户指定 full；必须真实探测并行能力 |
+| `mode=quick` | 串行角色切换；仅在用户指定 quick 或合法 fallback 时使用 |
+| 自动判定 | Align 显式输出 mode + 理由；环境不支持并行时说明降级理由 |
+| `format=ofm` | READ `review-ofm.md`；顶部 NOTE 协议段；主报告 Callout ≥3 |
+| `format=standard` | 禁止 OFM Callout；裸 Markdown 兼容 GitHub |
+## 4. Full Review State Machine
 
-### 独立发现率
+```text
+Phase 1  Align   — sniff / route / context / mode / task_probe
+Gate 1   探测门  — full 缺 task_probe 不得进入 Explore
+Phase 2  Explore — 独立 subagent / role findings / subagent_self_check
+Gate 2   角色门  — 角色数、TL;DR、Findings 齐全
+Phase 3  Merge   — 去重仲裁 / 独立发现率 / 行动计划 / merge_artifact
+Gate 3   落盘门  — reviews/rXX + 条件 raw + finalize 通过
+Phase 4  Gate 4  — AskQuestion 4 选项 / decision_artifact
+```
 
-`独立发现率 = |仅由单个角色提出的发现| / |合并后唯一发现总数| × 100%`，目标 ≥ 50%。
-Merge 报告必须含计算表格（角色 × 总发现 / 仅该角色发现 / 独立项数）。
+### Phase 1 Align
 
-## 二态产物契约 — 防 OFM 退化
+1. `prism sniff <target> --kind review --topic <主题>` → `format` / `output_dir` / `next_review_number` / affinity。
+2. READ `review-templates.md`；`format=ofm` 时 READ `review-ofm.md`。
+3. 显式输出 topic route、评审对象、范围、角色、mode 决策、已加载 references。
+4. topic / milestone / 方法论评审装配 context-pack full 或等价输入包。
+5. **mode=full 强制输出 `task_probe`**：`called` / `result` / `fallback_decision` / `fallback_reason`。
+`next_review_source = none`、sniff 失败或 mode 判定不可信 → 边界澄清门，见 [askquestion-fallback.md](references/askquestion-fallback.md)；sniff 维护 fallback 见 [review-maintainer.md](references/review-maintainer.md)。
 
-- **format=ofm**：协议 callout 须置顶（`NOTE` 或兼容 `info`）、主报告 ≥3 Callout、必填 frontmatter。**G0** 默认 callout 词汇见 `shared/obsidian-config.md`（经 `references/` 软链）；**评审语义映射**仅见 [review-ofm.md](references/review-ofm.md)。人类速查：[docs/ofm-cheatsheet.md](../../../docs/ofm-cheatsheet.md)。
-- **format=standard**：禁止 OFM Callout，裸 Markdown 兼容 GitHub/GitLab；不强制 frontmatter。
+### Phase 2 Explore
 
-## 执行策略
+mode=full：为每个角色真发起独立 Task/subagent，禁止伪并行；串行 fallback 仅限 [parallel-execution.md](references/parallel-execution.md) 白名单。每个 raw 角色报告须含 `subagent_self_check`。
+mode=quick：单次会话依次切换角色；每个角色输出前声明“仅基于原始材料，不参考前序角色发现”。
 
-### 策略一：并行子任务（推荐，mode=full）
+默认角色可增减（上限 5）：
 
-按协作骨架执行 Align；Explore 阶段在同一轮为每个角色**真发起独立 Task/subagent**，禁止伪并行。IDE 客户端须先真实探测 Task 能力，只有命中 [parallel-execution.md](references/parallel-execution.md) 的串行 Fallback 白名单才可退化。
+| 角色 | 评审重点 | 禁止项 |
+|------|----------|--------|
+| A 结构与一致性 | 目录、命名、入口完整性、引用一致性、SSOT | 不评业务逻辑 / 实现细节 |
+| B 可执行性 | 行动项、验收标准、依赖、优先级、最小交付 | 不重设架构 |
+| C 风险与边界 | 安全、范围漂移、过度工程、兼容、依赖、滥用 | 不扩写方案 |
 
-#### Subagent 召集约束
+### Phase 3 Merge
 
-主 agent 召集每个角色 subagent 时使用 [parallel-execution.md](references/parallel-execution.md) 的 prompt 骨架，并补足本轮角色定义、评审对象、输出契约与 `subagent_self_check`。失败模式（summary 压缩、缺字段、OFM 退化、自检缺失）与串行 Fallback 4 条白名单以该 reference 和 [shared/scripts/README.md](../shared/scripts/README.md) 为准。
+Merge 必须保留理由，而不是只做摘要：
 
-**Merge 阶段**：按上方协作骨架 ① ~ ⑦ 执行。raw 落盘判定（Step 4）+ merge_artifact 痕迹完整字段表见 [shared/trace-artifacts-spec.md](references/trace-artifacts-spec.md)。
+| 必做 | 说明 |
+|------|------|
+| 去重仲裁 | 合并同类发现，保留冲突点 |
+| 独立发现率 | `仅由单个角色提出的发现 / 合并后唯一发现总数 × 100%`，目标 ≥50% |
+| 统一行动计划 | Owner / priority / acceptance |
+| 写综合报告 | `reviews/rXX_{title}.md`；模板见 [review-templates.md](references/review-templates.md) |
+| 条件 raw | 触发阈值时写 `reviews/raw/`；未写须给 `raw_skip_reason` |
+| finalize | `prism finalize <topic_dir>` 通过后再进入 Gate 4 |
+| `merge_artifact` | raw 判定、独立发现率、路径与 skip reason 可审计 |
+合并细则见 [review-merge-spec.md](references/review-merge-spec.md)；raw 与 trace 字段表见 [trace-artifacts-spec.md](references/trace-artifacts-spec.md)。
 
-### 策略二：串行角色切换（mode=quick）
+## 5. 输出契约
 
-单次会话中依次以不同角色输出，完成后执行 Merge。落盘要求与策略一相同；串行模式下须在每个角色输出前声明："以下仅基于原始材料，不参考前序角色的发现"。
+| 字段 | 必需 |
+|------|:----:|
+| TL;DR（≤3 句） | 是 |
+| Findings（P0/P1/P2） | 是 |
+| Risks | 是 |
+| Actions（Owner / priority / acceptance） | 是 |
+| Prior Unclosed Items | 是（`--incremental`） |
+| Open Questions | 按需 |
+P0 = 阻塞级；P1 = 重要缺陷 / 不一致；P2 = 改善项。`format=ofm` 的 callout 映射见 `review-ofm.md`，不复制。
 
-### sniff 失败处理（边界澄清门）
+## 6. Gate 4 决策门
 
-sniff 报错、`next_review_source=none`、mode 判定不可信时先触发边界澄清；`writable=false` 时降级为对话输出；`topic_affinity=null` 时按 new_topic 或用户指定处理。详见 [askquestion-fallback.md §4.3](references/askquestion-fallback.md)。
+Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `reject` / `defer` / `type_something`。
 
-## 痕迹义务（4 族封顶）
+| 选择 | 后续动作 |
+|------|----------|
+| `accept` | 写 `decisions/dXX.md` + `decision_artifact`；影响 scope 再调 `/workflow-scope` |
+| `reject` | 写 rejected dXX；重启评审或调 scope |
+| `defer` | 写 deferred dXX；不改 scope/focus |
+| `type_something` | **不写 dXX**；原样回收为修订意图；禁止当 Accept |
 
-必填痕迹：`task_probe`（mode=full Align）、`merge_artifact`（Merge 后）、`decision_artifact`（Gate 4 后）。完整字段表与校验规则见 [trace-artifacts-spec.md](references/trace-artifacts-spec.md)；共同原则：**无痕迹 = 未执行**。
+完整 Gate 4 契约见 [decision-gate.md](references/decision-gate.md)。AskQuestion 不可用时按 [askquestion-fallback.md](references/askquestion-fallback.md)；`PRISM_NO_INTERACTIVE=1` 必须 fail。
 
-## 决策触发（⛔ Gate 4）
+⛔ Gate 4 不可跳过；错选 + finalize 会固化错误共识。
 
-Merge 落盘且 Gate 3 通过后，**必须**触发结构化决策门：`accept` / `reject` / `defer` / `type_something`。前三者按需写 `decisions/dXX.md` 并回填 `decision_artifact`，Other 不写 dXX、原样回收为修订意图；完整契约见 [decision-gate.md](references/decision-gate.md)。
+## 7. Core Behavior Safety Gates
 
-⛔ 决策门不可跳过。错选 + 串联 `prism finalize` 会固化错误共识。
+| 行为 | 不可退化要求 |
+|------|--------------|
+| Parallel | full review 必须真实探测并行能力；不得伪并行 |
+| Merge | 必须解释去重、冲突仲裁、独立发现率、行动计划 |
+| Trace | `task_probe` / `merge_artifact` / `decision_artifact` 三族不可丢；无痕迹 = 未执行 |
+| Gate | Gate1–4 不可合并；Gate4 不可跳过 |
 
-## 反馈闭环
+`writable=false` 时降级为对话输出并说明限制；不得假装已落盘 / 已 finalize。README grandfather、完整 fallback、目录结构与维护说明见 [review-maintainer.md](references/review-maintainer.md)。
 
-1. **质量自检**：Merge 报告必须含独立发现率指标（含计算过程）
-2. **Calibration 询问**：向用户确认发现价值
-3. **增量 Re-review**：支持 `--incremental` 只审查 diff 部分
+## 8. 写盘口径
 
-## 产物命名 / 目录结构
+| 文件 | 操作 | 说明 |
+|------|------|------|
+| `reviews/rXX_{title}.md` | 新建 | 综合报告 |
+| `reviews/raw/rXX-role-{A,B,C}.md` | 条件新建 | raw 阈值或审计需要 |
+| `review.index.md` | 稀疏追加 | 仅当本 review 被 dXX 引用 |
+| `decision.index.md` | 由 dXX 追加 | 主事件链 |
+| `scope.md` / `focus.md` | **禁止直改** | 须 accepted dXX 或 `/workflow-scope` |
 
-核心产物：`reviews/rXX_{title}.md`、可选 `reviews/raw/rXX-role-{A,B,C}.md`、决策后 `decisions/dXX_*.md`，索引按 `decision.index.md` 主索引 + `review.index.md` 稀疏辅助索引联动。命名规则见 [review-templates.md](references/review-templates.md)，合并规则见 [review-merge-spec.md](references/review-merge-spec.md)。
+命名规则见 `review-templates.md`；索引、raw、finalize 疑难排查见 `review-maintainer.md`。
