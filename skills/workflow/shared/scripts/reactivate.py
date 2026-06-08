@@ -28,6 +28,7 @@ from archive import (
     _read,
     _write,
 )
+from archive_layout import find_archived_topic_dir
 
 
 def _update_readme_status_in_progress(readme_path: str) -> bool:
@@ -73,16 +74,16 @@ def reactivate_topic(workspace_path: str, topic_dirname: str, dry_run: bool = Fa
     number, topic_name = parsed
     topics_dir = os.path.join(workspace_path, "topics")
     archive_dir = os.path.join(workspace_path, "archive")
-    src = os.path.join(archive_dir, topic_dirname)
     dst = os.path.join(topics_dir, topic_dirname)
 
     if os.path.isdir(dst):
         return {"success": True, "actions": ["已在 topics/ 活跃区，跳过"],
                 "warnings": []}
 
-    if not os.path.isdir(src):
+    src = find_archived_topic_dir(workspace_path, topic_dirname)
+    if not src:
         return {"success": False, "actions": [], "warnings": [],
-                "error": f"archive 源目录不存在: {src}"}
+                "error": f"archive 源目录不存在: {topic_dirname}"}
 
     if not os.path.isdir(topics_dir):
         return {"success": False, "actions": [], "warnings": [],

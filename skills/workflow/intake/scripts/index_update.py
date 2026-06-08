@@ -22,6 +22,14 @@ import os
 import re
 import sys
 
+_SHARED_SCRIPTS = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "shared", "scripts")
+)
+if _SHARED_SCRIPTS not in sys.path:
+    sys.path.insert(0, _SHARED_SCRIPTS)
+
+from archive_layout import archive_relative_link
+
 START_MARKER = "<!-- prism:topics:start -->"
 END_MARKER = "<!-- prism:topics:end -->"
 
@@ -63,9 +71,10 @@ def _topic_line(number: int, topic_name: str, desc: str) -> str:
     return f"- [{nnn} — {label_desc}]({link}){suffix}"
 
 
-def _archive_line(number: int, topic_name: str, desc: str) -> str:
+def _archive_line(workspace_path: str, number: int, topic_name: str, desc: str) -> str:
     nnn = f"{number:03d}"
-    return f"| {nnn} | [{topic_name}](./archive/{nnn}_{topic_name}/) | {desc} |"
+    link = archive_relative_link(workspace_path, number, topic_name)
+    return f"| {nnn} | [{topic_name}]({link}) | {desc} |"
 
 
 def _number_pattern(number: int) -> str:
@@ -138,7 +147,7 @@ def append_archive_index_row(workspace_path: str, number: int, topic_name: str, 
         return {"action": "append_archive_row", "success": True,
                 "message": f"归档表已有 {nnn}，跳过"}
 
-    row = f"| {nnn} | [{topic_name}](./archive/{nnn}_{topic_name}/) | {desc} |"
+    row = _archive_line(workspace_path, number, topic_name, desc or topic_name)
     lines = content.split("\n")
     insert_idx = _archive_table_insert_index(lines)
 

@@ -322,17 +322,13 @@ def scan_workspace(project_dir: str) -> dict:
             t["location"] = "topics"
             topics.append(t)
 
-    # 2. 扫描 archive/{NNN}_{topic-name}/ 扁平归档目录
-    if os.path.isdir(archive_dir):
-        for entry in sorted(os.listdir(archive_dir)):
-            entry_path = os.path.join(archive_dir, entry)
-            if not os.path.isdir(entry_path):
-                continue
-            if not re.match(r"^\d{3}_", entry):
-                continue
-            t = scan_topic(entry_path)
-            t["location"] = "archive"
-            topics.append(t)
+    # 2. 扫描 archive/ 内已归档 topic（flat 或 YYYY-MM/topic/）
+    from archive_layout import iter_archived_topic_dirs
+
+    for entry_path in iter_archived_topic_dirs(workspace["path"]):
+        t = scan_topic(entry_path)
+        t["location"] = "archive"
+        topics.append(t)
 
     total = len(topics)
     # 区分活跃与已归档/废弃 topic

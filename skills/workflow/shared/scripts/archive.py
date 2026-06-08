@@ -4,8 +4,12 @@
 用法:
   uv run python archive.py <workspace_path> <topic_dirname> [--dry-run]
 
+布局（由 archive_layout.detect_layout 决定）：
+- flat（默认）：archive/{dirname}/
+- monthly_topic：archive/YYYY-MM/topic/{dirname}/（项目 README / project.yaml 约定）
+
 动作（幂等）：
-1. topics/{dirname} → archive/{dirname}（移目录）
+1. topics/{dirname} → 归档目标目录（移目录）
 2. 更新 archive/README.md 索引表（追加条目）
 3. 更新 README.md status → archived
 4. 调用 index_update archive 从活跃区块移除
@@ -22,6 +26,13 @@ import re
 import shutil
 import sys
 from datetime import date
+
+from archive_layout import (
+    archive_dst_dir,
+    archive_relative_link,
+    detect_layout,
+    find_archived_topic_dir,
+)
 
 
 def _read(path: str) -> str | None:
@@ -97,8 +108,9 @@ def _check_gardening(topic_dir: str) -> list[str]:
     return warnings
 
 
-def _update_archive_readme(archive_dir: str, number: int, topic_name: str,
+def _update_archive_readme(workspace_path: str, number: int, topic_name: str,
                            title: str, created: str, updated: str) -> bool:
+    archive_dir = os.path.join(workspace_path, "archive")
     readme_path = os.path.join(archive_dir, "README.md")
     content = _read(readme_path)
     if not content:
@@ -109,7 +121,10 @@ def _update_archive_readme(archive_dir: str, number: int, topic_name: str,
         return False
 
     date_range = f"{created} ~ {updated}" if created and updated else (created or updated or date.today().isoformat())
-    new_row = f"| {nnn} | [{topic_name}](./{nnn}_{topic_name}/) | {title} | {date_range} |"
+    rel = archive_relative_link(workspace_path, number, topic_name).lstrip("./")
+    if rel.startswith("archive/"):
+        rel = rel[len("archive/"):]
+    new_row = f"| {nnn} | [{topic_name}](./{rel}) | {title} | {date_range} |"
 
     lines = content.split("\n")
     insert_idx = None
@@ -138,12 +153,14 @@ def archive_topic(workspace_path: str, topic_dirname: str, dry_run: bool = False
     number, topic_name = parsed
     topics_dir = os.path.join(workspace_path, "topics")
     archive_dir = os.path.join(workspace_path, "archive")
+    layout = detect_layout(workspace_path)
     src = os.path.join(topics_dir, topic_dirname)
-    dst = os.path.join(archive_dir, topic_dirname)
+    dst = archive_dst_dir(workspace_path, topic_dirname)
 
     if not os.path.isdir(src):
-        if os.path.isdir(dst):
-            return {"success": True, "actions": ["已在 archive 中，跳过"],
+        existing = find_archived_topic_dir(workspace_path, topic_dirname)
+        if existing:
+            return {"success": True, "actions": [f"已在 archive 中（{existing}），跳过"],
                     "warnings": []}
         return {"success": False, "actions": [], "warnings": [],
                 "error": f"源目录不存在: {src}"}
@@ -164,6 +181,7 @@ def archive_topic(workspace_path: str, topic_dirname: str, dry_run: bool = False
                 "error": f"目标已存在: {dst}（若已部分归档请手动处理）"}
 
     if dry_run:
+        actions.append(f"[dry-run] 布局: {layout}")
         actions.append(f"[dry-run] 将移动 {src} → {dst}")
         actions.append(f"[dry-run] 更新 archive/README.md")
         actions.append(f"[dry-run] 更新 README.md status → archived")
@@ -175,7 +193,7 @@ def archive_topic(workspace_path: str, topic_dirname: str, dry_run: bool = False
     except OSError as e:
         return {"success": False, "actions": [], "warnings": warnings,
                 "error": f"移动目录失败: {e}"}
-    actions.append(f"已移动 {topic_dirname} → archive/")
+    actions.append(f"已移动 {topic_dirname} → {os.path.relpath(dst, workspace_path)}/")
 
     readme_path = os.path.join(dst, "README.md")
     title = _extract_title(readme_path)
@@ -197,7 +215,7 @@ def archive_topic(workspace_path: str, topic_dirname: str, dry_run: bool = False
                 _write(readme_path, new_content)
                 actions.append(f"README.md updated → {date.today().isoformat()}")
 
-    if _update_archive_readme(archive_dir, number, topic_name, title, created, updated):
+    if _update_archive_readme(workspace_path, number, topic_name, title, created, updated):
         actions.append("archive/README.md 索引已更新")
 
     workflow_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

@@ -49,8 +49,11 @@ uv run python skills/workflow/intake/scripts/index_update.py <ws> reactivate <nu
 ## archive.py 摘要
 
 ```text
-topics/ → archive/ · README archived · index archive · archive/README append
+topics/ → archive/（flat 或 YYYY-MM/topic/，见 archive_layout.py）
+· README archived · index archive · archive/README append
 ```
+
+布局探测：`project.yaml` 的 `archive_layout: monthly_topic` 或 README 含 `archive/YYYY-MM/topic/` → 按月份子目录；否则 flat `archive/{NNN}_name/`。
 
 ## reactivate.py 摘要
 
