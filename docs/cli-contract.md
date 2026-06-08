@@ -177,7 +177,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 探测 topic / 校验产物 / 工件对齐 / 痕迹抽检 | `bin/prism <verb> --json` | envelope |
 | 仓库/环境/IDE 级体检（含 doctor / setup / relink） | `bin/<command> --json` 等 | flat（按命令文档） |
 
-> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/migrate/sync/finalize/tidy/status/digest/validate-trace/manifest；自 v2.0 起 `pipeline` 已物理移除）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
+> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/reactivate/migrate/sync/finalize/tidy/status/digest/validate-trace/manifest；自 v2.0 起 `pipeline` 已物理移除）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
 
 #### 守门测试
 
@@ -211,6 +211,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism sniff` | stable | ✅ | 探测 topic_affinity / next_review_number（`--kind review\|intake`） |
 | `prism validate` | stable | ✅ | 校验产物格式（frontmatter / 命名规范） |
 | `prism archive` | stable | ⬜ | 归档 topic 到 archive/ |
+| `prism reactivate` | stable | ⬜ | 将 archive topic 移回 topics/ 活跃区 |
 | `prism migrate` | experimental | ⬜ | 迁移 review 子目录格式（1.2 如无新用例将降为过渡期工具） |
 | `prism sync` | **exempt** | ⬜ | 嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免） |
 | `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示 |

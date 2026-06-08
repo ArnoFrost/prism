@@ -1,5 +1,7 @@
 import importlib.util
+import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 
@@ -20,6 +22,12 @@ spec.loader.exec_module(tidy)
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+def _pin_mtime(path: Path, date_str: str) -> None:
+    """Align file mtime with frontmatter date so unrelated tidy fixes stay quiet."""
+    ts = datetime.strptime(date_str, "%Y-%m-%d").timestamp()
+    os.utime(path, (ts, ts))
 
 
 def _topic(tmp_path: Path) -> Path:
@@ -53,6 +61,14 @@ date: 2026-06-01
 # Wave-1 — task-1 第 1 批推进
 """,
     )
+    for path in (
+        topic / "scope.md",
+        topic / "focus.md",
+        topic / "review.index.md",
+        topic / "structures" / "task.index.md",
+        topic / "structures" / "task-1_demo" / "wave-1_demo.md",
+    ):
+        _pin_mtime(path, "2026-06-01")
 
     report = tidy.tidy_topic(str(topic), fix=False)
     structure_reports = [r for r in report["reports"] if r["type"] == "structures_readability"]
