@@ -1,0 +1,83 @@
+# Intake Routing Spec — Topic Entry and Compatibility Boundary
+
+> 本文件是 `workflow-intake` 专属路由语义 SSOT。`topic-sniff-spec.md` 负责通用 affinity 评分与字段语义；本文件负责 intake 在收到这些信号后的默认行为。
+
+## 1. Core Rule
+
+`/workflow-intake` 默认语义 = 创建新的 3.0 topic。
+
+用户显式调用 intake，本身已经表达一层意图：把一段混沌输入收束成一个新的专项容器。sniff 对 intake 的作用是 advisory：探测编号、暴露可能相关 topic、防止误撞；它不应把默认动作改写成静默追加到已有 topic。
+
+## 2. Mode Matrix
+
+| mode | 触发 | 默认行为 | 是否需要确认 |
+|------|------|----------|--------------|
+| `new` | `/workflow-intake` 或新需求描述 | 创建新 3.0 topic；已有候选只作为可选 append 提示 | 创建前轻确认 |
+| `append` | `--append <topic>` | 追加 `references/intake.md`，补 scope OQ，刷新 README 兜底 | 目标可审计时可跳过 AskQuestion |
+| `migrate` | `--mode migrate` | 扫描散落任务并生成迁移建议 | 必须确认；无交互必须 fail |
+| `upgrade` | `--mode upgrade <topic_dir>` | 机械补 3.0 壳；不做判断性内容迁移 | 单目标可执行；异常时 fail |
+
+## 3. Suggestion Handling
+
+| `topic_affinity.suggestion` | intake 默认动作 |
+|-----------------------------|-----------------|
+| `new_topic` | 走 `mode=new`，创建新 topic |
+| `cohesion` | 不静默追加；展示候选为“可选 append”，默认仍是新 topic |
+| `ask_user` | 展示新 topic 默认项 + 候选 append 项，等待用户选择 |
+| `null` | 走 new topic fallback；必要时询问命名 |
+
+### 3.1 route_decision 映射（Phase 2 YAML SSOT）
+
+| `topic_affinity.suggestion` | `route_decision` | `user_confirmation` | 备注 |
+|-----------------------------|------------------|---------------------|------|
+| `new_topic` | `new_topic` | `required` | 轻确认后创建 |
+| `cohesion` | `new_topic` | `required` | 默认仍新建；matched topic 仅作可选 append 候选展示 |
+| `ask_user` | `ask_user` | `required` | 等待用户在新 topic / append 间选择 |
+| `null` | `new_topic` | `required` | fallback 到新建 |
+| （`--append <topic>`） | `append` | `skipped_by_explicit_target` | 强入口 |
+| （NL append + §4.3 白名单） | `append` | `skipped_by_explicit_target` | 无 slash 前缀 |
+
+## 4. Explicit Append Guard
+
+`--append <topic>` 是 `mode=append` 的唯一强入口。相关 ≠ append；sniff 命中、语义相近、用户说“有点相关”，都不能单独触发 append。
+
+### 4.1 裸 Slash 硬规则
+
+裸 `/workflow-intake`（含在已有 topic 对话内再次调用）**永远**走 `mode=new`，不得因对话上下文、follow-up 语气或 sniff cohesion 改为 append。显式参数优先于裸 slash 默认：`/workflow-intake --append <topic>` 合法进入 `mode=append`。自然语言 append/cohere 只有在**无 slash**、目标 topic 紧随且可审计时才可进入 append。
+
+### 4.2 Append 合法条件
+
+只有满足以下任一条件，才可写入已有 topic：
+
+- 用户使用 `--append <topic>` 或等价明确参数（含 `/workflow-intake --append <topic>`）
+- 用户自然语言中有 append/cohere 关键词，并且目标 topic 紧随其后、可审计（**无** `/workflow-intake` slash 前缀）
+
+低置信候选、候选首项、`matched_topic`、当前对话所在 topic 上下文，都不能单独作为 append 目标。
+
+### 4.3 NL append 关键词白名单（askquestion-fallback §6.3.3）
+
+intake 专属同义短语（命中 + 可审计目标紧随才可跳过 AskQuestion）：
+
+`聚合到` / `合并到` / `归入` / `放进` / `内聚到` / `append to` / `add to existing` / `cohere to` / `merge into`
+
+正例与反例表见 [askquestion-fallback.md §6.3](../../shared/references/askquestion-fallback.md)；本文件不复制。
+
+## 5. Compatibility Boundary
+
+2.x → 3.0 兼容只由 intake/upgrade 承担。其他 workflow skills 应尽量假设输入 topic 已满足 3.0 contract：
+
+- 有 `focus.md`
+- 有 `references/intake.md`
+- 有 `decision.index.md` / `review.index.md`
+- README / plan 兼容只作为 grandfather 兜底，不是下游 skill 的主责任
+
+## 6. Fixtures
+
+| fixture | pass condition |
+|---------|----------------|
+| FI-new-default | 用户调用 `/workflow-intake X`，即使 sniff 命中已有 topic，也默认创建新 topic 候选 |
+| FI-slash-always-new | 在已有 topic 对话内调用裸 `/workflow-intake Y`，仍走 new topic，不得 append 到当前 topic |
+| FI-explicit-append | 用户调用 `/workflow-intake --append 044 X`，可追加到 044 |
+| FI-low-confidence | `affinity_strength=low` 不得默认 append/cohesion |
+| FI-migrate-no-interactive | `PRISM_NO_INTERACTIVE=1` + migrate 必须 fail |
+| FI-upgrade-boundary | 2.x upgrade 只机械补壳，不迁移判断性合同内容 |

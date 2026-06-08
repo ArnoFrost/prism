@@ -4,6 +4,7 @@
 用法:
   uv run python index_update.py <workspace_path> add <number> <topic_name> [--desc <描述>]
   uv run python index_update.py <workspace_path> archive <number> <topic_name> [--desc <描述>]
+  uv run python index_update.py <workspace_path> reactivate <number> <topic_name> [--desc <描述>]
   uv run python index_update.py <workspace_path> remove <number>
 
 锚点区块格式（index.md 中必须存在）：
@@ -97,6 +98,85 @@ def add_topic(workspace_path: str, number: int, topic_name: str, desc: str) -> d
     return {"action": "add", "success": True, "message": f"已添加专项 {nnn}_{topic_name}"}
 
 
+def _remove_numbered_table_row(content: str, number: int) -> tuple[str, bool]:
+    """从 index.md 归档表等 pipe 表中移除 | NNN | 开头的行。"""
+    nnn = f"{number:03d}"
+    lines = content.split("\n")
+    new_lines = []
+    removed = False
+    for line in lines:
+        if re.match(rf"^\|\s*{nnn}\s*\|", line):
+            removed = True
+            continue
+        new_lines.append(line)
+    return "\n".join(new_lines), removed
+
+
+def _archive_table_insert_index(lines: list[str]) -> int | None:
+    in_section = False
+    for i, line in enumerate(lines):
+        if line.startswith("## 历史归档"):
+            in_section = True
+            continue
+        if in_section and line.startswith("|---|"):
+            return i + 1
+        if in_section and line.startswith("## "):
+            break
+    return None
+
+
+def append_archive_index_row(workspace_path: str, number: int, topic_name: str, desc: str) -> dict:
+    """在 index.md 历史归档表中追加一行（幂等）。"""
+    index_path = os.path.join(workspace_path, "index.md")
+    content = _read_index(index_path)
+    if content is None:
+        return {"action": "append_archive_row", "success": False,
+                "message": f"index.md 不存在: {index_path}"}
+
+    nnn = f"{number:03d}"
+    if re.search(rf"^\|\s*{nnn}\s*\|", content, re.MULTILINE):
+        return {"action": "append_archive_row", "success": True,
+                "message": f"归档表已有 {nnn}，跳过"}
+
+    row = f"| {nnn} | [{topic_name}](./archive/{nnn}_{topic_name}/) | {desc} |"
+    lines = content.split("\n")
+    insert_idx = _archive_table_insert_index(lines)
+
+    if insert_idx is None:
+        return {"action": "append_archive_row", "success": False,
+                "message": "index.md 中未找到 ## 历史归档 归档表"}
+
+    lines.insert(insert_idx, row)
+    _write_index(index_path, "\n".join(lines))
+    return {"action": "append_archive_row", "success": True,
+            "message": f"已追加归档表行 {nnn}_{topic_name}"}
+
+
+def reactivate_topic(workspace_path: str, number: int, topic_name: str, desc: str) -> dict:
+    """恢复活跃 index：活跃区块 add + 归档表 remove 行。"""
+    add_result = add_topic(workspace_path, number, topic_name, desc)
+
+    index_path = os.path.join(workspace_path, "index.md")
+    content = _read_index(index_path)
+    if content is None:
+        return {"action": "reactivate", "success": False,
+                "message": f"index.md 不存在: {index_path}"}
+
+    new_content, removed = _remove_numbered_table_row(content, number)
+    if removed:
+        _write_index(index_path, new_content)
+        table_msg = f"已从 index 归档表移除 {number:03d}"
+    else:
+        table_msg = f"index 归档表无 {number:03d} 行（跳过）"
+
+    ok = add_result.get("success", False)
+    return {
+        "action": "reactivate",
+        "success": ok,
+        "message": f"{add_result.get('message', '')}; {table_msg}",
+    }
+
+
 def archive_topic(workspace_path: str, number: int, topic_name: str, desc: str) -> dict:
     index_path = os.path.join(workspace_path, "index.md")
     content = _read_index(index_path)
@@ -117,8 +197,12 @@ def archive_topic(workspace_path: str, number: int, topic_name: str, desc: str) 
 
     new_content = before + new_block + after
     _write_index(index_path, new_content)
+
+    table_result = append_archive_index_row(workspace_path, number, topic_name, desc or topic_name)
+    table_note = table_result.get("message", "")
+
     return {"action": "archive", "success": True,
-            "message": f"已从活跃区块移除专项 {nnn}（归档表需手动或由 archive skill 更新）"}
+            "message": f"已从活跃区块移除专项 {nnn}; {table_note}"}
 
 
 def remove_topic(workspace_path: str, number: int) -> dict:
@@ -159,6 +243,11 @@ def main():
     p_archive.add_argument("topic_name")
     p_archive.add_argument("--desc", default="", help="归档描述")
 
+    p_reactivate = sub.add_parser("reactivate", help="恢复活跃区块并移除 index 归档表行")
+    p_reactivate.add_argument("number", type=int)
+    p_reactivate.add_argument("topic_name")
+    p_reactivate.add_argument("--desc", default="", help="活跃列表描述")
+
     p_remove = sub.add_parser("remove", help="从活跃区块移除")
     p_remove.add_argument("number", type=int)
 
@@ -172,6 +261,8 @@ def main():
         result = add_topic(args.workspace_path, args.number, args.topic_name, args.desc)
     elif args.action == "archive":
         result = archive_topic(args.workspace_path, args.number, args.topic_name, args.desc)
+    elif args.action == "reactivate":
+        result = reactivate_topic(args.workspace_path, args.number, args.topic_name, args.desc)
     elif args.action == "remove":
         result = remove_topic(args.workspace_path, args.number)
     else:

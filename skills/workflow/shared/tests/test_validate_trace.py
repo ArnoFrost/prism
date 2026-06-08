@@ -331,6 +331,48 @@ class TestCompleteAndIncomplete:
         rules = {e["rule"] for e in result["errors"]}
         assert "decision-other-must-not-write" in rules
 
+    def test_merge_artifact_raw_threshold_violation(self, tmp_path: Path):
+        topic = tmp_path / "030"
+        (topic / "reviews").mkdir(parents=True)
+        (topic / "reviews" / "r01_threshold.md").write_text(
+            "---\nmode: full\ntype: review\n---\n# r01\n\n"
+            "task_probe:\n"
+            "  called: true\n"
+            "  result: success\n"
+            "  fallback_decision: parallel\n"
+            "  fallback_reason: 并行\n"
+            "\n"
+            "merge_artifact:\n"
+            "  independence_threshold: 0.6\n"
+            "  actual_independence: 0.75\n"
+            "  raw_landed: false\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        rules = {e["rule"] for e in result["errors"]}
+        assert "raw-threshold-violation" in rules
+
+    def test_merge_artifact_raw_threshold_pass_with_raw(self, tmp_path: Path):
+        topic = tmp_path / "030"
+        (topic / "reviews").mkdir(parents=True)
+        (topic / "reviews" / "r01_ok.md").write_text(
+            "---\nmode: full\ntype: review\n---\n# r01\n\n"
+            "task_probe:\n"
+            "  called: true\n"
+            "  result: success\n"
+            "  fallback_decision: parallel\n"
+            "  fallback_reason: 并行\n"
+            "\n"
+            "merge_artifact:\n"
+            "  independence_threshold: 0.6\n"
+            "  actual_independence: 0.733\n"
+            "  raw_landed: true\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        rules = {e["rule"] for e in result["errors"]}
+        assert "raw-threshold-violation" not in rules
+
 
 # ============================================================
 # 字段命名 SSOT 同步（029/r07 PostFix 1 / AP-42）

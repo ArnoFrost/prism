@@ -46,6 +46,12 @@ metadata:
 |------|------|------|
 | output1 | .md | 说明 |
 
+## 参考（cite 不复制）
+
+- SDK 文档导航：[docs/README.md](../../docs/README.md)
+- 术语 SSOT：`skills/workflow/shared/vocabulary.md`（经 `bin/relink` 分发到 `references/vocabulary.md`）
+- CLI 契约：[docs/cli-contract.md](../../docs/cli-contract.md)
+
 ## 约束
 
 - 约束 1

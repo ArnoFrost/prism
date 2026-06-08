@@ -9,11 +9,11 @@ description_zh: "扫描活跃专项的健康度，输出结构化报告。当需
 
 | 维度 | 说明 |
 |------|------|
-| **是什么** | 只读健康度巡检工具：扫描全部活跃 topic 的骨架完整性、进度、活跃度，输出结构化报告 + 建议 |
-| **不是什么** | 不写关键工件、不自动发起 review、不重构 scope/focus、不自动执行修复（report-first） |
+| **是什么** | 只读健康度巡检工具：扫描全部活跃 topic 的骨架完整性、进度、活跃度，输出结构化报告 + `next_actions[]` 建议 |
+| **不是什么** | 不写关键工件、不自动发起 review、不重构 scope/focus、不自动执行修复或归档（report-first / handoff-only） |
 | **读取工件** | workspace 全部 topic 按 [context-pack-spec](references/context-pack-spec.md) light 档逐 topic 采集（scope.md / focus.md 入口；README.md 仅存量 grandfather）；另统计 reviews/ + decisions/ 文件数 |
 | **写入工件** | 无（只读报告） |
-| **结束建议** | 根据问题类型建议 → `workflow-scope`（scope 过期）/ `workflow-review`（无评审）/ scaffold（骨架不完整） |
+| **结束建议** | 根据结构化状态建议 → `workflow-scope` / `workflow-tidy` / `workflow-review-lite` / `workflow-archive preview`；只 handoff，不执行 |
 | **设计模式** | Pattern 4 — Context-aware Tool Selection（根据健康度状态和问题类型建议不同的下一步 skill） |
 
 ---
@@ -43,7 +43,7 @@ Phase 1  扫描（逐 topic 健康度采集）
   ↓
 Phase 2  报告（输出结构化结果）
   ↓
-Phase 3  建议（可选：针对问题给出修复建议）
+Phase 3  建议（生成 next_actions[]；只建议，不执行）
 ```
 
 ### Phase 0：探测
@@ -77,18 +77,41 @@ uv run python {skill_dir}/scripts/status.py <project_dir> --format markdown
 - verify 覆盖率（当前创建数为 0）
 - 产物内容质量（属于 review 的职责）
 
-### Phase 3：建议（Agent 行为）
+### Phase 3：建议（Next Actions）
 
-脚本输出报告后，Agent 根据 `issues` 字段给出建议：
+脚本在 JSON 顶层输出 `next_actions[]`，Markdown 渲染 `## 建议下一步（Next Actions）`。
+第一版 detector **只基于结构化 status 字段**（`scope.checked/unchecked`、`review_count`、`skeleton_missing`、`location`），不从中文 `issues[]` 文案反解析。
 
-| 问题类型 | 建议动作 |
-|---------|---------|
-| 骨架不完整 | 建议执行 `scaffold.py` 补全 |
-| scope 全部未勾选 | 提醒用户是否需要更新 scope |
-| 超过 7 天未更新 | 提醒用户是否仍在推进 |
-| 无评审记录 | 建议启动首轮 review |
+#### JSON 合同
+
+```yaml
+next_actions:
+  - id: <stable action id>
+    priority: P1 | P2 | P3
+    target_type: topic | workspace
+    target: <topic slug | null>
+    skill: workflow-scope | workflow-tidy | workflow-review-lite | workflow-archive | null
+    reason: <one sentence>
+    source: status_report
+    confidence: high | medium | low
+    execution_policy: handoff_only | preview_required | no_action
+    blocking: <target skill gate / prerequisite>
+```
+
+#### Detector 表
+
+| 条件（结构化字段） | 建议动作 | priority | execution_policy |
+|--------------------|----------|----------|------------------|
+| `skeleton_missing` 非空 | `workflow-tidy` / scaffold 口径 | P1 | `handoff_only` |
+| `scope.unchecked > 0 && scope.checked == 0 && review_count == 0` | `workflow-review-lite` | P1 | `handoff_only` |
+| `scope.unchecked > 0 && scope.checked == 0` | `workflow-scope` | P1 | `handoff_only` |
+| `review_count == 0` | `workflow-review-lite` | P2 | `handoff_only` |
+| `location == topics && scope.unchecked == 0 && scope.checked > 0` | `workflow-archive` | P2 | `preview_required` |
+| 无可判定 action | workspace `no_action` | P3 | `no_action` |
 
 > **report-first 原则**：Agent 只报告和建议，不自动执行修复。用户确认后再行动。
+> **handoff-only 原则**：archive / compact / tidy / scope / review 均由目标 skill 重新执行自身 Gate；status 不代表目标 skill 写盘。
+> **source 边界**：CLI 只生成 `source=status_report`；digest / intake 等用户意图路由属于 Agent 会话层，不进入 `status.py`。
 
 ## 输出格式
 
@@ -111,6 +134,12 @@ uv run python {skill_dir}/scripts/status.py <project_dir> --format markdown
 | 活跃专项 | 1 |
 | 健康 | 0 |
 | 需注意 | 1 |
+
+## 建议下一步（Next Actions）
+
+| 优先级 | 对象 | 建议 skill | 原因 | 策略 | 前置/阻塞 |
+|--------|------|------------|------|------|-----------|
+| P1 | 008_agent-workflow-patterns | workflow-review-lite | scope 未启动且无 review，需要先判断是否继续推进或收口。 | handoff_only | review-lite/full 由目标评审流程自行 Gate；status 不生成决策。 |
 
 ## 🟡 008_agent-workflow-patterns
 
@@ -148,7 +177,8 @@ workflow/status/
 | 技能 | 职责 | 交接点 |
 |------|------|--------|
 | **status**（本技能）| 健康度巡检 → 报告 → 建议 | 可在任意阶段调用，不改变工件 |
-| **intake** | 入料 → 路由 → 初始化 | status 可检测 intake 产出的骨架完整性 |
+| **intake** | 入料 → 路由 → 初始化 | status 可检测 intake 产出的骨架完整性；用户新需求归属不明时由 Agent 建议，不由 CLI status 猜测 |
 | **review** | 评审 → 仲裁 → 行动计划 | status 统计评审轮次 |
 | **scope** | 边界收敛与合同维护 | status 统计验收进度 |
-| **archive** | 归档已验收专项 | status 报告可辅助判断是否可归档 |
+| **archive** | 归档已验收专项 | status 仅建议 preview；移动必须由 archive Gate + 用户接受 |
+| **digest** | 对外状态通报 | 用户有通报意图时由 Agent 建议，不由 CLI status 猜测 |

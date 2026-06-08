@@ -31,7 +31,7 @@ prism/skills/                         ← SDK 仓库内置
 │   │       └── prism_sync_sniff.py
 │   │
 │   └── review/                       ★ 本技能
-│       ├── SKILL.md                  ← <450 行（v2.0 AP-79 简化目标）
+│       ├── SKILL.md                  ← <450 行（热路径简化目标）
 │       ├── scripts/
 │       │   ├── sniff.py
 │       │   └── validate_product.py
@@ -39,8 +39,13 @@ prism/skills/                         ← SDK 仓库内置
 │           ├── review-ofm.md
 │           ├── review-templates.md
 │           ├── review-maintainer.md  ← 本文件（Agent 默认不读）
-│           ├── obsidian-config.md    → ../../shared/obsidian-config.md  ★ 软链接
-│           └── parallel-execution.md → ../../shared/parallel-execution.md  ★ 软链接
+│           ├── askquestion-fallback.md → ../../shared/references/askquestion-fallback.md ★ 软链接
+│           ├── decision-gate.md        ← 本技能 Gate 4 契约
+│           ├── obsidian-config.md      → ../../shared/obsidian-config.md ★ 软链接
+│           ├── parallel-execution.md   → ../../shared/parallel-execution.md ★ 软链接
+│           ├── review-merge-spec.md    → ../../shared/review-merge-spec.md ★ 软链接
+│           ├── trace-artifacts-spec.md → ../../shared/trace-artifacts-spec.md ★ 软链接
+│           └── vocabulary.md           → ../../shared/vocabulary.md ★ 软链接
 ```
 
 ## 2. 软链机制
@@ -52,7 +57,7 @@ prism/skills/                         ← SDK 仓库内置
 
 ## 3. references 加载策略（Agent 实际读取链路）
 
-> **AP-79 验收口径 #4**（r02 F3 + d11 Action 3）：Agent 完成 1 次完整 review-lite **实际需要读取的 reference 文件数 ≤ 2**（含 templates + ofm；本 maintainer.md 默认不读取，仅在 PostFix / 升级到 full 模式时按需读取）。
+> **review-lite 热路径验收**：Agent 完成 1 次完整 review-lite **实际需要读取的 reference 文件数 ≤ 2**（含 templates + ofm；本 maintainer.md 默认不读取，仅在 PostFix / 升级到 full 模式时按需读取）。
 
 | 文件 | 来源 | 何时加载 | 是否计入 review-lite 读取链路 |
 |------|------|---------|:----------------------------:|
@@ -61,12 +66,13 @@ prism/skills/                         ← SDK 仓库内置
 | `review-maintainer.md` | 本技能 | **PostFix 排查 / mode=full 历史动因追溯 / 维护者升级** | ❌ **否**（不进 review-lite 读取链路）|
 | `obsidian-config.md` | shared 软链 | 需要链接规范细节时 | 条件加载 |
 | `parallel-execution.md` | shared 软链 | Align 阶段判定 `mode=full` 且需查白名单时 | 条件加载 |
+| `../../shared/context-pack-spec.md` | shared | topic / milestone / 方法论评审需装配 full context-pack 时 | 条件加载 |
 
 > **link 路径**：`obsidian-config` / `parallel-execution` 在 lite 路径完全不读取；在 full 路径仅当遇到链接规范争议或并行白名单争议时按需读取，不属于强制前置 reference。
 
 ## 4. PostFix Errata 历史档案
 
-> **本节用途**：聚合 r05~r18 多轮 review 暴露的 dogfooding 失败 + PostFix 修复动因。SKILL.md 主流程不再展开历史叙事（v2.0 AP-79 简化），但维护者排查工具行为反常时可回溯到本节定位根因。
+> **本节用途**：聚合多轮 dogfooding 失败 + PostFix 修复动因。SKILL.md 主流程不再展开历史叙事，但维护者排查工具行为反常时可回溯到本节定位根因。条目内 topic / review 编号仅作历史索引，不是 Agent 执行前提。
 
 ### 4.1 二态产物契约（v1.1.7 修复动因）
 
@@ -171,6 +177,33 @@ prism/skills/                         ← SDK 仓库内置
 | `none` | 未定位到 topic reviews/，编号 r01 为占位默认值 | **触发边界澄清门**（SSOT §4.3.2）：必须先与用户确认 topic 后再使用，否则会覆盖已有 r01；env 不得绕过此门 |
 
 review 与 review-lite 共享 `reviews/rXX_*.md` 同一流水编号池，lite 在 frontmatter 标注 `type: review-lite` 区分；review.index.md 栏内标 `lite`。
+
+### 4.9 主入口压缩后的 MOVE 面
+
+**context-pack full 条件装配**：
+
+- topic / milestone / 方法论 baseline 评审必须装配 `context-pack full` 或等价输入包
+- 最小包：scope/focus、相关 decisions、目标工件、prior review/index
+- 支持脚本时：`uv run python skills/workflow/shared/scripts/context_pack.py <topic_dir> --mode full`
+- 不支持脚本时：按 [context-pack-spec.md](../../shared/context-pack-spec.md) 手动读取；缺上下文不得输出全局判断
+
+**Grandfather / README 当前状态兜底**：
+
+- README 已 deprecate，新 topic 的状态入口是 `focus.md` + `decision.index.md`
+- 存量 topic 如仍有 README 当前状态，review 主入口不直接改 focus，也不把 README 当上游
+- 只允许在 finalize / tidy / maintainer 路径做兜底同步；focus 刷新仍经 `/workflow-scope`
+
+**writable=false / no-write 降级**：
+
+- 无写权限时只能对话输出，并明确 `writable=false`
+- 不得宣称已写 `reviews/rXX`、不得追加索引、不得宣称 finalize 通过
+- 若用户后续提供可写路径或授权，再按原 review 编号契约重新落盘
+
+**主入口保留锚点，字段表外置**：
+
+- `task_probe`、`merge_artifact`、`decision_artifact` 必须在主流程可发现
+- 完整字段、校验规则、raw 阈值全部以 `trace-artifacts-spec.md` 为准
+- fallback 白名单全文以 `parallel-execution.md` 为准；主入口只保留“真探测 + 禁伪并行 + 合法降级”
 
 ## 5. 维护节奏
 

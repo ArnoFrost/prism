@@ -293,6 +293,41 @@ def validate_review_main(
                 level, rel, family, f"{family}-fields-incomplete",
                 f"`{family}:` 块缺字段: {sorted(missing_fields)}（必需: {sorted(required)}）",
             ))
+        elif family == "merge_artifact":
+            issues.extend(_validate_merge_artifact_semantics(block, rel, level))
+    return issues
+
+
+def _parse_independence_value(raw: str) -> float | None:
+    """解析独立发现率 / 阈值（支持 0.733 或 73.3%）。"""
+    try:
+        v = float(str(raw).strip().rstrip("%"))
+    except (TypeError, ValueError):
+        return None
+    if v > 1.0:
+        return v / 100.0
+    return v
+
+
+def _validate_merge_artifact_semantics(
+    block: dict[str, str],
+    rel: str,
+    level: str,
+) -> list[Issue]:
+    """merge_artifact 语义：触发 raw 阈值时须落 raw 或给出 skip reason。"""
+    issues: list[Issue] = []
+    actual = _parse_independence_value(block.get("actual_independence", ""))
+    threshold = _parse_independence_value(block.get("independence_threshold", "0.6"))
+    raw_landed = block.get("raw_landed", "").lower() == "true"
+    if actual is None or threshold is None:
+        return issues
+    if actual >= threshold and not raw_landed:
+        skip = block.get("raw_skip_reason", "").strip()
+        if not skip:
+            issues.append(Issue(
+                level, rel, "merge_artifact", "raw-threshold-violation",
+                f"actual_independence={actual} >= threshold={threshold} 但 raw_landed=false 且无 raw_skip_reason",
+            ))
     return issues
 
 

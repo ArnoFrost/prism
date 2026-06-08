@@ -116,6 +116,7 @@ Prism vault (iCloud)/
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
 - **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + Vault + `uv`；review / decision / `task_probe` 等只在结构化协作场景启用。Agent 不应当把"必须先用 workflow"作为协作前置条件。
+- **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（裸 slash 调用永远 new，显式 `--append <topic>` 优先，不因 cohesion 静默 append）；`workflow-review` / `workflow-review-lite` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic；`workflow-compact` 是 explicit-topic-only 低频维护技能，不跟随 review cohesion。路由语义 SSOT 见 [`skills/workflow/intake/references/intake-routing-spec.md`](skills/workflow/intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) §0.1 — cite 不复制。
 
 ---
 
@@ -221,7 +222,7 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Prism 内置技能
 
-SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实（与 README §Skills 表保持一致）。
+SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实 → 生命周期归档（与 README §Skills 表保持一致）。
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
@@ -232,7 +233,9 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
 | workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
 | workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
-| workflow-status | `/workflow-status` | 健康度巡检 — 活跃专项 report-first 扫描 |
+| workflow-status | `/workflow-status` | 健康度巡检 — report-first + `next_actions[]` handoff（不自动写盘） |
+| workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不进 mini/full） |
+| workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不进 mini/full） |
 
 ---
 
@@ -242,6 +245,7 @@ Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`]
 
 | 分发面 | 路径 | 角色 |
 |--------|------|------|
+| **文档分类索引** | [`docs/README.md`](docs/README.md) | SDK 客观面 / beta 叙事 / 历史内部；人类读 docs 先读 |
 | **SDK 协议级 SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 唯一 SSOT；其他面 cite 不复制 |
 | **人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
 | **OFM / GFM callout 速查** | [`docs/ofm-cheatsheet.md`](docs/ofm-cheatsheet.md) | G0 词汇 + review 主报告映射；cite `obsidian-config` + `review-ofm` |
@@ -316,5 +320,7 @@ git commit -m "feat: 新增 xxx 脚本"
 | 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
 | 日常迭代、小改动确认、scope/focus 快速对齐 | 执行 `/workflow-review-lite` |
 | 评审/决策落盘后，README 指针、review.index、frontmatter 需机械对齐 | 执行 `/workflow-tidy`（或随 `prism finalize` 自动串联） |
-| 想了解专项进度 / 检查骨架完整性 / 启动新一轮工作前的现状回顾 | 执行 `/workflow-status`（report-first，只报告不修改） |
+| 想了解专项进度 / 检查骨架完整性 / 启动新一轮工作前的现状回顾 | 执行 `/workflow-status`（report-first + `next_actions[]` handoff，只报告不修改） |
 | 需要对外通报专项状态（产品 / 协作者 / 自我回顾） | 执行 `/workflow-digest`（生成 `digest.md` 快照） |
+| topic 上下文膨胀、接续阅读成本过高 | 执行 `/workflow-compact`（先 preview；授权后 backup→apply） |
+| topic 已结束需释放注意力，或从 archive 拉回继续跟踪 | 执行 `/workflow-archive` / `prism archive` / `prism reactivate`（preview-first） |

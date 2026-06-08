@@ -399,7 +399,7 @@ done
 
 ## 升级与回滚
 
-> **从 v1.x 升级到 v2.x 的用户**：先看 [docs/migration.md](docs/migration.md) — 它是 v1.x → v2.0 的唯一迁移入口（破坏性变化、命令替换脚本、升级检查清单）。下面的命令是通用升级流程，与 migration.md 配合使用。
+> **从 v1.x 升级到 v2.x 的用户**：先看 [docs/migration.md](docs/migration.md) — 它是 v1.x → v2.0 的唯一迁移入口（破坏性变化、命令替换脚本、升级检查清单）。文档分类见 [docs/README.md](docs/README.md)。下面的命令是通用升级流程，与 migration.md 配合使用。
 
 ### 升级（从旧版本到新版本）
 
@@ -414,7 +414,7 @@ git pull origin main              # Skills（双仓同 semver，需同步）
 cd "$HOME/prism"
 bin/doctor --scope release --quick    # 升级后体检
 bin/relink                        # 刷软链接（如果 relink 规则有变化）
-prism --version                   # 自查版本号（应 ≥ v2.0.0-beta.1）
+prism --version                   # 自查版本号（当前 v3.0.0-beta）
 ```
 
 **zip 分发路径**：参见 `INSTALL_INTERNAL.md` 的 Step 3a（mv-swap 模式，自动保留本地配置）。
@@ -427,7 +427,7 @@ prism --version                   # 自查版本号（应 ≥ v2.0.0-beta.1）
 cd "$HOME/prism"
 git fetch --tags
 git tag --list --sort=-v:refname | head -5   # 列出近期 tag
-git checkout v<target>            # e.g. v2.0.0-beta.1（当前 beta）/ v1.1.7（v1.x 末版）
+git checkout v<target>            # e.g. v3.0.0-beta（当前）/ v2.0.0-beta.1（v2 末版）/ v1.1.7（v1.x 末版）
 cd "$HOME/prism-skills"
 git checkout v<target>            # 同版本回滚
 

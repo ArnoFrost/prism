@@ -5,17 +5,17 @@
 
 参数:
   project_dir       - 项目根目录
-  --topic <主题名>  - 评审主题（可选）。提供后 output_dir 会自动拼接为
-                      {YYYYMMDD}-{NNN}_[评审]{主题}/
+  --topic <主题名>  - 评审主题（可选），用于 affinity 与 review 编号推导
 
 输出 JSON 字段:
   project_dir       - 输入的项目目录（绝对路径）
   workspace         - Prism Workspace 信息（null 表示未找到）
   obsidian          - Obsidian 环境信息
   prism             - Prism SDK 上下文（device_id / workspace_root / projects）
-  output_dir        - 推荐的产物输出目录
-  next_number       - 推荐的日期编号（如 "001"）
-  writable          - output_dir 是否可写
+  output_dir        - 已解析的 3.0 topic 根目录；未定位时为 null（须边界澄清门）
+  reviews_dir       - 已解析的 reviews/ 目录；未定位时为 null
+  boundary_clarification_required - next_review_source=none 时为 true
+  writable          - output_dir 可写（未定位时为 false）
   format            - "ofm" | "standard"
   route             - "deep" | "short"
   topic             - 评审主题（null 表示未提供）
@@ -33,8 +33,8 @@ from sniff_lib import (
     find_obsidian,
     find_prism_context,
     _find_topics_dir,
-    determine_output_dir,
     detect_topic_affinity,
+    resolve_review_output_dir,
     enumerate_reviews,
     enumerate_structures,
     check_review_density,
@@ -57,11 +57,6 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         workspace["path"] if workspace else project_dir,
         project_dir=project_dir,
     )
-    output_dir, next_number = determine_output_dir(project_dir, workspace, topic)
-    writable = check_writable(output_dir)
-    fmt = "ofm" if obsidian["detected"] else "standard"
-    route = "deep" if workspace and writable else "short"
-
     prism = find_prism_context(project_dir)
 
     topic_affinity = None
@@ -102,13 +97,22 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         next_review_source=next_review_source,
     )
 
+    output_dir, reviews_dir = resolve_review_output_dir(
+        project_dir, workspace, topic_affinity, topic_hint=topic
+    )
+    boundary_clarification_required = next_review_source == "none"
+    writable = bool(output_dir and check_writable(output_dir))
+    fmt = "ofm" if obsidian["detected"] else "standard"
+    route = "deep" if workspace and writable else "short"
+
     return {
         "project_dir": project_dir,
         "workspace": workspace,
         "obsidian": obsidian,
         "prism": prism,
         "output_dir": output_dir,
-        "next_number": next_number,
+        "reviews_dir": reviews_dir,
+        "boundary_clarification_required": boundary_clarification_required,
         "writable": writable,
         "format": fmt,
         "route": route,
@@ -172,7 +176,7 @@ def main():
         usage="uv run python sniff.py <project_dir> [--topic <主题名>]",
     )
     parser.add_argument("project_dir", help="项目根目录")
-    parser.add_argument("--topic", default=None, help="评审主题（可选），拼接到 output_dir 目录名末尾")
+    parser.add_argument("--topic", default=None, help="评审主题（可选），用于 affinity 与编号推导")
 
     args = parser.parse_args()
 

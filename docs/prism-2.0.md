@@ -4,7 +4,7 @@
 > 当前发行口径：`v2.0.0-beta.1`（内部 beta 观察期）。本文以 "Prism 2.0" 为历史定位陈述入口；更早的版本细节请看 [CHANGELOG](../CHANGELOG.md)。
 
 > [!NOTE]
-> v3.0-canary 在 2.0 的“治理路径可选、默认路径变轻”基础上继续推进：`focus` 成为 topic 单入口，`task` 作为按需递归分解原语，并把 Prism 的上层叙事收敛为“长期人机协作中的认知熵治理”。当前定位见 [prism-3.0.md](./prism-3.0.md)，完整架构口径见 [architecture.md](./architecture.md)。
+> v3.0 beta 在 2.0 的“治理路径可选、默认路径变轻”基础上继续推进：`focus` 成为 topic 单入口，`task` 作为按需递归分解原语，并把 Prism 的上层叙事收敛为“长期人机协作中的认知熵治理”。当前定位见 [prism-3.0.md](./prism-3.0.md)，完整架构口径见 [architecture.md](./architecture.md)。
 
 ---
 

@@ -2,7 +2,7 @@
 """用户默认面机械扫描 — 识别不应泄漏到默认阅读面的内部治理标记。
 
 031/AP-94 首版：只输出 WARN，不 fail 构建。默认扫描用户可见面，
-并通过 frontmatter `audience: maintainer` 豁免维护者文档。
+并通过 frontmatter `audience: maintainer|internal` 豁免维护者 / 内部叙事文档。
 """
 
 from __future__ import annotations
@@ -65,8 +65,17 @@ def get_audience(path: Path) -> str | None:
     return _parse_frontmatter(text).get("audience")
 
 
+EXEMPT_AUDIENCES = frozenset({"maintainer", "internal"})
+
+
+def is_exempt_audience_file(path: Path) -> bool:
+    audience = get_audience(path)
+    return audience in EXEMPT_AUDIENCES
+
+
 def is_maintainer_file(path: Path) -> bool:
-    return get_audience(path) == "maintainer"
+    """向后兼容别名。"""
+    return is_exempt_audience_file(path)
 
 
 def _is_excluded(path: Path) -> bool:
@@ -115,8 +124,8 @@ def scan_file(path: Path, repo_root: Path, patterns: dict[str, str] | None = Non
 
     rel = str(path.relative_to(repo_root))
     audience = _parse_frontmatter(text).get("audience")
-    if audience == "maintainer":
-        return {"file": rel, "audience": audience, "warnings": [], "skipped": "maintainer"}
+    if audience in EXEMPT_AUDIENCES:
+        return {"file": rel, "audience": audience, "warnings": [], "skipped": audience}
 
     warnings: list[dict] = []
     for lineno, line in enumerate(text.splitlines(), start=1):

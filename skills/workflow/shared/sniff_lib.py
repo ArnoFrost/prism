@@ -274,6 +274,28 @@ def determine_next_number(topics_dir: str) -> str:
     return f"{max_num + 1:03d}"
 
 
+def resolve_review_output_dir(
+    project_dir: str,
+    workspace: dict | None,
+    topic_affinity: dict | None,
+    topic_hint: str | None = None,
+) -> tuple[str | None, str | None]:
+    """解析 review/review-lite 的 3.0 topic 落点。
+
+    返回 (topic_dir, reviews_dir)。未定位到已有 topic 时二者均为 None——
+    调用方须走边界澄清门（askquestion-fallback §4.3.2），禁止 mkdir 日期前缀目录。
+
+    与 determine_output_dir（遗留日期目录）不同：本函数只认 {NNN}_* 专项目录。
+    """
+    reviews_dir, _source = resolve_topic_reviews_dir(
+        project_dir, workspace, topic_affinity, topic_hint
+    )
+    if not reviews_dir:
+        return None, None
+    topic_dir = os.path.dirname(reviews_dir)
+    return topic_dir, reviews_dir
+
+
 def determine_output_dir(
     project_dir: str,
     workspace: dict | None,
@@ -283,6 +305,10 @@ def determine_output_dir(
     """确定 output_dir 和 next_number。若提供 topic 则拼接到目录名末尾。
 
     label_prefix 允许各 skill 定制目录名前缀（默认 [评审]）。
+
+    .. deprecated::
+        review/review-lite 应使用 resolve_review_output_dir()。
+        本函数保留给 intake 嗅探的遗留字段，勿用于创建 review 落盘目录。
     """
     suffix = topic if topic else ""
     if workspace:

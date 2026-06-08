@@ -7,6 +7,7 @@
   uv run python prism_cli.py sniff <project_dir> [--topic <主题>] [--kind review|intake]
   uv run python prism_cli.py validate <output_dir> [--format ofm|standard] [--fix]
   uv run python prism_cli.py archive <workspace_path> <topic_dirname> [--dry-run]
+  uv run python prism_cli.py reactivate <workspace_path> <topic_dirname> [--dry-run]
   uv run python prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
   uv run python prism_cli.py sync [--sdk] [--skills] [--env] [--all] [--fetch]
   uv run python prism_cli.py finalize <topic_dir> [--dry-run]
@@ -111,6 +112,11 @@ VERB_REGISTRY = {
         "stability": "stable",
         "schema_compliant": False,
         "description": "归档 topic 到 archive/",
+    },
+    "reactivate": {
+        "stability": "stable",
+        "schema_compliant": False,
+        "description": "将 archive topic 移回 topics/ 活跃区",
     },
     "migrate": {
         "stability": "experimental",
@@ -427,6 +433,21 @@ def cmd_archive(args: argparse.Namespace) -> int:
         return 1
 
     result = archive_topic(args.workspace_path, args.topic_dirname, args.dry_run)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if result["success"] else 1
+
+
+def cmd_reactivate(args: argparse.Namespace) -> int:
+    """再激活 topic（dispatch 到 shared/scripts/reactivate.py）"""
+    _add_to_path(SCRIPT_DIR)
+    _add_to_path(SHARED_DIR)
+    from reactivate import reactivate_topic
+
+    if not os.path.isdir(args.workspace_path):
+        print(f"错误: {args.workspace_path} 不是有效目录", file=sys.stderr)
+        return 1
+
+    result = reactivate_topic(args.workspace_path, args.topic_dirname, args.dry_run)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["success"] else 1
 
@@ -1050,6 +1071,11 @@ def main():
     p_archive.add_argument("topic_dirname", help="Topic 目录名")
     p_archive.add_argument("--dry-run", action="store_true")
 
+    p_reactivate = subparsers.add_parser("reactivate", help="再激活 archive topic")
+    p_reactivate.add_argument("workspace_path", help="Workspace 根目录")
+    p_reactivate.add_argument("topic_dirname", help="Topic 目录名")
+    p_reactivate.add_argument("--dry-run", action="store_true")
+
     # migrate
     p_migrate = subparsers.add_parser("migrate", help="迁移子目录评审格式")
     p_migrate.add_argument("topic_dir", help="专项根目录")
@@ -1139,6 +1165,7 @@ def main():
         "sniff": cmd_sniff,
         "validate": cmd_validate,
         "archive": cmd_archive,
+        "reactivate": cmd_reactivate,
         "migrate": cmd_migrate,
         "sync": cmd_sync,
         "finalize": cmd_finalize,

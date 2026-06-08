@@ -18,6 +18,21 @@ def test_parse_frontmatter_audience():
     assert pss._parse_frontmatter(text)["audience"] == "maintainer"
 
 
+def test_internal_audience_skips_warnings(tmp_path: Path):
+    doc = tmp_path / "leader-pitch.md"
+    doc.write_text(
+        "---\naudience: internal\n---\n"
+        "# Internal\n\n"
+        "叙事：AP-93 / d01 / r01 / OQ-4 / workspace.prism.local\n",
+        encoding="utf-8",
+    )
+
+    result = pss.scan_file(doc, tmp_path)
+
+    assert result["skipped"] == "internal"
+    assert result["warnings"] == []
+
+
 def test_maintainer_audience_skips_warnings(tmp_path: Path):
     doc = tmp_path / "review-maintainer.md"
     doc.write_text(

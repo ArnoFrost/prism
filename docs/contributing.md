@@ -8,8 +8,8 @@
 |------|----------|----------|------------|
 | L1 使用者 | 只安装和使用 Prism | `README.md` / `SETUP.md` | 不修改仓库 |
 | L2 项目接入者 | 为某个工作仓库接入 Workspace | `/workspace-init` / `AGENTS.local.md` | 本地 `.local` 状态 |
-| L3 贡献者 | 修改 SDK、Skills、文档或发布流程 | 本文 | 共享仓库内的代码与文档 |
-| L4 维护者 | 处理发布、协议修订、破坏性变更 | `docs/architecture.md` / release checklist | 协议、版本、CI、分发 |
+| L3 贡献者 | 修改 SDK、Skills、文档或发布流程 | 本文 · [docs/README.md](./README.md) | 共享仓库内的代码与文档 |
+| L4 维护者 | 处理发布、协议修订、破坏性变更 | [docs/README.md](./README.md) · `docs/architecture.md` · `docs/cli-contract.md` | 协议、版本、CI、分发 |
 
 ## 仓库边界
 

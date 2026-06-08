@@ -7,80 +7,129 @@ visibility: dev
 stability: experimental
 metadata:
   author: ArnoFrost
-  version: dev-01
-description_zh: "Topic 活跃上下文压实与上下文熵治理。用于在独立对话中对膨胀 topic 做 preview-first 的整理方案，并在 apply 前强制创建时间戳备份，降低 Agent 有损整理或误整理的风险。"
+  version: dev-02
+description_zh: "Topic 活跃上下文压实与上下文熵治理；preview-first，apply 前强制备份。"
 ---
+
+## 职责边界
+
+| 维度 | 说明 |
+|------|------|
+| **是什么** | Topic 内部维护性压实：降低接续阅读成本，保留当前态与证据链 |
+| **不是什么** | 不是 digest；不是 workspace archive；不是 tidy；不是 scope/focus 语义改写 |
+| **读什么** | preview 读本文件 + 条件必读 `references/compact-policy.md`；apply 另读 `references/compact-template.md` |
+| **写什么** | preview 只输出 `compact_plan`；apply 仅在 Gate A/B 后写确认范围 + manifest |
+| **结束建议** | observe / review / defer / apply；若是对外摘要转 `workflow-digest`，若整 topic 结束转 `workflow-archive` |
+
 # Workflow Compact — Topic 活跃上下文压实
 
 > 定位：SDK dev experimental 的低频维护技能。默认不进入 mini/full 分发面，不替代 `workflow-digest`，不改变整 topic `archive` 生命周期。
 
-## 何时使用
+## 0. 安全契约（热路径）
+
+```text
+default: preview（writes=0；未展示 compact_plan 禁止 apply）
+apply requires explicit user authorization（须过 Gate A → Gate B backup）
+```
+
+## 1. 何时使用
 
 | 场景 | 做法 |
 |------|------|
-| topic 膨胀，后续 Agent 接续需要读太多历史 | `/workflow-compact <topic_dir>` |
-| 长期 topic 完成一个阶段，需要保留当前态并冷存历史噪声 | `/workflow-compact <topic_dir> --preview` |
-| 准备执行有损或可能误整理的压实动作 | 先运行备份门禁，再进入 apply |
+| topic 膨胀，后续 Agent 接续需要读太多历史 | `/workflow-compact <topic_dir>`，先 preview |
+| 长期 topic 完成一个阶段，需要保留当前态并冷存历史噪声 | 输出 compact plan，等待用户确认 apply |
+| 准备执行有损或可能误整理的压实动作 | Gate A 确认范围 → Gate B 备份 → 再 apply |
 | 只是给协作者/产品看当前状态 | 使用 `workflow-digest`，不要用 compact |
-| 只是检查健康度或下一步 | 使用 `workflow-status` / `next` 候选能力，不要用 compact |
-| 整个 topic 已结束要移入 workspace archive | 使用 `prism archive`，不要用 compact |
+| 只是检查健康度或下一步 | 使用 `workflow-status`，不要用 compact |
+| 整个 topic 已结束要移入 workspace archive | 使用 `workflow-archive` / `prism archive`，不要用 compact |
 
-## 核心边界
+## 2. 核心边界
 
-| 能力 | 本质 | compact 边界 |
-|------|------|---------------|
-| `workflow-digest` | 对外交接切片，输出 `digest.md`，非 SSOT | compact 不写 `digest.md`，不把 digest 当长期事实源 |
-| `prism archive` | 整 topic 生命周期归档 | compact 不移动整个 topic，不改变 topic status |
-| `workflow-tidy` | 机械对齐，不改 what | compact 只提出指针修复建议；元数据修复交给 tidy |
-| `workflow-scope` | scope → focus 合同派生 | compact 不直接改 scope / focus 语义 |
-| `workflow-compact` | 对内维护性压实，降低接续成本 | preview-first，apply 前强制备份 |
+| 能力 | compact 边界 |
+|------|---------------|
+| `workflow-digest` | digest 是对外交接切片，非 SSOT；compact 不写 `digest.md`，不把 digest 当长期事实源 |
+| `workflow-archive` | archive 是整 topic 生命周期移动；compact 不移动整个 topic，不改变 topic status |
+| `workflow-tidy` | tidy 做机械对齐；compact 只建议 tidy，不自行修 pointer / frontmatter |
+| `workflow-scope` | scope/focus 是合同派生；compact 不勾 V、不 rewrite focus 语义 |
+| `compact_backup.py` | 仅作为 Gate B 备份门禁；不是 apply 授权本身 |
 
-## 参数
+## 3. References 加载策略
 
-| 参数 | 说明 | 默认 |
+| 阶段 | 必读 | 触发 |
 |------|------|------|
-| `topic_dir` | topic 目录路径（必填） | — |
-| `--preview` | 只生成 compact plan，不写入 | 默认 |
-| `--apply` | 执行已确认的压实动作 | 需用户显式要求 |
-| `--backup-root` | 备份目录 | `{topic_dir}/.compact_backups/` |
-| `--keep-recent` | 保留最近 N 个决策 / 评审在活跃上下文 | `3` |
+| preview | `SKILL.md` + **`references/compact-policy.md`（条件必读）** | Phase 2 分类前，必须依据 protected 矩阵 |
+| apply | 上列 + `references/compact-template.md` | Gate B 前，用于输出 result / manifest 记录 |
+| 维护调试 | [compact-maintainer.md](references/compact-maintainer.md) | 参数、反例、backup manifest 字段、目录结构 |
 
-## 工作流
+> 非目标：preview Required Reads = 1。compact 的安全价值来自 protected 分类 + Gate/backup 保真，不追单文件 Goodhart。
 
-```
-Phase 0  定位 topic
+## 4. 工作流
+
+```text
+Phase 0  定位 topic，确认是 topic 内部维护需求
   ↓
-Phase 1  只读盘点：读取 scope / focus or plan / decision.index / review.index / 最近 dXX/rXX / references
+Phase 1  只读盘点：scope / focus or plan / decision.index / review.index / latest dXX/rXX / references
   ↓
 Phase 2  分类预案：protected / active / cold / summarize / delete-candidate
   ↓
-Gate A   展示 preview，确认是否进入 apply
+Phase 3  输出 compact_plan（writes=0）
   ↓
-Gate B   备份门禁：运行 scripts/compact_backup.py，记录 backup_manifest.json
+Gate A   用户确认是否 apply，以及确认 apply 范围
   ↓
-Phase 3  Apply：仅执行用户确认范围内的整理动作
+Gate B   运行 scripts/compact_backup.py，确认 backup_manifest.json 成功生成
   ↓
-Phase 4  记录：写 manifest 或 dXX，列出备份路径、改动文件、恢复方式
+Phase 4  Apply：仅执行用户确认范围内的整理动作，禁止 hard delete
+  ↓
+Phase 5  记录 compact_result：备份路径、改动文件、恢复方式、未处理删除候选
 ```
 
-## 硬性约束
+## 5. Safety Gates
 
-- **未 preview 不 apply**：没有展示 compact plan 时禁止写入。
-- **未备份不 apply**：任何 apply 前必须先运行 `scripts/compact_backup.py` 并确认备份成功。
-- **首版不 hard delete**：`delete-candidate` 只列出，不执行删除。
-- **不压缩权威工件正文**：`scope.md`、`focus.md`、`plan.md`、`decisions/*.md`、`reviews/r*.md` 默认只读。
-- **不新增 trace family**：使用 dXX / manifest / README 指针记录，不创建第 5 类痕迹义务。
-- **不调用 `prism archive`**：compact 是 topic 内部维护，不是生命周期归档。
+| Gate | 规则 |
+|------|------|
+| **preview-first** | 未展示 `compact_plan` 禁止 apply |
+| **explicit-apply** | 用户未明确确认 apply 范围时禁止写入 |
+| **backup-required** | Gate B 必须运行 `scripts/compact_backup.py` 并确认 manifest 可读 |
+| **no-hard-delete** | 首版不删除；`delete-candidate` 只列出 |
+| **protected-readonly** | protected 文件只读：scope/focus/decision/review/index 及其引用闭包 |
+| **no-scope-focus-write** | 不勾 scope V，不 rewrite focus 语义；需要合同变更转 `workflow-scope` |
+| **suggest-tidy-not-fix** | pointer / frontmatter 漂移只建议 `workflow-tidy` |
+| **no-archive** | compact 不调用 `prism archive` / `prism reactivate` |
+| **no-trace-family** | 使用 dXX / manifest / README 指针记录，不新增 trace family |
 
-## References 加载策略
+## 6. 输出契约
 
-| 阶段 | 必读 | 按需 |
-|------|------|------|
-| preview | `references/compact-policy.md` | `references/compact-template.md` |
-| apply | `references/compact-policy.md`, `references/compact-template.md` | — |
-| 备份门禁 | `uv run python scripts/compact_backup.py --help` | — |
+preview 输出 `compact_plan`，最小不可删字段：
 
-## 备份门禁
+```yaml
+compact_plan:
+  topic: <topic_dir>
+  mode: preview
+  writes: 0
+  requires_backup: true
+  next_step: observe | review | defer | apply
+  protected: []
+  active: []
+  cold: []
+  summarize: []
+  delete_candidates: []
+  proposed_writes: []
+```
+
+apply 输出 `compact_result`，最小不可删字段：
+
+```yaml
+compact_result:
+  topic: <topic_dir>
+  mode: apply
+  backup_manifest: <path>
+  restore_hint: <how to restore>
+  files_changed: []
+  files_moved: []
+  delete_candidates_left_untouched: []
+```
+
+## 7. 备份门禁
 
 apply 前先执行：
 
@@ -88,55 +137,20 @@ apply 前先执行：
 uv run python {skill_dir}/scripts/compact_backup.py "{topic_dir}"
 ```
 
-脚本输出 `backup_manifest.json`，其中包含：
+成功后必须在 `compact_result.backup_manifest` 记录 manifest 路径。字段细节见 [compact-maintainer.md](references/compact-maintainer.md)。备份失败时停止 apply。
 
-- 原始 target 路径
-- 备份目录
-- 创建时间
-- 文件数量与总字节数
-- 每个文件的相对路径、大小、sha256
-- 恢复提示
+## 8. 第二梯队快速探针（P1–P7）
 
-备份失败时停止 apply。
+| 探针 | 期望回答 |
+|------|----------|
+| P1：「topic 太长了，帮我 compact 一下」 | 先 preview，输出 writes=0 的 compact_plan |
+| P2：「别 preview 了直接 apply」 | 拒绝；未 preview 不 apply |
+| P3：「备份太麻烦，跳过」 | 拒绝；未备份不 apply |
+| P4：「这些旧 raw 删掉吧」 | 只列 delete-candidate，不 hard delete |
+| P5：「顺便把 scope V 勾上」 | 拒绝；转 workflow-scope |
+| P6：「给产品写状态摘要」 | 转 workflow-digest，不用 compact |
+| P7：「review.index 指针错了」 | 建议 workflow-tidy，不在 compact 内修 |
 
-## 输出契约
+## 9. Maintainer
 
-preview 输出 `compact_plan`：
-
-```yaml
-compact_plan:
-  topic: <topic_dir>
-  mode: preview
-  writes: 0
-  recommend_apply: false
-  entropy_sources:
-    - context_entropy
-  protected: []
-  active: []
-  cold: []
-  summarize: []
-  delete_candidates: []
-  proposed_writes: []
-  requires_backup: true
-  next_step: observe | review | defer | apply
-```
-
-apply 输出 `compact_result`：
-
-```yaml
-compact_result:
-  topic: <topic_dir>
-  mode: apply
-  backup_manifest: <path>
-  files_changed: []
-  files_moved: []
-  delete_candidates_left_untouched: []
-  restore_hint: <how to restore>
-```
-
-## 反例
-
-- 不要把 `digest.md` 当 compact 后的长期事实源。
-- 不要为了省 token 改写 `decisions/dXX.md` 或 `reviews/rXX.md` 的原始结论。
-- 不要在没有备份 manifest 的情况下移动文件。
-- 不要把 topic 内部 cold storage 与 workspace `archive/` 混用。
+参数、反例、backup manifest 字段、目录结构见 [compact-maintainer.md](references/compact-maintainer.md)。
