@@ -81,6 +81,18 @@ OpenSpec 产出的 spec、design、tasks 可以进入 Prism topic；Prism 负责
 
 ---
 
+## beta 已落地锚点
+
+> 架构客观描述见 [architecture.md](./architecture.md)；此处只列 **v3.0.0-beta dogfood 已验收** 的能力锚点。
+
+- [x] `focus.md` 成为 topic 入口；README grandfather 兜底
+- [x] `structures/task-N_slug/` 按需递归分解（task-scope 1:1 投影 topic-V）
+- [x] 主路径 skill 热路径压缩 + `skill-governance-contract.md`（044）
+- [x] 维护技能三角：tidy / compact / status `next_actions[]` / archive+reactivate（046）
+- [x] 默认文档叙事对齐 beta（`docs/README.md` 三层索引）
+
+---
+
 ## 现在还差什么
 
 v3.0 的主线不是再堆功能，而是继续验证：
@@ -89,5 +101,6 @@ v3.0 的主线不是再堆功能，而是继续验证：
 2. `task` 是否只在 S3 深化时自然长出，而不是变成“复杂就拆”的习惯。
 3. `status` 的 `next_actions[]` 是否能降低方向熵，而不替代人类治理决策。
 4. 认知熵叙事是否帮助非 Prism 项目更快理解为什么要保留 scope / focus / decision。
+5. catalog `dev → public` 晋升与更多异构项目 dogfood。
 
-如果这些验证成立，Prism 3.0 才能从 beta 进入更稳定的公开口径。
+如果这些验证成立，Prism 3.0 才能从 beta 进入更稳定的公开口径；发行 semver 与叙事阶段在 MR → main 时一并收敛（见 [docs/README.md](./README.md) §版本双轨）。

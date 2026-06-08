@@ -1,6 +1,6 @@
 # Prism — 架构详解
 
-> 本文档包含 Prism 的完整架构设计。首次使用请先阅读 [README](../README.md) 的快速开始；如果你想先看"Prism 现在是什么、为什么成立、还差什么"，请先读 [Prism 3.0 定位说明](./prism-3.0.md)。v2.0 的历史定位见 [Prism 2.0 定位说明](./prism-2.0.md)。
+> 本文档包含 Prism 的**结构客观面**（四层模型、部署、workflow 管线）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；v3 beta 叙事见 [prism-3.0.md](./prism-3.0.md)；v2 历史见 [prism-2.0.md](./prism-2.0.md)。
 
 ---
 
@@ -270,20 +270,13 @@ prism/
 
 ---
 
-## 当前状态
+## 当前阶段
 
-历史阶段详见 [CHANGELOG.md](../CHANGELOG.md)。架构页只保留当前主线状态。
+本页描述**结构客观面**，不重复 beta 进度 checklist。
 
-**v3.0 beta：focus 入口与维护技能治理** 🟡
-
-- [x] `focus.md` 成为 topic 入口与当前工作集，README 降为 grandfather 兜底
-- [x] `scope.md` → `focus.md` 刷新规则沉淀为 `focus-derive-spec.md`
-- [x] `structures/task-N_slug/` 作为按需递归分解：task-scope 1:1 投影 topic 级 V，wave 承载推进批次
-- [x] `topic-format-spec.md` 成为 topic 形态对标基准
-- [x] `workflow-compact`：preview-first + backup Gate apply（dev experimental，不进 mini/full）
-- [x] `workflow-status`：`next_actions[]` handoff 建议（不自动写盘）
-- [x] `workflow-archive` + `prism reactivate`：双向 lifecycle（dev experimental）
-- [x] `skill-governance-contract.md` + per-skill maintainer 分层（044/046 治理沉淀）
-- [x] `docs/prism-3.0.md` / `docs/workspace-v3-upgrade.md` / `docs/topic-lifecycle.md` / `docs/skill-taxonomy.md` 承接默认文档叙事
-- [ ] catalog `dev → public` 晋升与更多异构项目 dogfood 仍待验证
+| 面 | 入口 |
+|----|------|
+| v3 beta 已落地锚点 + 开放验证 | [prism-3.0.md](./prism-3.0.md) |
+| 文档分类与读序 | [docs/README.md](./README.md) |
+| 发行版本与变更史 | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |
 

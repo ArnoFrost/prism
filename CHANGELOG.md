@@ -12,6 +12,7 @@
 
 - **workflow 主路径技能热路径压缩**（044）：intake / scope / review / review-lite SKILL.md 瘦身，行为语义不变
 - **叙事层 canary → beta**：`docs/prism-3.0.md`、`docs/skill-taxonomy.md`、`docs/architecture.md`、`docs/workspace-v3-upgrade.md`、`AGENTS.md` 与 SDK 行为对齐
+- **docs 三层索引**：`docs/README.md`；`leader-pitch` v3 beta 对内口径；`architecture` checklist cite 化；`glossary` 去 workspace 痕迹
 - **shared 文档清污**：移除 topic 实例泄漏；`context-pack-spec` 路径统一为 `../shared/`
 
 ### Fixed

@@ -118,15 +118,17 @@ Prism 的交付术语分三层：
 
 ## 读什么
 
-README 只负责入口导航。想深入某一层，请读对应文档：
+README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md)**（SDK 客观面 / beta 叙事 / 历史内部）。
 
 | 你想了解 | 入口 |
 |----------|------|
+| 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
 | Prism 3.0 为什么是轻量认知熵管理框架 | [docs/prism-3.0.md](docs/prism-3.0.md) |
 | 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
 | topic 从 intake 到 archive 怎么走 | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |
 | 每个 workflow skill 治理什么熵 | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) |
 | 完整架构与部署视图 | [docs/architecture.md](docs/architecture.md) |
+| CLI 稳定性与 verb 契约 | [docs/cli-contract.md](docs/cli-contract.md) |
 | 术语速查 | [docs/glossary.md](docs/glossary.md) |
 | 历史迁移 | [docs/migration.md](docs/migration.md) |
 
@@ -174,6 +176,7 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 | `prism sniff`    | 探测 topic_affinity / 下一轮编号（`--kind review\|intake`） |
 | `prism validate` | 校验 topic 产物格式（frontmatter / 命名规范，`--fix` 自动修复） |
 | `prism archive`  | 归档 topic 到 `archive/` |
+| `prism reactivate` | 将 archive topic 移回 `topics/` |
 | `prism migrate`  | 迁移历史 review 子目录格式 |
 | `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态 |
 | `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |

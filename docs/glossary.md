@@ -11,7 +11,7 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 - **心流断裂**：用户在不同会话间反复切换术语习惯
 - **跨 topic 追溯困难**：归档后术语变体让历史记录难以串联
 
-为此，034_flow-and-vocab-governance 专项落地了一份**协议级 SSOT** 词典，固定术语在所有 SKILL / 文档 / topic 产物中的形态。
+为此，项目在 workflow 层落地了一份**协议级 SSOT** 词典，固定术语在所有 SKILL / 文档 / topic 产物中的形态。
 
 ## 词典入口
 
@@ -55,13 +55,13 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 | `docs/architecture.md` | 架构层叙事；引用本词典中的 scope / plan / topic 等术语 |
 | `docs/contributing.md` | 贡献者指南；新贡献者写文档前应阅读本词典 |
 | `docs/migration.md` | v1.x→v2.0 迁移指南；版本号术语已部分受控（见 SSOT §与其他 shared SSOT 的关系） |
-| 各 topic 的 `scope.md / plan.md / reviews/` | 是词典的**消费方**；术语合规率受 034 V6 dogfood 监督 |
+| 各 topic 的 `scope.md` / `focus.md` / `reviews/` | 词典的**消费方**；合规靠人工 checklist + review |
 
 ## 演进治理
 
-词典由专项 [034_flow-and-vocab-governance](../skills/workflow/shared/vocabulary.md#变更记录) 治理：
+词典演进规则见 SSOT [§演进规则](../skills/workflow/shared/vocabulary.md#演进规则)：
 
-- 新增术语 / 修改定义需走 dXX 决策（首批 11 由 034 治理；Prism 3.0 第二批 task/focus/structure 于 2026-05-29 扩展落锚）
+- 新增术语 / 修改定义需走 dXX 决策
 - 漂移检测策略首版仅人工自检 checklist（OQ-6 推荐）
 - 脚本化 `validate_vocab.py` 留 v2.3+ 评估
 - 不引入 hard error；最多 WARN（继承 030 d10）
