@@ -1,6 +1,7 @@
 # Shared Modules
 
 > 跨技能共享的参考文档与工具脚本。**不是独立 skill**，不会被 `bin/relink` 分发到 IDE。
+> SDK 文档导航：[docs/README.md](../../../docs/README.md) · CLI 契约：[docs/cli-contract.md](../../../docs/cli-contract.md)
 
 ## 设计约定
 

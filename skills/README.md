@@ -15,7 +15,7 @@ skills/
 │   └── SKILL.template.md             # 技能编写模板
 ├── workflow/                          # ★ 内置工作流技能（v2.0）
 │   ├── digest/
-│   ├── compact/                   # dev experimental：上下文熵治理 preview（不 apply）
+│   ├── compact/                   # dev experimental：preview-first；授权后 backup→apply
 │   ├── archive/                   # dev experimental：topic 生命周期归档
 │   ├── intake/
 │   ├── review/
@@ -37,15 +37,14 @@ skills/
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
-## Workflow 管线（v3.0 canary）
+## Workflow 管线（v3.0 beta）
 
-内置 workflow skills 组成完整的人机协作管线：
+内置 workflow skills 组成完整的人机协作管线。人类文档导航见 [docs/README.md](../docs/README.md)。
 
 ```
-init（项目容器）→ intake（入料路由）→ scope（合同收敛）→ review（评审）→ decision（决策）→ scope（更新）→ ...
-                                                          └─ tidy（工件对齐，决策后自动触发）
-                                                          └─ digest（状态通报，任意阶段可用）
-                                                          └─ status（健康巡检，任意阶段可用）
+init → intake → scope → review / review-lite → decision → scope（更新）→ ...
+  ├─ tidy（工件对齐）  ├─ digest（状态通报）  ├─ status（健康巡检 + next_actions handoff）
+  ├─ compact（低频压实，dev experimental）  └─ archive / reactivate（生命周期，dev experimental）
 ```
 
 | Skill | 触发 | 输入 | 产出 |
@@ -57,7 +56,7 @@ init（项目容器）→ intake（入料路由）→ scope（合同收敛）→
 | `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |
 | `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
-| `workflow-status` | `/workflow-status` | 无 | 健康度 JSON + Markdown 报告 |
+| `workflow-status` | `/workflow-status` | 无 | 健康度报告 + `next_actions[]` handoff（不自动写盘） |
 | `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁 |
 | `workflow-archive` | `/workflow-archive` | workspace + topic | preview-first 生命周期归档（topics/ → archive/）|
 
@@ -93,6 +92,8 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 
 ## 治理与 SSOT
 
+- 人类文档分类与读序：[docs/README.md](../docs/README.md)（SDK 客观面 / beta 叙事 / 历史内部）
+- CLI 契约：[docs/cli-contract.md](../docs/cli-contract.md) · 术语：[docs/glossary.md](../docs/glossary.md)（cite `workflow/shared/vocabulary.md`）
 - 默认 `visibility=internal`（私人能力不限制）
 - 只有通过审计并满足 `public_gate` 的技能，才可标记为 `visibility=public`
 - `schema/skills-catalog.yaml` 是公开注入技能清单 SSOT（官方公开面以此为准）

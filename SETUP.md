@@ -399,7 +399,7 @@ done
 
 ## 升级与回滚
 
-> **从 v1.x 升级到 v2.x 的用户**：先看 [docs/migration.md](docs/migration.md) — 它是 v1.x → v2.0 的唯一迁移入口（破坏性变化、命令替换脚本、升级检查清单）。下面的命令是通用升级流程，与 migration.md 配合使用。
+> **从 v1.x 升级到 v2.x 的用户**：先看 [docs/migration.md](docs/migration.md) — 它是 v1.x → v2.0 的唯一迁移入口（破坏性变化、命令替换脚本、升级检查清单）。文档分类见 [docs/README.md](docs/README.md)。下面的命令是通用升级流程，与 migration.md 配合使用。
 
 ### 升级（从旧版本到新版本）
 

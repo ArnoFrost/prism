@@ -245,6 +245,7 @@ Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`]
 
 | 分发面 | 路径 | 角色 |
 |--------|------|------|
+| **文档分类索引** | [`docs/README.md`](docs/README.md) | SDK 客观面 / beta 叙事 / 历史内部；人类读 docs 先读 |
 | **SDK 协议级 SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 唯一 SSOT；其他面 cite 不复制 |
 | **人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
 | **OFM / GFM callout 速查** | [`docs/ofm-cheatsheet.md`](docs/ofm-cheatsheet.md) | G0 词汇 + review 主报告映射；cite `obsidian-config` + `review-ofm` |

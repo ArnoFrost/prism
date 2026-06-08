@@ -46,7 +46,8 @@
 | 形态 | 含义 | 编号空间 |
 |------|------|---------|
 | `V` / `V1`…（**大写 V**） | scope 内验收口径项（Verification Criterion） | 单 topic 内自增 |
-| `v3.0` / `v3.0-canary`（**小写 v**） | Prism 协议 / SDK 版本号 | 全局版本线 |
+| `v3.0` / `v3.0.0-beta`（**小写 v**） | Prism 叙事 / dogfood 阶段 | 全局版本线；见 [docs/README.md](../../../docs/README.md) §版本双轨 |
+| `v3.0-canary`（**小写 v**） | 历史 dogfood 阶段名 | 已收口为 beta 叙事，仅历史文档保留 |
 
 > **判别**：大写 `V`+数字 = 某 topic 内部「算不算做完」的勾选项；小写 `v`+点分 = 整套规范的版本。一个 v3.0 dogfood topic 内部拆成 V1…V6 验收项，**不存在「升 v4」**。口语避免裸说「V4」，写「V4 验收项」或直接用名字防混。
 
