@@ -103,4 +103,4 @@ v3.0 的主线不是再堆功能，而是继续验证：
 4. 认知熵叙事是否帮助非 Prism 项目更快理解为什么要保留 scope / focus / decision。
 5. catalog `dev → public` 晋升与更多异构项目 dogfood。
 
-如果这些验证成立，Prism 3.0 才能从 beta 进入更稳定的公开口径；发行 semver 与叙事阶段在 MR → main 时一并收敛（见 [docs/README.md](./README.md) §版本双轨）。
+如果这些验证成立，Prism 3.0 才能从 beta 进入更稳定的公开口径；当前 dogfood 口径为 `v3.0.0-beta`（见 `VERSION` 与 [docs/README.md](./README.md)）。

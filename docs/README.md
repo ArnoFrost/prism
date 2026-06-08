@@ -2,7 +2,7 @@
 
 > 本页是 `docs/` 的**唯一索引**。正文仍在各文件中，此处只做分类与读序。
 >
-> **版本双轨**：根目录 `VERSION` + [`cli-contract.md`](./cli-contract.md) 跟**发行 semver**（当前 `v2.0.0-beta.1`）；`v3.0.0-beta` 指**分支 / dogfood 叙事阶段**（见 [`prism-3.0.md`](./prism-3.0.md)）。二者 intentionally 分开，MR 前再统一 bump。
+> **当前版本**：`v3.0.0-beta` — 根目录 `VERSION` + [`cli-contract.md`](./cli-contract.md) 与叙事层（[`prism-3.0.md`](./prism-3.0.md)）已对齐。历史 v2 发行线止于 `v2.0.0-beta.1`（见 [CHANGELOG](../CHANGELOG.md)）。
 
 ---
 

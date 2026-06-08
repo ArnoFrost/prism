@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+## [v3.0.0-beta] — 2026-06-08
+
+> **Prism 3.0 beta** — 认知熵治理框架 dogfood 首版。`VERSION` / `cli-contract` / 叙事层统一为 `v3.0.0-beta`（结束 v2 发行线与 v3 叙事双轨）。
+
 ### Added
 
 - **技能治理契约** `skill-governance-contract.md`：压缩 wave / 语义 wave 两刀模型、Entropy 量尺、Protected Inventory、Fixture 前缀
@@ -7,18 +11,22 @@
 - **per-skill maintainer 分层**：intake / scope / review / review-lite / tidy / compact / archive 热路径压缩 + `*-maintainer.md` 外移
 - **intake 路由 SSOT** `intake-routing-spec.md`：slash 永远 new、`--append` 强入口、cohesion 不静默 append
 - **CLI** `prism reactivate` verb（`cli-contract.md` §5.2 对齐）
+- **review sniff** `resolve_review_output_dir()`：`boundary_clarification_required` 字段；未定位 topic 时 `output_dir=null`，禁止日期前缀 `[评审]` 孤儿目录
 
 ### Changed
 
 - **workflow 主路径技能热路径压缩**（044）：intake / scope / review / review-lite SKILL.md 瘦身，行为语义不变
 - **叙事层 canary → beta**：`docs/prism-3.0.md`、`docs/skill-taxonomy.md`、`docs/architecture.md`、`docs/workspace-v3-upgrade.md`、`AGENTS.md` 与 SDK 行为对齐
 - **docs 三层索引**：`docs/README.md`；`leader-pitch` v3 beta 对内口径；`architecture` checklist cite 化；`glossary` 去 workspace 痕迹
+- **task-5 docs↔skills 校准**：`skills/README` beta 叙事、导航链 `docs/README.md`、`public_surface_scan` 豁免 `audience:internal`
 - **shared 文档清污**：移除 topic 实例泄漏；`context-pack-spec` 路径统一为 `../shared/`
+- **版本口径统一**：`VERSION` 从 `v2.0.0-beta.1` 升为 `v3.0.0-beta`；`docs/README` 移除发行/叙事双轨说明
 
 ### Fixed
 
 - **cli-contract 漂移**：`prism reactivate` 补入 §5.2，恢复 `check_cli_contract_sync` 绿灯
 - **tidy 结构可读性测试**：mtime 钉扎避免 `frontmatter_date` 干扰 report-only 断言
+- **review-lite 路由事故**：MR 就绪评审误落 `YYYYMMDD-[评审]` 孤儿 topic；工件迁入 046，sniff 防复发
 
 ## [v2.0.0-beta.1] — 2026-05-16
 

@@ -21,7 +21,7 @@ Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过
 
 **v3 beta 增量**：`focus` 作 topic 入口；`status` 只读建议下一步（`next_actions[]` handoff）；tidy/compact/archive 分工维护工件与生命周期；主路径技能已做热路径压缩（044/046 治理）。
 
-**当前状态**：`v3.0.0-beta` 分支 dogfood；发行 semver 仍为 `v2.0.0-beta.1`（见 `VERSION`），合并 main 前再统一版本号。
+**当前状态**：`v3.0.0-beta` dogfood；`VERSION` / `cli-contract` / 叙事层已统一（见 [CHANGELOG](../CHANGELOG.md)）。
 
 **下一步**：选一个小项目试点「可追踪、可接续」；或准备 MR 将 beta 治理成果并回 main。
 

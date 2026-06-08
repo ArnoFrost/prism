@@ -2,7 +2,7 @@
 
 > 本文件固化 `bin/` 与 `prism <verb>` 命令面分层 / 稳定性承诺 / "30 秒加 verb" 设计门槛 / 双协议范围。
 > 所有对 `bin/` 与 `prism <verb>` 的新增、改名、删除必须引用本文作为依据。
-> 版本：v2.0.0-beta.1（随 SDK `VERSION` 同步升级）
+> 版本：v3.0.0-beta（随 SDK `VERSION` 同步升级）
 
 ---
 
@@ -240,6 +240,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 2026-05-13 | v1.1.7 | §5.2 finalize description 加 "validate-trace (Step 2.5)"；pipeline 行加"不支持 trace flag"脚注 |
 | 2026-05-14 | **v2.0.0-alpha** | §5.2 `prism pipeline` 行从 deprecated 改为 ~~removed (v2.0)~~（物理移除 alias，调用方 hard fail exit 2）；§2.2 改名示例段更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径）；§1 / §2 / §4 默认路径脱敏（移除内部 review/decision 链路引用）；§6 表 vault link 迁出主表[^variant-history]；VERSION / manifest / 默认文档口径对齐。<br>（开发期 v2.0-canary 阶段的契约迭代已收编进本行。）|
 | 2026-05-16 | **v2.0.0-beta.1** | 版本口径从 v2.1.0 统一为 v2.0.0-beta.1（v2 尚未对外发布，重新梳理版本号）；`prism --version` 与 SDK `VERSION` 同步。|
+| 2026-06-08 | **v3.0.0-beta** | Prism 3.0 beta 首版：维护技能三角、docs 三层 IA、review sniff 路由修复；`VERSION` / 叙事层统一为 `v3.0.0-beta`（结束 v2 发行线与 v3 叙事双轨）。|
 
 [^variant-history]: 各版本变更的详细 review / decision 推导链路保留在 vault Workspace 内部历史档案中，不在本契约暴露；参与维护的人员可通过 SDK 内 `references/maintainer.md` 等维护者文档定位。
 
