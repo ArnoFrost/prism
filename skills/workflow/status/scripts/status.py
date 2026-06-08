@@ -163,6 +163,143 @@ def scan_topic(topic_dir: str) -> dict:
     }
 
 
+def _next_action(
+    *,
+    action_id: str,
+    priority: str,
+    target_type: str,
+    target: str | None,
+    skill: str | None,
+    reason: str,
+    execution_policy: str,
+    blocking: str,
+    confidence: str = "high",
+) -> dict:
+    """Build a stable next action object.
+
+    Contract constraints:
+    - source is CLI status data only (`status_report`); user-intent routing belongs to Agent context.
+    - execution_policy is handoff/preview/no_action; status never writes or applies fixes.
+    """
+    return {
+        "id": action_id,
+        "priority": priority,
+        "target_type": target_type,
+        "target": target,
+        "skill": skill,
+        "reason": reason,
+        "source": "status_report",
+        "confidence": confidence,
+        "execution_policy": execution_policy,
+        "blocking": blocking,
+    }
+
+
+def _next_action_for_topic(t: dict) -> dict | None:
+    """Return at most one deterministic next action for an active topic.
+
+    Detectors are intentionally based on structured fields, not `issues[]` wording,
+    so report text changes do not affect routing.
+    """
+    if t.get("location") != "topics":
+        return None
+
+    name = t["name"]
+    scope_unchecked = t["scope"]["unchecked"]
+    scope_checked = t["scope"]["checked"]
+    review_count = t["review_count"]
+    missing = t.get("skeleton_missing", [])
+
+    if missing:
+        return _next_action(
+            action_id=f"skeleton-missing:{name}",
+            priority="P1",
+            target_type="topic",
+            target=name,
+            skill="workflow-tidy",
+            reason=f"骨架缺失：{', '.join(missing)}，需要先补齐结构或指针。",
+            execution_policy="handoff_only",
+            blocking="由 workflow-tidy / scaffold 口径处理；status 只报告，不写盘。",
+        )
+
+    if scope_unchecked > 0 and scope_checked == 0 and review_count == 0:
+        return _next_action(
+            action_id=f"scope-not-started-no-review:{name}",
+            priority="P1",
+            target_type="topic",
+            target=name,
+            skill="workflow-review-lite",
+            reason=f"scope {scope_unchecked} 项均未勾选且无 review，需要先判断是否继续推进或收口。",
+            execution_policy="handoff_only",
+            blocking="review-lite/full 由目标评审流程自行 Gate；status 不生成决策。",
+        )
+
+    if scope_unchecked > 0 and scope_checked == 0:
+        return _next_action(
+            action_id=f"scope-sync-needed:{name}",
+            priority="P1",
+            target_type="topic",
+            target=name,
+            skill="workflow-scope",
+            reason=f"scope {scope_unchecked} 项均未勾选，建议先确认合同是否仍反映当前执行态。",
+            execution_policy="handoff_only",
+            blocking="scope/focus 只能由 accepted dXX 或显式 workflow-scope 更新。",
+            confidence="medium",
+        )
+
+    if review_count == 0:
+        return _next_action(
+            action_id=f"no-review:{name}",
+            priority="P2",
+            target_type="topic",
+            target=name,
+            skill="workflow-review-lite",
+            reason="活跃 topic 尚无 review 记录，建议补一个轻量检查点。",
+            execution_policy="handoff_only",
+            blocking="若涉及方向变更或里程碑，应升级为 workflow-review。",
+            confidence="medium",
+        )
+
+    if scope_unchecked == 0 and scope_checked > 0:
+        return _next_action(
+            action_id=f"archive-preview:{name}",
+            priority="P2",
+            target_type="topic",
+            target=name,
+            skill="workflow-archive",
+            reason=f"scope 验收已全部完成（{scope_checked}/{scope_checked}），可考虑归档预览。",
+            execution_policy="preview_required",
+            blocking="必须先运行 workflow-archive preview；用户接受后才可移动 topic。",
+            confidence="medium",
+        )
+
+    return None
+
+
+def _build_next_actions(topics: list[dict]) -> list[dict]:
+    actions = []
+    for t in topics:
+        action = _next_action_for_topic(t)
+        if action:
+            actions.append(action)
+
+    if not actions:
+        actions.append(_next_action(
+            action_id="workspace:no-action",
+            priority="P3",
+            target_type="workspace",
+            target=None,
+            skill=None,
+            reason="未发现可由 status_report 稳定判定的下一步动作。",
+            execution_policy="no_action",
+            blocking="如用户有新需求或对外同步意图，由 Agent 会话层建议 intake / digest。",
+            confidence="high",
+        ))
+
+    priority_rank = {"P1": 0, "P2": 1, "P3": 2}
+    return sorted(actions, key=lambda a: (priority_rank.get(a["priority"], 9), a["target"] or ""))
+
+
 def scan_workspace(project_dir: str) -> dict:
     workspace = find_workspace(project_dir)
     if not workspace:
@@ -209,6 +346,7 @@ def scan_workspace(project_dir: str) -> dict:
         "workspace": workspace["path"],
         "scan_date": date.today().isoformat(),
         "topics": topics,
+        "next_actions": _build_next_actions(topics),
         "summary": {
             "total": total,
             "active": len(active_topics),
@@ -218,6 +356,21 @@ def scan_workspace(project_dir: str) -> dict:
             "attention": attention,
         },
     }
+
+
+def _append_next_actions_block(lines: list[str], actions: list[dict]) -> None:
+    lines.append("## 建议下一步（Next Actions）")
+    lines.append("")
+    lines.append("| 优先级 | 对象 | 建议 skill | 原因 | 策略 | 前置/阻塞 |")
+    lines.append("|--------|------|------------|------|------|-----------|")
+    for a in actions:
+        target = a.get("target") or a.get("target_type", "workspace")
+        skill = a.get("skill") or "—"
+        lines.append(
+            f"| {a.get('priority', 'P3')} | {target} | {skill} | "
+            f"{a.get('reason', '')} | {a.get('execution_policy', '')} | {a.get('blocking', '')} |"
+        )
+    lines.append("")
 
 
 def _append_topic_block(lines: list[str], t: dict) -> None:
@@ -270,6 +423,8 @@ def to_markdown(report: dict) -> str:
     lines.append(f"| 需注意（活跃） | {s.get('warning', 0)} |")
     lines.append(f"| 需关注（活跃） | {s.get('attention', 0)} |")
     lines.append(f"")
+
+    _append_next_actions_block(lines, report.get("next_actions", []))
 
     # 分组展示
     active = [t for t in report.get("topics", []) if t.get("location") == "topics"]
