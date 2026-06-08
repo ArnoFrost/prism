@@ -222,7 +222,7 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Prism 内置技能
 
-SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实（与 README §Skills 表保持一致）。
+SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实 → 生命周期归档（与 README §Skills 表保持一致）。
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
@@ -233,7 +233,9 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
 | workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
 | workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
-| workflow-status | `/workflow-status` | 健康度巡检 — 活跃专项 report-first 扫描 |
+| workflow-status | `/workflow-status` | 健康度巡检 — report-first + `next_actions[]` handoff（不自动写盘） |
+| workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不进 mini/full） |
+| workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不进 mini/full） |
 
 ---
 
@@ -317,5 +319,7 @@ git commit -m "feat: 新增 xxx 脚本"
 | 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
 | 日常迭代、小改动确认、scope/focus 快速对齐 | 执行 `/workflow-review-lite` |
 | 评审/决策落盘后，README 指针、review.index、frontmatter 需机械对齐 | 执行 `/workflow-tidy`（或随 `prism finalize` 自动串联） |
-| 想了解专项进度 / 检查骨架完整性 / 启动新一轮工作前的现状回顾 | 执行 `/workflow-status`（report-first，只报告不修改） |
+| 想了解专项进度 / 检查骨架完整性 / 启动新一轮工作前的现状回顾 | 执行 `/workflow-status`（report-first + `next_actions[]` handoff，只报告不修改） |
 | 需要对外通报专项状态（产品 / 协作者 / 自我回顾） | 执行 `/workflow-digest`（生成 `digest.md` 快照） |
+| topic 上下文膨胀、接续阅读成本过高 | 执行 `/workflow-compact`（先 preview；授权后 backup→apply） |
+| topic 已结束需释放注意力，或从 archive 拉回继续跟踪 | 执行 `/workflow-archive` / `prism archive` / `prism reactivate`（preview-first） |

@@ -1,6 +1,23 @@
 ## [Unreleased]
 
-_当前无未发布变更。_
+### Added
+
+- **技能治理契约** `skill-governance-contract.md`：压缩 wave / 语义 wave 两刀模型、Entropy 量尺、Protected Inventory、Fixture 前缀
+- **维护技能三角**（046）：`workflow-status` `next_actions[]` handoff、`workflow-compact` backup Gate apply、`workflow-archive` + `prism reactivate` 双向 lifecycle
+- **per-skill maintainer 分层**：intake / scope / review / review-lite / tidy / compact / archive 热路径压缩 + `*-maintainer.md` 外移
+- **intake 路由 SSOT** `intake-routing-spec.md`：slash 永远 new、`--append` 强入口、cohesion 不静默 append
+- **CLI** `prism reactivate` verb（`cli-contract.md` §5.2 对齐）
+
+### Changed
+
+- **workflow 主路径技能热路径压缩**（044）：intake / scope / review / review-lite SKILL.md 瘦身，行为语义不变
+- **叙事层 canary → beta**：`docs/prism-3.0.md`、`docs/skill-taxonomy.md`、`docs/architecture.md`、`docs/workspace-v3-upgrade.md`、`AGENTS.md` 与 SDK 行为对齐
+- **shared 文档清污**：移除 topic 实例泄漏；`context-pack-spec` 路径统一为 `../shared/`
+
+### Fixed
+
+- **cli-contract 漂移**：`prism reactivate` 补入 §5.2，恢复 `check_cli_contract_sync` 绿灯
+- **tidy 结构可读性测试**：mtime 钉扎避免 `frontmatter_date` 干扰 report-only 断言
 
 ## [v2.0.0-beta.1] — 2026-05-16
 
