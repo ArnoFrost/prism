@@ -65,11 +65,13 @@ Phase 4  Gate 4 — AskQuestion 4 选项 → decision_artifact
 1. `prism sniff <project_dir> --kind review --topic <主题>` → `format` / `output_dir` / `next_review_number`
 2. **READ** `review-templates.md` → 命名规则
 3. 若 `format=ofm` → **READ** `review-ofm.md`
-4. 基于 `topic_affinity.suggestion` 确定 `output_dir`；显式输出路由结论
+4. 基于 `topic_affinity.suggestion` + sniff `output_dir` / `reviews_dir` 确定落点；显式输出路由结论
 5. 若评审对象是 topic、scope/focus 快速对齐，或 sniff 已定位 topic：按 `../shared/context-pack-spec.md` light 档装配上下文；不支持脚本时手动读 `scope.md` + `focus.md`
-6. 显式输出：`format` / `output_dir` / `next_review_number` / `topic_route` + 已加载 references + `context_pack: light|skipped`
+6. 显式输出：`format` / `output_dir` / `reviews_dir` / `next_review_number` / `topic_route` + 已加载 references + `context_pack: light|skipped`
 
-> **编号契约**：`reviews/rXX_*.md` 由 sniff 返回；`type: review-lite` 区分序列。`next_review_source = none` → 边界澄清门见 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)。sniff 维护 fallback 见 review-lite-maintainer。
+> **编号契约**：`reviews/rXX_*.md` 由 sniff 返回；`type: review-lite` 区分序列。
+> **`boundary_clarification_required=true` 或 `next_review_source=none`**：`output_dir` 为 null → **禁止 mkdir / 禁止 Phase 3 写盘**；必须先走边界澄清门 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)。新建 topic 须 `/workflow-intake`，不得使用日期前缀 `[评审]` 目录。
+> sniff 维护 fallback 见 review-lite-maintainer。
 
 ### Phase 2 Scan
 
@@ -150,7 +152,7 @@ topic / scope-focus 场景必须按 `../shared/context-pack-spec.md` 装配 ligh
 
 ### FR-boundary-gate / FR-fallback-degrade / FR-no-interactive-fail
 
-`next_review_source = none` → 澄清门；AskQuestion 不可用按 fallback SSOT；`PRISM_NO_INTERACTIVE=1` 必须 fail。
+`boundary_clarification_required=true` 或 `next_review_source=none` → 澄清门；**禁止**按 null `output_dir` 建目录；AskQuestion 不可用按 fallback SSOT；`PRISM_NO_INTERACTIVE=1` 必须 fail。
 
 ## 7. Maintainer
 

@@ -174,6 +174,47 @@ class TestCliJsonOutput:
         assert "empty_reason" in data
         assert data["empty_reason"] == "no_workspace_bridge"
 
+    def test_unresolved_topic_null_output_dir(self, tmp_path: Path):
+        """未定位 topic 时 output_dir 必须为 null，且须边界澄清。"""
+        bridge = tmp_path / "workspace.test.local"
+        bridge.mkdir()
+        (bridge / "project.yaml").write_text("code: TEST\n", encoding="utf-8")
+        (bridge / "README.md").write_text("# Test\n", encoding="utf-8")
+        topics = bridge / "topics"
+        topics.mkdir()
+        (topics / "001_foo-bar").mkdir()
+        (topics / "001_foo-bar" / "reviews").mkdir()
+
+        result = review_sniff.sniff(str(tmp_path), topic="totally-unrelated-zzzz")
+
+        assert result["next_review_source"] == "none"
+        assert result["output_dir"] is None
+        assert result["reviews_dir"] is None
+        assert result["boundary_clarification_required"] is True
+        assert result["writable"] is False
+        assert "20260608" not in str(result.get("output_dir") or "")
+        assert "[评审]" not in str(result.get("output_dir") or "")
+
+    def test_resolved_topic_output_dir_is_nnn_slug(self, tmp_path: Path):
+        """高亲和命中时 output_dir 为 {NNN}_* topic 根，非日期前缀。"""
+        bridge = tmp_path / "workspace.test.local"
+        bridge.mkdir()
+        (bridge / "project.yaml").write_text("code: TEST\n", encoding="utf-8")
+        (bridge / "README.md").write_text("# Test\n", encoding="utf-8")
+        topic_dir = bridge / "topics" / "046_maintenance-skills-governance"
+        (topic_dir / "reviews").mkdir(parents=True)
+        (topic_dir / "reviews" / "r01_foo.md").write_text("# r01\n", encoding="utf-8")
+
+        result = review_sniff.sniff(
+            str(tmp_path), topic="maintenance skills governance archive"
+        )
+
+        assert result["next_review_source"] in ("affinity", "topic_hint")
+        assert result["output_dir"] == str(topic_dir)
+        assert result["reviews_dir"] == str(topic_dir / "reviews")
+        assert result["boundary_clarification_required"] is False
+        assert result["writable"] is True
+
     def test_empty_reason_field_in_outer_envelope(self):
         """通过 prism CLI 调 sniff —— empty_reason 字段必须在 outer envelope 的 data 下。
 

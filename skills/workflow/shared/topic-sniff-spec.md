@@ -133,7 +133,9 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 | `workspace` | object \| null | Prism Workspace 信息 |
 | `obsidian` | object | Obsidian 环境探测结果 |
 | `prism` | object \| null | Prism SDK 上下文 |
-| `output_dir` | string | 推荐的产物输出目录 |
+| `output_dir` | string \| null | review/review-lite：已解析的 **3.0 topic 根**；未定位时为 null（须边界澄清门）。intake：遗留日期目录提示（实际建 topic 用 `next_topic_number` + scaffold） |
+| `reviews_dir` | string \| null | review/review-lite 专有：已解析的 `reviews/`；未定位时为 null |
+| `boundary_clarification_required` | boolean | review/review-lite：`next_review_source=none` 时为 true |
 | `writable` | boolean | output_dir 是否可写 |
 | `format` | string | `ofm` \| `standard` |
 | `topic` | string \| null | 用户提供的主题 |
