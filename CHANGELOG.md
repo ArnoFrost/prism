@@ -1,5 +1,24 @@
 ## [Unreleased]
 
+### Added
+
+- **`archive_layout.py`** — topic 归档路径布局：`flat`（SDK 默认）与 `monthly_topic`（`archive/YYYY-MM/topic/`）；`project.yaml` `archive_layout` 或 README 约定自动探测
+- **`index_style` 契约** — `anchored` / `narrative` / `manual`；narrative 模式自动写 `## 归档` 分月表，活跃区保留手工 checklist
+- **集成测试** `test_archive_integration.py` — monthly_topic + narrative index 归档/reactivate 往返
+
+### Changed
+
+- **`archive.py` / `reactivate.py`** — 按布局移目录；幂等检测支持月份子目录；narrative 归档时 warnings 提示手工删活跃区
+- **`index_update.py`** — 归档表链接随布局生成；reactivate 按 `{NNN}_{slug}` 删行（避免同编号多 topic 误删）
+- **`status.py`** — 扫描 flat 与 `YYYY-MM/topic/` 双轨归档目录
+- **`workspace.schema.yaml` / `project.yaml` 模板`** — 文档化 `archive_layout` 与 `index_style` 可选字段
+- **`docs/topic-lifecycle.md`** — 双布局 + index 自动化分层说明
+- **`workflow-archive` SKILL** — happy path 对齐 monthly_topic / index_style
+
+### Fixed
+
+- **`prism archive` 铺平归档** — 与 TVKMM 等项目 `archive/YYYY-MM/topic/` 约定不一致（此前脚本仅写 flat 路径）
+
 ## [v3.0.0-beta] — 2026-06-08
 
 > **Prism 3.0 beta** — 认知熵治理框架 dogfood 首版。`VERSION` / `cli-contract` / 叙事层统一为 `v3.0.0-beta`（结束 v2 发行线与 v3 叙事双轨）。

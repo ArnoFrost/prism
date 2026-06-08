@@ -8,7 +8,7 @@ user_invocable: True
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-02
+  version: dev-03
 description_zh: "Topic Attention Lifecycle — archive/reactivate 双向；preview-first，移目录须用户确认。"
 ---
 
@@ -16,7 +16,7 @@ description_zh: "Topic Attention Lifecycle — archive/reactivate 双向；previ
 
 | 维度 | 说明 |
 |------|------|
-| **是什么** | **Attention Lifecycle**：`topics/` ⇄ `archive/` · 索引更新 · 冻结/恢复活跃 |
+| **是什么** | **Attention Lifecycle**：`topics/` ⇄ `archive/`（flat 或 `YYYY-MM/topic/`）· index 更新 · 冻结/恢复活跃 |
 | **不是什么** | 不是 compact（topic 内减熵）；不是 Memory；不是 tidy；**reactivate ≠ compact restore** |
 | **读什么** | Happy path 本文件；Phase 1 / R1 前 cite §6 Handoff |
 | **写什么** | 无 topic 内 SSOT 改写；CLI JSON 输出 |
@@ -61,10 +61,27 @@ Archive ≠ Memory
 Phase 0  --dry-run → Phase 1 就绪检查 → Gate A 确认 → Phase 2 execute → Phase 3 frozen handoff
 ```
 
+**目标路径**（`archive_layout.detect_layout`）：
+
+| 布局 | 目标 | 声明方式 |
+|------|------|----------|
+| **flat**（默认） | `archive/{NNN}_{name}/` | 无声明或 `archive_layout: flat` |
+| **monthly_topic** | `archive/YYYY-MM/topic/{NNN}_{name}/` | `project.yaml` 或 README 含 `archive/YYYY-MM/topic/` |
+
+**index 自动化**（`index_style`）：
+
+| 风格 | 活跃区 | 归档表 | archive 脚本 |
+|------|--------|--------|--------------|
+| **anchored** | `prism:topics` 自动 remove | `## 历史归档` append | 全自动 |
+| **narrative** | `## 活跃专项` **手工** remove | `## 归档` / `### YYYY-MM` append | 半自动 + warnings |
+| **manual** | 手工 | 手工 | 仅移目录 |
+
 ```bash
 bin/prism archive <workspace_path> <topic_dirname> --dry-run
 bin/prism archive <workspace_path> <topic_dirname>   # Gate A 后
 ```
+
+dry-run 应确认 **布局**、**目标绝对路径**、index 预期（narrative 时含活跃区 checklist）。
 
 ## 4. 输出契约
 
@@ -113,10 +130,10 @@ bin/prism reactivate <workspace_path> <topic_dirname>   # Gate R 后
 
 | 步骤 | 动作 |
 |------|------|
-| 移目录 | `archive/` → `topics/` |
+| 移目录 | `archive/`（flat 或 `YYYY-MM/topic/`）→ `topics/` |
 | README | `status` → **in-progress**（无 README 跳过）|
-| index | 活跃区块 **add** + 归档表 **remove** |
-| archive/README | 索引行 **remove** |
+| index | anchored：活跃 **add** + 归档表 **remove**（按 slug）；narrative：仅删归档表行 + 活跃区手工恢复 |
+| archive/README | 索引行 **remove**（存在时） |
 | scope/focus | **不改** — 可选 `/workflow-scope` |
 
 **结束建议**：`/workflow-status` 或 active 维护三角（tidy/compact/status）。
