@@ -94,3 +94,44 @@ class TestTopicLineFormat:
         assert len(lines) == 1
         # 当 desc 空时不应有右侧 " — desc" 段
         assert lines[0].endswith("/)"), f"空 desc 时不应有后缀：{lines[0]}"
+
+
+class TestNarrativeArchiveRow:
+    """narrative index 归档表 append / slug 删行"""
+
+    def _write_narrative_index(self, tmp_path, month="2026-06"):
+        idx = tmp_path / "index.md"
+        idx.write_text(
+            "## 活跃专项\n\n"
+            "## 归档\n\n"
+            f"### {month}\n\n"
+            "| # | 专项 | status | 说明 |\n"
+            "|---|------|--------|------|\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "README.md").write_text("archive/YYYY-MM/topic/\n", encoding="utf-8")
+        (tmp_path / "project.yaml").write_text(
+            "index_style: narrative\narchive_layout: monthly_topic\n",
+            encoding="utf-8",
+        )
+        return idx
+
+    def test_append_narrative_row(self, tmp_path, monkeypatch):
+        import index_update as iu
+
+        monkeypatch.setattr(iu, "archive_month", lambda _ws: "2026-06")
+        self._write_narrative_index(tmp_path)
+        result = iu.append_archive_index_row(tmp_path, 15, "foo-bar", "Foo 专项")
+        assert result["success"] is True
+        content = (tmp_path / "index.md").read_text()
+        assert "015_foo-bar" in content
+        assert "✅ archived" in content
+
+    def test_append_idempotent_by_slug(self, tmp_path, monkeypatch):
+        import index_update as iu
+
+        monkeypatch.setattr(iu, "archive_month", lambda _ws: "2026-06")
+        self._write_narrative_index(tmp_path)
+        iu.append_archive_index_row(tmp_path, 23, "nba-module-retire", "NBA")
+        result = iu.append_archive_index_row(tmp_path, 23, "nba-module-retire", "NBA")
+        assert "跳过" in result["message"]

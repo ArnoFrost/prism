@@ -43,6 +43,29 @@ class TestDetectLayout:
         assert detect_layout(str(tmp_path)) == LAYOUT_MONTHLY_TOPIC
 
 
+class TestDetectIndexStyle:
+    def test_defaults_to_anchored(self, tmp_path):
+        from archive_layout import (
+            INDEX_STYLE_ANCHORED,
+            INDEX_STYLE_NARRATIVE,
+            detect_index_style,
+        )
+
+        assert detect_index_style(str(tmp_path)) == INDEX_STYLE_ANCHORED
+
+    def test_narrative_from_index(self, tmp_path):
+        from archive_layout import INDEX_STYLE_NARRATIVE, detect_index_style
+
+        (tmp_path / "index.md").write_text("## 活跃专项\n\n## 归档\n", encoding="utf-8")
+        assert detect_index_style(str(tmp_path)) == INDEX_STYLE_NARRATIVE
+
+    def test_explicit_project_yaml(self, tmp_path):
+        from archive_layout import INDEX_STYLE_MANUAL, detect_index_style
+
+        (tmp_path / "project.yaml").write_text("index_style: manual\n", encoding="utf-8")
+        assert detect_index_style(str(tmp_path)) == INDEX_STYLE_MANUAL
+
+
 class TestArchivePaths:
     def test_flat_dst(self, tmp_path):
         dst = archive_dst_dir(str(tmp_path), "015_foo", layout=LAYOUT_FLAT)

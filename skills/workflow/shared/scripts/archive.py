@@ -28,8 +28,10 @@ import sys
 from datetime import date
 
 from archive_layout import (
+    INDEX_STYLE_NARRATIVE,
     archive_dst_dir,
     archive_relative_link,
+    detect_index_style,
     detect_layout,
     find_archived_topic_dir,
 )
@@ -233,6 +235,13 @@ def archive_topic(workspace_path: str, topic_dirname: str, dry_run: bool = False
             desc = title or topic_name
             result = index_update.archive_topic(workspace_path, number, topic_name, desc)
             actions.append(f"index.md 更新: {result.get('message', 'ok')}")
+            msg = result.get("message", "")
+            if detect_index_style(workspace_path) == INDEX_STYLE_NARRATIVE and "需手工移除" in msg:
+                warnings.append(
+                    f"index 活跃区需手工移除 **{number:03d}** 段落（narrative index）"
+                )
+            elif not result.get("success", True):
+                warnings.append(f"index_update 未完全成功: {msg}")
         except Exception as e:
             warnings.append(f"index_update 调用失败: {e}")
         finally:

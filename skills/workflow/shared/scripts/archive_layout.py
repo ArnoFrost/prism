@@ -17,6 +17,12 @@ from datetime import date
 LAYOUT_FLAT = "flat"
 LAYOUT_MONTHLY_TOPIC = "monthly_topic"
 
+INDEX_STYLE_ANCHORED = "anchored"
+INDEX_STYLE_NARRATIVE = "narrative"
+INDEX_STYLE_MANUAL = "manual"
+
+PRISM_TOPICS_START = "<!-- prism:topics:start -->"
+
 _MONTH_DIR_RE = re.compile(r"^\d{4}-\d{2}$")
 _TOPIC_DIR_RE = re.compile(r"^\d{3}_")
 
@@ -49,6 +55,33 @@ def detect_layout(workspace_path: str) -> str:
         return LAYOUT_MONTHLY_TOPIC
 
     return LAYOUT_FLAT
+
+
+def detect_index_style(workspace_path: str) -> str:
+    """返回 anchored / narrative / manual。"""
+    project_yaml = os.path.join(workspace_path, "project.yaml")
+    content = _read(project_yaml)
+    if content:
+        m = re.search(r"^index_style:\s*(\S+)\s*$", content, re.MULTILINE)
+        if m:
+            value = m.group(1).strip().strip("\"'")
+            if value in (INDEX_STYLE_ANCHORED, INDEX_STYLE_NARRATIVE, INDEX_STYLE_MANUAL):
+                return value
+
+    index_path = os.path.join(workspace_path, "index.md")
+    index_content = _read(index_path) or ""
+    if PRISM_TOPICS_START in index_content:
+        return INDEX_STYLE_ANCHORED
+    if "## 活跃专项" in index_content or "## 归档" in index_content:
+        return INDEX_STYLE_NARRATIVE
+    if "## 历史归档" in index_content:
+        return INDEX_STYLE_ANCHORED
+
+    return INDEX_STYLE_ANCHORED
+
+
+def topic_slug(number: int, topic_name: str) -> str:
+    return f"{number:03d}_{topic_name}"
 
 
 def archive_month(workspace_path: str, when: date | None = None) -> str:

@@ -18,5 +18,13 @@ tech_stack: []
 
 created: "YYYY-MM-DD"
 status: active       # active | paused | archived
+
+# 可选：归档与 index 自动化契约（默认 auto / anchored）
+# archive_layout: flat           # archive/{NNN}_{name}/
+# archive_layout: monthly_topic  # archive/YYYY-MM/topic/{NNN}_{name}/
+# index_style: anchored          # prism:topics + ## 历史归档（默认）
+# index_style: narrative         # ## 活跃专项 + ## 归档 分月表（TVKMM 等）
+# index_style: manual            # 仅移目录，index 全手工
+
 tags: []
 related: []

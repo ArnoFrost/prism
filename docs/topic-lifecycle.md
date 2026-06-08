@@ -110,12 +110,28 @@ structures/task-N_slug/
 
 ## 什么时候归档
 
-归档不是压缩，也不是删除。归档只是把 topic 从热区移出：
+归档不是压缩，也不是删除。归档只是把 topic 从热区移出。
+
+**两种布局**（由 `archive_layout` / README 约定，`bin/prism archive` 自动选择）：
 
 ```text
-topics/{NNN}_{topic}/
-  → archive/{NNN}_{topic}/
+# SDK 默认（flat）
+topics/{NNN}_{topic}/  →  archive/{NNN}_{topic}/
+
+# 项目扩展（monthly_topic，如 TVKMM）
+topics/{NNN}_{topic}/  →  archive/YYYY-MM/topic/{NNN}_{topic}/
 ```
+
+`project.yaml` 可选显式声明：
+
+```yaml
+archive_layout: monthly_topic   # 或 flat
+index_style: narrative          # 或 anchored / manual
+```
+
+- **anchored**：`index.md` 含 `prism:topics` 锚点 + `## 历史归档` — archive 全自动
+- **narrative**：`## 活跃专项` 富文本 + `## 归档` 分月表 — 脚本写归档表，活跃区手工
+- **manual**：仅移目录，index 全手工
 
 适合归档：
 

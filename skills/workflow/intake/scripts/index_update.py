@@ -28,9 +28,18 @@ _SHARED_SCRIPTS = os.path.normpath(
 if _SHARED_SCRIPTS not in sys.path:
     sys.path.insert(0, _SHARED_SCRIPTS)
 
-from archive_layout import archive_relative_link
+from archive_layout import (
+    INDEX_STYLE_ANCHORED,
+    INDEX_STYLE_MANUAL,
+    INDEX_STYLE_NARRATIVE,
+    PRISM_TOPICS_START,
+    archive_month,
+    archive_relative_link,
+    detect_index_style,
+    topic_slug,
+)
 
-START_MARKER = "<!-- prism:topics:start -->"
+START_MARKER = PRISM_TOPICS_START
 END_MARKER = "<!-- prism:topics:end -->"
 
 
@@ -71,10 +80,29 @@ def _topic_line(number: int, topic_name: str, desc: str) -> str:
     return f"- [{nnn} — {label_desc}]({link}){suffix}"
 
 
-def _archive_line(workspace_path: str, number: int, topic_name: str, desc: str) -> str:
+def _archive_line_anchored(workspace_path: str, number: int, topic_name: str, desc: str) -> str:
     nnn = f"{number:03d}"
     link = archive_relative_link(workspace_path, number, topic_name)
     return f"| {nnn} | [{topic_name}]({link}) | {desc} |"
+
+
+def _archive_line_narrative(workspace_path: str, number: int, topic_name: str, desc: str) -> str:
+    nnn = f"{number:03d}"
+    link = archive_relative_link(workspace_path, number, topic_name)
+    label = desc or topic_name.replace("-", " ")
+    note = desc or "frozen"
+    return f"| {nnn} | [{label}]({link}) | ✅ archived | {note} |"
+
+
+def _archive_row_exists(content: str, number: int, topic_name: str) -> bool:
+    """按 slug 幂等：同编号不同 topic（如 023）不误判。"""
+    slug = topic_slug(number, topic_name)
+    for line in content.splitlines():
+        if not re.match(rf"^\|\s*{number:03d}\s*\|", line):
+            continue
+        if slug in line or f"/{slug}/" in line:
+            return True
+    return False
 
 
 def _number_pattern(number: int) -> str:
@@ -107,8 +135,24 @@ def add_topic(workspace_path: str, number: int, topic_name: str, desc: str) -> d
     return {"action": "add", "success": True, "message": f"已添加专项 {nnn}_{topic_name}"}
 
 
+def _remove_archive_table_row(content: str, number: int, topic_name: str) -> tuple[str, bool]:
+    """从归档表移除匹配 slug 的行（避免同编号多 topic 误删）。"""
+    nnn = f"{number:03d}"
+    slug = topic_slug(number, topic_name)
+    lines = content.split("\n")
+    new_lines = []
+    removed = False
+    for line in lines:
+        if re.match(rf"^\|\s*{nnn}\s*\|", line):
+            if slug in line or f"/{slug}/" in line or topic_name in line:
+                removed = True
+                continue
+        new_lines.append(line)
+    return "\n".join(new_lines), removed
+
+
 def _remove_numbered_table_row(content: str, number: int) -> tuple[str, bool]:
-    """从 index.md 归档表等 pipe 表中移除 | NNN | 开头的行。"""
+    """兼容旧调用：仅按编号删行（anchored 单 topic 编号场景）。"""
     nnn = f"{number:03d}"
     lines = content.split("\n")
     new_lines = []
@@ -121,7 +165,7 @@ def _remove_numbered_table_row(content: str, number: int) -> tuple[str, bool]:
     return "\n".join(new_lines), removed
 
 
-def _archive_table_insert_index(lines: list[str]) -> int | None:
+def _anchored_archive_table_insert_index(lines: list[str]) -> int | None:
     in_section = False
     for i, line in enumerate(lines):
         if line.startswith("## 历史归档"):
@@ -134,8 +178,28 @@ def _archive_table_insert_index(lines: list[str]) -> int | None:
     return None
 
 
+def _narrative_archive_table_insert_index(lines: list[str], month: str) -> int | None:
+    in_archive = False
+    in_month = False
+    for i, line in enumerate(lines):
+        if line.startswith("## 归档"):
+            in_archive = True
+            in_month = False
+            continue
+        if in_archive and line.startswith(f"### {month}"):
+            in_month = True
+            continue
+        if in_month and line.startswith("|---|"):
+            return i + 1
+        if in_month and line.startswith("### "):
+            break
+        if in_archive and line.startswith("## ") and not line.startswith("## 归档"):
+            break
+    return None
+
+
 def append_archive_index_row(workspace_path: str, number: int, topic_name: str, desc: str) -> dict:
-    """在 index.md 历史归档表中追加一行（幂等）。"""
+    """在 index.md 归档表中追加一行（幂等，支持 anchored / narrative）。"""
     index_path = os.path.join(workspace_path, "index.md")
     content = _read_index(index_path)
     if content is None:
@@ -143,46 +207,66 @@ def append_archive_index_row(workspace_path: str, number: int, topic_name: str, 
                 "message": f"index.md 不存在: {index_path}"}
 
     nnn = f"{number:03d}"
-    if re.search(rf"^\|\s*{nnn}\s*\|", content, re.MULTILINE):
+    if _archive_row_exists(content, number, topic_name):
         return {"action": "append_archive_row", "success": True,
-                "message": f"归档表已有 {nnn}，跳过"}
+                "message": f"归档表已有 {nnn}_{topic_name}，跳过"}
 
-    row = _archive_line(workspace_path, number, topic_name, desc or topic_name)
+    style = detect_index_style(workspace_path)
     lines = content.split("\n")
-    insert_idx = _archive_table_insert_index(lines)
 
-    if insert_idx is None:
-        return {"action": "append_archive_row", "success": False,
-                "message": "index.md 中未找到 ## 历史归档 归档表"}
+    if style == INDEX_STYLE_NARRATIVE:
+        month = archive_month(workspace_path)
+        row = _archive_line_narrative(workspace_path, number, topic_name, desc or topic_name)
+        insert_idx = _narrative_archive_table_insert_index(lines, month)
+        if insert_idx is None:
+            return {"action": "append_archive_row", "success": False,
+                    "message": f"index.md 中未找到 ## 归档 / ### {month} 归档表"}
+    else:
+        row = _archive_line_anchored(workspace_path, number, topic_name, desc or topic_name)
+        insert_idx = _anchored_archive_table_insert_index(lines)
+        if insert_idx is None:
+            return {"action": "append_archive_row", "success": False,
+                    "message": "index.md 中未找到 ## 历史归档 归档表"}
 
     lines.insert(insert_idx, row)
     _write_index(index_path, "\n".join(lines))
     return {"action": "append_archive_row", "success": True,
-            "message": f"已追加归档表行 {nnn}_{topic_name}"}
+            "message": f"已追加归档表行 {nnn}_{topic_name} ({style})"}
 
 
 def reactivate_topic(workspace_path: str, number: int, topic_name: str, desc: str) -> dict:
-    """恢复活跃 index：活跃区块 add + 归档表 remove 行。"""
-    add_result = add_topic(workspace_path, number, topic_name, desc)
-
+    """恢复活跃 index：anchored 时 add + 删归档行；narrative 仅删归档行。"""
+    style = detect_index_style(workspace_path)
     index_path = os.path.join(workspace_path, "index.md")
     content = _read_index(index_path)
     if content is None:
         return {"action": "reactivate", "success": False,
                 "message": f"index.md 不存在: {index_path}"}
 
-    new_content, removed = _remove_numbered_table_row(content, number)
+    if style == INDEX_STYLE_MANUAL:
+        return {"action": "reactivate", "success": True,
+                "message": "index_style=manual，跳过 index 更新"}
+
+    add_msg = ""
+    if style == INDEX_STYLE_ANCHORED:
+        add_result = add_topic(workspace_path, number, topic_name, desc)
+        add_msg = add_result.get("message", "")
+        if not add_result.get("success", False):
+            return {"action": "reactivate", "success": False, "message": add_msg}
+    else:
+        add_msg = f"narrative 活跃区（## 活跃专项）需手工恢复 **{number:03d} — {desc or topic_name}** 条目"
+
+    new_content, removed = _remove_archive_table_row(content, number, topic_name)
     if removed:
         _write_index(index_path, new_content)
-        table_msg = f"已从 index 归档表移除 {number:03d}"
+        table_msg = f"已从 index 归档表移除 {number:03d}_{topic_name}"
     else:
-        table_msg = f"index 归档表无 {number:03d} 行（跳过）"
+        table_msg = f"index 归档表无 {number:03d}_{topic_name} 行（跳过）"
 
-    ok = add_result.get("success", False)
     return {
         "action": "reactivate",
-        "success": ok,
-        "message": f"{add_result.get('message', '')}; {table_msg}",
+        "success": True,
+        "message": f"{add_msg}; {table_msg}",
     }
 
 
@@ -192,26 +276,39 @@ def archive_topic(workspace_path: str, number: int, topic_name: str, desc: str) 
     if content is None:
         return {"action": "archive", "success": False, "message": f"index.md 不存在: {index_path}"}
 
-    parts = _extract_block(content)
-    if parts is None:
-        return {"action": "archive", "success": False,
-                "message": f"index.md 中未找到锚点区块"}
-
-    before, block, after = parts
-
+    style = detect_index_style(workspace_path)
     nnn = f"{number:03d}"
-    lines = block.strip().split("\n") if block.strip() else []
-    filtered = [l for l in lines if not re.search(rf"\b{nnn}\b", l)]
-    new_block = "\n" + "\n".join(filtered) + "\n" if filtered else "\n"
 
-    new_content = before + new_block + after
-    _write_index(index_path, new_content)
+    if style == INDEX_STYLE_MANUAL:
+        return {"action": "archive", "success": True,
+                "message": "index_style=manual，跳过 index 更新"}
+
+    active_note = ""
+    if style == INDEX_STYLE_ANCHORED:
+        parts = _extract_block(content)
+        if parts is None:
+            return {"action": "archive", "success": False,
+                    "message": "index.md 中未找到锚点区块"}
+
+        before, block, after = parts
+        lines = block.strip().split("\n") if block.strip() else []
+        filtered = [l for l in lines if not re.search(rf"\b{nnn}\b", l)]
+        new_block = "\n" + "\n".join(filtered) + "\n" if filtered else "\n"
+        new_content = before + new_block + after
+        _write_index(index_path, new_content)
+        active_note = f"已从活跃区块移除专项 {nnn}"
+    else:
+        active_note = f"narrative 活跃区（## 活跃专项）需手工移除 **{nnn}** 条目"
 
     table_result = append_archive_index_row(workspace_path, number, topic_name, desc or topic_name)
     table_note = table_result.get("message", "")
 
-    return {"action": "archive", "success": True,
-            "message": f"已从活跃区块移除专项 {nnn}; {table_note}"}
+    ok = table_result.get("success", False) or "跳过" in table_note
+    return {
+        "action": "archive",
+        "success": ok,
+        "message": f"{active_note}; {table_note}",
+    }
 
 
 def remove_topic(workspace_path: str, number: int) -> dict:

@@ -37,10 +37,10 @@ uv run python skills/workflow/shared/scripts/reactivate.py <workspace> <topic> [
 
 ## index 双向（index_update.py）
 
-| verb | 活跃区块 `prism:topics` | index `## 历史归档` 表 | archive/README |
-|------|-------------------------|------------------------|----------------|
-| **archive** | remove | **append** 行 | append |
-| **reactivate** | **add** | **remove** 行 | remove 行 |
+| verb | 活跃区块 | index 归档表 | archive/README |
+|------|----------|--------------|----------------|
+| **archive** | anchored：`prism:topics` remove；narrative：手工 checklist | anchored：`## 历史归档`；narrative：`## 归档`/`### YYYY-MM` append | append |
+| **reactivate** | anchored：`prism:topics` add；narrative：手工 checklist | 按 `{NNN}_{slug}` 删行（非仅编号） | remove 行 |
 
 ```bash
 uv run python skills/workflow/intake/scripts/index_update.py <ws> reactivate <num> <name> [--desc]
