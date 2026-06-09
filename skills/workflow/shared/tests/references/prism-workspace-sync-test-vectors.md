@@ -53,7 +53,7 @@
 | N-01 | `notify_on_block=true` + L-01 | `PRISM_SYNC_NOTIFY_DRY=1` 时日志含 `notify: [Prism 同步已阻断` |
 | N-02 | push 成功 + `notify_on_success=true` | dry 日志含 `Prism 同步完成` + hostname |
 | N-03 | `notify_on_success=false` | 无成功通知日志 |
-| N-04 | 生产（无 DRY） | `osascript display notification`（**人工 checklist**） |
+| N-04 | 生产（无 DRY） | `prism_notify_macos.py` 写 UTF-8 `.applescript` 再 `osascript`（**人工 checklist**，launchd 下中文不乱码） |
 
 人工验收（本机）：
 

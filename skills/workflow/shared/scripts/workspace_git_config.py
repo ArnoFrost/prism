@@ -190,6 +190,13 @@ def render_launchd_plist(wg: dict, home: str | None = None) -> str:
         [
             "  <key>WorkingDirectory</key>",
             f"  <string>{escape(vault)}</string>",
+            "  <key>EnvironmentVariables</key>",
+            "  <dict>",
+            "    <key>LANG</key>",
+            "    <string>en_US.UTF-8</string>",
+            "    <key>LC_ALL</key>",
+            "    <string>en_US.UTF-8</string>",
+            "  </dict>",
             "  <key>StandardOutPath</key>",
             f"  <string>{escape(os.path.join(home, '.adot/logs/prism-sync.out'))}</string>",
             "  <key>StandardErrorPath</key>",

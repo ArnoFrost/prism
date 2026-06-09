@@ -100,6 +100,12 @@ class TestRenderLaunchdPlist:
         assert "<integer>600</integer>" in xml
         assert "StartCalendarInterval" in xml
 
+    def test_plist_sets_utf8_locale(self):
+        wg = {"vault_path": "/tmp/vault", "interval_minutes": 15, "schedule": []}
+        xml = wgc.render_launchd_plist(wg, home="/Users/test")
+        assert "EnvironmentVariables" in xml
+        assert "en_US.UTF-8" in xml
+
     def test_no_trigger_raises(self):
         with pytest.raises(ValueError, match="无 launchd 触发器"):
             wgc.render_launchd_plist({"schedule": [], "interval_minutes": 0}, home="/Users/test")
