@@ -82,7 +82,12 @@ Phase 4  Gate 4  — AskQuestion 4 选项 / decision_artifact
 2. READ `review-templates.md`；`format=ofm` 时 READ `review-ofm.md`。
 3. 显式输出 topic route、评审对象、范围、角色、mode 决策、已加载 references。
 4. topic / milestone / 方法论评审装配 context-pack full 或等价输入包。
-5. **mode=full 强制输出 `task_probe`**：`called` / `result` / `fallback_decision` / `fallback_reason`。
+5. **mode=full 热路径：直接尝试并行，失败再降级 quick**（⚡ 90% 场景支持并行，不浪费 token 做前置 probe）：
+   - **直接发起 ≥2 个并行 task/subagent call**，不要先 probe 再决定
+   - 并行全部成功返回 → mode=full，正常进入 Phase 2 Explore
+   - 并行失败（任意 subagent 报错）→ mode=quick，在 Align 输出中说明降级理由（`fallback_reason: {具体 error}`）
+   - `task_probe` 字段**移除**：不再需要前置 probe，热路径零额外 cost
+   - 仅当用户**显式说"不支持并行"**或历史对话已确认不支持时，才跳过并行直接 mode=quick
 `next_review_source = none`、sniff 失败或 mode 判定不可信 → 边界澄清门，见 [askquestion-fallback.md](references/askquestion-fallback.md)；sniff 维护 fallback 见 [review-maintainer.md](references/review-maintainer.md)。
 
 ### Phase 2 Explore
