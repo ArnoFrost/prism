@@ -1,6 +1,6 @@
 # Gate 4 决策门完整契约
 
-> 被 `review/SKILL.md` / `review-lite/SKILL.md` 在 Gate 4 阶段引用。
+> 被 `workflow-review/SKILL.md` / `workflow-review-lite/SKILL.md` 在 Gate 4 阶段引用。
 > 主体 SKILL.md 只保留触发条件 + Gate 4 yaml 精简模板；本文件展开完整 5 要素硬契约 + Other 选项 + 决策路径 + Fallback。
 
 ## 触发位置

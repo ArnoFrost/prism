@@ -919,7 +919,7 @@ def cmd_finalize(args: argparse.Namespace) -> int:
 
 
 def cmd_tidy(args: argparse.Namespace) -> int:
-    """工件机械对齐（dispatch 到 tidy/scripts/tidy.py）。"""
+    """工件机械对齐（dispatch 到 workflow-tidy/scripts/tidy.py）。"""
     cmd_args = [args.project_dir, "--format", "json"]
     if args.fix:
         cmd_args.append("--fix")
@@ -929,7 +929,7 @@ def cmd_tidy(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    """Workspace 活跃 topic 健康度扫描（dispatch 到 status/scripts/status.py）。"""
+    """Workspace 活跃 topic 健康度扫描（dispatch 到 workflow-status/scripts/status.py）。"""
     return _dispatch_subprocess("status", "status.py", [args.project_dir, "--format", args.format])
 
 

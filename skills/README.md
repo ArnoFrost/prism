@@ -9,6 +9,7 @@ skills/
 ├── README.md
 ├── schema/
 │   ├── skill.schema.yaml             # 技能结构约束
+│   ├── frontmatter-spec.md           # frontmatter 分层与书写顺序
 │   ├── skills-catalog.yaml           # 技能注册表 SSOT
 │   └── dist-whitelist.yaml           # 分发白名单
 ├── templates/
@@ -78,11 +79,11 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 ~/.cursor/skills-cursor/workflow-* -> ~/prism/skills/workflow/workflow-*/
 ~/.cursor/skills-cursor/workspace-* -> ~/prism/skills/workspace/workspace-*/
 ~/.cursor/skills-cursor/prism-*    -> ~/prism-skills/prism-*
-~/.codex/skills/workflow-*         -> ~/prism/skills/workflow/*/
-~/.codex/skills/workspace-*        -> ~/prism/skills/workspace/*/
+~/.codex/skills/workflow-*         -> ~/prism/skills/workflow/workflow-*/
+~/.codex/skills/workspace-*        -> ~/prism/skills/workspace/workspace-*/
 ~/.codex/skills/prism-*            -> ~/prism-skills/prism-*
-~/.codex-internal/skills/workflow-* -> ~/prism/skills/workflow/*/
-~/.codex-internal/skills/workspace-* -> ~/prism/skills/workspace/*/
+~/.codex-internal/skills/workflow-* -> ~/prism/skills/workflow/workflow-*/
+~/.codex-internal/skills/workspace-* -> ~/prism/skills/workspace/workspace-*/
 ~/.codex-internal/skills/prism-*   -> ~/prism-skills/prism-*
 ```
 

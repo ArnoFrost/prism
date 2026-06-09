@@ -130,7 +130,7 @@ archive ─ topic 终态归档 / reactivate（dev experimental）
 | `workflow-compact` | `/workflow-compact` | 上下文熵治理（默认 preview；授权后 backup→apply） |
 | `workflow-archive` | `/workflow-archive` | topic 生命周期归档 / 再激活（preview-first） |
 
-技能位于 `skills/workflow/` 和 `skills/workspace/`，每个包含 `sniff.py` 环境预探测，共享 `workflow/shared/sniff_lib.py`。
+技能位于 `skills/workflow/workflow-*` 和 `skills/workspace/workspace-init`（目录名 = frontmatter `name` = IDE 软链名），环境预探测脚本按需分布在各 skill 的 `scripts/`，共享 `workflow/shared/sniff_lib.py`。
 
 ### Topic 工件
 
@@ -217,21 +217,24 @@ prism/
 ├── skills/                          # 技能层（自 v1.0 起内置 workflow / workspace 技能）
 │   ├── schema/
 │   │   ├── skill.schema.yaml
+│   │   ├── frontmatter-spec.md      # frontmatter 分层与书写顺序 SSOT
 │   │   ├── skills-catalog.yaml
 │   │   └── dist-whitelist.yaml
 │   ├── templates/
 │   │   └── SKILL.template.md
-│   ├── workflow/                    # ★ 内置工作流技能
-│   │   ├── digest/
-│   │   ├── intake/
-│   │   ├── review/
-│   │   ├── review-lite/
-│   │   ├── scope/
-│   │   ├── status/
-│   │   ├── tidy/
-│   │   └── shared/                  # sniff_lib + scripts + references
+│   ├── workflow/                    # ★ 内置工作流技能（目录名 = name）
+│   │   ├── workflow-intake/
+│   │   ├── workflow-review/
+│   │   ├── workflow-review-lite/
+│   │   ├── workflow-scope/
+│   │   ├── workflow-tidy/
+│   │   ├── workflow-digest/
+│   │   ├── workflow-status/
+│   │   ├── workflow-compact/      # dev experimental
+│   │   ├── workflow-archive/      # dev experimental
+│   │   └── shared/                # sniff_lib + scripts + references（非 skill）
 │   └── workspace/                   # ★ 工作区管理技能
-│       └── init/
+│       └── workspace-init/
 └── workspace/                       # 工作区定义层
     ├── schema/
     │   └── workspace.schema.yaml

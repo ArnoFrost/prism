@@ -8,9 +8,9 @@
 | Validator | 物理位置 | 校验对象 | 校验内容 | 错误信号锚点 |
 |-----------|---------|---------|----------|-------------|
 | **validate-skills** | `bin/validate-skills` | 单个 SKILL.md frontmatter + 引用完整性 | `name` 格式 / `description` 含 Use when / `description_zh`（SDK 层）/ `visibility`·`stability` 与 `skills-catalog.yaml` 交叉校验 / `user_invocable` 小写布尔 / public_gate / scripts 与 references 的 symlink 完整性 / **双 frontmatter 检测** | [`schema/frontmatter-spec.md`](../../../schema/frontmatter-spec.md) |
-| **validate_trace.py** | `shared/scripts/validate_trace.py` | topic 产物（reviews/decisions/intake.md）的痕迹义务块 | `task_probe` / `merge_artifact` / `decision_artifact` / `intake_gate_out` 四族存在性 + 必填字段完整性（**不校验字段值**） | `review/SKILL.md §痕迹义务` |
+| **validate_trace.py** | `shared/scripts/validate_trace.py` | topic 产物（reviews/decisions/intake.md）的痕迹义务块 | `task_probe` / `merge_artifact` / `decision_artifact` / `intake_gate_out` 四族存在性 + 必填字段完整性（**不校验字段值**） | `workflow-review/SKILL.md §痕迹义务` |
 | **validate_review_call.py** | `shared/scripts/validate_review_call.py` | reviews/rXX_*.md + reviews/raw/rXX-role-*.md schema 字段值 + **subagent 输出契约**（详见下方 §subagent_self_check schema） | `frontmatter mode ∈ {full, quick}` / `raw/rXX-role-*.md` 个数 ≤ 5 / `task_probe.fallback_reason ∈ {1,2,3,4, 并行, parallel}` / **`subagent_self_check` 块字段完整性**（**校验字段值，与 trace 互补**）| `parallel-execution.md §串行 Fallback` + 本 README |
-| **validate_product.py** | `review/scripts/validate_product.py` | review 落盘产物的格式校验（OFM Callout 计数 / frontmatter 完整性 / 命名规则） | mode=full 至少 3 Callout / mode=lite 至少 2 Callout / frontmatter type 与 callout 数分档（**format 层 lint**）| `review-ofm.md` + `review-templates.md` |
+| **validate_product.py** | `workflow-review/scripts/validate_product.py` | review 落盘产物的格式校验（OFM Callout 计数 / frontmatter 完整性 / 命名规则） | mode=full 至少 3 Callout / mode=lite 至少 2 Callout / frontmatter type 与 callout 数分档（**format 层 lint**）| `review-ofm.md` + `review-templates.md` |
 
 ### 边界 1：各 validator **只校验自己负责的对象**
 
@@ -18,7 +18,7 @@
 单个 SKILL.md 元数据  → validate-skills    （bin/，全仓扫描，pre-commit / prism-push Phase -1 调用）
 topic 产物痕迹义务    → validate_trace      （shared/，finalize Step 2.5）
 review schema 字段值  → validate_review_call（shared/，finalize Step 2.6）
-review 产物格式 lint  → validate_product    （review/scripts/，finalize Step 2 内嵌）
+review 产物格式 lint  → validate_product    （workflow-review/scripts/，finalize Step 2 内嵌）
 ```
 
 不允许跨界（e.g. validate_trace 不校验 mode 取值；validate_review_call 不校验痕迹块存在性）。

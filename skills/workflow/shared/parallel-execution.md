@@ -68,7 +68,7 @@
 > **本表共 4 条，且仅这 4 条**。任何不在表内的理由——无论以什么名义包装（主题分类、上下文相似、风格偏好、稳健性考量……）——一律视为伪触发，必须并行。
 >
 > 1. **平台 API 探测明确不支持**：必须先在当前轮真实发起一次 Task（或等效 subagent）调用，调用返回 `tool_not_found` / `unknown_tool` / 等价错误才算命中。**没有 Task 调用痕迹 = 没探测 = 不算命中**。
-> 2. `mode=quick` 显式指定（review/SKILL.md §策略二）
+> 2. `mode=quick` 显式指定（workflow-review/SKILL.md §策略二）
 > 3. 用户原文明确声明"不要并行" / "按顺序来" / "串行执行" 等
 > 4. 文本流 CLI 类客户端（无 subagent 原语，如 Codex CLI / Claude Code CLI / CodeBuddy CLI）
 >
@@ -90,8 +90,8 @@
 > - "派生新 topic 设计需要主 agent 统筹" → 统筹由 Merge 阶段完成，与 Explore 是否并行无关
 >
 > **D. 路径混淆类**
-> - "review-lite 更轻量" → review-lite 与 review 是不同入口，不构成 review/SKILL.md 内的 fallback 路径
-> - "用户主诉是梳理调整 / 快速对齐" → 这是 review-lite 的触发场景，不是 review/mode=full 内降级为串行的理由
+> - "review-lite 更轻量" → review-lite 与 review 是不同入口，不构成 workflow-review/SKILL.md 内的 fallback 路径
+> - "用户主诉是梳理调整 / 快速对齐" → 这是 review-lite 的触发场景，不是 workflow-review/mode=full 内降级为串行的理由
 
 当合法触发后，在单次会话中顺序执行各工作单元：
 1. 依次处理每个单元，输出以编号章节分隔
@@ -99,7 +99,7 @@
 3. 全部完成后执行汇总/合并
 
 > [!note]
-> **如何识别"伪并行串行 fallback"**：当 Agent 声称"以角色 A 视角输出 → 以角色 B 视角输出 → 以角色 C 视角输出"但**全部在同一轮单次响应里以前后段落形式出现**，这是伪并行（实际仍是串行）。`mode=full` 下要求**真发起并行 Task 调度**，每个角色独立上下文产出独立返回，详见 review/SKILL.md「策略一」对 Explore 的硬约束。
+> **如何识别"伪并行串行 fallback"**：当 Agent 声称"以角色 A 视角输出 → 以角色 B 视角输出 → 以角色 C 视角输出"但**全部在同一轮单次响应里以前后段落形式出现**，这是伪并行（实际仍是串行）。`mode=full` 下要求**真发起并行 Task 调度**，每个角色独立上下文产出独立返回，详见 workflow-review/SKILL.md「策略一」对 Explore 的硬约束。
 
 ## 探测痕迹契约（可观察 enforcement）
 
@@ -107,9 +107,9 @@
 >
 > | 痕迹 | 出处 | 用途 |
 > |---|---|---|
-> | `task_probe` | review/SKILL.md Align 步骤 8 | mode=full 真并行能力探测可观察化 |
-> | `decision_artifact` | review/SKILL.md Gate 4 | accept/reject 决策必须落 dXX.md 可观察化 |
-> | `intake_gate_out` | intake/SKILL.md Phase 3 | intake 完成后 scope/focus/README 占位齐全可观察化 |
+> | `task_probe` | workflow-review/SKILL.md Align 步骤 8 | mode=full 真并行能力探测可观察化 |
+> | `decision_artifact` | workflow-review/SKILL.md Gate 4 | accept/reject 决策必须落 dXX.md 可观察化 |
+> | `intake_gate_out` | workflow-intake/SKILL.md Phase 3 | intake 完成后 scope/focus/README 占位齐全可观察化 |
 >
 > 共同原则：**无痕迹 = 未执行**。痕迹缺失即视为对应门未关闭，禁止宣布完成。
 >

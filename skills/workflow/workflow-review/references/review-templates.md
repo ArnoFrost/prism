@@ -79,7 +79,7 @@ topics/{NNN}_{topic}/
 
 ## frontmatter 元数据约定
 
-### 必填字段（review/SKILL.md §产物 OFM 退化判据 line 248）
+### 必填字段（workflow-review/SKILL.md §产物 OFM 退化判据 line 248）
 
 | 字段 | 类型 | 说明 |
 |------|------|------|

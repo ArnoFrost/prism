@@ -85,7 +85,7 @@ bin/validate-skills --layer sdk  # 仅扫描 SDK 层
 bin/validate-skills --layer skills  # 仅扫描 Skills 层
 ```
 
-检查 SKILL.md frontmatter 必填字段（name、description、visibility、stability）完整性和格式规范。
+检查 SKILL.md frontmatter（`name` / `description` / `description_zh`、书写顺序、`user_invocable` 小写布尔）；SDK 内置技能的 `visibility` / `stability` 与 `skills-catalog.yaml` 交叉校验。详见 `skills/schema/frontmatter-spec.md`。
 
 ### clean — 清理（relink 逆操作）
 

@@ -17,11 +17,11 @@ skills/workflow/
 │   └── scripts/
 │       ├── archive.py              # 专项归档
 │       └── sniff_lib.py            # 环境嗅探公共库
-├── intake/
+├── workflow-intake/
 │   ├── SKILL.md
 │   └── references/
 │       └── obsidian-config.md → ../../shared/obsidian-config.md  # 软链
-├── review/
+├── workflow-review/
 │   ├── SKILL.md
 │   └── references/
 │       └── obsidian-config.md → ../../shared/obsidian-config.md  # 软链

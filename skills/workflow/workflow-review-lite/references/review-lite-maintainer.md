@@ -64,8 +64,8 @@ workflow/workflow-review-lite/
 └── references/
     ├── lite-templates.md
     ├── review-lite-maintainer.md   # 本文件
-    ├── review-templates.md         # → review/
-    ├── review-ofm.md               # → review/
+    ├── review-templates.md         # → workflow-review/
+    ├── review-ofm.md               # → workflow-review/
     ├── askquestion-fallback.md     # → shared/
     ├── trace-artifacts-spec.md     # → shared/
     └── vocabulary.md               # → shared/

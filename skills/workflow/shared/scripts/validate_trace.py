@@ -53,7 +53,7 @@ WORKFLOW_TRACE_SCHEMA: dict[str, object] = {
             "applies_to": "review_main_full",
             "description": (
                 "Task 工具并行调用探针 — mode=full 必须诚实声明 called/result/fallback_decision；"
-                "字段命名以 review/SKILL.md + parallel-execution.md 为 SSOT（029/r07 PostFix 1 对齐）"
+                "字段命名以 workflow-review/SKILL.md + parallel-execution.md 为 SSOT（029/r07 PostFix 1 对齐）"
             ),
         },
         {

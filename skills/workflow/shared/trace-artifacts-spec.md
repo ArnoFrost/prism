@@ -1,7 +1,7 @@
 # Trace Artifacts SSOT — 痕迹义务家族 4 族字段表与校验规则
 
 > Prism workflow 痕迹义务家族 4 族（永久封顶）的唯一 SSOT。
-> 被 `review/SKILL.md` / `review-lite/SKILL.md` / `intake/SKILL.md` 引用，三处 SKILL 不再字字复制契约本体。
+> 被 `workflow-review/SKILL.md` / `workflow-review-lite/SKILL.md` / `workflow-intake/SKILL.md` 引用，三处 SKILL 不再字字复制契约本体。
 > 由 `validate_trace.py` 机器抽检字段存在性 + 必填完整性。
 
 ## 4 族总览

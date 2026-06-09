@@ -55,7 +55,7 @@ SDK 层应当只表达**通用结论 / 规则 / 防护目标**，例如：
 | `防 F-meta-1 复发` | `防止 subagent 输出契约失效` |
 | `用户 14:25 反思 §2 分级 validate` | `首次合格优于多次 resume 补救（Harness 心流原则）` |
 
-**实操约束**：每次修改 SDK 层文件时（特别是 `skills/workflow/*/SKILL.md` / `shared/scripts/*` / `bin/*`），顺手 grep 当次 diff 中是否含 workspace 痕迹关键词；若有，改写为通用句或删除。
+**实操约束**：每次修改 SDK 层文件时（特别是 `skills/workflow/workflow-*/SKILL.md` / `shared/scripts/*` / `bin/*`），顺手 grep 当次 diff 中是否含 workspace 痕迹关键词；若有，改写为通用句或删除。
 
 > 公共分发到外部（mini / full profile）的视角下，外部读者看到 `r01 F-P0-2` 没有任何可解释性，反而是污染。
 

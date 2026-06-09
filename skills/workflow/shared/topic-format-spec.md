@@ -64,7 +64,7 @@ flowchart TD
 |------|-----------|
 | 术语 / kind 五元 / retention 律 | [vocabulary.md](./vocabulary.md) |
 | scope→focus 刷新 / 双区 / README-deprecate / 分叉判据 | [focus-derive-spec.md](./focus-derive-spec.md) |
-| scope 段落规范 / 复杂度边界 / canonical form | `scope-templates.md`（scope/references/）|
+| scope 段落规范 / 复杂度边界 / canonical form | `scope-templates.md`（workflow-scope/references/）|
 | focus 可读性度量（M1-M4）| [focus-readability-checklist.md](./focus-readability-checklist.md) |
 | 痕迹工件（intake_gate_out / task_probe / merge_artifact / decision_artifact）| [trace-artifacts-spec.md](./trace-artifacts-spec.md) |
 | 上下文装配 | [context-pack-spec.md](./context-pack-spec.md) |

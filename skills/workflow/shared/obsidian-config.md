@@ -33,7 +33,7 @@ Prism 环境下，vault 路径优先从 `prism.local.yaml` 读取：
 
 ## Prism 默认 callout（G0 · OFM v2）
 
-> **SSOT 分层**：本节 = 全仓**默认 callout 词汇**；`format=ofm` 二态与 vault frontmatter 见 sniff / `validate_product`；**评审协议段 + Findings 映射**见 `review/references/review-ofm.md`（仅 `rXX_*.md` 主报告）。
+> **SSOT 分层**：本节 = 全仓**默认 callout 词汇**；`format=ofm` 二态与 vault frontmatter 见 sniff / `validate_product`；**评审协议段 + Findings 映射**见 `workflow-review/references/review-ofm.md`（仅 `rXX_*.md` 主报告）。
 
 跨端优先 [GitHub Alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts)（GFM 五类）。Obsidian 与 Android Studio 2025.3.4+ 对五类均为全样式渲染；Obsidian-only 扩展在 IDE 预览中多为半样式。
 
