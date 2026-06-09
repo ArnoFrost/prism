@@ -1,9 +1,16 @@
 ---
 name: skill-name
-description: 技能功能描述（单行，含 Use when 触发词）。CodeBuddy IDE 列表依赖本字段 + description_zh。
-description_zh: 技能功能中文简述（CodeBuddy IDE 列表显示；必填）
+description: |
+  技能功能描述（含 Use when 触发词）。多行时用 block scalar。
+  Use when: 触发词1、触发词2、skill-name
+description_zh: "技能功能中文简述（CodeBuddy IDE 列表）"
+license: MIT
+metadata:
+  author: ""
+  version: "1.0.0"
 visibility: internal
 stability: experimental
+user_invocable: true
 compatibility: backward-compatible
 public_gate:
   reviewed: false
@@ -12,10 +19,6 @@ public_gate:
   rationale: ""
   rollback: ""
   ssot_id: ""
-license: MIT
-metadata:
-  author: ""
-  version: "1.0.0"
 ---
 
 # 技能标题

@@ -419,7 +419,12 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       skill_name=$(basename "$skill_dir")
       [[ "$skill_name" == "shared" ]] && continue
       [[ ! -f "$skill_dir/SKILL.md" ]] && continue
-      link_name="${category}-${skill_name}"
+      # 目录名已与 frontmatter name / IDE 分发 id 对齐（workflow-archive 等）
+      if [[ "$skill_name" == "${category}-"* ]]; then
+        link_name="$skill_name"
+      else
+        link_name="${category}-${skill_name}"
+      fi
 
       if is_archived "$link_name"; then
         log_skip "${link_name} ${DIM}(archived)${NC}"

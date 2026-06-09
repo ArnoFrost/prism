@@ -105,7 +105,7 @@ def _categorize_files(changed_files: list[str], old_sha: str, new_sha: str, repo
 
         # 模式 A：任意路径中含 SKILL.md → 该 SKILL.md 的父目录就是 skill 目录
         # 例：prism-skills/excalidraw-enhance/SKILL.md → excalidraw-enhance
-        # 例：prism/skills/workflow/review/SKILL.md → review（full path: skills/workflow/review）
+        # 例：prism/skills/workflow/workflow-review/SKILL.md → workflow-review
         if "SKILL.md" in parts:
             idx = parts.index("SKILL.md")
             if idx > 0:
@@ -114,7 +114,7 @@ def _categorize_files(changed_files: list[str], old_sha: str, new_sha: str, repo
                 skill_dirs.setdefault(skill_name, full_dir)
 
         # 模式 B：SDK 仓库中 skills/<category>/<skill_name>/<subfile> 命中
-        # 例：skills/workflow/review/scripts/foo.py（无 SKILL.md 但确实属于 skill）
+        # 例：skills/workflow/workflow-review/scripts/foo.py（无 SKILL.md 但确实属于 skill）
         # 至少 4 层才算，且 parts[1] / parts[2] 都不能是共享目录
         if (
             len(parts) >= 4

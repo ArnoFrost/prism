@@ -15,9 +15,33 @@ structure:
 
 # SKILL.md frontmatter
 frontmatter:
+  spec: "skills/schema/frontmatter-spec.md — field tiers, order, catalog mirror rules"
   required:
-    name: "string, lowercase + hyphens, matches directory name"
+    name: "string, lowercase + hyphens; MUST equal parent directory basename (distribution id)"
     description: "string, includes 'Use when:' trigger phrases"
+    description_zh: "string, CodeBuddy IDE list label (required for SDK builtin workflow/workspace)"
+  recommended_order:
+    - name
+    - description
+    - description_zh
+    - license
+    - metadata
+    - visibility
+    - stability
+    - user_invocable
+    - public_gate
+
+# Naming — 目录名 = frontmatter name = IDE 软链名（agentskills.io / Codex 兼容）
+naming:
+  rule: "basename(skill_dir) === frontmatter.name === relink link name"
+  sdk_builtin:
+    layout: "skills/{category}/{skill-id}/SKILL.md"
+    skill_id: "{category}-{slug} — e.g. workflow-archive, workspace-init"
+    anti_pattern: "skills/workflow/archive/ + name: workflow-archive（父目录与 name 不一致，Codex 等会报错）"
+  external_skills:
+    layout: "~/prism-skills/{skill-id}/SKILL.md"
+    skill_id: "flat top-level directory name"
+  slash_command: "/{skill-id} — 与 name 同形，如 /workflow-archive"
   optional:
     visibility: "enum: internal | public — SSOT 在 skills-catalog.yaml，缺省 = internal"
     stability: "enum: experimental | stable — SSOT 在 skills-catalog.yaml，缺省 = experimental"

@@ -1,6 +1,6 @@
 # OFM / GFM Callout 速查
 
-> 人类阅读分发面；机器 SSOT：`skills/workflow/shared/obsidian-config.md`（G0 默认词汇）+ `skills/workflow/review/references/review-ofm.md`（评审语义）。
+> 人类阅读分发面；机器 SSOT：`skills/workflow/shared/obsidian-config.md`（G0 默认词汇）+ `skills/workflow/workflow-review/references/review-ofm.md`（评审语义）。
 
 ## 默认规则（全 Prism）
 

@@ -383,8 +383,8 @@ class TestFieldNamingSSOT:
 
     SSOT 来源（按优先级）：
     1. skills/workflow/shared/parallel-execution.md §task_probe 痕迹
-    2. skills/workflow/review/SKILL.md Align 步骤 8
-    3. skills/workflow/review-lite/SKILL.md（同源镜像）
+    2. skills/workflow/workflow-review/SKILL.md Align 步骤 8
+    3. skills/workflow/workflow-review-lite/SKILL.md（同源镜像）
 
     分叉触发条件：required_fields 与 SSOT 字段集不一致。
     """

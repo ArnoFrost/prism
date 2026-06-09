@@ -115,16 +115,16 @@ def main():
     # 定位脚本路径
     # 尝试从 prism.local.yaml 或常见路径找脚本
     script_search_paths = [
-        os.path.expanduser("~/prism/skills/workflow/tidy/scripts"),
-        os.path.expanduser("~/prism/skills/workflow/review/scripts"),
+        os.path.expanduser("~/prism/skills/workflow/workflow-tidy/scripts"),
+        os.path.expanduser("~/prism/skills/workflow/workflow-review/scripts"),
         os.path.expanduser("~/prism/skills/workflow/shared/scripts"),
     ]
 
     # 也检查环境变量
     sdk_path = os.environ.get("PRISM_SDK_PATH")
     if sdk_path:
-        script_search_paths.insert(0, os.path.join(sdk_path, "skills/workflow/tidy/scripts"))
-        script_search_paths.insert(1, os.path.join(sdk_path, "skills/workflow/review/scripts"))
+        script_search_paths.insert(0, os.path.join(sdk_path, "skills/workflow/workflow-tidy/scripts"))
+        script_search_paths.insert(1, os.path.join(sdk_path, "skills/workflow/workflow-review/scripts"))
 
     tidy_script = find_script("tidy.py", script_search_paths)
     validate_script = find_script("validate_product.py", script_search_paths)

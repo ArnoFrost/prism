@@ -100,6 +100,19 @@ fm_has_use_when() {
   sed -n '2,/^---$/p' "$file" | grep -qi "use when:" && return 0 || return 1
 }
 
+CATALOG_FILE="$PRISM_DIR/skills/schema/skills-catalog.yaml"
+
+# 从 skills-catalog.yaml 读取某 id 的 visibility / stability（SDK 治理 SSOT）
+catalog_field() {
+  local id="$1" key="$2"
+  [[ -f "$CATALOG_FILE" ]] || return 0
+  awk -v id="$id" -v key="$key" '
+    $0 ~ "^  - id: " id "$" { in_entry=1; next }
+    in_entry && /^  - id:/ { exit }
+    in_entry && $1 == key ":" { print $2; exit }
+  ' "$CATALOG_FILE"
+}
+
 # 在 frontmatter 尾部（第二个 `---` 之前）插入一行，兼容任何 frontmatter 布局。
 # 旧实现依赖 `stability:` / `user_invocable:` / `license:` 作为锚点，对极简
 # frontmatter（只有 name + disable）会静默失败。
@@ -149,12 +162,19 @@ for i in "${!SKILLS[@]}"; do
   skill_warnings=()
   skill_fixes=()
 
-  # 1. name 字段
+  # 1. name 字段（须与分发 id / 父目录名一致 — 见 skill.schema.yaml §naming）
   fm_name=$(fm_get "$file" "name")
+  parent_cat=$(basename "$(dirname "$dir")")
   if [[ -z "$fm_name" ]]; then
     skill_errors+=("缺失 name 字段")
   elif ! echo "$fm_name" | grep -qE '^[a-z][a-z0-9-]*$' 2>/dev/null; then
     skill_errors+=("name 格式错误: $fm_name（要求小写+连字符）")
+  elif [[ "$parent_cat" == "workflow" || "$parent_cat" == "workspace" ]]; then
+    if [[ "$fm_name" != "$name" ]]; then
+      skill_errors+=("name '$fm_name' 必须与父目录 '$name' 一致（SDK 内置技能目录名 = 分发 id）")
+    fi
+  elif [[ "$fm_name" != "$name" ]]; then
+    skill_errors+=("name '$fm_name' 必须与父目录 '$name' 一致")
   fi
 
   # 2. description 字段 + Use when
@@ -170,10 +190,32 @@ for i in "${!SKILLS[@]}"; do
     skill_warnings+=("description 中缺少 'Use when:' 关键词")
   fi
 
-  # 3. visibility
+  # 2b. description_zh（SDK workflow/workspace 必填 — frontmatter-spec §A）
+  fm_desc_zh=$(fm_get "$file" "description_zh")
+  if [[ "$layer" == "sdk" && -z "$fm_desc_zh" ]]; then
+    skill_warnings+=("缺失 description_zh（CodeBuddy IDE 列表；见 frontmatter-spec.md）")
+  fi
+
+  # 2c. user_invocable 布尔字面量
+  fm_ui=$(fm_get "$file" "user_invocable")
+  if [[ -n "$fm_ui" && "$fm_ui" != "true" && "$fm_ui" != "false" && "$fm_ui" != "True" && "$fm_ui" != "False" ]]; then
+    skill_warnings+=("user_invocable 应为 true/false 小写，当前: $fm_ui")
+  elif [[ "$fm_ui" == "True" || "$fm_ui" == "False" ]]; then
+    skill_warnings+=("user_invocable 请用小写 true/false（非 Python True）")
+  fi
+
+  cat_vis=$(catalog_field "$fm_name" "visibility")
+  cat_stab=$(catalog_field "$fm_name" "stability")
+
+  # 3. visibility（catalog 有条目时 SSOT；SKILL 可省略或须一致）
   fm_vis=$(fm_get "$file" "visibility")
-  if [[ -z "$fm_vis" ]]; then
-    skill_warnings+=("缺失 visibility（默认应为 internal）")
+  if [[ -n "$cat_vis" ]]; then
+    if [[ -n "$fm_vis" && "$fm_vis" != "$cat_vis" ]]; then
+      skill_errors+=("visibility=$fm_vis 与 skills-catalog.yaml 不一致（catalog=$cat_vis）")
+    fi
+    [[ -z "$fm_vis" ]] && fm_vis="$cat_vis"
+  elif [[ -z "$fm_vis" ]]; then
+    skill_warnings+=("缺失 visibility（默认 internal；见 frontmatter-spec）")
     if $FIX; then
       _insert_into_frontmatter "$file" "visibility: internal"
       if fm_get "$file" "visibility" | grep -q "internal"; then
@@ -187,8 +229,13 @@ for i in "${!SKILLS[@]}"; do
 
   # 4. stability
   fm_stab=$(fm_get "$file" "stability")
-  if [[ -z "$fm_stab" ]]; then
-    skill_warnings+=("缺失 stability（默认应为 experimental）")
+  if [[ -n "$cat_stab" ]]; then
+    if [[ -n "$fm_stab" && "$fm_stab" != "$cat_stab" ]]; then
+      skill_errors+=("stability=$fm_stab 与 skills-catalog.yaml 不一致（catalog=$cat_stab）")
+    fi
+    [[ -z "$fm_stab" ]] && fm_stab="$cat_stab"
+  elif [[ -z "$fm_stab" ]]; then
+    skill_warnings+=("缺失 stability（默认 experimental）")
     if $FIX; then
       _insert_into_frontmatter "$file" "stability: experimental"
       if fm_get "$file" "stability" | grep -q "experimental"; then

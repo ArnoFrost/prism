@@ -39,7 +39,7 @@
 
 > **设计立意**：
 > - **路由门**频率随 skill 而异：intake 低频启动（偏 Ask 保护）、review/review-lite 高频持续（偏 cohesion 顺滑）。**不能笼统按「路由门=高频」一档处理**——该误差是 r13 P0 finding F1。
-> - **intake 专属语义**：`/workflow-intake` 的默认意图是创建新 3.0 topic；已有 topic 追加需要显式 append/cohere 目标。详见 [intake-routing-spec.md](../intake/references/intake-routing-spec.md)。
+> - **intake 专属语义**：`/workflow-intake` 的默认意图是创建新 3.0 topic；已有 topic 追加需要显式 append/cohere 目标。详见 [intake-routing-spec.md](../workflow-intake/references/intake-routing-spec.md)。
 > - **决策门**（低频锚点，如 review Gate 4 / review-lite §4 Accept-Reject-Defer / intake migrate 聚合方案确认）所有 skill 统一改用 `AskQuestion` 三选一模板。
 > - **边界澄清门**（review/review-lite Align 阶段 sniff 失败 / mode 决策 / `next_review_source=none` 编号确认）也是低频锚点，与决策门同级严格度（错选会覆盖已有评审，不可逆）。
 > - 三类门完整频率分档表与错选成本梯度详见 SSOT [shared/references/askquestion-fallback.md](references/askquestion-fallback.md) §7。

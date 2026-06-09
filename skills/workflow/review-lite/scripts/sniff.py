@@ -1,1 +1,0 @@
-../../review/scripts/sniff.py

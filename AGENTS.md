@@ -116,7 +116,7 @@ Prism vault (iCloud)/
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
 - **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + Vault + `uv`；review / decision / `task_probe` 等只在结构化协作场景启用。Agent 不应当把"必须先用 workflow"作为协作前置条件。
-- **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（裸 slash 调用永远 new，显式 `--append <topic>` 优先，不因 cohesion 静默 append）；`workflow-review` / `workflow-review-lite` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic；`workflow-compact` 是 explicit-topic-only 低频维护技能，不跟随 review cohesion。路由语义 SSOT 见 [`skills/workflow/intake/references/intake-routing-spec.md`](skills/workflow/intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) §0.1 — cite 不复制。
+- **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（裸 slash 调用永远 new，显式 `--append <topic>` 优先，不因 cohesion 静默 append）；`workflow-review` / `workflow-review-lite` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic；`workflow-compact` 是 explicit-topic-only 低频维护技能，不跟随 review cohesion。路由语义 SSOT 见 [`skills/workflow/workflow-intake/references/intake-routing-spec.md`](skills/workflow/workflow-intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) §0.1 — cite 不复制。
 
 ---
 
@@ -249,7 +249,7 @@ Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`]
 | **SDK 协议级 SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 唯一 SSOT；其他面 cite 不复制 |
 | **人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
 | **OFM / GFM callout 速查** | [`docs/ofm-cheatsheet.md`](docs/ofm-cheatsheet.md) | G0 词汇 + review 主报告映射；cite `obsidian-config` + `review-ofm` |
-| **各 workflow SKILL 子目录软链** | `skills/workflow/{review,review-lite,intake,scope,digest}/references/vocabulary.md` | `bin/relink` 分发到 IDE；SKILL.md 用 `references/vocabulary.md` 相对路径引用 |
+| **各 workflow SKILL 子目录软链** | `skills/workflow/workflow-*/references/vocabulary.md` | `bin/relink` 分发到 IDE；SKILL.md 用 `references/vocabulary.md` 相对路径引用 |
 
 所有 SKILL / 文档 / topic 产物**不字字复制术语定义**（避免漂移），按需 cite 即可。词典演进走 dXX 决策门（详见 vocabulary.md §演进规则）。
 
