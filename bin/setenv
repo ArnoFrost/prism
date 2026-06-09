@@ -172,11 +172,19 @@ do_export() {
     echo "export PRISM_OBS_PERSONAL=\"${obs_p}\""
   fi
 
-  if command -v uv >/dev/null 2>&1; then
-    local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
-    if [[ -f "$wg_script" ]]; then
-      uv run python "$wg_script" --export 2>/dev/null || true
-    fi
+  _workspace_git_export
+}
+
+# workspace_git export — launchd PATH 常无 uv，优先用 SDK .venv python
+_workspace_git_export() {
+  local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
+  [[ -f "$wg_script" ]] || return 0
+
+  local venv_py="${PRISM_DIR}/.venv/bin/python3"
+  if [[ -x "$venv_py" ]]; then
+    "$venv_py" "$wg_script" --export 2>/dev/null || true
+  elif command -v uv >/dev/null 2>&1; then
+    uv run python "$wg_script" --export 2>/dev/null || true
   fi
 }
 
