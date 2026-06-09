@@ -32,38 +32,93 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import sniff_lib  # noqa: E402
+
+
+def _prism_config_path() -> Path:
+    return Path.home() / "prism" / "prism.local.yaml"
+
 
 def _read_env_path() -> str | None:
-    """从 prism.local.yaml 读取 env_path 字段（可选），返回原始值不检查路径是否存在"""
-    config = Path.home() / "prism" / "prism.local.yaml"
+    """从 prism.local.yaml 读取 env_path 字段（可选）"""
+    config = _prism_config_path()
     if not config.exists():
         return None
-    try:
-        for line in config.read_text().splitlines():
-            if line.startswith("env_path:"):
-                val = line.split(":", 1)[1].strip()
-                return val if val else None
-    except OSError:
-        pass
-    return None
+    parsed = sniff_lib.parse_prism_local_yaml(str(config))
+    return parsed.get("env_path") if parsed else None
+
+
+def _workspace_git_context() -> dict:
+    cfg = _prism_config_path()
+    if not cfg.exists():
+        wg = sniff_lib.parse_workspace_git(str(cfg))  # defaults
+        return {"enabled": False, "vault_path": None, "wg": wg}
+    parsed = sniff_lib.parse_prism_local_yaml(str(cfg)) or {}
+    wg = sniff_lib.parse_workspace_git(str(cfg))
+    return {
+        "enabled": bool(wg.get("enabled")),
+        "vault_path": parsed.get("vault_path"),
+        "wg": wg,
+    }
 
 
 _env_path = _read_env_path()
+_wg_ctx = _workspace_git_context()
 
 REPOS = {
     "sdk": {
         "path": os.path.expanduser("~/prism"),
         "label": "Prism SDK",
+        "git_remote": "origin",
     },
     "skills": {
         "path": os.path.expanduser("~/prism-skills"),
         "label": "Prism Skills",
+        "git_remote": "origin",
     },
     "env": {
         "path": _env_path,
         "label": f"Prism Env ({_env_path or '未配置'})",
+        "git_remote": "origin",
     },
 }
+
+if _wg_ctx["enabled"] and _wg_ctx["vault_path"]:
+    wg = _wg_ctx["wg"]
+    REPOS["workspace"] = {
+        "path": _wg_ctx["vault_path"],
+        "label": f"Prism Workspace ({_wg_ctx['vault_path']})",
+        "git_remote": wg.get("remote") or "origin",
+        "git_branch": wg.get("branch") or "master",
+    }
+
+
+def _workspace_repo_entry() -> dict | None:
+    """构建 workspace 仓条目（供 --workspace 强制包含）。"""
+    cfg = _prism_config_path()
+    if not cfg.exists():
+        return None
+    parsed = sniff_lib.parse_prism_local_yaml(str(cfg)) or {}
+    vault = parsed.get("vault_path")
+    if not vault:
+        return None
+    wg = sniff_lib.parse_workspace_git(str(cfg))
+    return {
+        "path": vault,
+        "label": f"Prism Workspace ({vault})",
+        "git_remote": wg.get("remote") or "origin",
+        "git_branch": wg.get("branch") or "master",
+    }
+
+
+def _repos_map(force_workspace: bool = False) -> dict:
+    repos = dict(REPOS)
+    if force_workspace and "workspace" not in repos:
+        entry = _workspace_repo_entry()
+        if entry:
+            repos["workspace"] = entry
+    return repos
 
 
 def run_git(repo_path: str, *args: str) -> tuple[int, str]:
@@ -90,6 +145,8 @@ def run_git(repo_path: str, *args: str) -> tuple[int, str]:
 
 def sniff_repo(name: str, repo_def: dict, do_fetch: bool = False) -> dict:
     path = repo_def["path"]
+    git_remote = repo_def.get("git_remote") or "origin"
+    git_branch = repo_def.get("git_branch")
 
     if path is None:
         return {
@@ -117,10 +174,12 @@ def sniff_repo(name: str, repo_def: dict, do_fetch: bool = False) -> dict:
         }
 
     _, branch = run_git(path, "branch", "--show-current")
-    _, remote = run_git(path, "remote", "get-url", "origin")
+    if git_branch:
+        branch = git_branch
+    _, remote = run_git(path, "remote", "get-url", git_remote)
 
     if do_fetch:
-        run_git(path, "fetch", "origin", "--quiet")
+        run_git(path, "fetch", git_remote, "--quiet")
 
     _, status_porcelain = run_git(path, "status", "--porcelain")
     lines = [l for l in status_porcelain.splitlines() if l.strip()] if status_porcelain else []
@@ -138,8 +197,9 @@ def sniff_repo(name: str, repo_def: dict, do_fetch: bool = False) -> dict:
         if xy[1] != " " and xy[1] != "?":
             modified.append(filename)
 
-    _, ahead_str = run_git(path, "rev-list", f"origin/{branch}..HEAD", "--count")
-    _, behind_str = run_git(path, "rev-list", f"HEAD..origin/{branch}", "--count")
+    upstream = f"{git_remote}/{branch}"
+    _, ahead_str = run_git(path, "rev-list", f"{upstream}..HEAD", "--count")
+    _, behind_str = run_git(path, "rev-list", f"HEAD..{upstream}", "--count")
     ahead = int(ahead_str) if ahead_str.isdigit() else 0
     behind = int(behind_str) if behind_str.isdigit() else 0
 
@@ -186,24 +246,47 @@ def sniff_repo(name: str, repo_def: dict, do_fetch: bool = False) -> dict:
     }
 
 
-def main():
-    targets = set()
+def _parse_targets(argv: list[str]) -> tuple[set[str], bool, bool]:
+    """返回 (targets, do_fetch, force_workspace)"""
+    targets: set[str] = set()
     do_fetch = False
-    for arg in sys.argv[1:]:
+    no_workspace = False
+    force_workspace = False
+
+    for arg in argv:
         clean = arg.lstrip("-")
         if clean == "fetch":
             do_fetch = True
         elif clean == "all":
             targets = {"sdk", "skills", "env"}
-        elif clean in REPOS:
+        elif clean == "no-workspace":
+            no_workspace = True
+        elif clean == "workspace":
+            force_workspace = True
+        elif clean in ("sdk", "skills", "env", "workspace"):
             targets.add(clean)
 
     if not targets:
         targets = {"sdk", "skills", "env"}
 
+    include_ws = (force_workspace or _wg_ctx["enabled"]) and not no_workspace
+    if include_ws:
+        targets.add("workspace")
+    else:
+        targets.discard("workspace")
+
+    return targets, do_fetch, force_workspace
+
+
+def main():
+    targets, do_fetch, force_workspace = _parse_targets(sys.argv[1:])
+    repos_map = _repos_map(force_workspace)
+
     repos = {}
     for name in sorted(targets):
-        repos[name] = sniff_repo(name, REPOS[name], do_fetch=do_fetch)
+        if name not in repos_map:
+            continue
+        repos[name] = sniff_repo(name, repos_map[name], do_fetch=do_fetch)
 
     actionable = [
         name for name, info in repos.items()
@@ -214,6 +297,11 @@ def main():
         "repos": repos,
         "requested": sorted(targets),
         "actionable": actionable,
+        "workspace_git": {
+            "enabled": _wg_ctx["enabled"],
+            "present": _wg_ctx["wg"].get("present", False),
+            "included": "workspace" in targets,
+        },
     }
 
     print(json.dumps(result, ensure_ascii=False, indent=2))

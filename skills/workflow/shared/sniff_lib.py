@@ -153,6 +153,75 @@ def parse_prism_local_yaml(yaml_path: str) -> dict | None:
     return result
 
 
+def parse_workspace_git(yaml_path: str) -> dict:
+    """解析 prism.local.yaml 可选块 workspace_git（零 PyYAML 依赖）。
+
+    块缺失时返回 present=False, enabled=False 与默认值。
+    enabled 仅接受 true/false 字面量（d03：无 auto）。
+    """
+    defaults = {
+        "present": False,
+        "enabled": False,
+        "branch": "master",
+        "remote": "origin",
+        "debounce_seconds": 300,
+        "schedule": [],
+    }
+    try:
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except OSError:
+        return dict(defaults)
+
+    result = dict(defaults)
+    in_block = False
+    in_schedule = False
+
+    for line in lines:
+        stripped = line.rstrip()
+        if not stripped or stripped.lstrip().startswith("#"):
+            continue
+
+        if not in_block:
+            if re.match(r"^workspace_git:\s*$", stripped):
+                in_block = True
+                result["present"] = True
+            continue
+
+        # 退出 workspace_git 块（下一个顶层 key）
+        if line[0] not in (" ", "\t"):
+            break
+
+        if in_schedule:
+            m_item = re.match(r'^\s+-\s*["\']?([^"\']+)["\']?\s*$', stripped)
+            if m_item:
+                result["schedule"].append(m_item.group(1).strip())
+                continue
+            if re.match(r"^\s+\w", stripped) and not stripped.strip().startswith("- "):
+                in_schedule = False
+            else:
+                continue
+
+        m = re.match(r"^\s+(\w+):\s*(.*)$", stripped)
+        if not m:
+            continue
+        key, raw = m.group(1), m.group(2).strip()
+        if key == "schedule" and raw == "":
+            in_schedule = True
+            continue
+        val = _strip_yaml_quotes(raw)
+        if key == "enabled":
+            result["enabled"] = val.lower() == "true"
+        elif key == "branch" and val:
+            result["branch"] = val
+        elif key == "remote" and val:
+            result["remote"] = val
+        elif key == "debounce_seconds" and val.isdigit():
+            result["debounce_seconds"] = int(val)
+
+    return result
+
+
 def find_prism_context(project_dir: str) -> dict | None:
     """从 prism.local.yaml 构建完整的 Prism 上下文。
 

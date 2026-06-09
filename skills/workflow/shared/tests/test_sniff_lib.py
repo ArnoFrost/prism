@@ -86,6 +86,44 @@ class TestParsePrismLocalYaml:
         assert result["projects"]["PROJ1"] == "/home/user/project1"
 
 
+class TestParseWorkspaceGit:
+    def test_block_missing(self, tmp_path):
+        yaml_file = tmp_path / "prism.local.yaml"
+        yaml_file.write_text("vault_path: /vault\n")
+        result = sniff_lib.parse_workspace_git(str(yaml_file))
+        assert result["present"] is False
+        assert result["enabled"] is False
+
+    def test_enabled_and_schedule(self, tmp_path):
+        yaml_file = tmp_path / "prism.local.yaml"
+        yaml_file.write_text(
+            "vault_path: /vault\n"
+            "workspace_git:\n"
+            "  enabled: true\n"
+            "  branch: main\n"
+            "  remote: origin\n"
+            "  debounce_seconds: 120\n"
+            "  schedule:\n"
+            '    - "9:00"\n'
+            '    - "18:00"\n'
+        )
+        result = sniff_lib.parse_workspace_git(str(yaml_file))
+        assert result["present"] is True
+        assert result["enabled"] is True
+        assert result["branch"] == "main"
+        assert result["debounce_seconds"] == 120
+        assert result["schedule"] == ["9:00", "18:00"]
+
+    def test_enabled_false_explicit(self, tmp_path):
+        yaml_file = tmp_path / "prism.local.yaml"
+        yaml_file.write_text(
+            "workspace_git:\n"
+            "  enabled: false\n"
+        )
+        result = sniff_lib.parse_workspace_git(str(yaml_file))
+        assert result["enabled"] is False
+
+
 # ============================================================
 # find_workspace（桥接路径 / workspace 内路径）
 # ============================================================

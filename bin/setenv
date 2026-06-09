@@ -95,6 +95,15 @@ show_config() {
   fi
   echo ""
 
+  if command -v uv >/dev/null 2>&1; then
+    local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
+    if [[ -f "$wg_script" ]]; then
+      echo -e "  ${CYAN}Workspace Git（可选）:${NC}"
+      uv run python "$wg_script" --summary 2>/dev/null | sed 's/^/  /'
+      echo ""
+    fi
+  fi
+
   echo -e "  ${CYAN}注册项目:${NC}"
   local in_projects=false
   while IFS= read -r line; do
@@ -161,6 +170,13 @@ do_export() {
   obs_p=$(yaml_get obs_vault_personal)
   if [[ -n "$obs_p" ]]; then
     echo "export PRISM_OBS_PERSONAL=\"${obs_p}\""
+  fi
+
+  if command -v uv >/dev/null 2>&1; then
+    local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
+    if [[ -f "$wg_script" ]]; then
+      uv run python "$wg_script" --export 2>/dev/null || true
+    fi
   fi
 }
 
@@ -315,6 +331,31 @@ do_validate() {
     echo -e "    ${YELLOW}⚠${NC} 无注册项目"
   fi
 
+  if command -v uv >/dev/null 2>&1; then
+    local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
+    if [[ -f "$wg_script" ]]; then
+      echo ""
+      echo -e "  ${CYAN}workspace_git:${NC}"
+      if ! uv run python "$wg_script" --validate 2>&1; then
+        echo -e "  ${RED}✗${NC} workspace_git.schedule 格式无效"
+        ((errors++)) || true
+      else
+        local wg_json
+        wg_json=$(uv run python "$wg_script" --json 2>/dev/null || echo "{}")
+        if echo "$wg_json" | grep -q '"enabled": true'; then
+          if [[ -n "$vault" && ! -d "$vault/.git" ]]; then
+            echo -e "  ${RED}✗${NC} workspace_git.enabled=true 但 vault 不是 git 仓库: ${vault}"
+            ((errors++)) || true
+          else
+            echo -e "  ${GREEN}✓${NC} workspace_git: enabled，vault git 可达"
+          fi
+        else
+          echo -e "  ${DIM}⊘${NC} workspace_git: 未启用或缺块"
+        fi
+      fi
+    fi
+  fi
+
   echo ""
   echo "─────────────────────────────────"
   if [[ $errors -gt 0 ]]; then
@@ -350,6 +391,21 @@ workspace_subdir: Prism/Workspace
 
 # 可选：个人知识库路径
 # obs_vault_personal: ${HOME}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Arno Obsidian
+
+# 可选：Workspace Git 同步（Layer 4 增强；显式 enabled: true 才启用）
+# workspace_git:
+#   enabled: false
+#   branch: master
+#   remote: origin
+#   debounce_seconds: 300
+#   schedule:
+#     - "9:00"
+#     - "12:00"
+#     - "14:00"
+#     - "16:00"
+#     - "18:00"
+#     - "20:00"
+#     - "22:00"
 
 # 注册项目（CODE: 本地路径）
 projects:
