@@ -5,7 +5,7 @@
   uv run python workspace_git_config.py --json
   uv run python workspace_git_config.py --export    # bash export 语句
   uv run python workspace_git_config.py --summary   # 人类可读摘要
-  uv run python workspace_git_config.py --validate  # 校验 schedule 格式
+  uv run python workspace_git_config.py --validate  # 校验 schedule / interval 格式
   uv run python workspace_git_config.py --write-plist ~/Library/LaunchAgents/....plist
 """
 
@@ -22,9 +22,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import sniff_lib  # noqa: E402
 
 _SCHEDULE_RE = re.compile(r"^\d{1,2}:\d{2}$")
+_INTERVAL_MIN = 5
 
 
 def _find_config() -> str | None:
+    override = os.environ.get("PRISM_CONFIG_PATH")
+    if override and os.path.isfile(override):
+        return override
     for path in (
         os.path.expanduser("~/prism/prism.local.yaml"),
         os.path.expanduser("~/prism.local.yaml"),
@@ -60,13 +64,50 @@ def validate_schedule(schedule: list[str]) -> list[str]:
     return errors
 
 
+def validate_workspace_git(wg: dict) -> list[str]:
+    """校验 workspace_git 块：schedule 格式、interval 下限、触发器矩阵。"""
+    if not wg.get("present"):
+        return []
+    errors: list[str] = []
+    schedule = wg.get("schedule") or []
+    interval = int(wg.get("interval_minutes") or 0)
+
+    errors.extend(validate_schedule(schedule))
+
+    if interval < 0:
+        errors.append(f"invalid interval_minutes: {interval} (must be >= 0)")
+    elif 0 < interval < _INTERVAL_MIN:
+        errors.append(
+            f"interval_minutes={interval} below minimum {_INTERVAL_MIN} "
+            "(use 0 to disable interval heartbeat)"
+        )
+
+    if interval <= 0 and not schedule:
+        errors.append(
+            "workspace_git: need interval_minutes > 0 and/or non-empty schedule "
+            "(at least one launchd trigger)"
+        )
+
+    large_mb = wg.get("large_file_mb")
+    if large_mb is not None and int(large_mb) <= 0:
+        errors.append(f"large_file_mb must be positive, got {large_mb!r}")
+
+    return errors
+
+
 def cmd_export(wg: dict) -> None:
     sched = ",".join(wg.get("schedule") or [])
     enabled = "true" if wg.get("enabled") else "false"
+    notify_ok = "true" if wg.get("notify_on_success") else "false"
+    notify_block = "true" if wg.get("notify_on_block", True) else "false"
     print(f'export PRISM_WORKSPACE_GIT_ENABLED="{enabled}"')
     print(f'export PRISM_WORKSPACE_GIT_BRANCH="{wg.get("branch", "master")}"')
     print(f'export PRISM_WORKSPACE_GIT_REMOTE="{wg.get("remote", "origin")}"')
     print(f'export PRISM_WORKSPACE_GIT_DEBOUNCE="{wg.get("debounce_seconds", 300)}"')
+    print(f'export PRISM_WORKSPACE_GIT_INTERVAL="{wg.get("interval_minutes", 0)}"')
+    print(f'export PRISM_WORKSPACE_GIT_LARGE_FILE_MB="{wg.get("large_file_mb", 20)}"')
+    print(f'export PRISM_WORKSPACE_GIT_NOTIFY_SUCCESS="{notify_ok}"')
+    print(f'export PRISM_WORKSPACE_GIT_NOTIFY_BLOCK="{notify_block}"')
     print(f'export PRISM_WORKSPACE_GIT_SCHEDULE="{sched}"')
     if wg.get("vault_path"):
         print(f'export PRISM_VAULT="{wg["vault_path"]}"')
@@ -78,9 +119,17 @@ def cmd_summary(wg: dict) -> None:
         return
     en = "启用" if wg.get("enabled") else "关闭"
     sched = ", ".join(wg.get("schedule") or []) or "(无)"
+    interval = wg.get("interval_minutes") or 0
+    interval_s = f"{interval}min" if interval else "(无)"
     print(f"  workspace_git: {en}")
     print(f"    branch: {wg.get('branch')}  remote: {wg.get('remote')}")
-    print(f"    debounce: {wg.get('debounce_seconds')}s  schedule: {sched}")
+    print(f"    interval: {interval_s}  debounce: {wg.get('debounce_seconds')}s")
+    print(f"    schedule: {sched}")
+    print(
+        f"    large_file: {wg.get('large_file_mb', 20)}MB  "
+        f"notify_success: {wg.get('notify_on_success')}  "
+        f"notify_block: {wg.get('notify_on_block', True)}"
+    )
 
 
 def render_launchd_plist(wg: dict, home: str | None = None) -> str:
@@ -89,51 +138,78 @@ def render_launchd_plist(wg: dict, home: str | None = None) -> str:
     adot = os.environ.get("ADOT_DIR") or os.path.join(home, "ArnoDotFiles")
     sync_script = os.path.join(adot, "scripts", "prism-workspace-sync.sh")
     schedule = wg.get("schedule") or []
-    if not schedule:
-        raise ValueError("workspace_git.schedule 为空，无法生成 launchd plist")
+    interval = int(wg.get("interval_minutes") or 0)
 
-    intervals = []
-    for item in schedule:
-        h, m = item.split(":", 1)
-        intervals.append(f"    <dict><key>Hour</key><integer>{int(h)}</integer>"
-                         f"<key>Minute</key><integer>{int(m)}</integer></dict>")
+    if interval <= 0 and not schedule:
+        raise ValueError(
+            "workspace_git 无 launchd 触发器：需 interval_minutes > 0 和/或非空 schedule"
+        )
 
-    interval_xml = "\n".join(intervals)
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.arnofrostxu.prism-workspace-sync</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/bin/bash</string>
-    <string>{escape(sync_script)}</string>
-    <string>auto</string>
-  </array>
-  <key>StartCalendarInterval</key>
-  <array>
-{interval_xml}
-  </array>
-  <key>WorkingDirectory</key>
-  <string>{escape(vault)}</string>
-  <key>StandardOutPath</key>
-  <string>{escape(os.path.join(home, ".adot/logs/prism-sync.out"))}</string>
-  <key>StandardErrorPath</key>
-  <string>{escape(os.path.join(home, ".adot/logs/prism-sync.err"))}</string>
-  <key>WaitForNetwork</key>
-  <true/>
-  <key>RunAtLoad</key>
-  <false/>
-</dict>
-</plist>
-"""
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
+        '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
+        "<plist version=\"1.0\">",
+        "<dict>",
+        "  <key>Label</key>",
+        "  <string>com.arnofrostxu.prism-workspace-sync</string>",
+        "  <key>ProgramArguments</key>",
+        "  <array>",
+        "    <string>/bin/bash</string>",
+        f"    <string>{escape(sync_script)}</string>",
+        "    <string>auto</string>",
+        "  </array>",
+    ]
+
+    if interval > 0:
+        parts.extend(
+            [
+                "  <key>StartInterval</key>",
+                f"  <integer>{interval * 60}</integer>",
+            ]
+        )
+
+    if schedule:
+        intervals = []
+        for item in schedule:
+            h, m = item.split(":", 1)
+            intervals.append(
+                f"    <dict><key>Hour</key><integer>{int(h)}</integer>"
+                f"<key>Minute</key><integer>{int(m)}</integer></dict>"
+            )
+        parts.extend(
+            [
+                "  <key>StartCalendarInterval</key>",
+                "  <array>",
+                *intervals,
+                "  </array>",
+            ]
+        )
+
+    parts.extend(
+        [
+            "  <key>WorkingDirectory</key>",
+            f"  <string>{escape(vault)}</string>",
+            "  <key>StandardOutPath</key>",
+            f"  <string>{escape(os.path.join(home, '.adot/logs/prism-sync.out'))}</string>",
+            "  <key>StandardErrorPath</key>",
+            f"  <string>{escape(os.path.join(home, '.adot/logs/prism-sync.err'))}</string>",
+            "  <key>WaitForNetwork</key>",
+            "  <true/>",
+            "  <key>RunAtLoad</key>",
+            "  <false/>",
+            "</dict>",
+            "</plist>",
+            "",
+        ]
+    )
+    return "\n".join(parts)
 
 
 def cmd_write_plist(wg: dict, dest: str) -> None:
     if not wg.get("enabled"):
         raise SystemExit("workspace_git.enabled 未开启，拒绝生成 launchd plist")
-    errs = validate_schedule(wg.get("schedule") or [])
+    errs = validate_workspace_git(wg)
     if errs:
         for e in errs:
             print(e, file=sys.stderr)
@@ -163,9 +239,7 @@ def main() -> int:
         return 0
 
     if args.validate:
-        if not wg.get("present"):
-            return 0
-        errs = validate_schedule(wg.get("schedule") or [])
+        errs = validate_workspace_git(wg)
         for e in errs:
             print(e, file=sys.stderr)
         return 1 if errs else 0

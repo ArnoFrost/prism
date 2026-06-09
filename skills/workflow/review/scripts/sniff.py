@@ -21,7 +21,7 @@
   topic             - 评审主题（null 表示未提供）
   topic_affinity    - 专项亲和检测结果
     .suggestion     - "cohesion" | "ask_user" | "new_topic"
-  structures        - 3.0 结构层探测（present / task_index / tasks[] / task_count）
+  structures        - 3.0 结构层探测（present / tasks[] / tasks_superseded / task_id_conflicts）
 """
 
 import json

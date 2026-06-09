@@ -123,6 +123,33 @@ class TestParseWorkspaceGit:
         result = sniff_lib.parse_workspace_git(str(yaml_file))
         assert result["enabled"] is False
 
+    def test_v2_fields_and_defaults(self, tmp_path):
+        yaml_file = tmp_path / "prism.local.yaml"
+        yaml_file.write_text(
+            "workspace_git:\n"
+            "  enabled: true\n"
+            "  interval_minutes: 15\n"
+            "  large_file_mb: 50\n"
+            "  notify_on_success: false\n"
+            "  notify_on_block: true\n"
+            "  schedule:\n"
+            '    - "9:00"\n'
+        )
+        result = sniff_lib.parse_workspace_git(str(yaml_file))
+        assert result["interval_minutes"] == 15
+        assert result["large_file_mb"] == 50
+        assert result["notify_on_success"] is False
+        assert result["notify_on_block"] is True
+
+    def test_v2_defaults_when_block_missing(self, tmp_path):
+        yaml_file = tmp_path / "prism.local.yaml"
+        yaml_file.write_text("workspace_git:\n  enabled: true\n")
+        result = sniff_lib.parse_workspace_git(str(yaml_file))
+        assert result["interval_minutes"] == 0
+        assert result["large_file_mb"] == 20
+        assert result["notify_on_success"] is False
+        assert result["notify_on_block"] is True
+
 
 # ============================================================
 # find_workspace（桥接路径 / workspace 内路径）

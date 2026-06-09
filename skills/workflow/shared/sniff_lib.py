@@ -165,6 +165,10 @@ def parse_workspace_git(yaml_path: str) -> dict:
         "branch": "master",
         "remote": "origin",
         "debounce_seconds": 300,
+        "interval_minutes": 0,
+        "large_file_mb": 20,
+        "notify_on_success": False,
+        "notify_on_block": True,
         "schedule": [],
     }
     try:
@@ -212,12 +216,14 @@ def parse_workspace_git(yaml_path: str) -> dict:
         val = _strip_yaml_quotes(raw)
         if key == "enabled":
             result["enabled"] = val.lower() == "true"
+        elif key in ("notify_on_success", "notify_on_block"):
+            result[key] = val.lower() == "true"
         elif key == "branch" and val:
             result["branch"] = val
         elif key == "remote" and val:
             result["remote"] = val
-        elif key == "debounce_seconds" and val.isdigit():
-            result["debounce_seconds"] = int(val)
+        elif key in ("debounce_seconds", "interval_minutes", "large_file_mb") and val.isdigit():
+            result[key] = int(val)
 
     return result
 
@@ -740,25 +746,142 @@ def check_review_density(reviews_dir: str, topic_created: str | None = None) -> 
     return None
 
 
+_TASK_DIR_RE = re.compile(r"^task-(\d+)(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?$")
+_TASK_SUPERSEDED_STATUS = frozenset({"superseded", "archived", "cancelled"})
+
+
+def parse_scope_frontmatter(scope_path: str) -> dict:
+    """轻量读取 scope.md YAML frontmatter（status / superseded_by）。"""
+    try:
+        with open(scope_path, "r", encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return {}
+    if not text.startswith("---"):
+        return {}
+    end = text.find("\n---", 3)
+    if end == -1:
+        return {}
+    result: dict[str, str] = {}
+    for line in text[3:end].splitlines():
+        m = re.match(r"^(status|superseded_by):\s*(.+)$", line.strip())
+        if not m:
+            continue
+        result[m.group(1)] = _strip_yaml_quotes(m.group(2).strip())
+    return result
+
+
+def is_task_dir_superseded(task_dir: str) -> bool:
+    """废止 task 目录：scope frontmatter 标 superseded/archived/cancelled 或含 superseded_by。"""
+    scope = os.path.join(task_dir, "scope.md")
+    if not os.path.isfile(scope):
+        return False
+    fm = parse_scope_frontmatter(scope)
+    status = (fm.get("status") or "").lower()
+    if status in _TASK_SUPERSEDED_STATUS:
+        return True
+    return bool(fm.get("superseded_by"))
+
+
+def resolve_active_task_entries(structures_dir: str) -> dict:
+    """按 task 序号互斥解析 structures/task-N_slug/。
+
+    同序号多目录时跳过废止项（status/superseded_by）；多个活跃项时保留字典序首个并记录 conflict。
+
+    返回:
+      active    - [{entry, number, path, id}]
+      skipped   - [{entry, number, id, reason, superseded_by}]
+      conflicts - [{number, kept, dropped}]
+    """
+    by_num: dict[int, list[str]] = {}
+    for entry in sorted(os.listdir(structures_dir)):
+        m = _TASK_DIR_RE.match(entry)
+        if not m:
+            continue
+        path = os.path.join(structures_dir, entry)
+        if not os.path.isdir(path):
+            continue
+        by_num.setdefault(int(m.group(1)), []).append(entry)
+
+    active: list[dict] = []
+    skipped: list[dict] = []
+    conflicts: list[dict] = []
+
+    for number in sorted(by_num.keys()):
+        entries = by_num[number]
+        live = [
+            e for e in entries
+            if not is_task_dir_superseded(os.path.join(structures_dir, e))
+        ]
+        dead = [e for e in entries if e not in live]
+
+        for entry in dead:
+            scope = os.path.join(structures_dir, entry, "scope.md")
+            fm = parse_scope_frontmatter(scope) if os.path.isfile(scope) else {}
+            skipped.append({
+                "entry": entry,
+                "number": number,
+                "id": f"t{number}",
+                "reason": fm.get("status") or "superseded",
+                "superseded_by": fm.get("superseded_by"),
+            })
+
+        if not live:
+            continue
+        if len(live) > 1:
+            conflicts.append({
+                "number": number,
+                "kept": live[0],
+                "dropped": live[1:],
+            })
+        kept = live[0]
+        active.append({
+            "entry": kept,
+            "number": number,
+            "path": os.path.join(structures_dir, kept),
+            "id": f"t{number}",
+        })
+
+    return {"active": active, "skipped": skipped, "conflicts": conflicts}
+
+
+def _task_entry_metadata(tdir: str, entry: str, number: int) -> dict:
+    waves = sorted(
+        f for f in os.listdir(tdir)
+        if re.match(r"^wave-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\.md$", f)
+    )
+    return {
+        "id": f"t{number}",
+        "dir": entry,
+        "scope_present": os.path.isfile(os.path.join(tdir, "scope.md")),
+        "waves": waves,
+        "wave_count": len(waves),
+    }
+
+
 def enumerate_structures(topic_dir: str) -> dict:
     """识别 topic 的 3.0 结构层 structures/（V4 / G1 结构契约）。
 
     返回 dict：
       present          - 是否存在 structures/ 目录
       task_index       - structures/task.index.md 是否存在
-      tasks            - [{id, dir, scope_present, waves:[...], wave_count}]
-                         id = 路径命名空间派生的稳定 id（task-1_xxx → "t1"）
-      task_count       - task 数
+      tasks            - 活跃 task 列表（已互斥废止目录）
+      task_count       - 活跃 task 数
+      tasks_superseded - 跳过的废止 task（同序号留档目录）
+      task_id_conflicts - 同序号多个活跃目录时的仲裁记录
 
     设计：structures/ 按需出现（无 task topic 不预建）；task-N_slug 内仅 scope.md +
     wave-N_slug.md（单一决策链，task 内不开 reviews/decisions）。
-    数字 N 派生稳定 id；slug 只做人类可读信息。
+    数字 N 派生稳定 id；slug 只做人类可读信息。废止目录须 scope frontmatter 标
+    status=superseded 或 superseded_by，否则与同序号活跃项并存时记入 conflicts。
     """
     result = {
         "present": False,
         "task_index": False,
         "tasks": [],
         "task_count": 0,
+        "tasks_superseded": [],
+        "task_id_conflicts": [],
     }
     structures_dir = os.path.join(topic_dir, "structures")
     if not os.path.isdir(structures_dir):
@@ -767,28 +890,16 @@ def enumerate_structures(topic_dir: str) -> dict:
     result["present"] = True
     result["task_index"] = os.path.isfile(os.path.join(structures_dir, "task.index.md"))
 
-    tasks = []
-    for entry in sorted(os.listdir(structures_dir)):
-        m = re.match(r"^task-(\d+)(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?$", entry)
-        if not m:
-            continue
-        tdir = os.path.join(structures_dir, entry)
-        if not os.path.isdir(tdir):
-            continue
-        waves = sorted(
-            f for f in os.listdir(tdir)
-            if re.match(r"^wave-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\.md$", f)
-        )
-        tasks.append({
-            "id": f"t{m.group(1)}",  # 稳定 id（.tN 命名编码的 id 形态）
-            "dir": entry,
-            "scope_present": os.path.isfile(os.path.join(tdir, "scope.md")),
-            "waves": waves,
-            "wave_count": len(waves),
-        })
+    resolved = resolve_active_task_entries(structures_dir)
+    tasks = [
+        _task_entry_metadata(item["path"], item["entry"], item["number"])
+        for item in resolved["active"]
+    ]
 
     result["tasks"] = tasks
     result["task_count"] = len(tasks)
+    result["tasks_superseded"] = resolved["skipped"]
+    result["task_id_conflicts"] = resolved["conflicts"]
     return result
 
 

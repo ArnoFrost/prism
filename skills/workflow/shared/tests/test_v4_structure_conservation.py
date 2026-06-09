@@ -221,6 +221,40 @@ class TestEnumerateStructures:
         assert t2["id"] == "t2"
         assert t2["scope_present"] is False
 
+    def test_superseded_same_number_excluded(self, tmp_path):
+        """同序号废止目录（d03 合并遗留）不进入活跃 tasks。"""
+        struct = tmp_path / "structures"
+        active = struct / "task-4_sync-heartbeat-notify"
+        archived = struct / "task-4_pull-push-merge"
+        active.mkdir(parents=True)
+        archived.mkdir(parents=True)
+        (active / "scope.md").write_text(
+            "---\nstatus: active\ntype: scope\n---\n# active task-4\n",
+            encoding="utf-8",
+        )
+        (archived / "scope.md").write_text(
+            "---\nstatus: superseded\nsuperseded_by: task-3_pull-push-launchd\n---\n",
+            encoding="utf-8",
+        )
+
+        res = sniff_lib.enumerate_structures(str(tmp_path))
+        assert res["task_count"] == 1
+        assert res["tasks"][0]["dir"] == "task-4_sync-heartbeat-notify"
+        assert len(res["tasks_superseded"]) == 1
+        assert res["tasks_superseded"][0]["entry"] == "task-4_pull-push-merge"
+
+    def test_resolve_active_task_entries_conflict(self, tmp_path):
+        struct = tmp_path / "structures"
+        (struct / "task-3_alpha").mkdir(parents=True)
+        (struct / "task-3_beta").mkdir(parents=True)
+        (struct / "task-3_alpha" / "scope.md").write_text("---\nstatus: active\n---\n", encoding="utf-8")
+        (struct / "task-3_beta" / "scope.md").write_text("---\nstatus: active\n---\n", encoding="utf-8")
+
+        resolved = sniff_lib.resolve_active_task_entries(str(struct))
+        assert len(resolved["active"]) == 1
+        assert resolved["active"][0]["entry"] == "task-3_alpha"
+        assert resolved["conflicts"][0]["number"] == 3
+
 
 # ============================================================
 # .S / .tN 命名编码下 review 枚举不破

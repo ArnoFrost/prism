@@ -34,6 +34,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from sniff_lib import resolve_active_task_entries  # noqa: E402
+
 
 # 内部统一 schema：workflow_trace → phase → 既有外部 family。
 #
@@ -523,12 +526,10 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
             topic_v_ids = set()
 
     tasks_out: list[dict] = []
-    task_dirs = sorted(
-        d for d in structures_dir.glob("task-*")
-        if d.is_dir() and re.fullmatch(r"task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?", d.name)
-    )
-    for tdir in task_dirs:
-        task_name = tdir.name
+    resolved = resolve_active_task_entries(str(structures_dir))
+    for item in resolved["active"]:
+        tdir = Path(item["path"])
+        task_name = item["entry"]
         task_scope = tdir / "scope.md"
         rel = str(task_scope)
         if not task_scope.is_file():
@@ -583,6 +584,21 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
                             f"（现有: {sorted(topic_v_ids)}）",
                         ))
 
+    for skip in resolved["skipped"]:
+        by = f" → {skip['superseded_by']}" if skip.get("superseded_by") else ""
+        issues.append(Issue(
+            "WARN", str(structures_dir / skip["entry"]), CONSERVATION_FAMILY,
+            "task-superseded-skipped",
+            f"{skip['entry']} 已废止（{skip.get('reason')}{by}），守恒校验跳过",
+        ))
+    for conflict in resolved["conflicts"]:
+        issues.append(Issue(
+            "WARN", str(structures_dir), CONSERVATION_FAMILY,
+            "task-id-conflict",
+            f"task-{conflict['number']} 多个活跃目录：保留 {conflict['kept']}，"
+            f"忽略 {conflict['dropped']}",
+        ))
+
     errors = [i.to_dict() for i in issues if i.level == "ERROR"]
     warnings = [i.to_dict() for i in issues if i.level == "WARN"]
     return {
@@ -590,6 +606,8 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
         "structures_present": True,
         "topic_v_ids": sorted(topic_v_ids),
         "tasks": tasks_out,
+        "tasks_superseded": resolved["skipped"],
+        "task_id_conflicts": resolved["conflicts"],
         "errors": errors,
         "warnings": warnings,
     }
