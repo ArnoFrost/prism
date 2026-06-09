@@ -44,7 +44,8 @@ user_invocable: true
 
 | 阶段 | 必读 | 按需 |
 |------|------|------|
-| Phase 1 Context | `context-pack-spec.md` light | `vocabulary.md` |
+| Phase 1 Context | `context-pack-spec.md` light | `vocabulary.md`；struct-absent 时可选 `sniff_lib.struct_vacuum_signals()` |
+| Phase 2 Delta | — | `require_fork_gate` 时必读 [scope-templates.md §task-fork gate](references/scope-templates.md) |
 | Phase 3 Update | `focus-derive-spec.md`, `scope-templates.md` | — |
 | Maintainer / 2.x | — | [scope-maintainer.md](references/scope-maintainer.md) |
 
@@ -61,7 +62,7 @@ user_invocable: true
 
 ```text
 Phase 1  Context — 读 scope/focus（context-pack light）；触发源 + 最近 dXX/review
-Phase 2  Delta   — 显式输出变更摘要（+ / ~ / ✓）；不可跳过
+Phase 2  Delta   — 显式输出变更摘要（+ / ~ / ✓）；不可跳过；require_fork_gate 时追加 task-fork gate 块（cite scope-templates §task-fork gate，不 COPY 全文）
 Phase 3  Update  — 按 focus-derive 更新 scope + rewrite focus [+ task.index]
 Phase 4  Sync     — 刷新 focus 保留区双链；decision.index 按需追加
 ```
@@ -74,6 +75,8 @@ Phase 4  Sync     — 刷新 focus 保留区双链；decision.index 按需追加
 | scope 偏移修正 | 补录已完成未勾 V |
 | 新增非目标 | 追加「不做 …」 |
 | 约束变更 | 追加关键约束 |
+
+**struct-vacuum**：Phase 1 可对 topic 跑 `struct_vacuum_signals()`。当 `require_fork_gate: true` 时，Delta **必须**含 [scope-templates §task-fork gate](references/scope-templates.md) 三选一；省略 → FS-skip-delta-fail。选「膨胀 task」→ Phase 3 完成 Task Spawn Checklist 四件套。
 
 示例：
 
@@ -101,7 +104,7 @@ Phase 4  Sync     — 刷新 focus 保留区双链；decision.index 按需追加
 
 ### FS-delta-required / FS-skip-delta-fail
 
-Phase 2 delta 摘要**不可跳过**；用户要求「直接更新」必须 fail。
+Phase 2 delta 摘要**不可跳过**；用户要求「直接更新」必须 fail。`require_fork_gate` 时省略 task-fork gate 块同等 fail。
 
 ### FS-decision-to-scope
 

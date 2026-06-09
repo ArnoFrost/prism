@@ -903,6 +903,113 @@ def enumerate_structures(topic_dir: str) -> dict:
     return result
 
 
+# struct-vacuum thresholds (align scope-templates §struct-vacuum / scope_readability S1)
+_STRUCT_VACUUM_S1_ADVISORY = 60
+_STRUCT_VACUUM_S1_REQUIRE = 80
+_STRUCT_VACUUM_VN_ADVISORY = 8
+_STRUCT_VACUUM_VN_REQUIRE = 10
+
+
+def _strip_scope_frontmatter(text: str) -> str:
+    return re.sub(r"^---\n.*?\n---\n", "", text, count=1, flags=re.S)
+
+
+def _scope_heading_base(line: str) -> str:
+    h = re.sub(r"^#+\s*", "", line.strip())
+    return re.split(r"[（(]", h, maxsplit=1)[0].strip()
+
+
+def _scope_sections(body: str) -> dict:
+    out, cur, buf = {}, None, []
+    for ln in body.splitlines():
+        if re.match(r"^##\s+", ln):
+            if cur is not None:
+                out[cur] = "\n".join(buf)
+            cur, buf = _scope_heading_base(ln), []
+        elif cur is not None:
+            buf.append(ln)
+    if cur is not None:
+        out[cur] = "\n".join(buf)
+    return out
+
+
+def _scope_readability_metrics(topic_dir: str) -> dict:
+    """SR-S1 / SR-Vn for struct-vacuum (cite scope_readability S1 + 验收口径未勾 V)。"""
+    path = os.path.join(topic_dir, "scope.md")
+    if not os.path.isfile(path):
+        return {"skipped": True, "reason": "no-scope.md"}
+
+    with open(path, encoding="utf-8") as f:
+        body = _strip_scope_frontmatter(f.read())
+
+    body_lines = [ln for ln in body.splitlines() if ln.strip()]
+    acceptance = _scope_sections(body).get("验收口径", "")
+    v_unchecked = [
+        ln for ln in acceptance.splitlines()
+        if re.match(r"^\s*- \[ \]", ln) and re.search(r"V\d+", ln)
+    ]
+    return {
+        "skipped": False,
+        "sr_s1_lines": len(body_lines),
+        "sr_v_unchecked": len(v_unchecked),
+    }
+
+
+def struct_vacuum_signals(topic_dir: str) -> dict:
+    """Detect struct-vacuum advisory / require_fork_gate.
+
+    struct-absent = structures/ 不存在或 task_count=0。
+    struct-present（已有 task）→ 不进入 struct-vacuum。
+    硬触发仅 SIG-L（SR-S1）与 SIG-V（SR-Vn 未勾）。契约见 scope-templates §struct-vacuum。
+    """
+    structs = enumerate_structures(topic_dir)
+    struct_absent = not structs["present"] or structs["task_count"] == 0
+
+    base = {
+        "struct_absent": struct_absent,
+        "struct_present": not struct_absent,
+        "task_count": structs["task_count"],
+        "signals": [],
+        "advisory": False,
+        "require_fork_gate": False,
+        "handoff": None,
+        "skipped": False,
+        "sr_s1_lines": None,
+        "sr_v_unchecked": None,
+    }
+
+    if not struct_absent:
+        return base
+
+    metrics = _scope_readability_metrics(topic_dir)
+    if metrics["skipped"]:
+        return {**base, "skipped": True, "reason": metrics.get("reason", "no-scope.md")}
+
+    s1 = metrics["sr_s1_lines"]
+    vn = metrics["sr_v_unchecked"]
+    signals = []
+    if s1 > _STRUCT_VACUUM_S1_ADVISORY:
+        signals.append("SIG-L")
+    if vn > _STRUCT_VACUUM_VN_ADVISORY:
+        signals.append("SIG-V")
+
+    advisory = s1 > _STRUCT_VACUUM_S1_ADVISORY or vn > _STRUCT_VACUUM_VN_ADVISORY
+    require = (
+        s1 > _STRUCT_VACUUM_S1_REQUIRE
+        or (s1 > _STRUCT_VACUUM_S1_ADVISORY and vn > _STRUCT_VACUUM_VN_REQUIRE)
+    )
+
+    return {
+        **base,
+        "sr_s1_lines": s1,
+        "sr_v_unchecked": vn,
+        "signals": signals,
+        "advisory": advisory,
+        "require_fork_gate": require,
+        "handoff": "workflow-scope" if advisory or require else None,
+    }
+
+
 def check_writable(path: str) -> bool:
     """检查路径是否可写（检查最近的已存在祖先目录）"""
     check = path
