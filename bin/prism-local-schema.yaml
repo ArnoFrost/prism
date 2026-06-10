@@ -10,9 +10,9 @@ fields:
     required: true
     description: "当前设备标识符，用于跨设备路径解析"
     example: "ARNOFROSTXU-MC1"
-    default: "$(hostname -s)"
+    default: "$(prism_short_hostname)"
     validation:
-      - "由 setenv --init 自动从 hostname -s 生成"
+      - "由 setenv --init 自动从本机 hostname 推导生成，Windows 下会使用 fallback"
       - "可手动修改为自定义别名"
       - "用于 project.yaml paths 的设备键匹配"
 

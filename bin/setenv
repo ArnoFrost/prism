@@ -37,6 +37,27 @@ yaml_get() {
   (grep "^${key}:" "$CONFIG" 2>/dev/null || true) | sed "s/^${key}: *//"
 }
 
+prism_short_hostname() {
+  local raw=""
+
+  if raw=$(hostname -s 2>/dev/null); then
+    :
+  else
+    raw="${HOSTNAME:-}"
+    if [[ -z "$raw" ]] && command -v hostname >/dev/null 2>&1; then
+      raw=$(hostname 2>/dev/null || true)
+    fi
+    if [[ -z "$raw" ]]; then
+      raw="${COMPUTERNAME:-${USERDOMAIN:-unknown}}"
+    fi
+  fi
+
+  raw="${raw%%.*}"
+  raw="${raw// /-}"
+  [[ -n "$raw" ]] || raw="unknown"
+  printf '%s\n' "$raw"
+}
+
 show_config() {
   if [[ ! -f "$CONFIG" ]]; then
     echo -e "${RED}✗ prism.local.yaml 不存在，运行 bin/setenv --init 初始化${NC}"
@@ -379,8 +400,8 @@ do_example() {
 # Prism Local Configuration — core contract example
 # 保存为 prism.local.yaml；本地路径状态，不入版本控制。
 
-# 设备标识（hostname -s 自动生成，跨设备路径解析用）
-device_id: $(hostname -s)
+# 设备标识（自动从本机 hostname 推导，跨设备路径解析用）
+device_id: $(prism_short_hostname)
 
 # SDK 路径（Prism 仓库位置）
 sdk_path: ${PRISM_DIR}
@@ -423,7 +444,7 @@ EOF
 write_config() {
   local sdk="$1" skills="$2" vault="$3" ws_sub="$4" env_p="${5:-}" obs_p="${6:-}"
   local device_id
-  device_id=$(hostname -s)
+  device_id=$(prism_short_hostname)
   cat > "$CONFIG" << 'YAML_END'
 # Prism Local Configuration
 # 本地路径状态，不入版本控制（受控最小 schema，不可自由扩展）。
@@ -431,7 +452,7 @@ write_config() {
 
 YAML_END
   cat >> "$CONFIG" << CONFDATA
-# 设备标识（hostname -s 自动生成，跨设备路径解析用）
+# 设备标识（自动从本机 hostname 推导，跨设备路径解析用）
 device_id: ${device_id}
 
 # SDK 路径（Prism 仓库位置）
@@ -585,12 +606,12 @@ do_sync() {
 
   # 如果没有 device_id，自动补充
   if [[ -z "$device_id" ]]; then
-    device_id=$(hostname -s)
+    device_id=$(prism_short_hostname)
     # 插入 device_id 到 sdk_path 之前
     local tmp="${CONFIG}.tmp.$$"
     awk -v did="$device_id" '
       /^sdk_path:/ && !inserted {
-        print "# 设备标识（hostname -s 自动生成，跨设备路径解析用）"
+        print "# 设备标识（自动从本机 hostname 推导，跨设备路径解析用）"
         print "device_id: " did
         print ""
         inserted=1

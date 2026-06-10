@@ -73,8 +73,12 @@ def parse_prism_local_yaml(path: str) -> dict:
         "projects": {},
     }
 
-    with open(path, "r") as f:
-        lines = f.readlines()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except UnicodeDecodeError:
+        with open(path, "r", encoding="locale") as f:
+            lines = f.readlines()
 
     in_projects = False
     for line in lines:
@@ -159,8 +163,12 @@ def _read_gitignore_lines(path: str) -> set[str]:
     """读取 gitignore 文件的有效行集合"""
     if not path or not os.path.isfile(path):
         return set()
-    with open(path, "r") as f:
-        return set(line.strip() for line in f.readlines() if line.strip() and not line.startswith("#"))
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return set(line.strip() for line in f.readlines() if line.strip() and not line.startswith("#"))
+    except UnicodeDecodeError:
+        with open(path, "r", encoding="locale") as f:
+            return set(line.strip() for line in f.readlines() if line.strip() and not line.startswith("#"))
 
 
 def check_gitignore(project_dir: str) -> dict:
