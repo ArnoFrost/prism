@@ -56,6 +56,13 @@ fi
 
 在执行任何操作前，先判断当前 Agent 环境的交互能力。
 
+### Windows 注意事项
+
+- 推荐在 Windows 上使用 Git Bash 执行 `bin/` 脚本。
+- `bin/setenv --init` 会自动使用跨平台 hostname fallback 生成 `device_id`。
+- `bin/relink` 在 Windows 上会先尝试 `mklink /D` 目录符号链接；如果当前用户没有符号链接权限，会自动 fallback 到 `mklink /J` 目录联接。
+- 文件级链接（如 `AGENTS.local.md`）仍需要 Windows 符号链接权限；如需完整文件链接能力，开启 Windows 开发者模式或使用管理员终端。
+
 ### 探测方法
 
 检查当前可用的工具/能力：
