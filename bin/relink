@@ -97,9 +97,14 @@ PLATFORM_TARGETS=()
 
 # 解析 archived_skills 列表
 ARCHIVED_SKILLS=()
+ARCHIVE_COMPAT=false
 _in_archived=false
 while IFS= read -r line; do
-  if [[ "$line" =~ ^archived_skills: ]]; then _in_archived=true; continue; fi
+  if [[ "$line" =~ ^archived_skills: ]]; then
+    ARCHIVE_COMPAT=true
+    _in_archived=true
+    continue
+  fi
   if $_in_archived; then
     if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+(.*) ]]; then
       ARCHIVED_SKILLS+=("${BASH_REMATCH[1]}")
@@ -109,7 +114,12 @@ while IFS= read -r line; do
   fi
 done < "$CONFIG"
 
+if [[ "${PRISM_SCAN_ARCHIVED:-}" == "1" || "${PRISM_SCAN_ARCHIVED:-}" == "true" ]]; then
+  ARCHIVE_COMPAT=true
+fi
+
 is_archived() {
+  $ARCHIVE_COMPAT || return 1
   local name="$1"
   for a in "${ARCHIVED_SKILLS[@]+"${ARCHIVED_SKILLS[@]}"}"; do
     [[ "$a" == "$name" ]] && return 0
@@ -131,11 +141,27 @@ _scan_archived_dir() {
   done
 }
 
-[[ -n "$SKILLS_PATH" ]] && _scan_archived_dir "$SKILLS_PATH/_archived"
-[[ -n "$ENV_PATH" ]]    && _scan_archived_dir "$ENV_PATH/skills/_archived"
+if $ARCHIVE_COMPAT; then
+  [[ -n "$SKILLS_PATH" ]] && _scan_archived_dir "$SKILLS_PATH/_archived"
+  [[ -n "$ENV_PATH" ]]    && _scan_archived_dir "$ENV_PATH/skills/_archived"
+fi
+
+_trim_trailing_blank_lines() {
+  local file="$1"
+  local tmp="${file}.trim.$$"
+  awk '
+    NF {
+      while (blank > 0) { print ""; blank-- }
+      print
+      next
+    }
+    { blank++ }
+  ' "$file" > "$tmp" && mv "$tmp" "$file"
+}
 
 # 回写 archived_skills 到 prism.local.yaml（幂等：删旧段 + 追加新段）
 _sync_archived_yaml() {
+  $ARCHIVE_COMPAT || return 0
   [[ ${#ARCHIVED_SKILLS[@]} -eq 0 ]] && return
   $CHECK_ONLY && return
   $DRY_RUN && return
@@ -150,7 +176,7 @@ _sync_archived_yaml() {
   ' "$CONFIG" > "$tmp"
 
   # 移除尾部多余空行
-  sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp" 2>/dev/null || true
+  _trim_trailing_blank_lines "$tmp"
 
   # 追加新段（排序去重保持可读性）
   echo "" >> "$tmp"
@@ -179,6 +205,136 @@ log_skip()  { echo -e "  ${DIM}⊘${NC} $1"; ((TOTAL++)) || true; }
 log_warn()  { echo -e "  ${YELLOW}⚠${NC} $1"; ((TOTAL++)) || true; }
 log_err()   { echo -e "  ${RED}✗${NC} $1"; ((ERRORS++)) || true; ((TOTAL++)) || true; }
 
+is_windows() {
+  case "$(uname -s 2>/dev/null || echo unknown)" in
+    MINGW*|MSYS*|CYGWIN*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+_path_for_compare() {
+  local p="$1"
+  local out="$p"
+  if command -v cygpath >/dev/null 2>&1; then
+    out=$(cygpath -m "$p" 2>/dev/null || printf '%s' "$p")
+  fi
+  out="${out//\\//}"
+  out="${out%/}"
+  printf '%s\n' "$out"
+}
+
+_same_path() {
+  local a b
+  a=$(_path_for_compare "$1")
+  b=$(_path_for_compare "$2")
+  if is_windows; then
+    [[ "${a,,}" == "${b,,}" ]]
+  else
+    [[ "$a" == "$b" ]]
+  fi
+}
+
+_windows_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+  else
+    printf '%s\n' "$1"
+  fi
+}
+
+_windows_reparse_target() {
+  is_windows || return 1
+  [[ -e "$1" ]] || return 1
+  command -v powershell.exe >/dev/null 2>&1 || return 1
+
+  local win_path
+  win_path=$(_windows_path "$1")
+  powershell.exe -NoProfile -Command "\$p = Get-Item -LiteralPath \$args[0] -Force -ErrorAction SilentlyContinue; if (\$p -and ((\$p.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0)) { \$target = \$p.Target; if (\$target -is [array]) { \$target[0] } else { \$target } }" "$win_path" 2>/dev/null | tr -d '\r' | head -1
+}
+
+_managed_link_target() {
+  local link_path="$1"
+  if [[ -L "$link_path" ]]; then
+    readlink "$link_path"
+    return 0
+  fi
+  _windows_reparse_target "$link_path"
+}
+
+_is_managed_link() {
+  local link_path="$1"
+  [[ -L "$link_path" ]] && return 0
+  [[ -e "$link_path" ]] || return 1
+  [[ -n "$(_windows_reparse_target "$link_path" 2>/dev/null || true)" ]]
+}
+
+_remove_managed_link() {
+  local link_path="$1"
+  if [[ -L "$link_path" ]]; then
+    rm "$link_path"
+    return $?
+  fi
+
+  if is_windows && [[ -n "$(_windows_reparse_target "$link_path" 2>/dev/null || true)" ]]; then
+    local win_link
+    win_link=$(_windows_path "$link_path")
+    if [[ -d "$link_path" ]]; then
+      MSYS2_ARG_CONV_EXCL='*' cmd.exe /C rmdir "$win_link" >/dev/null 2>&1
+    else
+      MSYS2_ARG_CONV_EXCL='*' cmd.exe /C del "$win_link" >/dev/null 2>&1
+    fi
+    return $?
+  fi
+
+  return 1
+}
+
+_can_use_file_copy_fallback() {
+  local link_path="$1"
+  local target="$2"
+  is_windows || return 1
+  [[ "$(basename "$link_path")" == "AGENTS.local.md" ]] || return 1
+  [[ -f "$target" ]] || return 1
+  [[ "$target" == "$WS_ROOT"* ]] || return 1
+}
+
+_create_managed_link() {
+  local link_path="$1"
+  local target="$2"
+  LINK_KIND="symlink"
+
+  if is_windows; then
+    local win_link win_target
+    win_link=$(_windows_path "$link_path")
+    win_target=$(_windows_path "$target")
+
+    if [[ -d "$target" ]]; then
+      if MSYS2_ARG_CONV_EXCL='*' cmd.exe /C mklink /D "$win_link" "$win_target" >/dev/null 2>&1; then
+        LINK_KIND="symlink"
+        return 0
+      fi
+      if MSYS2_ARG_CONV_EXCL='*' cmd.exe /C mklink /J "$win_link" "$win_target" >/dev/null 2>&1; then
+        LINK_KIND="junction"
+        return 0
+      fi
+      return 1
+    fi
+
+    if MSYS2_ARG_CONV_EXCL='*' cmd.exe /C mklink "$win_link" "$win_target" >/dev/null 2>&1; then
+      LINK_KIND="symlink"
+      return 0
+    fi
+    if _can_use_file_copy_fallback "$link_path" "$target"; then
+      cp "$target" "$link_path"
+      LINK_KIND="copy"
+      return 0
+    fi
+    return 1
+  fi
+
+  ln -sfn "$target" "$link_path"
+}
+
 ensure_link() {
   local link_path="$1"
   local target="$2"
@@ -189,10 +345,10 @@ ensure_link() {
     return
   fi
 
-  if [[ -L "$link_path" ]]; then
+  if _is_managed_link "$link_path"; then
     local current
-    current=$(readlink "$link_path")
-    if [[ "$current" == "$target" ]]; then
+    current=$(_managed_link_target "$link_path")
+    if _same_path "$current" "$target"; then
       log_ok "${label} ${DIM}→ ${target}${NC}"
       return
     fi
@@ -213,8 +369,37 @@ ensure_link() {
       return
     fi
 
-    ln -sfn "$target" "$link_path"
-    log_fix "${label}: 已更新 ${DIM}→ ${target}${NC}"
+    if ! _remove_managed_link "$link_path"; then
+      log_err "${label}: 无法移除旧链接 ${DIM}${link_path}${NC}"
+      return
+    fi
+
+    if _create_managed_link "$link_path" "$target"; then
+      log_fix "${label}: 已更新 ${DIM}→ ${target}${NC} (${LINK_KIND})"
+    else
+      log_err "${label}: 创建链接失败 ${DIM}${link_path} → ${target}${NC}"
+    fi
+    return
+  fi
+
+  if [[ -f "$link_path" && -f "$target" ]] && _can_use_file_copy_fallback "$link_path" "$target"; then
+    if cmp -s "$link_path" "$target"; then
+      log_ok "${label} ${DIM}→ ${target}${NC} (copy)"
+      return
+    fi
+
+    if $CHECK_ONLY; then
+      log_warn "${label}: 本地副本需要刷新 ${DIM}${link_path}${NC}"
+      return
+    fi
+
+    if $DRY_RUN; then
+      log_fix "${label}: 将刷新本地副本 ${DIM}${link_path}${NC}"
+      return
+    fi
+
+    cp "$target" "$link_path"
+    log_fix "${label}: 已刷新本地副本 ${DIM}→ ${target}${NC} (copy)"
     return
   fi
 
@@ -233,8 +418,11 @@ ensure_link() {
     return
   fi
 
-  ln -sfn "$target" "$link_path"
-  log_fix "${label}: 已创建 ${DIM}→ ${target}${NC}"
+  if _create_managed_link "$link_path" "$target"; then
+    log_fix "${label}: 已创建 ${DIM}→ ${target}${NC} (${LINK_KIND})"
+  else
+    log_err "${label}: 创建链接失败 ${DIM}${link_path} → ${target}${NC}"
+  fi
 }
 
 _relink_writeback_path() {
@@ -549,7 +737,7 @@ if [[ ${#ARCHIVED_SKILLS[@]} -gt 0 && ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
     root_dir="${target#*|}"
     for archived_name in "${ARCHIVED_SKILLS[@]}"; do
       link_path="${root_dir}/${archived_name}"
-      if [[ -L "$link_path" ]]; then
+      if _is_managed_link "$link_path"; then
         if ! $_has_unlink_output; then
           echo -e "\n${CYAN}[归档反解]${NC}"
           _has_unlink_output=true
@@ -559,8 +747,11 @@ if [[ ${#ARCHIVED_SKILLS[@]} -gt 0 && ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
         elif $DRY_RUN; then
           echo -e "  ${YELLOW}⌫${NC} ${platform}: ${archived_name} ${DIM}(归档，将反解)${NC}"
         else
-          rm "$link_path"
-          echo -e "  ${YELLOW}⌫${NC} ${platform}: ${archived_name} ${DIM}(归档，已反解)${NC}"
+          if _remove_managed_link "$link_path"; then
+            echo -e "  ${YELLOW}⌫${NC} ${platform}: ${archived_name} ${DIM}(归档，已反解)${NC}"
+          else
+            log_err "${platform}: ${archived_name} 反解失败 ${DIM}${link_path}${NC}"
+          fi
         fi
         ((UNLINKED_ARCHIVED++)) || true
       fi
@@ -575,11 +766,16 @@ if $PRUNE; then
 
   prune_link() {
     local link="$1" label="$2"
+    local link_target
+    link_target=$(_managed_link_target "$link")
     if $DRY_RUN; then
-      echo -e "  ${YELLOW}⌫${NC} ${label}: 将删除 ${DIM}$(readlink "$link")${NC}"
+      echo -e "  ${YELLOW}⌫${NC} ${label}: 将删除 ${DIM}${link_target}${NC}"
     else
-      rm "$link"
-      echo -e "  ${YELLOW}⌫${NC} ${label}: 已删除 ${DIM}$(basename "$link")${NC}"
+      if _remove_managed_link "$link"; then
+        echo -e "  ${YELLOW}⌫${NC} ${label}: 已删除 ${DIM}$(basename "$link")${NC}"
+      else
+        log_err "${label}: 删除失败 ${DIM}${link}${NC}"
+      fi
     fi
     ((PRUNED++)) || true
   }
@@ -589,8 +785,8 @@ if $PRUNE; then
     platform="${target%%|*}"
     root_dir="${target#*|}"
     for link in "$root_dir"/*; do
-      [[ -L "$link" ]] || continue
-      link_target=$(readlink "$link")
+      _is_managed_link "$link" || continue
+      link_target=$(_managed_link_target "$link")
       # SDK 内置技能（指向 prism/skills/）
       if [[ "$link_target" == "$SDK_PATH/skills/"* ]]; then
         if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
@@ -623,8 +819,8 @@ if $PRUNE; then
         [[ -d "$local_path" ]] || continue
         # 扫描 workspace.*.local 和 AGENTS.local.md
         for link in "$local_path"/workspace.*.local "$local_path"/AGENTS.local.md; do
-          [[ -L "$link" ]] || continue
-          link_target=$(readlink "$link")
+          _is_managed_link "$link" || continue
+          link_target=$(_managed_link_target "$link")
           if [[ ! -e "$link_target" ]]; then
             prune_link "$link" "项目: $(basename "$link")"
           fi
