@@ -25,14 +25,13 @@ workspace_subdir: Prism/Workspace
 #   enabled: false
 #   branch: master
 #   remote: origin
-#   debounce_seconds: 300
-#   schedule:
+#   interval_minutes: 15          # wave-2：分钟级心跳；0=仅 schedule
+#   debounce_seconds: 120         # 成功同步后 N 秒内且无 dirty/ahead 则跳过
+#   large_file_mb: 20             # 超阈值阻断 push；PRISM_SYNC_ALLOW_LARGE=1 单次 override
+#   notify_on_success: false      # 成功 push 系统通知（默认关，防疲劳）
+#   notify_on_block: true         # 大文件阻断时通知
+#   schedule:                     # 定点兜底；与 interval 可并存（单 plist 双触发器）
 #     - "9:00"
-#     - "12:00"
-#     - "14:00"
-#     - "16:00"
-#     - "18:00"
-#     - "20:00"
 #     - "22:00"
 
 # 可选：归档技能（缺省时可省略整段；bin/relink 不会自动写入）
