@@ -250,7 +250,45 @@ def test_setup_sh_help():
     )
     assert result.returncode == 0
     assert "PRISM_VAULT_PATH" in result.stdout
+    assert "relink" in result.stdout
 
+
+def test_setup_sh_relink_delegates():
+    """setup.sh relink 应委托 bin/relink（--check 不修改）。"""
+    if not LOCAL_CONFIG.exists():
+        pytest.skip("prism.local.yaml is local-only")
+
+    root_sh = SDK_ROOT / "setup.sh"
+    result = subprocess.run(
+        [str(root_sh), "relink", "--check"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "错误: 0" in result.stdout or "错误:0" in result.stdout.replace(" ", "")
+
+
+def test_prism_relink_delegates():
+    """prism relink 应委托 bin/relink。"""
+    if not PRISM.exists():
+        pytest.skip("bin/prism 不存在")
+    if not LOCAL_CONFIG.exists():
+        pytest.skip("prism.local.yaml is local-only")
+
+    result = subprocess.run(
+        [str(PRISM), "relink", "--check"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "错误: 0" in result.stdout or "错误:0" in result.stdout.replace(" ", "")
+
+
+def test_bin_prism_header_has_python3_fallback():
     """r10 A2: 静态保证 bin/prism 的 _run_python 包含 python3 fallback 分支。"""
     content = PRISM.read_text(encoding="utf-8")
     assert "exec python3" in content, "bin/prism 缺少 python3 fallback exec 分支"

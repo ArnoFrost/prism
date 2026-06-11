@@ -75,7 +75,7 @@ prism --version
 ```bash
 bin/setenv --validate
 bin/setup --check
-bin/relink --check
+prism relink --check
 bin/doctor --scope config --quick
 ```
 
@@ -84,7 +84,7 @@ bin/doctor --scope config --quick
 | 意图 | 入口 |
 |------|------|
 | 接入已有项目 | `/workspace-init` |
-| 刷新软链接 | `bin/relink` |
+| 刷新软链接 | `prism relink` · `./setup.sh relink` |
 | topic 工作流 | `prism status` · `/workflow-intake`（见 [docs/onboarding.md](docs/onboarding.md)） |
 | 命令面分层与 E2E 验收 | [docs/onboarding.md](docs/onboarding.md) |
 
@@ -92,7 +92,7 @@ bin/doctor --scope config --quick
 
 完整速查表见 **[docs/onboarding.md](docs/onboarding.md)**。核心原则：
 
-- **环境 / 软链** → `bin/relink` · `bin/doctor` · `./setup.sh check`
+- **环境 / 软链** → `prism relink` · `bin/doctor` · `./setup.sh check`
 - **topic 产物** → `prism validate` · `prism finalize` · `prism status`
 - **没有** `prism doctor`；体检用 `bin/doctor`
 
@@ -109,7 +109,7 @@ bin/doctor --scope config --quick
 ```bash
 cd ~/prism && git pull origin main
 cd ~/prism-skills && git pull origin main   # 若使用外部 Skills
-cd ~/prism && bin/doctor --scope release --quick && bin/relink
+cd ~/prism && bin/doctor --scope release --quick && prism relink
 ```
 
 完整升级/回滚/故障排查 → [SETUP_AGENT.md §升级与回滚](SETUP_AGENT.md#升级与回滚)。

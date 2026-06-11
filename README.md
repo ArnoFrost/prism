@@ -95,8 +95,8 @@ Prism 的核心使用路径：
 
 | 步骤 | 命令 / 入口 | 做什么 |
 |------|-------------|--------|
-| **安装** | `PRISM_VAULT_PATH=… ./setup.sh init` | 配置 + relink + CLI 注入（等价 `bin/setenv --init` + `bin/relink`） |
-| **桥接** | `bin/relink` | 刷新软链接（项目 + Skills → IDE） |
+| **安装** | `PRISM_VAULT_PATH=… ./setup.sh init` | 配置 + relink + CLI 注入（等价 `bin/setenv --init` + `prism relink`） |
+| **桥接** | `prism relink` · `./setup.sh relink` | 刷新软链接（项目 + Skills → IDE） |
 | **接入** | `/workspace-init` | 让已有项目接入 Prism 工作区 |
 | **聚焦/评审** | `prism status` · `/workflow-scope` · `/workflow-review` | topic 健康巡检与评审 |
 
@@ -182,6 +182,7 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 | `prism reactivate` | 将 archive topic 移回 `topics/` |
 | `prism migrate`  | 迁移历史 review 子目录格式 |
 | `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态 |
+| `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |
 | `prism tidy`     | 工件机械对齐（focus 入口 / 索引 / frontmatter；README 仅存量兜底） |
 | `prism status`   | Workspace 活跃 topic 健康度扫描 |

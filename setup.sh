@@ -5,6 +5,7 @@
 #   ./setup.sh              默认 init（需 prism.local.yaml 或 PRISM_* 环境变量）
 #   ./setup.sh init         同默认
 #   ./setup.sh check        健康检查（委托 bin/setup --check）
+#   ./setup.sh relink       刷新软链接（委托 bin/relink；参数透传）
 #   ./setup.sh help         本帮助
 #
 # 首次 init 环境变量（路径含空格须双引号）:
@@ -26,6 +27,7 @@ setup.sh — Prism 仓库根入口（人类一键 init）
   ./setup.sh              默认 init
   ./setup.sh init         创建/校验配置并 bin/setup --non-interactive
   ./setup.sh check        健康检查
+  ./setup.sh relink       刷新软链接（同 bin/relink / prism relink）
   ./setup.sh help         本帮助
 
 首次 init 环境变量:
@@ -58,6 +60,7 @@ cmd="${1:-init}"
 case "$cmd" in
   init)       shift || true; run_init "$@" ;;
   check)      shift || true; exec "$ROOT/bin/setup" --check "$@" ;;
+  relink)     shift || true; exec "$ROOT/bin/relink" "$@" ;;
   -h|--help|help) usage; exit 0 ;;
   *)
     echo "未知子命令: $cmd" >&2

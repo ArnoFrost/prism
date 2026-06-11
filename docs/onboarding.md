@@ -16,7 +16,7 @@
 |------|----------|---------------|
 | **安装** | `./setup.sh init` | 读 `SETUP_AGENT.md` |
 | **健康** | `./setup.sh check` · `bin/doctor --scope config --quick` | — |
-| **桥接** | `bin/relink` | `/workspace-init` |
+| **桥接** | `prism relink` · `./setup.sh relink` | `/workspace-init` |
 | **topic** | `prism status` · `prism sniff` | `/workflow-intake` · `/workflow-scope` · `/workflow-review` |
 
 > **不存在 `prism doctor` verb**。体检走 **`bin/doctor`**（见 [cli-contract.md §JSON 消费](./cli-contract.md)）。
@@ -28,12 +28,12 @@
 | 层 | 入口 | 何时用 | 示例 |
 |----|------|--------|------|
 | **仓库根** | `./setup.sh` | 人类一键 init / check | `./setup.sh init` |
-| **`bin/`** | 环境、软链、发布 | 改配置、刷 IDE 分发、发布前体检 | `bin/relink` · `bin/setenv --validate` · `bin/doctor --scope release` |
-| **`prism <verb>`** | workspace / topic | 校验产物、同步、评审收尾 | `prism validate` · `prism finalize` · `prism status` |
+| **`bin/`** | 环境、软链、发布 | 改配置、刷 IDE 分发、发布前体检 | `bin/doctor` · `bin/setenv --validate` · `bin/relink`（底层） |
+| **`prism <verb>`** | workspace / topic + 常用环境 | 校验产物、同步、刷新软链 | `prism validate` · `prism finalize` · `prism status` · **`prism relink`** |
 
 **判断口诀**（与 cli-contract 一致）：
 
-- 动 **本机环境 / 软链 / 全仓 skill** → `bin/*`
+- 动 **本机环境 / 软链 / 全仓 skill** → 优先 **`prism relink`**（或 `./setup.sh relink` / `bin/relink`）
 - 动 **某个 topic 目录里的 reviews / decisions / scope** → `prism <verb>`
 
 ---
@@ -46,7 +46,7 @@
 cd ~/prism
 ./setup.sh check                    # 或 bin/setup --check
 bin/setenv --validate
-bin/relink                          # 改 projects / skills 路径后
+prism relink                          # 或 ./setup.sh relink / bin/relink
 bin/doctor --scope config --fix     # 补全局 gitignore 等（非破坏性）
 ```
 
@@ -67,7 +67,7 @@ Agent 侧对应 slash skill：`/workflow-status` · `/workflow-intake` · `/work
 ```bash
 cd ~/prism && git pull origin main
 bin/doctor --scope release --quick
-bin/relink
+prism relink
 prism --version
 ```
 
@@ -94,7 +94,7 @@ Workspace Git 同步**不是** core contract 硬依赖；启用后见 Vault topi
 | E1 | SDK init | `PRISM_VAULT_PATH=~/PrismWorkspace ./setup.sh init` | 无 error 汇总 |
 | E2 | 配置 | `bin/setenv --validate` | Vault / Workspace 可达 |
 | E3 | CLI | `prism --version` | 输出版本号 |
-| E4 | 软链 | `bin/relink --check` | 错误: 0 |
+| E4 | 软链 | `prism relink --check` | 错误: 0 |
 | E5 | 全局 gitignore | `bin/doctor --scope config --quick` | 无 blocking err |
 | E6 | Vault 拉取 | `vault-pull`（已启用 sync 时） | pull 成功 |
 | E7 | 同步状态 | `vault-stat` | enabled=true，无 ahead/dirty 异常说明 |

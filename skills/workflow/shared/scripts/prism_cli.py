@@ -14,6 +14,7 @@
   uv run python prism_cli.py tidy <project_dir> [--fix] [--topic <主题>]
   uv run python prism_cli.py status <project_dir> [--format json|markdown]
   uv run python prism_cli.py digest <project_dir> --topic <主题>
+  uv run python prism_cli.py relink [--check] [--dry-run] [--prune] [--project CODE]
   uv run python prism_cli.py manifest            # verb 元数据清单
 
 顶层选项:
@@ -28,6 +29,7 @@ import argparse
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -127,6 +129,11 @@ VERB_REGISTRY = {
         "stability": "exempt",
         "schema_compliant": False,
         "description": "嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免，见 §1 豁免条款）",
+    },
+    "relink": {
+        "stability": "stable",
+        "schema_compliant": False,
+        "description": "刷新项目/Skills IDE 软链接（委托 bin/relink；参数同 bin/relink）",
     },
     "finalize": {
         "stability": "experimental",
@@ -1001,6 +1008,34 @@ def cmd_sync(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_relink(args: argparse.Namespace) -> int:
+    """刷新软链接（薄委托 bin/relink，stdout/stderr 透传）。"""
+    relink = os.path.join(SDK_ROOT, "bin", "relink")
+    if not os.path.isfile(relink):
+        msg = f"bin/relink 未找到: {relink}"
+        if getattr(args, "json_mode", False):
+            _print_outer(_outer_envelope(
+                command="relink",
+                errors=[{"code": "RELINK_MISSING", "message": msg, "hint": "确认 SDK 路径完整"}],
+            ))
+            return 127
+        print(msg, file=sys.stderr)
+        return 127
+
+    cmd = [relink]
+    if args.check:
+        cmd.append("--check")
+    if args.dry_run:
+        cmd.append("--dry-run")
+    if args.prune:
+        cmd.append("--prune")
+    if args.project:
+        cmd.extend(["--project", args.project])
+
+    completed = subprocess.run(cmd, check=False)
+    return completed.returncode
+
+
 # ============================================================
 # 主入口
 # ============================================================
@@ -1090,6 +1125,16 @@ def main():
     p_sync.add_argument("--all", action="store_true")
     p_sync.add_argument("--fetch", action="store_true", help="执行 git fetch（默认不 fetch）")
 
+    # relink（薄委托 bin/relink）
+    p_relink = subparsers.add_parser(
+        "relink",
+        help="刷新项目/Skills IDE 软链接（委托 bin/relink）",
+    )
+    p_relink.add_argument("--check", action="store_true", help="仅检查，不修改")
+    p_relink.add_argument("--dry-run", action="store_true", help="预览变更")
+    p_relink.add_argument("--prune", action="store_true", help="清理陈旧/失效软链接")
+    p_relink.add_argument("--project", default=None, help="仅刷新指定项目代号")
+
     # finalize（v2.0 取代 pipeline；含 --decision flag + trace flags）
     p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → validate-review-call → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
@@ -1168,6 +1213,7 @@ def main():
         "reactivate": cmd_reactivate,
         "migrate": cmd_migrate,
         "sync": cmd_sync,
+        "relink": cmd_relink,
         "finalize": cmd_finalize,
         "tidy": cmd_tidy,
         "status": cmd_status,
