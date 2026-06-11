@@ -144,26 +144,7 @@ def _is_intake_file(name: str) -> bool:
 _MODE_FULL_HINTS = ("mode=full", "mode: full", "mode full", "**full**", "[full]")
 
 
-def _parse_frontmatter_field(text: str, field: str) -> str | None:
-    """从文件开头 frontmatter (---...---) 提取指定字段的 value。
-
-    限制：
-    - frontmatter 必须以 `---` 开头（文件首行）
-    - 仅解析第一个 frontmatter 块
-    - 返回 value 已去引号 / 去末尾注释；未找到返回 None
-    """
-    head = text[:3000]
-    fm_match = re.match(r"^---\s*\n(.*?)^---\s*$", head, re.MULTILINE | re.DOTALL)
-    if not fm_match:
-        return None
-    fm_body = fm_match.group(1)
-    field_match = re.search(rf"^{re.escape(field)}\s*:\s*(.+?)$", fm_body, re.MULTILINE)
-    if not field_match:
-        return None
-    value = field_match.group(1).strip()
-    value = re.sub(r"\s+#.*$", "", value).strip()
-    value = value.strip("'\"")
-    return value
+from parse_utils import extract_frontmatter_field as _parse_frontmatter_field
 
 
 def detect_review_mode(text: str) -> str:

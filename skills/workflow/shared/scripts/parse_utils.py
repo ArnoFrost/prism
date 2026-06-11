@@ -24,6 +24,36 @@ def read_file(path: str, limit: int | None = None) -> str | None:
         return f.read()
 
 
+def extract_frontmatter_field(text: str, field: str) -> str | None:
+    """从 markdown 头部 YAML frontmatter 中读出一个标量字段值。
+
+    剥离行内注释（# 之后内容，引号内 # 保留）；剥离引号包裹。
+    无 frontmatter 或未闭合时返回 None。
+    """
+    if not text.startswith("---"):
+        return None
+    end_idx = text.find("\n---", 3)
+    if end_idx < 0:
+        return None
+    fm = text[3:end_idx]
+    m = re.search(rf"^{re.escape(field)}\s*:\s*(.+?)\s*$", fm, re.M)
+    if not m:
+        return None
+    val = m.group(1).strip()
+    if val.startswith('"') or val.startswith("'"):
+        quote = val[0]
+        close = val.find(quote, 1)
+        if close > 0:
+            val = val[1:close]
+    elif "#" in val:
+        val = val.split("#", 1)[0].rstrip()
+    elif len(val) >= 2 and (
+        (val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")
+    ):
+        val = val[1:-1]
+    return val
+
+
 def extract_field(content: str, field: str) -> str | None:
     """从 Markdown 表格中提取 **field** | value 格式的值。"""
     m = re.search(
