@@ -8,9 +8,9 @@
 
 1. 更新 SDK 到 `v2.0.0`。
 2. 把旧命令 `prism pipeline` 替换为 `prism finalize`。
-3. 运行一次 `bin/setup --non-interactive` 和 `bin/relink`，让本机配置与软链接自动补齐。
+3. 运行 **`./setup.sh init`**（或 `bin/setup --non-interactive` + `bin/relink`），让本机配置与软链接自动补齐。
 
-如果你使用 zip 分发包，按包内 `INSTALL_INTERNAL.md` 的升级模式走；如果你使用 git clone，按 `SETUP.md` 重新执行非交互初始化即可。
+如果你使用 zip 分发包，按包内 `INSTALL_INTERNAL.md` 的升级模式走；如果你使用 git clone，按 [SETUP_AGENT.md](../SETUP_AGENT.md) 重新执行非交互初始化，或人类自助见 [SETUP_GITHUB.md](../SETUP_GITHUB.md)。
 
 ## 破坏性变化
 
@@ -72,7 +72,7 @@ rg -n "prism pipeline" .
 - `prism --version` 输出 `v2.0.0` 或更新版本。
 - `prism --help` 不再列出 `pipeline`。
 - `prism finalize <topic>` 能正常运行。
-- `bin/setup --check --non-interactive` 通过。
+- `bin/setup --check --non-interactive` 或 `./setup.sh check` 通过。
 - `bin/relink --dry-run` 无意外 destructive 变更。
 - 如果启用 strict 治理，`prism validate-trace <topic> --json` 无 errors。
 

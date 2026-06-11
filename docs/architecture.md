@@ -204,7 +204,11 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 ```text
 prism/
 ├── AGENTS.md                        # 协作契约（Protocol 入口）
-├── SETUP.md                         # Agent 交互式引导
+├── setup.sh                         # 人类一键 init（委托 bin/setup）
+├── SETUP.md                         # 兼容 stub → SETUP_AGENT / SETUP_GITHUB
+├── SETUP_AGENT.md                   # Agent 交互式引导（SSOT；main/internal 同文）
+├── SETUP_GITHUB.md                  # 人类安装（GitHub main）
+├── prism.local.yaml.example         # 配置样例
 ├── README.md
 ├── LICENSE
 ├── bin/                             # 工具入口

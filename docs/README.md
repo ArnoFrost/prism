@@ -9,9 +9,11 @@
 ## 建议读序（L1 使用者）
 
 1. 仓库根 [README](../README.md) — 安装与工具入口  
-2. [prism-3.0.md](./prism-3.0.md) — 为什么是认知熵治理框架  
-3. [topic-lifecycle.md](./topic-lifecycle.md) + [skill-taxonomy.md](./skill-taxonomy.md) — topic 与 skill 怎么选  
-4. 已有 workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
+2. [SETUP_GITHUB.md](../SETUP_GITHUB.md) — 人类安装；[SETUP_AGENT.md](../SETUP_AGENT.md) — Agent  
+3. [onboarding.md](./onboarding.md) — **init 之后**日常命令与 E2E 验收  
+4. [prism-3.0.md](./prism-3.0.md) — 为什么是认知熵治理框架  
+5. [topic-lifecycle.md](./topic-lifecycle.md) + [skill-taxonomy.md](./skill-taxonomy.md) — topic 与 skill 怎么选  
+6. 已有 workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
 
 贡献者与协议修订 → [contributing.md](./contributing.md)（L3+）。
 
@@ -24,6 +26,7 @@
 | 文档 | 用途 |
 |------|------|
 | [cli-contract.md](./cli-contract.md) | `bin/` vs `prism <verb>` 稳定性、JSON 协议、verb 表 |
+| [onboarding.md](./onboarding.md) | init 后命令面分层、日常运维、E2E 验收 checklist |
 | [cli-json-schema.json](./cli-json-schema.json) | `--json` envelope schema |
 | [glossary.md](./glossary.md) | 术语人类速查（cite `vocabulary.md` SSOT） |
 | [migration.md](./migration.md) | v1.x → v2.0 破坏性迁移 |

@@ -134,9 +134,10 @@ _scan_archived_dir() {
 [[ -n "$SKILLS_PATH" ]] && _scan_archived_dir "$SKILLS_PATH/_archived"
 [[ -n "$ENV_PATH" ]]    && _scan_archived_dir "$ENV_PATH/skills/_archived"
 
-# 回写 archived_skills 到 prism.local.yaml（幂等：删旧段 + 追加新段）
+# 回写 archived_skills 到 prism.local.yaml（仅当配置已声明该段；缺省不 surprise 写盘）
 _sync_archived_yaml() {
   [[ ${#ARCHIVED_SKILLS[@]} -eq 0 ]] && return
+  grep -q '^archived_skills:' "$CONFIG" 2>/dev/null || return
   $CHECK_ONLY && return
   $DRY_RUN && return
 

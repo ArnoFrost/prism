@@ -2,6 +2,7 @@
 
 > 本文件固化 `bin/` 与 `prism <verb>` 命令面分层 / 稳定性承诺 / "30 秒加 verb" 设计门槛 / 双协议范围。
 > 所有对 `bin/` 与 `prism <verb>` 的新增、改名、删除必须引用本文作为依据。
+> **init 后日常速查** → [onboarding.md](./onboarding.md)
 > 版本：v3.0.0-beta（随 SDK `VERSION` 同步升级）
 
 ---

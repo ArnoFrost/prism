@@ -40,7 +40,7 @@ def _make_sdk_tree(dest: Path) -> Path:
             entry.chmod(entry.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     (dest / "skills").symlink_to(SDK_ROOT / "skills")
-    for fname in ("VERSION", "AGENTS.md", "SETUP.md"):
+    for fname in ("VERSION", "AGENTS.md", "SETUP.md", "SETUP_AGENT.md", "SETUP_GITHUB.md"):
         src = SDK_ROOT / fname
         if src.exists():
             (dest / fname).symlink_to(src)

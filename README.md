@@ -60,47 +60,47 @@ flowchart TB
 
 ### 仓库地址
 
-GitHub 公开版从以下地址克隆：
+GitHub 公开版：
 
 ```bash
 git clone git@github.com:ArnoFrost/prism.git ~/prism
 ```
 
-> **公开 / 内部分发治理**：`main` 分支只维护 GitHub 公开口径，不暴露内部仓库地址、内部 MR 流程或内部安装路径。司内分发说明保留在 `internal` 分支或内部安装文档中维护。
+### 人类安装（推荐先看）
+
+按步骤自助完成 clone → 配置 → init → CLI：[SETUP_GITHUB.md](SETUP_GITHUB.md)
 
 ### Agent 引导（推荐）
 
 把这句话发给你的 AI Agent（Cursor / Claude Code / CodeBuddy）：
 
-> 帮我克隆 `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，然后读取 `~/prism/SETUP.md` 并按里面的指引帮我完成初始化。
+> 帮我克隆 `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，然后读取 `~/prism/SETUP_AGENT.md` 并按里面的指引帮我完成初始化。
 
-### 手动安装
+### 手动安装（命令速查）
 
 ```bash
-# 1. Clone SDK（core contract）
+# 详见 SETUP_GITHUB.md
 git clone git@github.com:ArnoFrost/prism.git ~/prism
-# 可选：外部 Skills 扩展
-git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
+cd ~/prism
+PRISM_VAULT_PATH="$HOME/PrismWorkspace" ./setup.sh init
 ```
 
 ### 首屏闭环
 
-Prism 的核心使用路径只有四步：
+Prism 的核心使用路径：
 
+```text
+安装（setup.sh init）→ 桥接 → 接入项目 → 聚焦/评审
 ```
-配置 → 桥接 → 接入 → 聚焦/评审
-```
 
+| 步骤 | 命令 / 入口 | 做什么 |
+|------|-------------|--------|
+| **安装** | `PRISM_VAULT_PATH=… ./setup.sh init` | 配置 + relink + CLI 注入（等价 `bin/setenv --init` + `bin/relink`） |
+| **桥接** | `bin/relink` | 刷新软链接（项目 + Skills → IDE） |
+| **接入** | `/workspace-init` | 让已有项目接入 Prism 工作区 |
+| **聚焦/评审** | `prism status` · `/workflow-scope` · `/workflow-review` | topic 健康巡检与评审 |
 
-| 步骤     | 命令 / 入口             | 做什么                          |
-| ------ | ------------------- | ---------------------------- |
-| **配置** | `bin/setenv --init` | 填写本地路径，生成 `prism.local.yaml` |
-| **桥接** | `bin/relink`        | 刷新所有软链接（项目 + Skills → IDE）   |
-| **接入** | `/workspace-init`   | 让已有项目接入 Prism 工作区            |
-| **聚焦/评审** | `/workflow-scope` / `/workflow-review` | 从 scope 刷新 focus，必要时多角色评审 |
-
-
-前两步是 SDK 工具，后两步是 AI Skill（通过 Agent 调用）。
+init 之后的命令分层与 E2E 验收 → [docs/onboarding.md](docs/onboarding.md)。**没有** `prism doctor`；体检用 `bin/doctor`。
 
 ### 交付口径
 
@@ -122,6 +122,9 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 
 | 你想了解 | 入口 |
 |----------|------|
+| **安装（人类 · GitHub）** | [SETUP_GITHUB.md](SETUP_GITHUB.md) |
+| **安装（Agent）** | [SETUP_AGENT.md](SETUP_AGENT.md) |
+| **init 后日常 / E2E 验收** | [docs/onboarding.md](docs/onboarding.md) |
 | 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
 | Prism 3.0 为什么是轻量认知熵管理框架 | [docs/prism-3.0.md](docs/prism-3.0.md) |
 | 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |

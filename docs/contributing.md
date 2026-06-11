@@ -1,12 +1,12 @@
 # Prism Contributing Guide
 
-> 本文面向会修改 Prism SDK、Skills 或文档的 L3 贡献者。普通使用者只需要阅读 `README.md` 和 `SETUP.md`。
+> 本文面向会修改 Prism SDK、Skills 或文档的 L3 贡献者。普通使用者只需要阅读 `README.md` 和 [SETUP_GITHUB.md](../SETUP_GITHUB.md)（Agent 用 [SETUP_AGENT.md](../SETUP_AGENT.md)）。
 
 ## 贡献者分层
 
 | 层级 | 典型身份 | 默认入口 | 可修改范围 |
 |------|----------|----------|------------|
-| L1 使用者 | 只安装和使用 Prism | `README.md` / `SETUP.md` | 不修改仓库 |
+| L1 使用者 | 只安装和使用 Prism | `README.md` / [SETUP_GITHUB.md](../SETUP_GITHUB.md) | 不修改仓库 |
 | L2 项目接入者 | 为某个工作仓库接入 Workspace | `/workspace-init` / `AGENTS.local.md` | 本地 `.local` 状态 |
 | L3 贡献者 | 修改 SDK、Skills、文档或发布流程 | 本文 · [docs/README.md](./README.md) | 共享仓库内的代码与文档 |
 | L4 维护者 | 处理发布、协议修订、破坏性变更 | [docs/README.md](./README.md) · `docs/architecture.md` · `docs/cli-contract.md` | 协议、版本、CI、分发 |

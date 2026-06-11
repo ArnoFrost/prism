@@ -1,0 +1,44 @@
+# Prism Local Configuration — core contract example
+# 复制为 prism.local.yaml 并按本机路径修改；不入版本控制。
+# 生成 SSOT：bin/setenv --example
+
+# 设备标识（hostname -s 自动生成，跨设备路径解析用）
+device_id: YOUR_DEVICE_ID
+
+# SDK 路径（Prism 仓库位置）
+sdk_path: ~/prism
+
+# Vault 基础路径（Git 仓库根或 iCloud Obsidian 路径）
+vault_path: ~/PrismWorkspace
+
+# Vault 内 Workspace 子目录（相对于 vault_path）
+workspace_subdir: Prism/Workspace
+
+# 可选：外部 Skills 扩展仓库路径（mini profile/package 不要求）
+# skills_path: ~/prism-skills
+
+# 可选：env 层路径（如 ArnoDotFiles）
+# env_path: ~/ArnoDotFiles
+
+# 可选：Workspace Git 同步（Layer 4 增强；显式 enabled: true 才启用）
+# workspace_git:
+#   enabled: false
+#   branch: master
+#   remote: origin
+#   debounce_seconds: 300
+#   schedule:
+#     - "9:00"
+#     - "12:00"
+#     - "14:00"
+#     - "16:00"
+#     - "18:00"
+#     - "20:00"
+#     - "22:00"
+
+# 可选：归档技能（缺省时可省略整段；bin/relink 不会自动写入）
+# archived_skills:
+#   - example-archived-skill
+
+# 注册项目（CODE: 本地路径）
+projects:
+  PRISM: ~/prism

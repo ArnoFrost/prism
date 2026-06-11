@@ -22,7 +22,7 @@ DEFAULT_PATTERNS: dict[str, str] = {
     "workspace_bridge": r"workspace\.prism\.local",
 }
 
-DEFAULT_DOC_NAMES = {"README.md", "SETUP.md"}
+DEFAULT_DOC_NAMES = {"README.md", "SETUP.md", "SETUP_AGENT.md", "SETUP_GITHUB.md"}
 DEFAULT_SCAN_DIRS = ("docs", "skills")
 EXCLUDED_PARTS = {
     ".git",

@@ -237,7 +237,20 @@ def test_bin_prism_emits_uv_missing_hint(tmp_path):
     assert "uv" in result.stderr and "bin/setup" in result.stderr, result.stderr
 
 
-def test_bin_prism_run_python_has_python3_fallback_branch():
+def test_setup_sh_help():
+    """根目录 setup.sh 可执行且 help 可用。"""
+    root_sh = SDK_ROOT / "setup.sh"
+    assert root_sh.is_file() and os.access(root_sh, os.X_OK)
+    result = subprocess.run(
+        [str(root_sh), "help"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0
+    assert "PRISM_VAULT_PATH" in result.stdout
+
     """r10 A2: 静态保证 bin/prism 的 _run_python 包含 python3 fallback 分支。"""
     content = PRISM.read_text(encoding="utf-8")
     assert "exec python3" in content, "bin/prism 缺少 python3 fallback exec 分支"
