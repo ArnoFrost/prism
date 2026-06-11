@@ -298,15 +298,19 @@ def _subprocess_env() -> dict[str, str]:
 # 子命令实现
 # ============================================================
 
+# --kind 值 → skills/workflow/ 下实际 skill 目录名（workflow-* 前缀）
+_SNIFF_KIND_DIRS = {
+    "review": "workflow-review",
+    "intake": "workflow-intake",
+}
+
+
 def cmd_sniff(args: argparse.Namespace) -> int:
     """嗅探项目环境（按 --kind 分派到 review / intake sniff）"""
     kind = getattr(args, "kind", "review") or "review"
     json_mode = getattr(args, "json_mode", False)
 
-    sub_dir = {
-        "review": "review",
-        "intake": "intake",
-    }.get(kind)
+    sub_dir = _SNIFF_KIND_DIRS.get(kind)
     if sub_dir is None:
         msg = f"未知 --kind '{kind}'，支持: review | intake"
         if json_mode:

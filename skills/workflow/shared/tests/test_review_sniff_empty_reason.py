@@ -22,8 +22,8 @@ from pathlib import Path
 
 import pytest
 
-# review/scripts/sniff.py 通过软链接导入 sniff_lib；测试时直接导入 sniff 模块
-SNIFF_PY = Path(__file__).resolve().parents[2] / "review" / "scripts" / "sniff.py"
+# workflow-review/scripts/sniff.py；测试时直接导入 sniff 模块
+SNIFF_PY = Path(__file__).resolve().parents[2] / "workflow-review" / "scripts" / "sniff.py"
 SHARED_SCRIPTS = Path(__file__).resolve().parents[1]  # skills/workflow/shared
 
 # 用 importlib 强制按文件路径加载，避免与 tests/test_sniff.py 的
