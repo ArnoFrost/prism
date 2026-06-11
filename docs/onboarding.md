@@ -79,7 +79,7 @@ prism --version
 
 ## Vault 跨设备（可选 Layer 4）
 
-Workspace Git 同步**不是** core contract 硬依赖；启用后见 Vault topic **047** 的 `migration-guide.md`（路径：`topics/047_vault-git-migration/migration-guide.md`，经 `workspace.prism.local` 桥接可读）。
+Workspace Git 同步**不是** core contract 硬依赖；启用后见 Vault topic **047** 的 `migration-guide.md`（路径：`archive/047_vault-git-migration/migration-guide.md`，经 `workspace.prism.local` 桥接可读）。
 
 新机最小顺序：
 
