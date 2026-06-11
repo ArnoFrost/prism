@@ -76,7 +76,7 @@ prism --version
 bin/setenv --validate
 bin/setup --check
 prism relink --check
-bin/doctor --scope config --quick
+prism doctor --scope config --quick
 ```
 
 ## 6. 下一步与日常操作
@@ -92,14 +92,14 @@ bin/doctor --scope config --quick
 
 完整速查表见 **[docs/onboarding.md](docs/onboarding.md)**。核心原则：
 
-- **环境 / 软链** → `prism relink` · `bin/doctor` · `./setup.sh check`
+- **环境 / 软链** → `prism relink` · `prism doctor` · `./setup.sh check`
+- **升级** → `prism update`（或分步 pull + doctor + relink）
 - **topic 产物** → `prism validate` · `prism finalize` · `prism status`
-- **没有** `prism doctor`；体检用 `bin/doctor`
 
 ```bash
 prism --version
 prism status --project PRISM    # 示例
-bin/doctor --scope config --quick
+prism doctor --scope config --quick
 ```
 
 ## 升级与回滚
@@ -107,9 +107,7 @@ bin/doctor --scope config --quick
 日常升级：
 
 ```bash
-cd ~/prism && git pull origin main
-cd ~/prism-skills && git pull origin main   # 若使用外部 Skills
-cd ~/prism && bin/doctor --scope release --quick && prism relink
+prism update                      # 或分步 pull + doctor + relink
 ```
 
 完整升级/回滚/故障排查 → [SETUP_AGENT.md §升级与回滚](SETUP_AGENT.md#升级与回滚)。

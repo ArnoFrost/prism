@@ -100,7 +100,7 @@ Prism 的核心使用路径：
 | **接入** | `/workspace-init` | 让已有项目接入 Prism 工作区 |
 | **聚焦/评审** | `prism status` · `/workflow-scope` · `/workflow-review` | topic 健康巡检与评审 |
 
-init 之后的命令分层与 E2E 验收 → [docs/onboarding.md](docs/onboarding.md)。**没有** `prism doctor`；体检用 `bin/doctor`。
+init 之后的命令分层与 E2E 验收 → [docs/onboarding.md](docs/onboarding.md)。日常体检用 **`prism doctor`**（`--json` 为 flat passthrough）。
 
 ### 交付口径
 
@@ -183,6 +183,8 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 | `prism migrate`  | 迁移历史 review 子目录格式 |
 | `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态 |
 | `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
+| `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
+| `prism update`   | 拉取 SDK 并 doctor + relink（experimental） |
 | `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |
 | `prism tidy`     | 工件机械对齐（focus 入口 / 索引 / frontmatter；README 仅存量兜底） |
 | `prism status`   | Workspace 活跃 topic 健康度扫描 |

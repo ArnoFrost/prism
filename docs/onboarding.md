@@ -15,11 +15,11 @@
 | 阶段 | 人类常用 | Agent / topic |
 |------|----------|---------------|
 | **安装** | `./setup.sh init` | 读 `SETUP_AGENT.md` |
-| **健康** | `./setup.sh check` · `bin/doctor --scope config --quick` | — |
+| **健康** | `./setup.sh check` · `prism doctor --scope config --quick` | — |
 | **桥接** | `prism relink` · `./setup.sh relink` | `/workspace-init` |
 | **topic** | `prism status` · `prism sniff` | `/workflow-intake` · `/workflow-scope` · `/workflow-review` |
 
-> **不存在 `prism doctor` verb**。体检走 **`bin/doctor`**（见 [cli-contract.md §JSON 消费](./cli-contract.md)）。
+> **`prism doctor --json`** 输出 flat JSON（passthrough `bin/doctor`），**不是** outer envelope。见 [cli-contract.md §4.3](./cli-contract.md)。
 
 ---
 
@@ -28,8 +28,8 @@
 | 层 | 入口 | 何时用 | 示例 |
 |----|------|--------|------|
 | **仓库根** | `./setup.sh` | 人类一键 init / check | `./setup.sh init` |
-| **`bin/`** | 环境、软链、发布 | 改配置、刷 IDE 分发、发布前体检 | `bin/doctor` · `bin/setenv --validate` · `bin/relink`（底层） |
-| **`prism <verb>`** | workspace / topic + 常用环境 | 校验产物、同步、刷新软链 | `prism validate` · `prism finalize` · `prism status` · **`prism relink`** |
+| **`bin/`** | 环境、软链、发布 | 底层脚本 / 调试 | `bin/relink` · `bin/doctor`（flat `--json`） |
+| **`prism <verb>`** | workspace / topic + 常用环境 | 日常首选 | `prism relink` · **`prism doctor`** · **`prism update`** · `prism status` |
 
 **判断口诀**（与 cli-contract 一致）：
 
@@ -47,7 +47,7 @@ cd ~/prism
 ./setup.sh check                    # 或 bin/setup --check
 bin/setenv --validate
 prism relink                          # 或 ./setup.sh relink / bin/relink
-bin/doctor --scope config --fix     # 补全局 gitignore 等（非破坏性）
+prism doctor --scope config --fix     # 补全局 gitignore 等（非破坏性）
 ```
 
 ### topic / workflow（优先 `prism`）
@@ -65,11 +65,15 @@ Agent 侧对应 slash skill：`/workflow-status` · `/workflow-intake` · `/work
 ### 升级 SDK
 
 ```bash
+prism update              # pull 当前分支 → doctor release --quick → relink
+# 或分步：
 cd ~/prism && git pull origin main
-bin/doctor --scope release --quick
+prism doctor --scope release --quick
 prism relink
 prism --version
 ```
+
+> `prism update` 遇 **dirty working tree 会 abort**；不含 Vault pull（见 Layer 4）。`prism sync` 只嗅探不 pull。
 
 ---
 
@@ -95,7 +99,7 @@ Workspace Git 同步**不是** core contract 硬依赖；启用后见 Vault topi
 | E2 | 配置 | `bin/setenv --validate` | Vault / Workspace 可达 |
 | E3 | CLI | `prism --version` | 输出版本号 |
 | E4 | 软链 | `prism relink --check` | 错误: 0 |
-| E5 | 全局 gitignore | `bin/doctor --scope config --quick` | 无 blocking err |
+| E5 | 全局 gitignore | `prism doctor --scope config --quick` | 无 blocking err |
 | E6 | Vault 拉取 | `vault-pull`（已启用 sync 时） | pull 成功 |
 | E7 | 同步状态 | `vault-stat` | enabled=true，无 ahead/dirty 异常说明 |
 

@@ -288,6 +288,38 @@ def test_prism_relink_delegates():
     assert "错误: 0" in result.stdout or "错误:0" in result.stdout.replace(" ", "")
 
 
+def test_prism_doctor_delegates():
+    """prism doctor 应委托 bin/doctor。"""
+    if not PRISM.exists() or not LOCAL_CONFIG.exists():
+        pytest.skip("需要 bin/prism 与 prism.local.yaml")
+
+    result = subprocess.run(
+        [str(PRISM), "doctor", "--scope", "config", "--quick"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_prism_update_dry_run():
+    """prism update --dry-run 应打印步骤且不 mutating。"""
+    if not PRISM.exists():
+        pytest.skip("bin/prism 不存在")
+
+    result = subprocess.run(
+        [str(PRISM), "update", "--dry-run"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "[dry-run]" in result.stdout
+    assert "git pull" in result.stdout
+
+
 def test_bin_prism_header_has_python3_fallback():
     """r10 A2: 静态保证 bin/prism 的 _run_python 包含 python3 fallback 分支。"""
     content = PRISM.read_text(encoding="utf-8")

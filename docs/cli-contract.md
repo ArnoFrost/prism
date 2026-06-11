@@ -178,7 +178,9 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 探测 topic / 校验产物 / 工件对齐 / 痕迹抽检 | `bin/prism <verb> --json` | envelope |
 | 仓库/环境/IDE 级体检（含 doctor / setup / relink） | `bin/<command> --json` 等 | flat（按命令文档） |
 
-> **不存在 `prism doctor` verb**（`bin/prism --help` 可见 verb 列表 — sniff/validate/archive/reactivate/migrate/sync/relink/finalize/tidy/status/digest/validate-trace/manifest；自 v2.0 起 `pipeline` 已物理移除）。如果尝试 `bin/prism doctor` 会得到 argparse stderr 文本（不是 JSON），不要误读为"协议违反"。正确入口是独立的 `bin/doctor`。
+> **`prism doctor --json`** 与全局 `prism --json` 不同：doctor 子命令 **passthrough** `bin/doctor` 的 **flat JSON**，不包 outer envelope。消费 doctor 输出时直接解析 stdout，勿读 `data` 字段。
+>
+> **不存在独立的 `prism doctor` 实现** — 一律委托 `bin/doctor`（`bin/prism --help` 可见 verb 列表含 doctor/relink/update/…）。
 
 #### 守门测试
 
@@ -216,6 +218,8 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism migrate` | experimental | ⬜ | 迁移 review 子目录格式（1.2 如无新用例将降为过渡期工具） |
 | `prism sync` | **exempt** | ⬜ | 嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免） |
 | `prism relink` | stable | ⬜ | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
+| `prism doctor` | stable | ⬜ | 仓库/环境体检（委托 `bin/doctor`；`--json` 为 flat passthrough） |
+| `prism update` | experimental | ⬜ | SDK `git pull --rebase` → `doctor release --quick` → `relink`（dirty 时 abort） |
 | `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示 |
 | `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
 | `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |

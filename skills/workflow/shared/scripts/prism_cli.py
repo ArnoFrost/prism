@@ -135,6 +135,16 @@ VERB_REGISTRY = {
         "schema_compliant": False,
         "description": "刷新项目/Skills IDE 软链接（委托 bin/relink；参数同 bin/relink）",
     },
+    "doctor": {
+        "stability": "stable",
+        "schema_compliant": False,
+        "description": "仓库/环境体检（委托 bin/doctor；--json 为 flat passthrough，非 outer envelope）",
+    },
+    "update": {
+        "stability": "experimental",
+        "schema_compliant": False,
+        "description": "SDK git pull --rebase → doctor release --quick → relink（dirty 时 abort；可选 --skills）",
+    },
     "finalize": {
         "stability": "experimental",
         "schema_compliant": False,
@@ -1036,6 +1046,110 @@ def cmd_relink(args: argparse.Namespace) -> int:
     return completed.returncode
 
 
+def _run_bin_script(script_name: str, command: str, args: argparse.Namespace, extra: list[str]) -> int:
+    """薄委托 bin/<script>，stdout/stderr 透传。"""
+    script = os.path.join(SDK_ROOT, "bin", script_name)
+    if not os.path.isfile(script):
+        msg = f"bin/{script_name} 未找到: {script}"
+        if getattr(args, "json_mode", False):
+            _print_outer(_outer_envelope(
+                command=command,
+                errors=[{"code": "BIN_SCRIPT_MISSING", "message": msg, "hint": "确认 SDK 路径完整"}],
+            ))
+            return 127
+        print(msg, file=sys.stderr)
+        return 127
+    completed = subprocess.run([script, *extra], check=False)
+    return completed.returncode
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """体检（薄委托 bin/doctor；--json 保持 flat passthrough）。"""
+    cmd: list[str] = []
+    if args.quick:
+        cmd.append("--quick")
+    if args.fix:
+        cmd.append("--fix")
+    if args.rollback:
+        cmd.append("--rollback")
+    if args.json:
+        cmd.append("--json")
+    if args.scope:
+        cmd.extend(["--scope", args.scope])
+    if args.output:
+        cmd.extend(["--output", args.output])
+    return _run_bin_script("doctor", "doctor", args, cmd)
+
+
+def _yaml_scalar(config_path: str, key: str) -> str | None:
+    if not os.path.isfile(config_path):
+        return None
+    prefix = f"{key}:"
+    with open(config_path, encoding="utf-8") as handle:
+        for line in handle:
+            if line.startswith(prefix):
+                value = line[len(prefix):].strip().strip("'\"")
+                return value or None
+    return None
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    """拉取 SDK（可选 Skills）并执行 release 体检 + relink。"""
+    config = os.path.join(SDK_ROOT, "prism.local.yaml")
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=SDK_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if status.returncode != 0:
+        print(status.stderr or "git status 失败", file=sys.stderr)
+        return status.returncode
+    if status.stdout.strip() and not args.dry_run:
+        print("✗ SDK 工作区有未提交变更，拒绝 update。请先 commit/stash。", file=sys.stderr)
+        return 1
+
+    skills_path = _yaml_scalar(config, "skills_path") if args.skills else None
+    if args.skills and skills_path and os.path.isdir(skills_path):
+        skills_status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=skills_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if skills_status.stdout.strip() and not args.dry_run:
+            print("✗ prism-skills 有未提交变更，拒绝 update。", file=sys.stderr)
+            return 1
+
+    steps: list[tuple[str, list[str], str]] = [
+        ("git pull --rebase (sdk)", ["git", "pull", "--rebase"], SDK_ROOT),
+    ]
+    if args.skills and skills_path and os.path.isdir(skills_path):
+        steps.append(("git pull --rebase (skills)", ["git", "pull", "--rebase"], skills_path))
+
+    doctor = os.path.join(SDK_ROOT, "bin", "doctor")
+    relink = os.path.join(SDK_ROOT, "bin", "relink")
+    steps.extend([
+        ("doctor --scope release --quick", [doctor, "--scope", "release", "--quick"], SDK_ROOT),
+        ("relink", [relink], SDK_ROOT),
+    ])
+
+    for label, cmd, cwd in steps:
+        if args.dry_run:
+            print(f"[dry-run] ({cwd}) {' '.join(cmd)}")
+            continue
+        if cmd[0] == "git" and not os.path.isdir(os.path.join(cwd, ".git")):
+            print(f"✗ 跳过 {label}：非 git 仓库", file=sys.stderr)
+            return 1
+        completed = subprocess.run(cmd, cwd=cwd, check=False)
+        if completed.returncode != 0:
+            print(f"✗ update 在步骤失败: {label}", file=sys.stderr)
+            return completed.returncode
+    return 0
+
+
 # ============================================================
 # 主入口
 # ============================================================
@@ -1135,6 +1249,27 @@ def main():
     p_relink.add_argument("--prune", action="store_true", help="清理陈旧/失效软链接")
     p_relink.add_argument("--project", default=None, help="仅刷新指定项目代号")
 
+    # doctor（薄委托 bin/doctor；--json flat passthrough）
+    p_doctor = subparsers.add_parser("doctor", help="仓库/环境体检（委托 bin/doctor）")
+    p_doctor.add_argument("--quick", action="store_true")
+    p_doctor.add_argument("--fix", action="store_true")
+    p_doctor.add_argument("--rollback", action="store_true")
+    p_doctor.add_argument("--json", action="store_true", help="flat JSON passthrough（非 outer envelope）")
+    p_doctor.add_argument(
+        "--scope",
+        choices=["env", "config", "link", "skill", "sync", "cli", "release", "ci"],
+        default=None,
+    )
+    p_doctor.add_argument("--output", default=None, help="JSON 输出路径（自动 --json）")
+
+    # update（experimental）
+    p_update = subparsers.add_parser(
+        "update",
+        help="git pull SDK → doctor release --quick → relink（experimental）",
+    )
+    p_update.add_argument("--skills", action="store_true", help="同时 pull prism-skills")
+    p_update.add_argument("--dry-run", action="store_true", help="只打印步骤")
+
     # finalize（v2.0 取代 pipeline；含 --decision flag + trace flags）
     p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → validate-review-call → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
@@ -1214,6 +1349,8 @@ def main():
         "migrate": cmd_migrate,
         "sync": cmd_sync,
         "relink": cmd_relink,
+        "doctor": cmd_doctor,
+        "update": cmd_update,
         "finalize": cmd_finalize,
         "tidy": cmd_tidy,
         "status": cmd_status,

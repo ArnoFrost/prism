@@ -20,6 +20,8 @@
 #   migrate         迁移子目录评审格式
 #   sync            嗅探 Prism 三仓 Git 状态
 #   relink          刷新项目/Skills IDE 软链接（委托 bin/relink）
+#   doctor          仓库/环境体检（委托 bin/doctor）
+#   update          pull SDK → doctor → relink（experimental）
 #   finalize        Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示
 #   tidy            工件机械对齐（README/review.index/frontmatter）
 #   status          Workspace 活跃 topic 健康度扫描
