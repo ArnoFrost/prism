@@ -7,7 +7,7 @@ import sys
 import pytest
 
 # 确保可以导入
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "review", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import validate_product as vp
 
 
@@ -609,7 +609,7 @@ class TestSinceDateCliValidation:
     def test_invalid_format_exits_with_code_2(self, tmp_path):
         import subprocess
         script = os.path.join(
-            os.path.dirname(__file__), "..", "..", "review", "scripts", "validate_product.py"
+            os.path.dirname(__file__), "..", "scripts", "validate_product.py"
         )
         result = subprocess.run(
             [sys.executable, script, str(tmp_path), "--since-date", "2026/05/01"],

@@ -16,7 +16,7 @@ import pytest
 
 _SHARED_SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "scripts")
 sys.path.insert(0, _SHARED_SCRIPTS)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "intake", "scripts"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow-intake", "scripts"))
 
 import parse_utils  # noqa: E402
 import context_pack  # noqa: E402

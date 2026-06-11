@@ -88,7 +88,7 @@ class TestArchiveIntegration:
         index_path.write_text(content, encoding="utf-8")
 
         intake_scripts = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "intake", "scripts")
+            os.path.join(os.path.dirname(__file__), "..", "..", "workflow-intake", "scripts")
         )
         if intake_scripts not in sys.path:
             sys.path.insert(0, intake_scripts)

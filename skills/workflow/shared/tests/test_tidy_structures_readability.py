@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 SDK_ROOT = Path(__file__).resolve().parents[4]
-TIDY_SCRIPT = SDK_ROOT / "skills" / "workflow" / "tidy" / "scripts" / "tidy.py"
+TIDY_SCRIPT = SDK_ROOT / "skills" / "workflow" / "workflow-tidy" / "scripts" / "tidy.py"
 SHARED_SCRIPTS = SDK_ROOT / "skills" / "workflow" / "shared" / "scripts"
 SHARED_DIR = SDK_ROOT / "skills" / "workflow" / "shared"
 

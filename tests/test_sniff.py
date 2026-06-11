@@ -25,7 +25,7 @@ from pathlib import Path
 
 # SDK 内置 workspace-init sniff.py（Phase 5 迁移后的标准路径）
 SNIFF_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "skills", "workspace", "init", "scripts"
+    os.path.dirname(__file__), "..", "skills", "workspace", "workspace-init", "scripts"
 )
 # 兼容外部 prism-skills 仓库（旧路径 fallback）
 if not os.path.isdir(SNIFF_DIR):

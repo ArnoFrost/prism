@@ -266,7 +266,7 @@ def _dispatch_subprocess(skill: str, script: str, cmd_args: list[str]) -> int:
     """
     import subprocess
 
-    script_path = os.path.join(WORKFLOW_DIR, skill, "scripts", script)
+    script_path = os.path.join(_skill_scripts_dir(skill), script)
     if not os.path.isfile(script_path):
         print(f"错误: {skill} 脚本不存在: {script_path}", file=sys.stderr)
         return 1
@@ -298,11 +298,12 @@ def _subprocess_env() -> dict[str, str]:
 # 子命令实现
 # ============================================================
 
-# --kind 值 → skills/workflow/ 下实际 skill 目录名（workflow-* 前缀）
-_SNIFF_KIND_DIRS = {
-    "review": "workflow-review",
-    "intake": "workflow-intake",
-}
+# skills/workflow/ 下 dispatch 短名 → 实际 skill 目录名（SSOT: skill_paths.py）
+from skill_paths import SNIFF_KIND_DIRS as _SNIFF_KIND_DIRS, scripts_dir as _skill_scripts_dir_for_root
+
+
+def _skill_scripts_dir(skill: str) -> str:
+    return _skill_scripts_dir_for_root(WORKFLOW_DIR, skill)
 
 
 def cmd_sniff(args: argparse.Namespace) -> int:
@@ -628,13 +629,13 @@ def cmd_finalize(args: argparse.Namespace) -> int:
     has_error = False
 
     # ── Step 1: tidy ──
-    tidy_scripts = os.path.join(WORKFLOW_DIR, "tidy", "scripts")
+    tidy_scripts = _skill_scripts_dir("tidy")
     _add_to_path(tidy_scripts)
     _add_to_path(SHARED_DIR)
 
     # tidy 需要 workspace 级别的 project_dir（topic 的父级的父级）
-    # topic_dir = .../workspace.xxx.local/topics/011_xxx/
-    # project_dir for tidy = .../workspace.xxx.local/ 或包含 workspace 的目录
+    # topic_dir = .../workspace.{code}.local/topics/{NNN}_{name}/
+    # project_dir for tidy = workspace 根或含 workspace 桥接的目录
     # 但 tidy 内部会自己定位 workspace，所以传 topic_dir 即可让 sniff_lib 向上找
     tidy_path = os.path.join(tidy_scripts, "tidy.py")
     if os.path.isfile(tidy_path):

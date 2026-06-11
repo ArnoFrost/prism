@@ -8,7 +8,7 @@ import pytest
 
 # upgrade_topic 在 intake/scripts/
 sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), "..", "..", "intake", "scripts")
+    0, os.path.join(os.path.dirname(__file__), "..", "..", "workflow-intake", "scripts")
 )
 import upgrade_topic  # noqa: E402
 

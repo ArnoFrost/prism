@@ -15,7 +15,7 @@ import pytest
 
 SCRIPT = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "..", "..", "intake", "scripts", "index_update.py",
+    "..", "..", "workflow-intake", "scripts", "index_update.py",
 )
 SCRIPT = os.path.normpath(SCRIPT)
 

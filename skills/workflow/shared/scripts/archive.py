@@ -221,9 +221,9 @@ def archive_topic(workspace_path: str, topic_dirname: str, dry_run: bool = False
         actions.append("archive/README.md 索引已更新")
 
     workflow_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    index_update_path = os.path.join(
-        workflow_root, "intake", "scripts", "index_update.py"
-    )
+    from skill_paths import script_path
+
+    index_update_path = script_path(workflow_root, "intake", "index_update.py")
 
     if os.path.isfile(index_update_path):
         mod_dir = os.path.dirname(index_update_path)

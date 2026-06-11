@@ -13,8 +13,8 @@ _HERE = os.path.dirname(__file__)
 for _p in (
     os.path.join(_HERE, ".."),                       # skills/workflow/shared (sniff_lib)
     os.path.join(_HERE, "..", "scripts"),            # shared/scripts (parse_utils)
-    os.path.join(_HERE, "..", "..", "status", "scripts"),
-    os.path.join(_HERE, "..", "..", "digest", "scripts"),
+    os.path.join(_HERE, "..", "..", "workflow-status", "scripts"),
+    os.path.join(_HERE, "..", "..", "workflow-digest", "scripts"),
 ):
     sys.path.insert(0, _p)
 

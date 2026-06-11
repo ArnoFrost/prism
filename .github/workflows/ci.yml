@@ -21,17 +21,14 @@ name: CI
 #   - checkout: 保持 v5（v5.0.0 2025-08-11 已 Node 24）
 # 应对 2026-06-02 GitHub runner 强制 Node 24，秋季彻底移除 Node 20。
 
-# PAUSED 2026-06-09：workflow-* 目录重命名后 shared/tests 仍引用
-#   skills/workflow/review|tidy|intake/ 旧路径 → pytest collection 失败。
-# 恢复前：更新 test 路径 + 本地 pytest 全绿，再取消下方 push/PR 注释。
-# 手动验收仍可用 workflow_dispatch。
+# 2026-06-11：workflow-* 目录重命名后 shared/tests 路径已对齐；恢复 push/PR 触发。
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [main, mini, "release/**"]
-  # pull_request:
-  #   branches: [main, mini]
+  push:
+    branches: [main, mini, "release/**"]
+  pull_request:
+    branches: [main, mini]
 
 concurrency:
   group: ci-${{ github.ref }}

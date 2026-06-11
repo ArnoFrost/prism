@@ -46,8 +46,8 @@ def _resolve_sdk_scripts() -> dict[str, str]:
     workflow_dir = os.path.dirname(shared_dir)
 
     return {
-        "tidy": os.path.join(workflow_dir, "tidy", "scripts", "tidy.py"),
-        "validate": os.path.join(workflow_dir, "review", "scripts", "validate_product.py"),
+        "tidy": os.path.join(workflow_dir, "workflow-tidy", "scripts", "tidy.py"),
+        "validate": os.path.join(workflow_dir, "shared", "scripts", "validate_product.py"),
     }
 
 
