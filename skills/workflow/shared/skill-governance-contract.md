@@ -149,6 +149,7 @@ skill wave 关闭时，应有一份 `workflow-{skill}-d{N}-regression.md` 声明
 | 术语漂移 | cite `vocabulary.md`；不复制术语定义 |
 | 安全门隐藏 | 安全门必须能从热路径发现 |
 | 兼容债蔓延 | 下游 skill 不在无 dXX 时继承 2.x upgrade 规则 |
+| topic 痕迹写入 SDK | §8 + `sdk_trace_leak_scan.py`；专项编号/wave 不进 scripts/CI |
 
 ## 7. 演进规则
 
@@ -157,11 +158,36 @@ skill wave 关闭时，应有一份 `workflow-{skill}-d{N}-regression.md` 声明
 - 新的 skill-governance wave 可以扩展 prefix 模式和 fixture，但不应重写历史 evidence。
 - per-skill 适配优先放入该 skill maintainer 或 task 工件；只有跨多个 skill 复用时才上浮 shared。
 
-## Evidence Handling
+## 8. SDK 与 Workspace 痕迹分离
 
-本 contract 可以由 workspace dogfood、评审与决策产物验证，但 SDK 层不暴露这些隐含状态。
+Prism 四层分离：**Workspace 有状态，SDK 无状态**。实现代码（scripts / hooks / CI）不得绑定某一专项的阶段叙事。
 
-- SDK / shared / skill 文档只沉淀稳定规则、接口与 SSOT 引用。
-- workspace topic id、dXX/rXX、topic 本地路径与阶段痕迹只保留在 Workspace 实例层。
-- 需要表达来源时，使用抽象描述，例如 "intake / scope / review-lite dogfood" 或 "skill-governance wave 验证"。
-- 需要追溯具体证据时，在对应 workspace topic 的 review、decision、structure 或 digest 产物中维护。
+### 8.1 禁止出现在 SDK 实现面的内容
+
+| 类别 | 示例（禁止） | 应写在哪里 |
+|------|-------------|-----------|
+| 专项编号 + wave | `048 Wave 1`、`topic 041` | vault `topics/048_…/` |
+| 决策/评审指针 | `d02`、`r01`、`AP-73`（注释/trace） | topic `decisions/`、`reviews/` |
+| 桥接路径 | `workspace.prism.local` | `prism.local.yaml` / 用户配置 |
+| 阶段验收叙事 | `已修复路径；恢复 CI` 带专项上下文 | topic `references/` 或 digest |
+
+允许：协议级抽象（`workflow-*` 目录名、semver、泛化 `dogfood`）、指向本 contract 或 vocabulary 的 SSOT 引用。
+
+### 8.2 机械扫描
+
+```bash
+uv run python skills/workflow/shared/scripts/sdk_trace_leak_scan.py [REPO_ROOT]
+```
+
+扫描面：`skills/workflow/**/scripts/*.py`、`shared/hooks/*.py`、`.github/workflows/*.yml`。
+
+新增命中 `topic_wave` / `workspace_bridge` 规则 → pytest 红（见 `test_sdk_trace_leak_scan.py`）。
+
+### 8.3 存量 grandfather
+
+历史注释中的 `029/r05`、`030/AP-73` 等逐步清理；**禁止新增**。清理批次走专项治理，不阻塞 unrelated PR。
+
+## Evidence Handling（摘要）
+
+- SDK / shared 只沉淀稳定规则与接口；专项 evidence 留在 workspace topic。
+- 需要表达来源时用抽象描述（如「路径重命名回归」「复杂度 baseline 扫描器」），不用专项编号。
