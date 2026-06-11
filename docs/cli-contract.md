@@ -188,7 +188,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 
 ---
 
-## 5 当前 CLI 清单（v2.0.0）
+## 5 当前 CLI 清单（v3.0.0-beta）
 
 ### 5.1 `bin/` 一览
 
