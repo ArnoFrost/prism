@@ -141,7 +141,7 @@ bin/doctor --scope <name>         # 只跑指定范围
 
 ```bash
 prism --help                       # 列出所有子命令
-prism --version                    # 版本信息（联动 SDK VERSION）
+prism --version                    # 版本信息
 prism --json <verb> ...            # 统一 outer schema 输出（见 docs/cli-json-schema.json）
 prism sniff <project_dir> --topic <主题> --kind review|intake
 prism validate <topic_dir> [--fix]

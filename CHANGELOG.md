@@ -1,23 +1,35 @@
 ## [Unreleased]
 
+## [v3.0.0-rc] — 2026-06-11
+
+> **Prism 3.0 rc** — Workflow SDK 脚本复杂度治理 wave 0–3 闭合 + 版本消费面校准。`VERSION` / `cli-contract` / 叙事层统一为 `v3.0.0-rc`。
+
 ### Added
 
+- **`sniff` facade** — `sniff/` 四域拆分（`topic` / `review` / `workspace` / `cli`），`sniff.py` 瘦身为 re-export 入口
+- **`finalize_runner.py`** — `prism finalize` 编排外提；`parse_utils.py` 共享解析
+- **`script_complexity_scan.py`** — LOC / 复杂度基线扫描（§8 Protected Inventory 登记）
+- **`sdk_trace_leak_scan.py`** — scripts/CI vault 叙事泄漏门禁（topic 编号、wave、桥接路径等）
 - **`archive_layout.py`** — topic 归档路径布局：`flat`（SDK 默认）与 `monthly_topic`（`archive/YYYY-MM/topic/`）；`project.yaml` `archive_layout` 或 README 约定自动探测
 - **`index_style` 契约** — `anchored` / `narrative` / `manual`；narrative 模式自动写 `## 归档` 分月表，活跃区保留手工 checklist
 - **集成测试** `test_archive_integration.py` — monthly_topic + narrative index 归档/reactivate 往返
 
 ### Changed
 
+- **`prism_cli` / `validate_product` / `validate_trace`** — 路径债务收敛、模块拆分；post-wave LOC 降至治理基线内
+- **CI** — 双 matrix（`uv run pytest` + `prism doctor`）恢复绿灯
 - **`archive.py` / `reactivate.py`** — 按布局移目录；幂等检测支持月份子目录；narrative 归档时 warnings 提示手工删活跃区
 - **`index_update.py`** — 归档表链接随布局生成；reactivate 按 `{NNN}_{slug}` 删行（避免同编号多 topic 误删）
 - **`status.py`** — 扫描 flat 与 `YYYY-MM/topic/` 双轨归档目录
 - **`workspace.schema.yaml` / `project.yaml` 模板`** — 文档化 `archive_layout` 与 `index_style` 可选字段
 - **`docs/topic-lifecycle.md`** — 双布局 + index 自动化分层说明
 - **`workflow-archive` SKILL** — happy path 对齐 monthly_topic / index_style
+- **叙事层 canary → rc**：`README` / `docs/README` / `prism-3.0` / `architecture` / `leader-pitch` 等与 `VERSION` 对齐
 
 ### Fixed
 
 - **`prism archive` 铺平归档** — 与 TVKMM 等项目 `archive/YYYY-MM/topic/` 约定不一致（此前脚本仅写 flat 路径）
+- **SDK scripts 专项痕迹** — 清除 vault topic/wave 叙事泄漏；扩展 `sdk_trace_leak_scan` 规则
 
 ## [v3.0.0-beta] — 2026-06-08
 

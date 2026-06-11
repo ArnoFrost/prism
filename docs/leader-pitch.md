@@ -3,7 +3,7 @@ audience: internal
 doc_kind: internal
 ---
 
-# Prism — 对内沟通口径（v3.0.0-beta）
+# Prism — 对内沟通口径
 
 > 面向 leader / 团队沟通的简要说辞（≤300 字）。非默认用户文档，见 [docs/README.md](./README.md)。
 
@@ -11,7 +11,7 @@ doc_kind: internal
 
 ## 一句话版
 
-Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过程：不改主仓、不打乱现有节奏。v3 beta 在 v2「治理可选」之上，用 **focus 单入口 + 维护技能三角** 降低长期协作里的认知熵。
+Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过程：不改主仓、不打乱现有节奏。v3 rc 在 v2「治理可选」之上，用 **focus 单入口 + 维护技能三角** 降低长期协作里的认知熵。
 
 ## 简版口径
 
@@ -19,11 +19,11 @@ Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过
 
 **Prism 做什么**：软链接桥接把协作状态挂在项目旁；最小依赖 `SDK + Vault + uv`。workflow 是**可选**认知熵治理工作流，不强制全员评审/痕迹义务。
 
-**v3 beta 增量**：`focus` 作 topic 入口；`status` 只读建议下一步（`next_actions[]` handoff）；tidy/compact/archive 分工维护工件与生命周期；主路径技能已做热路径压缩（044/046 治理）。
+**v3 rc 增量**：`focus` 作 topic 入口；`status` 只读建议下一步（`next_actions[]` handoff）；tidy/compact/archive 分工维护工件与生命周期；主路径技能已做热路径压缩（044/046 治理）。
 
-**当前状态**：`v3.0.0-beta` dogfood；`VERSION` / `cli-contract` / 叙事层已统一（见 [CHANGELOG](../CHANGELOG.md)）。
+**当前状态**：v3 rc dogfood（发行见仓库 [README](../README.md)）。
 
-**下一步**：选一个小项目试点「可追踪、可接续」；或准备 MR 将 beta 治理成果并回 main。
+**下一步**：选一个小项目试点「可追踪、可接续」；或准备 GA 对外口径。
 
 **不做什么**：不替代项目管理、不要求全员 workflow、不接管代码仓。
 

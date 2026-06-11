@@ -1,10 +1,10 @@
 # Prism 2.0 — 当前定位与成熟度说明
 
 > 这不是安装文档，也不是完整架构文档。它只回答四个问题：**Prism 现在是什么、为什么算成立、边界在哪里、接下来还差什么。**
-> 当前发行口径：`v2.0.0-beta.1`（内部 beta 观察期）。本文以 "Prism 2.0" 为历史定位陈述入口；更早的版本细节请看 [CHANGELOG](../CHANGELOG.md)。
+> **历史**定位文档（v2 发行线）。版本细节见 [CHANGELOG](../CHANGELOG.md)；当前发行见仓库 [README](../README.md)。
 
 > [!NOTE]
-> v3.0 beta 在 2.0 的“治理路径可选、默认路径变轻”基础上继续推进：`focus` 成为 topic 单入口，`task` 作为按需递归分解原语，并把 Prism 的上层叙事收敛为“长期人机协作中的认知熵治理”。当前定位见 [prism-3.0.md](./prism-3.0.md)，完整架构口径见 [architecture.md](./architecture.md)。
+> v3.0 rc 在 2.0 的“治理路径可选、默认路径变轻”基础上继续推进：`focus` 成为 topic 单入口，`task` 作为按需递归分解原语，并把 Prism 的上层叙事收敛为“长期人机协作中的认知熵治理”。当前定位见 [prism-3.0.md](./prism-3.0.md)，完整架构口径见 [architecture.md](./architecture.md)。
 
 ---
 

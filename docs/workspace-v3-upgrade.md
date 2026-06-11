@@ -1,6 +1,6 @@
 # Workspace v3.0 Beta 接入口径
 
-> 本文不是稳定迁移指南。它只说明已有 Prism workspace 或新项目如何**渐进采用** v3.0 beta 的 topic 形态。
+> 本文不是稳定迁移指南。它只说明已有 Prism workspace 或新项目如何**渐进采用** v3.0 rc 的 topic 形态。
 > 核心原则：**不批量迁移旧 topic**；新 topic 默认使用 `focus.md`；活跃 topic 在继续推进时自然升级；归档 topic 保持 grandfather。
 
 ---
@@ -115,7 +115,7 @@ structures/task-N_slug/
 - 不为小任务仪式化创建 task。
 - 不让 `status` 的 `next_actions[]` 自动执行目标 skill；不把 `compact` / `archive` 当作默认主路径。
 - 不把跨对话 `handoff` 产品化为默认流程。
-- 不把“认知熵”加入 vocabulary / glossary；它当前仍是 v3.0 beta 的叙事锚点。
+- 不把“认知熵”加入 vocabulary / glossary；它当前仍是 v3.0 rc 的叙事锚点。
 
 ---
 

@@ -2,7 +2,7 @@
 
 > 本页是 `docs/` 的**唯一索引**。正文仍在各文件中，此处只做分类与读序。
 >
-> **当前版本**：`v3.0.0-beta` — 根目录 `VERSION` + [`cli-contract.md`](./cli-contract.md) 与叙事层（[`prism-3.0.md`](./prism-3.0.md)）已对齐。历史 v2 发行线止于 `v2.0.0-beta.1`（见 [CHANGELOG](../CHANGELOG.md)）。
+> 发行与阶段口径见仓库根 [README](../README.md) · [architecture.md](./architecture.md#当前阶段)。本页只做文档分类与读序。
 
 ---
 
@@ -37,13 +37,13 @@
 
 ---
 
-## B — 当前 beta 叙事（guide）
+## B — 当前 rc 叙事（guide）
 
-随 `v3.0.0-beta` dogfood 演进；允许改措辞，不进 vocabulary。
+随 v3 rc dogfood 演进；允许改措辞，不进 vocabulary。不写发行号。
 
 | 文档 | 用途 |
 |------|------|
-| [prism-3.0.md](./prism-3.0.md) | v3 beta 定位、已落地锚点、开放验证项 |
+| [prism-3.0.md](./prism-3.0.md) | v3 rc 定位、已落地锚点、开放验证项 |
 | [skill-taxonomy.md](./skill-taxonomy.md) | 按认知熵源选 workflow skill |
 | [topic-lifecycle.md](./topic-lifecycle.md) | topic 从 intake 到 archive |
 | [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
@@ -69,7 +69,7 @@
 |----------|------|
 | `contract` | 协议 / schema，改须守门测试 |
 | `reference` | 稳定参考，cite SSOT |
-| `guide` | 当前产品叙事，可随 beta 调整 |
+| `guide` | 当前产品叙事，可随 rc 调整 |
 | `historical` | 历史版本说明，少改 |
 | `internal` | 对内口径，扫描器可跳过默认面 |
 

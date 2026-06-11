@@ -53,7 +53,7 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 |------|------|
 | [docs/README.md](./README.md) | 文档分类索引（先读） |
 | `skills/workflow/shared/vocabulary.md` | **协议级 SSOT**，本文 cite 它 |
-| [prism-3.0.md](./prism-3.0.md) | v3 beta 叙事锚点 |
+| [prism-3.0.md](./prism-3.0.md) | v3 rc 叙事锚点 |
 | [skill-taxonomy.md](./skill-taxonomy.md) | 按熵源选 workflow skill |
 | `docs/architecture.md` | 结构客观面；引用本词典中的术语 |
 | `docs/contributing.md` | 贡献者指南；新贡献者写文档前应阅读本词典 |
