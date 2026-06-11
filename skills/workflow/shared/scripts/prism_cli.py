@@ -1144,6 +1144,9 @@ def cmd_update(args: argparse.Namespace) -> int:
             print(f"✗ 跳过 {label}：非 git 仓库", file=sys.stderr)
             return 1
         completed = subprocess.run(cmd, cwd=cwd, check=False)
+        if "doctor" in label and completed.returncode == 2:
+            # bin/doctor：0=全绿，1=ERROR，2=仅 WARN — update 链不因 WARN 中断
+            continue
         if completed.returncode != 0:
             print(f"✗ update 在步骤失败: {label}", file=sys.stderr)
             return completed.returncode
