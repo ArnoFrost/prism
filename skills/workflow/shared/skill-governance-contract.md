@@ -181,11 +181,15 @@ uv run python skills/workflow/shared/scripts/sdk_trace_leak_scan.py [REPO_ROOT]
 
 扫描面：`skills/workflow/**/scripts/*.py`、`shared/hooks/*.py`、`.github/workflows/*.yml`。
 
-新增命中 `topic_wave` / `workspace_bridge` 规则 → pytest 红（见 `test_sdk_trace_leak_scan.py`）。
+规则集：`topic_wave` · `workspace_bridge` · `topic_slash` · `topic_ap_ref` · `topic_v_ref` · `topic_space_r`。
 
-### 8.3 存量 grandfather
+任一命中 → `sdk_trace_leak_scan --strict` exit 1 / pytest 红（见 `test_sdk_trace_leak_scan.py`）。
 
-历史注释中的 `029/r05`、`030/AP-73` 等逐步清理；**禁止新增**。清理批次走专项治理，不阻塞 unrelated PR。
+### 8.3 存量与 maintainer 面
+
+- scripts / CI 内专项叙事（`NNN/rXX`、`AP-NN`、`workspace.*.local`）已批量清理；**禁止新增**。
+- `shared/*.md` 若含 dogfood 快照，须 `audience: maintainer`（见 `public_surface_scan.py` 豁免）。
+- 测试夹具可用泛化 `workspace.test.local`；集成测试依赖本机桥接时须 `skip` 不可达路径，不得硬编码 vault topic 编号进 scripts。
 
 ## Evidence Handling（摘要）
 

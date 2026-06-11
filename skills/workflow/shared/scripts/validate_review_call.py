@@ -231,7 +231,7 @@ def validate_review_file(review_file: Path, topic_dir: Path) -> list[dict]:
     review_type = fm.get("type", "")
     mode = fm.get("mode")
 
-    # 仅校验 type=review（非 review-lite，lite 走 validate_lite_evidence 后续 AP-3）
+    # 仅校验 type=review（非 review-lite；lite 证据校验另轨）
     if review_type != "review":
         return issues
 

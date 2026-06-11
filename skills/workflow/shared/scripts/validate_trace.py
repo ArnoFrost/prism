@@ -11,7 +11,7 @@ validate_trace.py — Prism 痕迹义务家族机器抽检
 | decision_artifact| decisions/dXX_*.md                  | 所有 dXX 必含              |
 | intake_gate_out  | intake.md                           | 走过 workflow-intake 时必含|
 
-来源：029/r05 AP-8 P1（机器抽检 verb，对应 AP-28 痕迹家族第 4 族补全）
+来源：痕迹义务家族机器抽检 verb（workflow-review 契约第 4 族补全）
 
 设计：
 - 默认 strict：missing → ERR（rc=1，CI 红）
@@ -40,7 +40,7 @@ from sniff_lib import resolve_active_task_entries  # noqa: E402
 
 # 内部统一 schema：workflow_trace → phase → 既有外部 family。
 #
-# AP-81b 边界：这里只做内部归一化。产物里仍落 `task_probe:`、
+# 边界：这里只做内部归一化。产物里仍落 `task_probe:`、
 # `merge_artifact:`、`decision_artifact:`、`intake_gate_out:` 四个块；
 # validate 输出里的 family 名称也保持不变，不新增第 5 族。
 WORKFLOW_TRACE_SCHEMA: dict[str, object] = {
@@ -53,7 +53,7 @@ WORKFLOW_TRACE_SCHEMA: dict[str, object] = {
             "applies_to": "review_main_full",
             "description": (
                 "Task 工具并行调用探针 — mode=full 必须诚实声明 called/result/fallback_decision；"
-                "字段命名以 workflow-review/SKILL.md + parallel-execution.md 为 SSOT（029/r07 PostFix 1 对齐）"
+                "字段命名以 workflow-review/SKILL.md + parallel-execution.md 为 SSOT"
             ),
         },
         {
@@ -663,7 +663,7 @@ def scan_topic(topic_dir: Path, strict: bool = True) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Prism 痕迹义务家族机器抽检（029/r05 AP-8 P1）"
+        description="Prism 痕迹义务家族机器抽检"
     )
     parser.add_argument("topic_dir", help="专项目录（含 reviews/ decisions/ intake.md）")
     parser.add_argument(

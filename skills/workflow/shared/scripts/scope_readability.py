@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""scope_readability.py — scope 可读性机器代理度量（041 V8 / d03-action-3）。
+"""scope_readability.py — scope 可读性机器代理度量（见 scope-templates.md §可读性度量）。
 
 把 scope-templates.md §可读性度量 的 S1-S4 变成可回归脚本：
   S1 总行数（非空正文）≤ 60        [advisory]

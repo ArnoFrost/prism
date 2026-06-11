@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""focus_readability.py — focus 可读性机器代理度量（041 V4 / action-3）。
+"""focus_readability.py — focus 可读性机器代理度量（见 focus-readability-checklist.md）。
 
 把 `focus-readability-checklist.md` 的 M1-M4 指标变成可回归脚本：
   M1 聚焦区主体行数 ≤ 30

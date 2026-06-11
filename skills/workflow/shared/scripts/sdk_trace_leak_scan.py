@@ -20,6 +20,10 @@ TRACE_PATTERNS: dict[str, str] = {
     "topic_wave": r"\b0\d{2}\s+Wave\b",
     "topic_wave_paren": r"[（(]\s*0\d{2}\s+Wave",
     "workspace_bridge": r"workspace\.[a-z0-9_-]+\.local",
+    "topic_slash": r"\b0\d{2}/",  # vault topic slash refs (NNN/rXX, NNN/OQ, …)
+    "topic_ap_ref": r"\bAP-\d+\b",
+    "topic_v_ref": r"\b0\d{2}\s+V\d",
+    "topic_space_r": r"\b0\d{2}\s+r\d{2}\b",
 }
 
 SCAN_GLOBS = (

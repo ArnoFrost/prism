@@ -21,7 +21,7 @@ references 中含 `prism <deprecated_verb>` 且行内不含豁免 token 的 → 
 - 1 = 至少一处误引用 deprecated verb（CI 红）
 - 2 = skills 目录不存在 / IO 错误
 
-来源：029/r05 AP-1c P0（v1.1.5 收口节奏）
+来源：v1.1.5 收口节奏 — deprecated verb 反向闸门
 """
 
 import argparse
@@ -109,7 +109,7 @@ def check_file(file_path: Path) -> list[dict]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Prism SKILL.md deprecated verb 反向闸门（029/r05 AP-1c）"
+        description="Prism SKILL.md deprecated verb 反向闸门"
     )
     parser.add_argument(
         "--skills-dir",

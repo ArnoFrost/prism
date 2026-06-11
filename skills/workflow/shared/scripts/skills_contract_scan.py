@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SKILL.md 契约扫描 — 警戒文件列表 + 硬约束 callout 占比统计
 
-030/AP-73 r14 P0-5 incremental_only — 轻量实现版本。
+轻量实现版本（incremental_only 扫描面）。
 
 设计意图（r14 用户决议 incremental_only 而非批量压缩存量）：
   - 不压缩存量：r14 当时识别 review/SKILL.md 9.3% danger / 398 行警戒，但用户决议
@@ -11,7 +11,7 @@
 
 警戒线（v2.0 d11 与 OQ-4 D 闸门对齐，可由 CLI 覆盖）：
   - lines > 450：v2.0 OQ-4 D 用户裁决的 SKILL.md 行数闸门（v1.x 历史值为 350，
-    在 030/AP-79 拆分 review/SKILL.md 后调高与用户标准对齐）
+    在 review SKILL 拆分后调高与用户标准对齐）
   - danger_pct > 8%：硬约束 callout（`[!IMPORTANT]` + 遗留 `[!danger]`）比例上限
 
 输出 JSON schema：
@@ -41,12 +41,12 @@ import os
 import sys
 from pathlib import Path
 
-DEFAULT_LINES_THRESHOLD = 450  # v2.0 OQ-4 D 闸门（030/AP-79 d11 与用户标准对齐；v1.x 历史值 350）
+DEFAULT_LINES_THRESHOLD = 450  # v2.0 闸门（与用户标准对齐；v1.x 历史值 350）
 DEFAULT_DANGER_PCT_THRESHOLD = 8.0
 
 
 def count_danger_callouts(text: str) -> int:
-    """统计 SKILL 内硬约束 callout 数量（JSON 字段仍名 danger_count，038/AP-9）。
+    """统计 SKILL 内硬约束 callout 数量（JSON 字段仍名 danger_count）。
 
     计 `[!IMPORTANT]`（GFM 推荐）与遗留 `[!danger]`（v1 教学块），
     行首允许 `>` blockquote；大小写不敏感。
@@ -153,7 +153,7 @@ def scan_all(skills_root: Path,
 
 def main():
     parser = argparse.ArgumentParser(
-        description="SKILL.md 契约扫描 — 警戒文件列表（030/AP-73 incremental_only）",
+        description="SKILL.md 契约扫描 — 警戒文件列表（incremental_only）",
         usage="uv run python skills_contract_scan.py [SKILLS_ROOT] [options]",
     )
     parser.add_argument(

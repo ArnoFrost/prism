@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """用户默认面机械扫描 — 识别不应泄漏到默认阅读面的内部治理标记。
 
-031/AP-94 首版：只输出 WARN，不 fail 构建。默认扫描用户可见面，
+首版：只输出 WARN，不 fail 构建。默认扫描用户可见面，
 并通过 frontmatter `audience: maintainer|internal` 豁免维护者 / 内部叙事文档。
 """
 

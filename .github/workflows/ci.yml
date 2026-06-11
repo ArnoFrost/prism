@@ -12,16 +12,10 @@ name: CI
 # 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
 # 不依赖 prism.local.yaml / vault / ~/.local/bin（doctor --scope ci 自包含）。
 #
-# 来源：029/r05 AP-2 P0（v1.1.5 收口节奏）—— 修复 v1.0→v1.1 CI 闸门漏跑
-# 79% 测试（32/151 → 全量）的系统性退化。
-#
-# 维护：029/d09 AP-65（2026-05-13）— Node.js 20 deprecation 提前消化
-#   - setup-uv: v5 → v7（v7.0.0 2025-10-07，Node 24 默认）
-#   - upload-artifact: v4 → v6（v6.0.0 2025-12-12，Node 24 默认）
-#   - checkout: 保持 v5（v5.0.0 2025-08-11 已 Node 24）
-# 应对 2026-06-02 GitHub runner 强制 Node 24，秋季彻底移除 Node 20。
-
-# 2026-06-11：workflow-* 目录重命名后 shared/tests 路径已对齐；恢复 push/PR 触发。
+# 维护备忘（GitHub Actions / Node 24）：
+#   - setup-uv: v7（Node 24 默认）
+#   - upload-artifact: v6
+#   - checkout: v5
 
 on:
   workflow_dispatch:
@@ -52,8 +46,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup uv
-        # 029/d09 AP-65 — 升级到 v7（2025-10-07）以默认 Node.js 24，
-        # 应对 2026-06-02 Node.js 20 deprecated 截止；v6 仍 Node 20，必须 v7。
+        # setup-uv v7 — Node.js 24 默认（runner 已弃用 Node 20）
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
@@ -100,9 +93,7 @@ jobs:
 
       - name: Upload doctor / validate artifacts
         if: always()
-        # 029/d09 AP-65 — 升级到 v6（2025-12-12）以默认 Node.js 24；v5 仅 preliminary
-        # support、仍按 Node 20 运行，必须 v6 才能消除 Node 20 deprecated 告警。
-        # 要求 runner ≥ 2.327.1（GitHub-hosted 自动满足）。
+        # upload-artifact v6 — Node.js 24 默认
         uses: actions/upload-artifact@v6
         with:
           name: prism-ci-${{ matrix.os }}

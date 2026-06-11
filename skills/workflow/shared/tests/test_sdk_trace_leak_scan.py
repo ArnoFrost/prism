@@ -21,7 +21,7 @@ def _run_scan() -> dict:
 
 
 def test_implementation_surface_has_no_topic_trace_leaks():
-    """scripts / hooks / CI 实现面零 topic_wave 与 workspace_bridge 命中。"""
+    """scripts / hooks / CI 实现面零专项痕迹命中（§8 全规则集）。"""
     data = _run_scan()
     assert data["warning_count"] == 0, (
         "SDK 实现面含专项痕迹（见 skill-governance-contract §8）：\n"

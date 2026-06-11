@@ -179,7 +179,7 @@ def check_mermaid_list_prefix(lines: list[str], relpath: str) -> list[Issue]:
 # --- OFM 专属规则 ---
 
 def _is_topic_readme(relpath: str) -> bool:
-    """专项根 README.md — 模板仍以正文属性表为主，L1 缺 FM 仅 WARN（038/OQ-5）。"""
+    """专项根 README.md — 模板仍以正文属性表为主，L1 缺 FM 仅 WARN（topic-readme 软约束）。"""
     return os.path.basename(relpath) == "README.md"
 
 
@@ -191,7 +191,7 @@ def _is_topic_index(relpath: str) -> bool:
 def check_frontmatter(lines: list[str], relpath: str) -> list[Issue]:
     """检查 OFM frontmatter 必填字段。
 
-    038/OQ-5：README.md 缺 frontmatter → WARN；*.index.md 与合同面工件仍 ERROR。
+    topic-readme 软约束：README.md 缺 frontmatter → WARN；*.index.md 与合同面工件仍 ERROR。
     """
     issues = []
     strict = not _is_topic_readme(relpath)
@@ -340,7 +340,7 @@ def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
 def check_ofm_callout_density(lines: list[str], relpath: str) -> list[Issue]:
     """[format=ofm] 主报告 Callout 数阈值按 frontmatter `type` 分档。
 
-    阈值（来源：029/r05 AP-3 P0 修复 SKILL ↔ validator 硬冲突）：
+    阈值（来源：修复 SKILL ↔ validator 硬冲突 — 按 frontmatter type 分档）：
     - `type: review` (full review) → ≥ 3（含协议段 `[!NOTE]`/`[!info]` + Findings）
     - `type: review-lite` (单视角 lite) → ≥ 2（含协议段 + 至少 1 个 Findings/结论 callout）
 
@@ -376,7 +376,7 @@ def check_ofm_callout_density(lines: list[str], relpath: str) -> list[Issue]:
 
 
 def _extract_frontmatter_date(lines: list[str]) -> str | None:
-    """从 markdown 文件 frontmatter 提取 `date` 字段值（030/AP-72 r14 OQ-2 since_date）。
+    """从 markdown 文件 frontmatter 提取 `date` 字段值（--since-date 抑制开关联动）。
 
     返回 ISO date 字符串（如 "2026-04-15"）或 None（无 frontmatter / 无 date 字段 / 解析失败）。
     用法：与 --since-date 抑制开关联动，frontmatter date < since_date 的文件会被抑制扫描。
@@ -425,7 +425,7 @@ def _extract_frontmatter_type(lines: list[str]) -> str | None:
 def _is_decision_artifact(relpath: str) -> bool:
     """判断是否为 dXX 决策文件（decisions/dXX_*.md）。
 
-    来源：029/r05 AP-5 P1 —— 此前 dXX 与 review 共用 frontmatter 校验，
+    来源：dXX 与 review 分轨 —— 此前 dXX 与 review 共用 frontmatter 校验，
     但 type/status 字段值不受约束（d04 首版漏 tags / dXX status 写法各异
     无机械抽检）。本函数为 dXX 专属语义校验提供识别入口。
     """
@@ -444,7 +444,7 @@ def check_decision_semantics(lines: list[str], relpath: str) -> list[Issue]:
     放宽（不强制）：
     - tags 字段必填由通用 check_frontmatter 兜底（仅 OFM 路径触发）
 
-    来源：029/r05 AP-5 P1（v1.1.5 收口 - 补 dXX 校验空白）
+    来源：v1.1.5 收口 — 补 dXX frontmatter 语义校验空白
     """
     if not _is_decision_artifact(relpath):
         return []
@@ -660,7 +660,7 @@ def detect_format(output_dir: str) -> str:
       3. iCloud 默认路径
       4. realpath 向上递归 .obsidian/（兜底）
 
-    历史教训（r02@019_card-retire-round2）：本函数早期只复刻了第 4 级兜底
+    历史教训（card-retire 回归）：本函数早期只复刻了第 4 级兜底
     且用 os.path.abspath 不解析 symlink，导致 vault 内通过 workspace.*.local
     软链访问的文件被判为 standard，触发 standard-leaked-callout 误报。
     现已统一走 find_obsidian（SSOT），任何前 3 级命中即可避开兜底坑。
@@ -711,7 +711,7 @@ def validate_dir(output_dir: str, fmt: str, do_fix: bool = False,
         output_dir: 产物目录
         fmt: ofm / standard
         do_fix: 自动修复可修复 issue
-        since_date: 030/AP-72 r14 OQ-2 — ISO 日期字符串（如 "2026-05-01"），
+        since_date: --since-date — ISO 日期字符串（如 "2026-05-01"），
                     frontmatter `date` 字段早于此值的文件会被抑制扫描，
                     既不计入 errors/warnings 也不计入 files_checked，
                     但记录到 `suppressed_files` 字段供调用方观测。
@@ -811,7 +811,7 @@ def main():
                         help="自动修复可修复的问题")
     parser.add_argument("--since-date", dest="since_date", default=None,
                         metavar="YYYY-MM-DD",
-                        help=("030/AP-72 r14 OQ-2 — 抑制 frontmatter date 早于该日期的文件扫描。"
+                        help=("--since-date — 抑制 frontmatter date 早于该日期的文件扫描。"
                               "既不计入 errors/warnings 也不计入 files_checked，但记录到 "
                               "suppressed_files 字段。无 frontmatter 或 date 不可解析的文件不抑制。"))
 

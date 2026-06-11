@@ -37,23 +37,26 @@ review 产物格式 lint  → validate_product    （workflow-review/scripts/，
 - `validate_review_call.py`：`--lenient` flag；finalize 复用 `validate_trace` 同 `trace_mode`（潜在 design smell — validator 家族 mode 控制是否独立 flag 待评估）
 - `validate_product.py`：内部 strict（review 落盘门）
 
-## 非 Validator 类（13 个，按职责分组）
+## 非 Validator 类（按职责分组）
 
 | 类别 | 脚本 | 用途 |
 |------|------|------|
-| **Sniff / 路由** | `sniff_lib.py` / `obs_sniff.py` / `prism_sync_sniff.py` | topic 亲和度 / Obsidian vault 探测 / git 远端同步状态 |
-| **CLI 编排** | `prism_cli.py` / `doctor_cli.py` | `bin/prism` verb 入口 / `bin/doctor` 多 scope 编排 |
+| **路径 SSOT** | `skill_paths.py` | `workflow-*` dispatch 短名 → skill 目录；`prism_cli` / hook / tests 统一引用 |
+| **Sniff / 路由** | `../sniff_lib.py`（facade）/ `obs_sniff.py` / `prism_sync_sniff.py` | topic 亲和度（物理 SSOT 在 `shared/`，经 symlink 分发）/ Obsidian vault / git 同步 |
+| **CLI 编排** | `prism_cli.py` / `finalize_runner.py` / `doctor_cli.py` | `bin/prism` verb 注册表 + dispatch / **finalize 步骤编排**（tidy→validate→trace 族）/ `bin/doctor` |
 | **Manifest / 版本** | `prism_changelog_scan.py` / `release_gate.py` | breaking change 检测 / CI 发布门禁 |
-| **CI 检查** | `check_cli_contract_sync.py` / `check_skill_deprecation.py` / `public_surface_scan.py` / `skills_contract_scan.py` | docs vs VERB_REGISTRY 同步 / DEPRECATED_VERBS 守门 / 用户可见面扫描 / SKILL 行数闸门 |
-| **迁移** | `archive.py` / `archive_layout.py` / `reactivate.py` / `migrate_review.py` | topic 归档（flat 或 monthly_topic + index_style）/ 布局探测 / 再激活 / review 子目录格式迁移（v1.2 评估退役）|
-| **Skills 分发** | `normalize_skill_codebuddy.py` | 为 SKILL frontmatter 补 `description_zh`、压平 `description`（CodeBuddy IDE 列表）|
-| **Context / Utility** | `context_pack.py` / `parse_utils.py` | review 上下文装配 / markdown 解析工具 |
+| **CI / 治理扫描** | `check_cli_contract_sync.py` / `check_skill_deprecation.py` / `public_surface_scan.py` / `skills_contract_scan.py` / `sdk_trace_leak_scan.py` / `script_complexity_scan.py` | contract 同步 / 废弃 verb / 用户面 / SKILL 行数 / **§8 SDK 痕迹泄漏**（strict 经 pytest）/ **复杂度 WARN-only** |
+| **迁移** | `archive.py` / `archive_layout.py` / `reactivate.py` / `migrate_review.py` | topic 归档 / 布局探测 / 再激活 / review 子目录迁移（评估退役）|
+| **Skills 分发** | `normalize_skill_codebuddy.py` | CodeBuddy IDE 列表 frontmatter 规范化 |
+| **Context / Utility** | `context_pack.py` / `parse_utils.py` | review 上下文装配 / markdown 解析（含 `extract_frontmatter_field` SSOT）|
 
 ## 命名约定
 
 - **Validator**：`validate_<对象>.py`（snake_case，明示校验对象）
 - **CLI 入口**：`<verb>_cli.py`（snake_case，对应 `bin/<verb>` 或 `prism <verb>`）
-- **Sniff**：`<对象>_sniff.py` 或 `sniff_<lib>.py`
+- **Sniff**：`<对象>_sniff.py`；库 SSOT 在 `shared/sniff_*.py`，`scripts/sniff_lib.py` 为 symlink
+- **Runner**：`<verb>_runner.py`（从 `prism_cli` 外提的长编排，如 `finalize_runner.py`）
+- **Governance scan**：`<purpose>_scan.py`（WARN-only 或 pytest 守门，见 `skill-governance-contract.md` §8）
 - **Check**：`check_<什么>.py`（用于 CI 类一次性扫描）
 - **私有 utility**：开头加 `_` 或文档明示 "私有，被 X 引用"
 

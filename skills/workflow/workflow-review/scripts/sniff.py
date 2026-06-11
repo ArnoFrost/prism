@@ -88,7 +88,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         resolved_topic_dir = project_dir
     structures = enumerate_structures(resolved_topic_dir)
 
-    # AP-41 / 029 r07 — 稀疏空态可消费语义化（empty_reason 枚举）
+    # 稀疏空态可消费语义化（empty_reason 枚举）
     # 让消费者能区分「合法空态」与「实现/参数路径问题」
     empty_reason = _compute_empty_reason(
         workspace=workspace,
@@ -127,7 +127,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
 
 
 # ============================================================
-# AP-41 — 稀疏空态语义化（029/r07 / d07 OQ-1 落地）
+# 稀疏空态语义化（empty_reason 枚举 — workflow-review 契约）
 # ============================================================
 
 # empty_reason 枚举（按检测优先级，前者更"根本"）：
