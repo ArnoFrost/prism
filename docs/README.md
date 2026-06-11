@@ -8,9 +8,9 @@
 
 ## 建议读序（L1 使用者）
 
-1. 仓库根 [README](../README.md) — 安装与工具入口  
+1. 仓库根 [README](../README.md) — **`./setup.sh init`** + 工具入口  
 2. [SETUP_GITHUB.md](../SETUP_GITHUB.md) — 人类安装；[SETUP_AGENT.md](../SETUP_AGENT.md) — Agent  
-3. [onboarding.md](./onboarding.md) — **init 之后**日常命令与 E2E 验收  
+3. [onboarding.md](./onboarding.md) — init 后：`setup.sh` · **`prism update` / `doctor`** · E2E  
 4. [prism-3.0.md](./prism-3.0.md) — 为什么是认知熵治理框架  
 5. [topic-lifecycle.md](./topic-lifecycle.md) + [skill-taxonomy.md](./skill-taxonomy.md) — topic 与 skill 怎么选  
 6. 已有 workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
@@ -47,7 +47,7 @@
 | [skill-taxonomy.md](./skill-taxonomy.md) | 按认知熵源选 workflow skill |
 | [topic-lifecycle.md](./topic-lifecycle.md) | topic 从 intake 到 archive |
 | [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
-| [architecture.md](./architecture.md) | 四层模型、部署视图、workflow 管线、CLI 摘要 |
+| [architecture.md](./architecture.md) | 四层模型、部署视图、workflow 管线、**v3 图示索引** |
 
 ---
 

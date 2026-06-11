@@ -2,40 +2,34 @@
 
 > 面向**自己动手安装**的维护者/协作者。Agent 引导请用 [SETUP_AGENT.md](SETUP_AGENT.md)。
 
-## 1. 克隆
+## 1. 克隆并 init
 
 ```bash
 git clone git@github.com:ArnoFrost/prism.git ~/prism
 cd ~/prism
-# 可选：外部 Skills 扩展
-git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
-```
 
-## 2. 准备配置
-
-查看样例：
-
-```bash
-cat prism.local.yaml.example
-# 或
-bin/setenv --example
-```
-
-**方式 A — 环境变量 + 一键 init（推荐）**
-
-```bash
+# 一键 init（推荐）
 PRISM_VAULT_PATH="$HOME/PrismWorkspace" \
 PRISM_WS_SUBDIR="Prism/Workspace" \
 ./setup.sh init
 
-# 可选扩展（写在同一行或 export 后执行）
-# PRISM_SKILLS_PATH="$HOME/prism-skills"
-# PRISM_ENV_PATH="$HOME/ArnoDotFiles"
+prism --version
 ```
 
-**方式 B — 手动 setenv 再 init**
+可选：外部 Skills 扩展
 
 ```bash
+git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
+# 重新 init 时传入 PRISM_SKILLS_PATH="$HOME/prism-skills"
+```
+
+init 之后日常命令 → [docs/onboarding.md](docs/onboarding.md)（`setup.sh` 子命令 · `prism update` / `doctor` 链）。
+
+## 2. 进阶：手动 setenv（方式 B）
+
+```bash
+cat prism.local.yaml.example   # 或 bin/setenv --example
+
 PRISM_SDK_PATH="$HOME/prism" \
 PRISM_VAULT_PATH="$HOME/PrismWorkspace" \
 PRISM_WS_SUBDIR="Prism/Workspace" \
@@ -44,17 +38,7 @@ bin/setenv --init --non-interactive
 ./setup.sh init
 ```
 
-## 3. 初始化
-
-`./setup.sh init` 委托 `bin/setup --non-interactive`（含 relink、CLI 寻址注入、IDE 分发）。
-
-仅健康检查：
-
-```bash
-./setup.sh check
-```
-
-## 4. CLI（setup 已尝试注入）
+## 3. 健康检查与 CLI
 
 `./setup.sh init` 会通过 `bin/setup` 写入 shell rc 与 `~/.local/bin/prism`。新开终端或：
 
@@ -70,7 +54,7 @@ export PATH="$HOME/prism/bin:$PATH"
 prism --version
 ```
 
-## 5. 验证
+## 4. 验证
 
 ```bash
 bin/setenv --validate
@@ -79,7 +63,7 @@ prism relink --check
 prism doctor --scope config --quick
 ```
 
-## 6. 下一步与日常操作
+## 5. 下一步与日常操作
 
 | 意图 | 入口 |
 |------|------|
@@ -88,7 +72,7 @@ prism doctor --scope config --quick
 | topic 工作流 | `prism status` · `/workflow-intake`（见 [docs/onboarding.md](docs/onboarding.md)） |
 | 命令面分层与 E2E 验收 | [docs/onboarding.md](docs/onboarding.md) |
 
-## 7. 日常运维（init 之后）
+## 6. 日常运维（init 之后）
 
 完整速查表见 **[docs/onboarding.md](docs/onboarding.md)**。核心原则：
 

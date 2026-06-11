@@ -8,7 +8,7 @@
 [![Stage](https://img.shields.io/badge/stage-v3--rc-orange)](docs/prism-3.0.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
-[快速开始](#快速开始) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
+[快速开始](#快速开始) · [生命周期](#生命周期总览) · [认知熵与 Skills](#认知熵与-workflow-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
 
 </div>
 
@@ -59,6 +59,21 @@ flowchart TB
 
 ## 快速开始
 
+**一条命令 init**（clone 之后）：
+
+```bash
+git clone git@github.com:ArnoFrost/prism.git ~/prism
+cd ~/prism
+PRISM_VAULT_PATH="$HOME/PrismWorkspace" PRISM_WS_SUBDIR="Prism/Workspace" ./setup.sh init
+prism --version
+```
+
+| 入口 | 读者 |
+|------|------|
+| [SETUP_GITHUB.md](SETUP_GITHUB.md) | 人类分步说明 |
+| [SETUP_AGENT.md](SETUP_AGENT.md) | Agent 协议 |
+| [docs/onboarding.md](docs/onboarding.md) | init **之后**日常 / update / doctor |
+
 ### 仓库地址
 
 GitHub 公开版：
@@ -67,41 +82,57 @@ GitHub 公开版：
 git clone git@github.com:ArnoFrost/prism.git ~/prism
 ```
 
-### 人类安装（推荐先看）
+### Agent 引导
 
-按步骤自助完成 clone → 配置 → init → CLI：[SETUP_GITHUB.md](SETUP_GITHUB.md)
-
-### Agent 引导（推荐）
-
-把这句话发给你的 AI Agent（Cursor / Claude Code / CodeBuddy）：
-
-> 帮我克隆 `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，然后读取 `~/prism/SETUP_AGENT.md` 并按里面的指引帮我完成初始化。
-
-### 手动安装（命令速查）
-
-```bash
-# 详见 SETUP_GITHUB.md
-git clone git@github.com:ArnoFrost/prism.git ~/prism
-cd ~/prism
-PRISM_VAULT_PATH="$HOME/PrismWorkspace" ./setup.sh init
-```
+> 帮我 clone `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，设置 `PRISM_VAULT_PATH`，执行 `./setup.sh init`，并读 `SETUP_AGENT.md` 完成验收。
 
 ### 首屏闭环
 
-Prism 的核心使用路径：
+clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总览](#生命周期总览)**。
+
+---
+
+## 生命周期总览
+
+从 clone 到长期维护的**人类路径**（init 细节见 [SETUP_GITHUB.md](SETUP_GITHUB.md)）：
+
+![Prism 流转：init → 桥接 → workflow → 维护](docs/assets/v3/prism-flow.png)
 
 ```text
-安装（setup.sh init）→ 桥接 → 接入项目 → 聚焦/评审
+./setup.sh init → prism --version 验收 → workspace-init / 桥接
+              → 日常 workflow（可选）→ update / doctor / relink 维护
 ```
 
-| 步骤 | 命令 / 入口 | 做什么 |
-|------|-------------|--------|
-| **安装** | `PRISM_VAULT_PATH=… ./setup.sh init` | 配置 + relink + CLI 注入（等价 `bin/setenv --init` + `prism relink`） |
-| **桥接** | `prism relink` · `./setup.sh relink` | 刷新软链接（项目 + Skills → IDE） |
-| **接入** | `/workspace-init` | 让已有项目接入 Prism 工作区 |
-| **聚焦/评审** | `prism status` · `/workflow-scope` · `/workflow-review` | topic 健康巡检与评审 |
+| 阶段 | 命令 | 做什么 |
+|------|------|--------|
+| **init** | `./setup.sh init` | 配置 + relink + CLI + uv |
+| **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
+| **桥接** | `prism relink` · `./setup.sh relink` | vault + IDE 软链 |
+| **接入** | `/workspace-init` | 已有仓库挂 workspace |
+| **topic** | `prism status` · `/workflow-intake` | 可选治理（见下节） |
+| **升级** | `prism update` · `./setup.sh update` | pull → doctor release → relink |
+| **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope 体检 |
 
-init 之后的命令分层与 E2E 验收 → [docs/onboarding.md](docs/onboarding.md)。日常体检用 **`prism doctor`**（`--json` 为 flat passthrough）。
+---
+
+## 认知熵与 Workflow Skills
+
+Prism 内置 **workflow** 是一套可选的认知熵治理工作流——按熵源选用 skill，而非「工具清单」。全景表 → [docs/skill-taxonomy.md](docs/skill-taxonomy.md)；叙事 → [docs/prism-3.0.md](docs/prism-3.0.md)。
+
+![认知熵治理地图：topic 工件与 workflow 技能如何协作](docs/assets/v3/cognitive-entropy-map.png)
+
+![认知熵走向：各阶段熵源与对应 skill](docs/assets/v3/cognitive-entropy-flow.png)
+
+| 你想… | 优先 skill / 入口 |
+|--------|-------------------|
+| 新需求不知归哪 | `/workflow-intake` |
+| 决策后更新边界 | `/workflow-scope` |
+| 方向变更 / 里程碑 | `/workflow-review` |
+| 日常小改动确认 | `/workflow-review-lite` |
+| 看进度 / 下一步 | `/workflow-status` |
+| 升级 SDK | `prism update` · `./setup.sh update` |
+
+---
 
 ### 交付口径
 
@@ -125,12 +156,12 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 |----------|------|
 | **安装（人类 · GitHub）** | [SETUP_GITHUB.md](SETUP_GITHUB.md) |
 | **安装（Agent）** | [SETUP_AGENT.md](SETUP_AGENT.md) |
-| **init 后日常 / E2E 验收** | [docs/onboarding.md](docs/onboarding.md) |
+| **init 后日常 / 生命周期** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
+| **认知熵 / skill 怎么选** | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) · 上文 [认知熵与 Workflow Skills](#认知熵与-workflow-skills) |
 | 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
 | Prism 3.0 为什么是轻量认知熵管理框架 | [docs/prism-3.0.md](docs/prism-3.0.md) |
 | 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
 | topic 从 intake 到 archive 怎么走 | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |
-| 每个 workflow skill 治理什么熵 | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) |
 | 完整架构与部署视图 | [docs/architecture.md](docs/architecture.md) |
 | CLI 稳定性与 verb 契约 | [docs/cli-contract.md](docs/cli-contract.md) |
 | 术语速查 | [docs/glossary.md](docs/glossary.md) |

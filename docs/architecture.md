@@ -277,6 +277,21 @@ prism/
 
 ---
 
+## 图示索引（v3 叙事）
+
+源图来自 043 播客 artifacts；仓内路径 `docs/assets/v3/`（GitHub raw 可外链）。
+
+| 图 | 文件 | 说明 |
+|----|------|------|
+| Prism ↔ SDD | [prism-sdd-relation.png](assets/v3/prism-sdd-relation.png) | 与 OpenSpec / planning layer 关系 |
+| 流转 | [prism-flow.png](assets/v3/prism-flow.png) | init → 维护（详见 [onboarding.md](./onboarding.md)） |
+| 认知熵地图 | [cognitive-entropy-map.png](assets/v3/cognitive-entropy-map.png) | 见 [prism-3.0.md](./prism-3.0.md) |
+| 认知熵走向 | [cognitive-entropy-flow.png](assets/v3/cognitive-entropy-flow.png) | 见 [prism-3.0.md](./prism-3.0.md) |
+
+![Prism 与 SDD / OpenSpec 层关系](assets/v3/prism-sdd-relation.png)
+
+---
+
 ## 当前阶段
 
 本页描述**结构客观面**，不重复 rc 进度 checklist。

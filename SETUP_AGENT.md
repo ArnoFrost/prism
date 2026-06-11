@@ -8,6 +8,8 @@
 
 你正在帮助用户完成 Prism 的首次安装或已有环境的刷新配置。
 
+**首选路径**：clone 后执行 `./setup.sh init`（等价 `PRISM_*` 环境变量 + `bin/setenv --init --non-interactive` + `bin/setup`）。init 后日常链见 [docs/onboarding.md](docs/onboarding.md)。
+
 **硬约束**：
 
 1. Shell 不支持交互式输入（`read -p` 会挂起），**禁止**直接调用 `bin/setenv --init`（不带 `--non-interactive`）
