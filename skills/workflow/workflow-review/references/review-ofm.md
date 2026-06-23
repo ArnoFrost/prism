@@ -3,7 +3,16 @@
 > 被 SKILL.md 在 Align 阶段按需引用（当 sniff 返回 `format=ofm` 时）。
 > mode=full 时，Align 阶段需将下方 Callout 映射内联到子任务 prompt。
 
-**版本**：OFM v2（2026-05）— 以 [GitHub Alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts)（GFM）为跨端主映射；Obsidian 扩展类型保留为兼容别名。
+**版本**：OFM v2（2026-05）— 以 [GitHub Alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts)（GFM）为 **Prism 默认基线**；Obsidian 扩展类型为**可选增量**。
+
+## 基线 + 扩展
+
+| 层 | review 主报告 |
+|----|---------------|
+| **GFM 基线**（`sniff.format` 为 `standard` 或 `ofm` 均有） | GFM Alerts、协议段 `NOTE`、密度 ≥3（full）/ ≥2（lite） |
+| **Obsidian 增量**（仅 `sniff.format=ofm`） | `==关键术语==`（Findings 推荐 ≥1 处）；扩展 callout 类型 |
+
+Align 协议段建议输出：`base: gfm` + `extensions: obsidian|none`（sniff `format` 枚举可仍为 `ofm|standard`）。
 
 ## 双端渲染
 
@@ -44,7 +53,7 @@
 ```markdown
 > [!NOTE]
 > **路由**：`topic_affinity.suggestion=cohesion`，`topics/NNN_…/`
-> **format**：`ofm`
+> **base**：`gfm` · **extensions**：`obsidian`（或 `none` 当 `format=standard`）
 > **已加载 references**：`lite-templates.md`、`review-ofm.md`
 > **评审对象**：`scope.md` v2、…
 ```
@@ -54,7 +63,7 @@
 ```markdown
 > [!IMPORTANT]
 > **P0-1**：{发现}
-> 证据：…
+> 证据：`validate_product.py` 中 ==check_highlight_density== 仅检过密
 > 结论：…
 
 > [!WARNING]
@@ -66,7 +75,7 @@
 
 ## 格式原则
 
-- 高亮 `==文本==` 每段最多 1–2 处，点缀而非涂色
+- 高亮 `==文本==` 每段最多 1–2 处（**Obsidian 增量**；`format=standard` 用 `**`）
 - 表格优于嵌套列表
 - 章节使用数字编号（`## 1 Findings`），层级 ≤ 3
 - 中英文之间加空格

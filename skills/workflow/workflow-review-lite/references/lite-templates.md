@@ -1,6 +1,7 @@
 # review-lite 产物模板
 
-> 被 [SKILL.md](../SKILL.md) 引用。lite 产物正文按 `format` 走对应骨架。
+> 被 [SKILL.md](../SKILL.md) 引用。lite 产物正文按 `sniff.format` 走对应骨架。
+> **基线律**：GFM Alerts 为 Prism 默认；`format=ofm` 额外可用 `==高亮==`。
 
 ## Frontmatter（与 format 无关，固定结构）
 
@@ -25,25 +26,25 @@ related:
 
 `lite` 标注让索引一眼区分轻重。
 
-## format=ofm（Obsidian Vault 默认）
+## format=ofm（GFM 基线 + Obsidian 增量）
 
 ```markdown
 # rXX — {标题}（lite）
 
 > [!NOTE]
 > **路由**：`topic_affinity.suggestion={cohesion|new_topic|ask_user}`，{output_dir}
-> **format**：`ofm`
+> **base**：`gfm` · **extensions**：`obsidian`
 > **已加载 references**：`review-templates.md`、`review-ofm.md`
 > **评审对象**：{file/path/clauses}
 
 > [!TIP]
-> **TL;DR**：{一句话结论}
+> **TL;DR**：{一句话结论}；关键路径可用 ==术语== 点缀。
 
 ## Findings
 
 > [!IMPORTANT]
 > **P0** {发现描述}
-> 证据：{证据要点}
+> 证据：{证据要点，如 ==validate_product== 规则名}
 
 > [!WARNING]
 > **P1** {发现描述}
@@ -64,18 +65,29 @@ related:
 
 > Callout 完整映射表见 [review-ofm.md](review-ofm.md)，本节仅给最常用映射示例。
 
-## format=standard（无 Obsidian Vault 时降级）
+## format=standard（仅 GFM 基线，无 Obsidian 增量）
 
 ```markdown
 # rXX — {标题}（lite）
 
-## Summary
-{一句话结论}
+> [!NOTE]
+> **路由**：…
+> **base**：`gfm` · **extensions**：`none`
+> **评审对象**：…
+
+> [!TIP]
+> **TL;DR**：{一句话结论}
 
 ## Findings
-- **P0** {发现描述}
-- **P1** {发现描述}
-- **P2** {发现描述}
+
+> [!IMPORTANT]
+> **P0** {发现描述}
+
+> [!WARNING]
+> **P1** {发现描述}
+
+> [!NOTE]
+> **P2** {发现描述}
 
 ## Actions
 | # | 行动 | Owner | 优先级 |
@@ -85,3 +97,5 @@ related:
 ## Open Questions
 - [ ] ...
 ```
+
+> standard 仍用 GFM Alerts；术语强调用 `**`，禁止 `==`。
