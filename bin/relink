@@ -62,7 +62,8 @@ yaml_get() {
 DEVICE_ID=$(yaml_get device_id)
 SDK_PATH=$(yaml_get sdk_path)
 SKILLS_PATH=$(yaml_get skills_path)
-VAULT_PATH=$(yaml_get vault_path)
+VAULT_PATH=$(yaml_get workspace_root)
+[[ -z "$VAULT_PATH" ]] && VAULT_PATH=$(yaml_get vault_path)
 WS_SUBDIR=$(yaml_get workspace_subdir)
 ENV_PATH=$(yaml_get env_path)
 
@@ -70,7 +71,7 @@ ENV_PATH=$(yaml_get env_path)
 _missing=""
 [[ -z "$DEVICE_ID" ]]  && _missing="$_missing device_id"
 [[ -z "$SDK_PATH" ]]   && _missing="$_missing sdk_path"
-[[ -z "$VAULT_PATH" ]] && _missing="$_missing vault_path"
+[[ -z "$VAULT_PATH" ]] && _missing="$_missing workspace_root/vault_path"
 [[ -z "$WS_SUBDIR" ]]  && _missing="$_missing workspace_subdir"
 
 if [[ -n "$_missing" ]]; then
