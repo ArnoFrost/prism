@@ -184,6 +184,24 @@ class TestMergedWithVault:
         assert wg["vault_path"] == "/my/vault"
         assert wg["config_path"] == str(cfg)
 
+    def test_reads_workspace_root_from_yaml(self, tmp_path, monkeypatch):
+        cfg = tmp_path / "prism.local.yaml"
+        cfg.write_text(
+            "workspace_root: /canonical/root\n"
+            "vault_path: /legacy/root\n"
+            "workspace_git:\n"
+            "  enabled: true\n"
+            "  interval_minutes: 15\n"
+            "  schedule:\n"
+            '    - "10:00"\n',
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(wgc, "_find_config", lambda: str(cfg))
+        wg = wgc._merged_with_vault(
+            {"present": True, "enabled": True, "interval_minutes": 15, "schedule": ["10:00"]}
+        )
+        assert wg["vault_path"] == "/canonical/root"
+
 
 class TestMainValidate:
     def test_validate_ok_via_config(self, tmp_path, monkeypatch):

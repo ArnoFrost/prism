@@ -86,6 +86,76 @@ class TestParsePrismLocalYaml:
         assert result["projects"]["PROJ1"] == "/home/user/project1"
 
 
+class TestResolvePrismLocalPaths:
+    def test_canonical_keys(self):
+        parsed = {
+            "workspace_root": "/data/ws-root",
+            "workspace_subdir": "Prism/Workspace",
+            "obs_vault": "/data/pkm",
+            "vault_path": None,
+            "obs_vault_personal": None,
+        }
+        out = sniff_lib.resolve_prism_local_paths(parsed)
+        assert out["storage_root"] == "/data/ws-root"
+        assert out["workspace_subdir"] == "Prism/Workspace"
+        assert out["prism_workspace_root"] == "/data/ws-root/Prism/Workspace"
+        assert out["obs_vault"] == "/data/pkm"
+
+    def test_deprecated_fallback(self):
+        parsed = {
+            "vault_path": "/legacy/vault",
+            "workspace_subdir": "Prism/Workspace",
+            "obs_vault_personal": "/legacy/pkm",
+            "workspace_root": None,
+            "obs_vault": None,
+        }
+        out = sniff_lib.resolve_prism_local_paths(parsed)
+        assert out["storage_root"] == "/legacy/vault"
+        assert out["obs_vault"] == "/legacy/pkm"
+        assert out["prism_workspace_root"] == "/legacy/vault/Prism/Workspace"
+
+    def test_canonical_over_deprecated(self):
+        parsed = {
+            "workspace_root": "/new/root",
+            "vault_path": "/old/root",
+            "obs_vault": "/new/pkm",
+            "obs_vault_personal": "/old/pkm",
+            "workspace_subdir": "Sub",
+        }
+        out = sniff_lib.resolve_prism_local_paths(parsed)
+        assert out["storage_root"] == "/new/root"
+        assert out["obs_vault"] == "/new/pkm"
+
+    def test_empty_parsed(self):
+        out = sniff_lib.resolve_prism_local_paths(None)
+        assert out["storage_root"] is None
+        assert out["prism_workspace_root"] is None
+
+
+class TestFindPrismContextDualRead:
+    def test_context_from_deprecated_yaml(self, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        home.mkdir()
+        prism_dir = home / "prism"
+        prism_dir.mkdir()
+        cfg = prism_dir / "prism.local.yaml"
+        cfg.write_text(
+            "vault_path: /store/root\n"
+            "workspace_subdir: Prism/Workspace\n"
+            "obs_vault_personal: /pkm/vault\n"
+            "projects:\n"
+            "  X: /proj\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("HOME", str(home))
+        ctx = sniff_lib.find_prism_context(str(tmp_path / "proj"))
+        assert ctx is not None
+        assert ctx["storage_root"] == "/store/root"
+        assert ctx["vault_path"] == "/store/root"
+        assert ctx["workspace_root"] == "/store/root/Prism/Workspace"
+        assert ctx["obs_vault"] == "/pkm/vault"
+
+
 class TestParseWorkspaceGit:
     def test_block_missing(self, tmp_path):
         yaml_file = tmp_path / "prism.local.yaml"
