@@ -31,6 +31,10 @@ def _add_to_path(directory: str) -> None:
         sys.path.insert(0, directory)
 
 
+_add_to_path(SCRIPT_DIR)
+from validate_product import DEFAULT_FORMAT_CUTOVER
+
+
 def _subprocess_env() -> dict[str, str]:
     env = os.environ.copy()
     existing = env.get("PYTHONPATH", "")
@@ -179,7 +183,10 @@ def run_finalize(args: argparse.Namespace) -> int:
     shared_scripts = os.path.join(WORKFLOW_DIR, "shared", "scripts")
     validate_path = os.path.join(shared_scripts, "validate_product.py")
     if os.path.isfile(validate_path):
-        validate_cmd = [sys.executable, validate_path, topic_dir, "--format", "ofm"]
+        validate_cmd = [
+            sys.executable, validate_path, topic_dir, "--format", "ofm",
+            "--since-date", DEFAULT_FORMAT_CUTOVER,
+        ]
         if not dry_run:
             validate_cmd.append("--fix")
 

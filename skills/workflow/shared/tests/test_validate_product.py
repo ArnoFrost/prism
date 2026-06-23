@@ -166,9 +166,9 @@ class TestOfmDualStateContract:
             "## Findings\n- **P1** ...\n- **P2** ...\n",
         )
         issues = vp.validate_file(path, "ofm")
-        density_issues = [i for i in issues if i.rule == "ofm-low-callout-density"]
-        assert len(density_issues) == 1
-        assert "A 档真退化" in density_issues[0].message
+        baseline = [i for i in issues if i.rule == "gfm-baseline-missing"]
+        assert len(baseline) == 1
+        assert "零 Callout" in baseline[0].message
 
     def test_ofm_main_report_few_callout_is_B_grade(self, tmp_path):
         path = self._write_review(
@@ -385,18 +385,56 @@ class TestOfmDualStateContract:
         decision_errors = [i for i in issues if i.rule.startswith("decision-")]
         assert decision_errors == []
 
-    def test_standard_main_report_with_ofm_callout_warned(self, tmp_path):
+    def test_standard_main_report_with_gfm_callout_passes(self, tmp_path):
         path = self._write_review(
             tmp_path, "r05_test.md",
             "# r05 — 测试评审\n\n"
-            "> [!info]\n> standard 里混入 callout\n\n"
-            "## Findings\n- P1 ...\n",
+            "> [!NOTE]\n> **base**：gfm\n\n"
+            "> [!TIP]\n> TL;DR\n\n"
+            "> [!IMPORTANT]\n> P0\n\n"
+            "## Findings\n",
         )
         issues = vp.validate_file(path, "standard")
-        leaked = [i for i in issues if i.rule == "standard-leaked-callout"]
+        rules = {i.rule for i in issues}
+        assert "standard-obsidian-callout" not in rules
+        assert "standard-leaked-callout" not in rules
+
+    def test_standard_main_report_with_obsidian_callout_warned(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r05_obsidian_callout.md",
+            "# r05 — 测试\n\n> [!hint]\n> obsidian only\n",
+        )
+        issues = vp.validate_file(path, "standard")
+        leaked = [i for i in issues if i.rule == "standard-obsidian-callout"]
         assert len(leaked) == 1
 
-    def test_standard_main_report_pure_markdown_passes(self, tmp_path):
+    def test_gfm_baseline_missing_warns(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r06_test.md",
+            "# r06 — 测试评审\n\n## Summary\n纯 markdown\n",
+        )
+        issues = vp.validate_file(path, "standard")
+        assert any(i.rule == "gfm-baseline-missing" for i in issues)
+
+    def test_ofm_missing_highlight_warns(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r07_test.md",
+            "---\ndate: 2026-06-23\nstatus: done\ntype: review-lite\n"
+            "tags:\n  - test\n---\n\n"
+            "# r07\n\n> [!NOTE]\n> proto\n\n> [!TIP]\n> tldr\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        assert any(i.rule == "highlight-missing" for i in issues)
+
+    def test_standard_leaked_highlight_warns(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r08_test.md",
+            "# r08\n\n==术语==\n",
+        )
+        issues = vp.validate_file(path, "standard")
+        assert any(i.rule == "standard-leaked-highlight" for i in issues)
+
+    def test_standard_main_report_pure_markdown_baseline_missing(self, tmp_path):
         path = self._write_review(
             tmp_path, "r06_test.md",
             "# r06 — 测试评审\n\n"
@@ -405,8 +443,8 @@ class TestOfmDualStateContract:
         )
         issues = vp.validate_file(path, "standard")
         rules = {i.rule for i in issues}
+        assert "gfm-baseline-missing" in rules
         assert "standard-leaked-callout" not in rules
-        assert "ofm-missing-protocol" not in rules
 
 
 # ============================================================

@@ -300,6 +300,14 @@ def _is_review_main_report(relpath: str) -> bool:
 
 _CALLOUT_HEAD_RE = re.compile(r"^>\s*\[!([\w-]+)\]", re.IGNORECASE)
 _PROTOCOL_TYPES = frozenset({"note", "info"})
+_GFM_BASE_CALLOUT = frozenset({
+    "note", "tip", "important", "warning", "caution",
+    "info", "abstract", "tldr", "danger", "success", "warn",
+})
+_HIGHLIGHT_RE = re.compile(r"==.+?==")
+
+# Format baseline cutover for advisory rules (--since-date suppresses older reviews)
+DEFAULT_FORMAT_CUTOVER = "2026-06-23"
 
 
 def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
@@ -510,17 +518,65 @@ def check_decision_semantics(lines: list[str], relpath: str) -> list[Issue]:
     return issues
 
 
-def check_standard_no_ofm_callout(lines: list[str], relpath: str) -> list[Issue]:
-    """[format=standard] 主报告禁止使用 OFM Callout（保持普通渲染器兼容）。"""
+def check_gfm_baseline_missing(lines: list[str], relpath: str) -> list[Issue]:
+    """[review 主报告] GFM 基线缺失：零 Callout（vault 内外均适用）。"""
+    if not _is_review_main_report(relpath):
+        return []
+    count = sum(1 for ln in lines if _CALLOUT_HEAD_RE.match(ln))
+    if count > 0:
+        return []
+    return [Issue(
+        "WARN", relpath, 1, "gfm-baseline-missing",
+        "review 主报告缺少 GFM 基线（零 Callout / 无协议段）；Prism 默认应使用 GFM Alerts",
+        False,
+    )]
+
+
+def check_ofm_missing_highlight(lines: list[str], relpath: str) -> list[Issue]:
+    """[format=ofm] 主报告零 ==高亮==（advisory；Obsidian 增量）。"""
+    if not _is_review_main_report(relpath):
+        return []
+    if not _HIGHLIGHT_RE.search("".join(lines)):
+        return [Issue(
+            "WARN", relpath, 1, "highlight-missing",
+            "ofm 主报告未使用 ==高亮==（Obsidian 增量；Findings 推荐 ≥1 处术语点缀）",
+            False,
+        )]
+    return []
+
+
+def check_standard_obsidian_extension_callout(lines: list[str], relpath: str) -> list[Issue]:
+    """[format=standard] 主报告使用 Obsidian-only 扩展 callout（GFM 基线仍允许 Alerts）。"""
     if not _is_review_main_report(relpath):
         return []
     issues = []
     for i, line in enumerate(lines, 1):
-        if re.match(r"^>\s*\[!", line):
-            issues.append(Issue("WARN", relpath, i, "standard-leaked-callout",
-                                "standard 产物混入了 OFM Callout（GitHub 等普通渲染器不识别），建议改为裸 Markdown 列表 / 引用",
-                                False))
+        m = _CALLOUT_HEAD_RE.match(line)
+        if m and m.group(1).lower() not in _GFM_BASE_CALLOUT:
+            issues.append(Issue(
+                "WARN", relpath, i, "standard-obsidian-callout",
+                f"standard 主报告含 Obsidian 扩展 callout `[!{m.group(1)}]`（GFM 五类仍可用）",
+                False,
+            ))
     return issues
+
+
+def check_standard_leaked_highlight(lines: list[str], relpath: str) -> list[Issue]:
+    """[format=standard] 主报告含 ==高亮==（GitHub 不渲染，应用 **）。"""
+    if not _is_review_main_report(relpath):
+        return []
+    if _HIGHLIGHT_RE.search("".join(lines)):
+        return [Issue(
+            "WARN", relpath, 1, "standard-leaked-highlight",
+            "standard 主报告含 ==高亮==（GitHub 不渲染）；请改用 **粗体**",
+            False,
+        )]
+    return []
+
+
+def check_standard_no_ofm_callout(lines: list[str], relpath: str) -> list[Issue]:
+    """[已废弃] 保留函数名兼容；逻辑已迁至 check_standard_obsidian_extension_callout。"""
+    return check_standard_obsidian_extension_callout(lines, relpath)
 
 
 # --- 结构完整性规则（产物目录级） ---
@@ -689,16 +745,27 @@ def validate_file(filepath: str, fmt: str) -> list[Issue]:
     issues.extend(check_mermaid_list_prefix(lines, relpath))
     issues.extend(check_decision_semantics(lines, relpath))
 
-    # ── OFM 专属规则（仅 format=ofm 时） ──
+    # ── review 主报告 GFM 基线（standard + ofm） ──
+    is_main = _is_review_main_report(relpath)
+    if is_main:
+        baseline = check_gfm_baseline_missing(lines, relpath)
+        issues.extend(baseline)
+        if not baseline:
+            issues.extend(check_ofm_protocol_header(lines, relpath))
+            issues.extend(check_ofm_callout_density(lines, relpath))
+
+    # ── OFM 专属规则（format=ofm：frontmatter + Obsidian 增量） ──
     if fmt == "ofm":
         issues.extend(check_frontmatter(lines, relpath))
         issues.extend(check_callout_format(lines, relpath))
         issues.extend(check_highlight_density(lines, relpath))
         issues.extend(check_heading_depth(lines, relpath))
-        issues.extend(check_ofm_protocol_header(lines, relpath))
-        issues.extend(check_ofm_callout_density(lines, relpath))
+        if is_main:
+            issues.extend(check_ofm_missing_highlight(lines, relpath))
     else:
-        issues.extend(check_standard_no_ofm_callout(lines, relpath))
+        if is_main:
+            issues.extend(check_standard_obsidian_extension_callout(lines, relpath))
+            issues.extend(check_standard_leaked_highlight(lines, relpath))
 
     return issues
 
