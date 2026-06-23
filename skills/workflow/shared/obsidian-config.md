@@ -33,7 +33,16 @@ Prism 环境下，vault 路径优先从 `prism.local.yaml` 读取：
 
 ## Prism 默认 callout（G0 · OFM v2）
 
-> **SSOT 分层**：本节 = 全仓**默认 callout 词汇**；`format=ofm` 二态与 vault frontmatter 见 sniff / `validate_product`；**评审协议段 + Findings 映射**见 `workflow-review/references/review-ofm.md`（仅 `rXX_*.md` 主报告）。
+> **SSOT 分层**：本节 = 全仓**默认 callout 词汇**；`sniff.format` 见下「基线 + 扩展」；**评审协议段 + Findings 映射**见 `workflow-review/references/review-ofm.md`（仅 `rXX_*.md` 主报告）。
+
+### 基线 + 扩展
+
+| 层 | 内容 | 何时 |
+|----|------|------|
+| **GFM 基线** | 表格、任务列表、围栏代码块、mermaid、**GFM Alerts** | 始终（含 `sniff.format=standard`） |
+| **Obsidian 增量** | `==高亮==`、扩展 callout（hint/question…） | `obsidian.detected`（`sniff.format=ofm`） |
+
+`sniff.format=standard` 表示 **无 Obsidian 增量**，不是「另一套 markdown」；review 主报告仍应使用 GFM Alerts。
 
 跨端优先 [GitHub Alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts)（GFM 五类）。Obsidian 与 Android Studio 2025.3.4+ 对五类均为全样式渲染；Obsidian-only 扩展在 IDE 预览中多为半样式。
 
@@ -54,7 +63,7 @@ Prism 环境下，vault 路径优先从 `prism.local.yaml` 读取：
 - Callout 类型**大小写不敏感**
 - 跨端产物**禁止** GFM 类型上的 Obsidian 折叠修饰（`[!note]-` / `[!quote]+`）
 - 每个章节最多 1–2 个 callout，不过度装饰
-- 高亮 `==文本==` 每段最多 1-2 处
+- 高亮 `==文本==` 每段最多 1-2 处（**Obsidian 增量**；standard 路径用 `**`）
 - 表格优于嵌套列表
 - 中英文之间加空格
 - Frontmatter 必须包含 `date`、`status`、`type`、`tags`
