@@ -66,8 +66,11 @@ user_invocable: true
 | `mode=full` | 评审材料 >200 行、涉及 3+ 文件，或用户指定 full；必须真实探测并行能力 |
 | `mode=quick` | 串行角色切换；仅在用户指定 quick 或合法 fallback 时使用 |
 | 自动判定 | Align 显式输出 mode + 理由；环境不支持并行时说明降级理由 |
-| `format=ofm` | READ `review-ofm.md`；顶部 NOTE 协议段；主报告 Callout ≥3 |
-| `format=standard` | 禁止 OFM Callout；裸 Markdown 兼容 GitHub |
+| **GFM 基线** | review 主报告：协议段 `NOTE` + GFM Alerts；`type: review` ≥3 callout，`review-lite` ≥2 |
+| `format=ofm` | READ `review-ofm.md`；在基线上叠加 `==` 高亮（Findings 推荐 ≥1 处） |
+| `format=standard` | 仅 GFM 基线（无 `==`）；**仍用** GFM Alerts，禁止 Obsidian-only 扩展 callout |
+
+Align 显式输出：`base: gfm` + `extensions: obsidian|none`（对应 sniff `format`）。
 
 ## 4. Full Review State Machine
 
@@ -129,6 +132,7 @@ Merge 必须保留理由，而不是只做摘要：
 |------|:----:|
 | TL;DR（≤3 句） | 是 |
 | Findings（P0/P1/P2） | 是 |
+| `format=ofm` 时 Findings 含 `==` 术语点缀 | 推荐（≥1 处） |
 | Risks | 是 |
 | Actions（Owner / priority / acceptance） | 是 |
 | Prior Unclosed Items | 是（`--incremental`） |

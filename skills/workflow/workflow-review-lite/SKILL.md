@@ -50,12 +50,15 @@ user_invocable: true
 | **痕迹校验** | — | `trace-artifacts-spec.md`（decision_artifact 字段歧义时） |
 | **Maintainer** | — | [review-lite-maintainer.md](references/review-lite-maintainer.md) |
 
-## 3. Format 二态判定
+## 3. Format 判定
 
 | format | 规则 |
 |--------|------|
-| **ofm** | READ `review-ofm.md`；顶部 NOTE 协议段；全篇 Callout ≥ 2 |
-| **standard** | 禁止 OFM Callout；裸 Markdown 兼容 GitHub |
+| **GFM 基线** | 协议段 `NOTE` + GFM Alerts；lite ≥2 callout |
+| **ofm** | READ `review-ofm.md`；基线 + `==` 高亮（Findings 推荐 ≥1 处） |
+| **standard** | 仅 GFM 基线；用 `**` 强调，禁 `==` |
+
+Align 显式输出：`base: gfm` + `extensions: obsidian|none`。
 
 ## 4. Happy Path
 
@@ -73,7 +76,7 @@ Phase 4  Gate 4 — AskQuestion 4 选项 → decision_artifact
 3. 若 `format=ofm` → **READ** `review-ofm.md`
 4. 基于 `topic_affinity.suggestion` + sniff `output_dir` / `reviews_dir` 确定落点；显式输出路由结论
 5. 若评审对象是 topic、scope/focus 快速对齐，或 sniff 已定位 topic：按 `../shared/context-pack-spec.md` light 档装配上下文；不支持脚本时手动读 `scope.md` + `focus.md`
-6. 显式输出：`format` / `output_dir` / `reviews_dir` / `next_review_number` / `topic_route` + 已加载 references + `context_pack: light|skipped`
+6. 显式输出：`format` / `base: gfm` / `extensions` / `output_dir` / `reviews_dir` / `next_review_number` / `topic_route` + 已加载 references + `context_pack: light|skipped`
 
 > **编号契约**：`reviews/rXX_*.md` 由 sniff 返回；`type: review-lite` 区分序列。
 > **`boundary_clarification_required=true` 或 `next_review_source=none`**：`output_dir` 为 null → **禁止 mkdir / 禁止 Phase 3 写盘**；必须先走边界澄清门 [askquestion-fallback.md §4.3.2](references/askquestion-fallback.md)。新建 topic 须 `/workflow-intake`，不得使用日期前缀 `[评审]` 目录。
