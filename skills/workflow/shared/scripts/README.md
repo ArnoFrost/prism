@@ -10,7 +10,7 @@
 | **validate-skills** | `bin/validate-skills` | 单个 SKILL.md frontmatter + 引用完整性 | `name` 格式 / `description` 含 Use when / `description_zh`（SDK 层）/ `visibility`·`stability` 与 `skills-catalog.yaml` 交叉校验 / `user_invocable` 小写布尔 / public_gate / scripts 与 references 的 symlink 完整性 / **双 frontmatter 检测** | [`schema/frontmatter-spec.md`](../../../schema/frontmatter-spec.md) |
 | **validate_trace.py** | `shared/scripts/validate_trace.py` | topic 产物（reviews/decisions/intake.md）的痕迹义务块 | `task_probe` / `merge_artifact` / `decision_artifact` / `intake_gate_out` 四族存在性 + 必填字段完整性（**不校验字段值**） | `workflow-review/SKILL.md §痕迹义务` |
 | **validate_review_call.py** | `shared/scripts/validate_review_call.py` | reviews/rXX_*.md + reviews/raw/rXX-role-*.md schema 字段值 + **subagent 输出契约**（详见下方 §subagent_self_check schema） | `frontmatter mode ∈ {full, quick}` / `raw/rXX-role-*.md` 个数 ≤ 5 / `task_probe.fallback_reason ∈ {1,2,3,4, 并行, parallel}` / **`subagent_self_check` 块字段完整性**（**校验字段值，与 trace 互补**）| `parallel-execution.md §串行 Fallback` + 本 README |
-| **validate_product.py** | `workflow-review/scripts/validate_product.py` | review 落盘产物的格式校验（OFM Callout 计数 / frontmatter 完整性 / 命名规则） | mode=full 至少 3 Callout / mode=lite 至少 2 Callout / frontmatter type 与 callout 数分档（**format 层 lint**）| `review-ofm.md` + `review-templates.md` |
+| **validate_product.py** | `workflow-review/scripts/validate_product.py` | review 落盘产物格式校验（**GFM 基线** callout 密度 / ofm `==` advisory / standard 泄漏 / frontmatter / 命名） | GFM 基线 ≥3(full)/≥2(lite) / `gfm-baseline-missing` / `highlight-missing` / `standard-leaked-highlight` / `standard-obsidian-callout` | `review-ofm.md` + `obsidian-config.md` |
 
 ### 边界 1：各 validator **只校验自己负责的对象**
 
@@ -105,7 +105,8 @@ subagent_self_check:
 
 - ❌ 把核心结论压缩到 `user_visible_high_level_summary` 而不展开成 markdown → `md_complete: false`
 - ❌ 只输出"交付确认 + 摘要 bullet"而不输出完整章节 → `fields_present` 缺关键字段
-- ❌ 把 OFM Callout 替换为裸 Markdown 列表（format 漂移）→ `output_format` 字段不匹配
+- ❌ 主报告零 GFM Alerts / 缺协议段（基线退化）→ `gfm-baseline-missing`
+- ❌ standard 路径写 `==` 或 Obsidian 扩展 callout → `standard-leaked-highlight` / `standard-obsidian-callout`
 - ❌ 完全省略 `subagent_self_check:` 块（不知道这个契约） → WARN（向后兼容）
 
 ### 调用流（分级 validate）

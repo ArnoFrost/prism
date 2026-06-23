@@ -74,9 +74,9 @@ prism/skills/                         ← SDK 仓库内置
 
 > **本节用途**：聚合多轮 dogfooding 失败 + PostFix 修复动因。SKILL.md 主流程不再展开历史叙事，但维护者排查工具行为反常时可回溯到本节定位根因。条目内 topic / review 编号仅作历史索引，不是 Agent 执行前提。
 
-### 4.1 二态产物契约（v1.1.7 修复动因）
+### 4.1 产物格式契约（v1.1.7 动因 · v2026-06-23 GFM 基线收口）
 
-**触发场景**：`format=ofm`（Obsidian vault 内）vs `format=standard`（普通 git 仓库）的产物风格混淆 — 早期 lite 评审报告 100% 走 standard 模板，full 评审报告也存在 OFM 退化（callout=0 / 缺协议段）。
+**触发场景**：早期将 `format=standard` 误教为「裸 Markdown / 禁止 callout」，与 Obsidian `ofm` 形成错误二态对立，导致 lite 100% 退化、full 大量 callout=0。2026-06-23 起统一为 **GFM 基线（全员）+ Obsidian 增量（叠加）**。
 
 **历史数据复盘**（v1.1.7 修复前真实统计）：
 
@@ -84,10 +84,11 @@ prism/skills/                         ← SDK 仓库内置
 - 78 篇缺协议段元数据（C 档透明度低）
 - lite 100% 失效（在 v1.1.7 通过强制 Align 阶段 READ `review-ofm.md` 修复）
 
-**v1.1.7+ 硬约束**（已写入 SKILL.md / review-lite SKILL.md）：
+**现行硬约束**（cite SKILL.md §3 / `validate_product.py`；**勿**再写「standard 禁止 callout」）：
 
-- format=ofm：产物**第一个 callout 必须**是 `> [!NOTE]` 评审协议段（v2；兼容 `> [!info]`；四要素：路由 / format / 已加载 references / 评审对象）；综合报告全篇 Callout ≥ 3（lite ≥ 2）；frontmatter 必填 `date / status / type / tags`
-- format=standard：禁止 OFM Callout；不强制 frontmatter
+- **GFM 基线（`standard` 与 `ofm` 共有）**：主报告第一个 callout 为 `> [!NOTE]` 协议段；`type: review` ≥3 callout、`review-lite` ≥2；允许 GFM Alerts（NOTE/TIP/IMPORTANT/WARNING/CAUTION）
+- **ofm 增量**：在基线上叠加 `==高亮==`、Obsidian 扩展 callout；Findings 推荐 ≥1 处 `==`（advisory：`highlight-missing`）
+- **standard 限制**：仅 GFM 基线；禁 `==`（`standard-leaked-highlight`）；禁 Obsidian-only 扩展 callout 如 `[!hint]`（`standard-obsidian-callout`）；术语用 `**`
 
 ### 4.2 跨脚本探测 SSOT 约束（v1.1.8 r17 PostFix）
 

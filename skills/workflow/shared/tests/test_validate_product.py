@@ -100,8 +100,8 @@ class TestValidateFile:
 # ============================================================
 
 class TestOfmDualStateContract:
-    """检验 format=ofm 时主报告必须有协议段 + Callout 密度；
-    format=standard 时主报告禁止混入 OFM Callout。"""
+    """检验 GFM 基线（协议段 + callout 密度）与 format 分轨限制：
+    ofm 允许 `==`；standard 禁 `==` 与 Obsidian-only 扩展 callout。"""
 
     def _write_review(self, tmp_path, name: str, body: str, review_type: str = "review") -> str:
         md = tmp_path / name

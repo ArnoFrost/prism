@@ -56,7 +56,7 @@ user_invocable: true
 |--------|------|
 | **GFM 基线** | 协议段 `NOTE` + GFM Alerts；lite ≥2 callout |
 | **ofm** | READ `review-ofm.md`；基线 + `==` 高亮（Findings 推荐 ≥1 处） |
-| **standard** | 仅 GFM 基线；用 `**` 强调，禁 `==` |
+| **standard** | 仅 GFM 基线；用 `**` 强调，禁 `==`；禁 Obsidian-only 扩展 callout |
 
 Align 显式输出：`base: gfm` + `extensions: obsidian|none`。
 

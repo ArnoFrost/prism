@@ -11,12 +11,13 @@
 
 编号契约：`next_review_source = none` → 边界澄清门见 [askquestion-fallback.md §4.3.2](../../shared/references/askquestion-fallback.md)。
 
-## format 二态速查（OFM 映射不复制）
+## format 速查（GFM 基线 + Obsidian 增量；OFM 映射不复制）
 
 | format | 要点 | SSOT |
 |--------|------|------|
-| **ofm** | 顶部 NOTE 协议段；全篇 Callout ≥2；Findings 映射不复制 | [review-ofm.md](../../workflow-review/references/review-ofm.md) |
-| **standard** | 禁止 OFM Callout；裸 Markdown | SKILL §3 Format 二态 |
+| **GFM 基线** | 协议段 NOTE + GFM Alerts；lite ≥2 callout | SKILL §3 / [review-ofm.md](../../workflow-review/references/review-ofm.md) |
+| **ofm** | 基线 + `==` 高亮 + 可选扩展 callout | [review-ofm.md](../../workflow-review/references/review-ofm.md) |
+| **standard** | 仅 GFM 基线；`**` 强调；禁 `==` 与 Obsidian-only 扩展 callout | SKILL §3 Format |
 
 ## 2.x 兼容边界（不承担）
 
