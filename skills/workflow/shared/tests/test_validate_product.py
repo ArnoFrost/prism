@@ -446,6 +446,52 @@ class TestOfmDualStateContract:
         assert "gfm-baseline-missing" in rules
         assert "standard-leaked-callout" not in rules
 
+    def test_ofm_protocol_declares_standard_warns(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r09_vault_leak.md",
+            "# r09\n\n"
+            "> [!NOTE]\n"
+            "> **format**: standard\n"
+            "> 路由：topic\n\n"
+            "> [!TIP]\n> TL;DR\n\n"
+            "> [!IMPORTANT]\n> P0\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        mismatches = [i for i in issues if i.rule == "format-protocol-mismatch"]
+        assert len(mismatches) == 1
+
+    def test_ofm_protocol_denies_vault_warns(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r10_vault_deny.md",
+            "# r10\n\n"
+            "> [!NOTE]\n"
+            "> 无 Obsidian Vault；纯 git 评审\n\n"
+            "> [!TIP]\n> TL;DR\n\n"
+            "> [!IMPORTANT]\n> P0\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        assert any(i.rule == "format-protocol-mismatch" for i in issues)
+
+    def test_ofm_correct_protocol_no_mismatch(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r11_ok.md",
+            "# r11\n\n"
+            "> [!NOTE]\n"
+            "> **base**: gfm · **extensions**: obsidian\n\n"
+            "> [!TIP]\n> TL;DR\n\n"
+            "> [!IMPORTANT]\n> P0\n",
+        )
+        issues = vp.validate_file(path, "ofm")
+        assert "format-protocol-mismatch" not in {i.rule for i in issues}
+
+    def test_format_protocol_mismatch_skipped_on_standard_fmt(self, tmp_path):
+        path = self._write_review(
+            tmp_path, "r12_std.md",
+            "# r12\n\n> [!NOTE]\n> **format**: standard\n",
+        )
+        issues = vp.validate_file(path, "standard")
+        assert "format-protocol-mismatch" not in {i.rule for i in issues}
+
 
 # ============================================================
 # apply_fixes

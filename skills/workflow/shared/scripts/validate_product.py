@@ -305,9 +305,28 @@ _GFM_BASE_CALLOUT = frozenset({
     "info", "abstract", "tldr", "danger", "success", "warn",
 })
 _HIGHLIGHT_RE = re.compile(r"==.+?==")
+_FORMAT_STANDARD_DECL_RE = re.compile(
+    r'(?:\*\*)?format(?:\*\*)?\s*[:=]\s*["\']?standard\b',
+    re.IGNORECASE,
+)
+_VAULT_DENY_RE = re.compile(
+    r'无\s*(Obsidian\s*)?Vault|没有\s*(Obsidian\s*)?Vault|no\s+obsidian\s+vault',
+    re.IGNORECASE,
+)
 
 # Format baseline cutover for advisory rules (--since-date suppresses older reviews)
 DEFAULT_FORMAT_CUTOVER = "2026-06-23"
+
+
+def _review_body_start(lines: list[str]) -> int:
+    """frontmatter 结束后的正文起始行（0-based index）。"""
+    body_start = 0
+    if lines and lines[0].strip() == "---":
+        for i in range(1, min(len(lines), 200)):
+            if lines[i].strip() == "---":
+                body_start = i + 1
+                break
+    return body_start
 
 
 def check_ofm_protocol_header(lines: list[str], relpath: str) -> list[Issue]:
@@ -545,6 +564,39 @@ def check_ofm_missing_highlight(lines: list[str], relpath: str) -> list[Issue]:
     return []
 
 
+def check_format_protocol_mismatch(
+    lines: list[str], relpath: str, fmt: str,
+) -> list[Issue]:
+    """[format=ofm] 协议叙事与 sniff 矛盾（vault-standard-leak / BC-T02/T03）。
+
+    与 gfm-baseline-missing 互补：后者抓零 callout；本规则抓 vault 内误判 standard。
+    """
+    if fmt != "ofm" or not _is_review_main_report(relpath):
+        return []
+    body_start = _review_body_start(lines)
+    window = "".join(lines[body_start:body_start + 45])
+    reasons: list[str] = []
+    if _FORMAT_STANDARD_DECL_RE.search(window):
+        reasons.append(
+            "协议段自声明 format: standard（vault 内应写 base: gfm + extensions: obsidian）"
+        )
+    if _VAULT_DENY_RE.search(window):
+        reasons.append("协议段否认 Obsidian Vault（与 sniff 探测矛盾）")
+    for line in lines[1:200]:
+        if line.strip() == "---":
+            break
+        if re.match(r"^format\s*:\s*standard\s*$", line.strip(), re.IGNORECASE):
+            reasons.append("frontmatter `format: standard` 与 vault 内 sniff=ofm 矛盾")
+            break
+    if not reasons:
+        return []
+    return [Issue(
+        "WARN", relpath, body_start + 1, "format-protocol-mismatch",
+        "；".join(reasons) + "（cite BC-T02/T03；旧标签 vault-standard-leak）",
+        False,
+    )]
+
+
 def check_standard_obsidian_extension_callout(lines: list[str], relpath: str) -> list[Issue]:
     """[format=standard] 主报告使用 Obsidian-only 扩展 callout（GFM 基线仍允许 Alerts）。"""
     if not _is_review_main_report(relpath):
@@ -761,6 +813,7 @@ def validate_file(filepath: str, fmt: str) -> list[Issue]:
         issues.extend(check_highlight_density(lines, relpath))
         issues.extend(check_heading_depth(lines, relpath))
         if is_main:
+            issues.extend(check_format_protocol_mismatch(lines, relpath, fmt))
             issues.extend(check_ofm_missing_highlight(lines, relpath))
     else:
         if is_main:
