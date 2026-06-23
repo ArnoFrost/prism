@@ -472,7 +472,7 @@ _stage_config() {
   # 用 python 解析 yaml，检验 core 必填字段、可选扩展路径与 uv 运行时
   local report
   report=$(run_python - "$config_path" <<'PYEOF' 2>/dev/null || echo "parse_error"
-import json, os, shutil, sys
+import json, os, re, shutil, sys
 
 path = sys.argv[1]
 try:
@@ -482,42 +482,69 @@ except OSError as e:
     print(json.dumps({"err": 1, "warn": 0, "lines": [f"\u2717 \u8bfb\u53d6\u5931\u8d25: {e}"]}))
     sys.exit(0)
 
-# 极简 YAML 解析：只处理顶层 key: value
 config = {}
+in_projects = False
 for line in raw.splitlines():
-    line = line.rstrip()
-    if not line or line.startswith("#") or line.startswith(" ") or line.startswith("-"):
+    stripped = line.rstrip()
+    if not stripped or stripped.lstrip().startswith("#"):
         continue
-    if ":" not in line:
+    if stripped == "projects:":
+        in_projects = True
         continue
-    key, _, val = line.partition(":")
+    if in_projects:
+        if line and line[0] not in (" ", "\t"):
+            in_projects = False
+        else:
+            continue
+    if ":" not in stripped:
+        continue
+    key, _, val = stripped.partition(":")
     config[key.strip()] = val.strip().strip('"').strip("'")
 
-required = ["device_id", "sdk_path", "vault_path", "workspace_subdir"]
 err = 0
 warn = 0
 lines = []
-for field in required:
+
+storage_root = config.get("workspace_root") or config.get("vault_path")
+for field in ("device_id", "sdk_path", "workspace_subdir"):
     if field not in config or not config[field]:
         lines.append(f"\u2717 \u7f3a\u5fc5\u586b\u5b57\u6bb5: {field}")
         err += 1
 
+if not storage_root:
+    lines.append("\u2717 \u7f3a\u5fc5\u586b\u5b57\u6bb5: workspace_root \u6216 vault_path")
+    err += 1
+
+# d02 deprecated key 检测
+if config.get("vault_path") and not config.get("workspace_root"):
+    lines.append("\u26a0 deprecated: vault_path \u2192 workspace_root\uff08bin/setenv --migrate-config\uff09")
+    warn += 1
+if config.get("obs_vault_personal") and not config.get("obs_vault"):
+    lines.append("\u26a0 deprecated: obs_vault_personal \u2192 obs_vault\uff08bin/setenv --migrate-config\uff09")
+    warn += 1
+for old_key, new_key in (("vault_path", "workspace_root"), ("obs_vault_personal", "obs_vault")):
+    if config.get(old_key) and config.get(new_key) and config[old_key] != config[new_key]:
+        lines.append(f"\u2717 \u51b2\u7a81: {old_key} \u4e0e {new_key} \u503c\u4e0d\u4e00\u81f4")
+        err += 1
+
 # 路径可达性
-path_fields = ["sdk_path", "vault_path"]
-for pf in path_fields:
-    if pf in config and config[pf]:
-        p = os.path.expanduser(config[pf])
-        if not p.startswith("/"):
-            lines.append(f"\u2717 {pf} \u975e\u7edd\u5bf9\u8def\u5f84: {p}")
-            err += 1
-        elif not os.path.isdir(p):
-            # vault_path 在 iCloud 未同步时可能暂时不可达，记 WARN
-            if pf == "vault_path":
-                lines.append(f"\u26a0 {pf} \u4e0d\u53ef\u8fbe (iCloud \u672a\u540c\u6b65?): {p}")
-                warn += 1
-            else:
-                lines.append(f"\u2717 {pf} \u76ee\u5f55\u4e0d\u5b58\u5728: {p}")
-                err += 1
+if config.get("sdk_path"):
+    p = os.path.expanduser(config["sdk_path"])
+    if not p.startswith("/"):
+        lines.append(f"\u2717 sdk_path \u975e\u7edd\u5bf9\u8def\u5f84: {p}")
+        err += 1
+    elif not os.path.isdir(p):
+        lines.append(f"\u2717 sdk_path \u76ee\u5f55\u4e0d\u5b58\u5728: {p}")
+        err += 1
+
+if storage_root:
+    p = os.path.expanduser(storage_root)
+    if not p.startswith("/"):
+        lines.append(f"\u2717 workspace_root \u975e\u7edd\u5bf9\u8def\u5f84: {p}")
+        err += 1
+    elif not os.path.isdir(p):
+        lines.append(f"\u26a0 workspace_root \u4e0d\u53ef\u8fbe (iCloud \u672a\u540c\u6b65?): {p}")
+        warn += 1
 
 skills_path = config.get("skills_path", "")
 if skills_path:
@@ -528,6 +555,27 @@ if skills_path:
     elif not os.path.isdir(p):
         lines.append(f"\u26a0 skills_path \u76ee\u5f55\u4e0d\u5b58\u5728\uff08\u53ef\u9009\u6269\u5c55\uff09: {p}")
         warn += 1
+
+# workspace_git × iCloud 互斥 WARN
+wg_enabled = False
+in_wg = False
+for line in raw.splitlines():
+    s = line.rstrip()
+    if re.match(r"^workspace_git:\s*$", s):
+        in_wg = True
+        continue
+    if in_wg:
+        if line and line[0] not in (" ", "\t"):
+            break
+        m = re.match(r"^\s+enabled:\s*(true|false)", s)
+        if m:
+            wg_enabled = m.group(1) == "true"
+            break
+
+icloud_markers = ("Mobile Documents", "iCloud~md~obsidian")
+if wg_enabled and storage_root and any(m in storage_root for m in icloud_markers):
+    lines.append("\u26a0 workspace_git.enabled \u4e0e iCloud \u534f\u4f5c\u6839\u540c\u8def\u5f84\uff1agit/icloud \u4e92\u65a5\u98ce\u9669\uff08\u89c1 migration spec \u00a75\uff09")
+    warn += 1
 
 if shutil.which("uv") is None:
     lines.append("\u2717 uv \u672a\u5b89\u88c5\uff08core contract \u5fc5\u9700\uff0cmini profile/package \u7ee7\u627f\uff09")

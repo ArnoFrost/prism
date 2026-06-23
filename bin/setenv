@@ -213,7 +213,19 @@ do_validate() {
     echo -e "  ${GREEN}✓${NC} device_id: ${did}"
   fi
 
-  local required_keys=("sdk_path" "vault_path" "workspace_subdir")
+  local required_keys=("sdk_path" "workspace_subdir")
+  local vault_path_val workspace_root_val
+  vault_path_val=$(yaml_get vault_path)
+  workspace_root_val=$(yaml_get workspace_root)
+  if [[ -z "$vault_path_val" && -z "$workspace_root_val" ]]; then
+    echo -e "  ${RED}✗${NC} workspace_root/vault_path: 缺失（必填，至少其一）"
+    ((errors++)) || true
+  else
+    local storage_display="${workspace_root_val:-$vault_path_val}"
+    echo -e "  ${GREEN}✓${NC} workspace 物理根: ${storage_display}"
+    [[ -n "$vault_path_val" && -z "$workspace_root_val" ]] && \
+      echo -e "  ${YELLOW}⚠${NC} deprecated: vault_path → 运行 bin/setenv --migrate-config 升级"
+  fi
 
   for key in "${required_keys[@]}"; do
     local val
@@ -295,9 +307,14 @@ do_validate() {
     fi
   fi
 
-  local obs_p
-  obs_p=$(yaml_get obs_vault_personal)
+  local obs_p obs_canonical obs_legacy
+  obs_canonical=$(yaml_get obs_vault)
+  obs_legacy=$(yaml_get obs_vault_personal)
+  obs_p="${obs_canonical:-$obs_legacy}"
   if [[ -n "$obs_p" ]]; then
+    if [[ -n "$obs_legacy" && -z "$obs_canonical" ]]; then
+      echo -e "  ${YELLOW}⚠${NC} deprecated: obs_vault_personal → 运行 bin/setenv --migrate-config 升级"
+    fi
     if [[ -d "$obs_p" ]]; then
       echo -e "  ${GREEN}✓${NC} 个人知识库: 可达"
     else
@@ -377,6 +394,26 @@ do_validate() {
     exit 1
   else
     echo -e "  ${GREEN}✓ 校验通过${NC}"
+  fi
+}
+
+do_migrate_config() {
+  if [[ ! -f "$CONFIG" ]]; then
+    echo -e "${RED}✗ prism.local.yaml 不存在${NC}"
+    exit 1
+  fi
+  local py="$PRISM_DIR/skills/workflow/shared/scripts/migrate_prism_config.py"
+  if [[ ! -f "$py" ]]; then
+    echo -e "${RED}✗ 迁移脚本不存在: ${py}${NC}"
+    exit 1
+  fi
+  local args=()
+  $MIGRATE_DRY_RUN && args+=(--dry-run)
+  args+=("$CONFIG")
+  if command -v uv >/dev/null 2>&1; then
+    uv run python "$py" "${args[@]}"
+  else
+    python3 "$py" "${args[@]}"
   fi
 }
 
@@ -838,6 +875,7 @@ _sync_find_by_remote() {
 
 NON_INTERACTIVE=false
 ACTION=""
+MIGRATE_DRY_RUN=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -846,6 +884,8 @@ while [[ $# -gt 0 ]]; do
     --export)           ACTION="export"; shift ;;
     --validate)         ACTION="validate"; shift ;;
     --sync)             ACTION="sync"; shift ;;
+    --migrate-config)   ACTION="migrate-config"; shift ;;
+    --dry-run)          MIGRATE_DRY_RUN=true; shift ;;
     --non-interactive)  NON_INTERACTIVE=true; shift ;;
     --help|-h)
       echo "用法: bin/setenv [--init [--non-interactive]|--example|--export|--validate|--sync|--help]"
@@ -855,6 +895,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --example         输出 core contract 配置样例"
       echo "  --export          输出 export 语句（配合 source 使用）"
       echo "  --validate        校验 prism.local.yaml 字段与路径"
+      echo "  --migrate-config  升级 yaml 至 d02 canonical key（配合 --dry-run 预览）"
       echo "  --sync            从 Workspace project.yaml 同步项目注册"
       exit 0
       ;;
@@ -867,6 +908,7 @@ case "${ACTION:-show}" in
   example)  do_example ;;
   export)   do_export ;;
   validate) do_validate ;;
+  migrate-config) do_migrate_config ;;
   sync)     do_sync ;;
   show)     show_config ;;
 esac
