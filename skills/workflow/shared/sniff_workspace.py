@@ -87,9 +87,11 @@ def _strip_yaml_quotes(value: str) -> str:
 
 
 def _read_vault_path_from_yaml(yaml_path: str) -> str | None:
-    """从 prism.local.yaml 读取 vault_path（简单解析，不引入 PyYAML 依赖）"""
+    """从 prism.local.yaml 读取协作树物理根（d02 双读 workspace_root / vault_path）。"""
     parsed = parse_prism_local_yaml(yaml_path)
-    return parsed.get("vault_path") if parsed else None
+    if not parsed:
+        return None
+    return resolve_prism_local_paths(parsed).get("storage_root")
 
 
 def parse_prism_local_yaml(yaml_path: str) -> dict | None:
@@ -104,7 +106,10 @@ def parse_prism_local_yaml(yaml_path: str) -> dict | None:
         "sdk_path": None,
         "skills_path": None,
         "vault_path": None,
+        "workspace_root": None,
         "workspace_subdir": None,
+        "obs_vault": None,
+        "obs_vault_personal": None,
         "projects": {},
     }
 
@@ -217,17 +222,52 @@ def parse_workspace_git(yaml_path: str) -> dict:
     return result
 
 
+def resolve_prism_local_paths(parsed: dict | None) -> dict:
+    """d02 双读：yaml 物理根与 PKM vault 解析为 canonical 路径。
+
+    storage_root       — Prism workspace 协作树物理根（workspace_root 或 vault_path）
+    prism_workspace_root — join(storage_root, workspace_subdir)；export PRISM_WORKSPACE
+    obs_vault            — PKM Obsidian vault（obs_vault 或 obs_vault_personal）
+    """
+    empty = {
+        "storage_root": None,
+        "workspace_subdir": None,
+        "prism_workspace_root": None,
+        "obs_vault": None,
+    }
+    if not parsed:
+        return dict(empty)
+
+    storage_root = parsed.get("workspace_root") or parsed.get("vault_path")
+    subdir = parsed.get("workspace_subdir")
+    prism_workspace_root = None
+    if storage_root and subdir:
+        prism_workspace_root = os.path.join(storage_root, subdir)
+
+    obs_vault = parsed.get("obs_vault") or parsed.get("obs_vault_personal")
+
+    return {
+        "storage_root": storage_root,
+        "workspace_subdir": subdir,
+        "prism_workspace_root": prism_workspace_root,
+        "obs_vault": obs_vault,
+    }
+
+
 def find_prism_context(project_dir: str) -> dict | None:
     """从 prism.local.yaml 构建完整的 Prism 上下文。
 
     返回 dict 含:
-      device_id       - 当前设备标识
-      sdk_path        - SDK 路径
-      skills_path     - Skills 仓库路径
-      vault_path      - Vault 基础路径
-      workspace_subdir - Vault 内子目录
-      workspace_root  - 计算后的完整 Workspace 根路径
-      projects        - 已注册项目 {CODE: local_path}
+      device_id            - 当前设备标识
+      sdk_path             - SDK 路径
+      skills_path          - Skills 仓库路径
+      vault_path           - 协作树物理根（deprecated 别名 = storage_root）
+      storage_root         - d02 协作树物理根
+      workspace_subdir     - 相对子目录
+      workspace_root       - 聚合根 prism_workspace_root（workflow 沿用此键）
+      prism_workspace_root - 与 workspace_root 相同
+      obs_vault            - PKM vault 路径
+      projects             - 已注册项目 {CODE: local_path}
     找不到 prism.local.yaml 时返回 None。
     """
     yaml_path = _find_prism_local_yaml(project_dir)
@@ -238,17 +278,18 @@ def find_prism_context(project_dir: str) -> dict | None:
     if not parsed:
         return None
 
-    workspace_root = None
-    if parsed["vault_path"] and parsed["workspace_subdir"]:
-        workspace_root = os.path.join(parsed["vault_path"], parsed["workspace_subdir"])
+    paths = resolve_prism_local_paths(parsed)
 
     return {
         "device_id": parsed["device_id"],
         "sdk_path": parsed["sdk_path"],
         "skills_path": parsed["skills_path"],
-        "vault_path": parsed["vault_path"],
-        "workspace_subdir": parsed["workspace_subdir"],
-        "workspace_root": workspace_root,
+        "vault_path": paths["storage_root"],
+        "storage_root": paths["storage_root"],
+        "workspace_subdir": paths["workspace_subdir"],
+        "workspace_root": paths["prism_workspace_root"],
+        "prism_workspace_root": paths["prism_workspace_root"],
+        "obs_vault": paths["obs_vault"],
         "projects": parsed["projects"],
     }
 

@@ -45,7 +45,7 @@ def _merged_with_vault(wg: dict) -> dict:
     if cfg_path:
         parsed = sniff_lib.parse_prism_local_yaml(cfg_path)
         if parsed:
-            vault = parsed.get("vault_path")
+            vault = sniff_lib.resolve_prism_local_paths(parsed).get("storage_root")
     out = dict(wg)
     out["config_path"] = cfg_path
     out["vault_path"] = vault

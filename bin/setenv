@@ -46,7 +46,8 @@ show_config() {
   local sdk skills vault ws_sub
   sdk=$(yaml_get sdk_path)
   skills=$(yaml_get skills_path)
-  vault=$(yaml_get vault_path)
+  vault=$(yaml_get workspace_root)
+  [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
   ws_sub=$(yaml_get workspace_subdir)
 
   local device_id
@@ -78,7 +79,8 @@ show_config() {
   fi
 
   local obs_p
-  obs_p=$(yaml_get obs_vault_personal)
+  obs_p=$(yaml_get obs_vault)
+  [[ -z "$obs_p" ]] && obs_p=$(yaml_get obs_vault_personal)
   if [[ -n "$obs_p" ]]; then
     echo -e "  个人知识库:     ${GREEN}${obs_p}${NC}"
   else
@@ -146,7 +148,8 @@ do_export() {
   local sdk skills vault ws_sub
   sdk=$(yaml_get sdk_path)
   skills=$(yaml_get skills_path)
-  vault=$(yaml_get vault_path)
+  vault=$(yaml_get workspace_root)
+  [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
   ws_sub=$(yaml_get workspace_subdir)
 
   local device_id
@@ -167,9 +170,11 @@ do_export() {
   fi
 
   local obs_p
-  obs_p=$(yaml_get obs_vault_personal)
+  obs_p=$(yaml_get obs_vault)
+  [[ -z "$obs_p" ]] && obs_p=$(yaml_get obs_vault_personal)
   if [[ -n "$obs_p" ]]; then
     echo "export PRISM_OBS_PERSONAL=\"${obs_p}\""
+    echo "export PRISM_OBS_VAULT=\"${obs_p}\""
   fi
 
   _workspace_git_export
@@ -245,7 +250,8 @@ do_validate() {
   local sdk skills vault ws_sub
   sdk=$(yaml_get sdk_path)
   skills=$(yaml_get skills_path)
-  vault=$(yaml_get vault_path)
+  vault=$(yaml_get workspace_root)
+  [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
   ws_sub=$(yaml_get workspace_subdir)
 
   for pair in "SDK:${sdk}" "Vault:${vault}"; do
