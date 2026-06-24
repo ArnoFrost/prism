@@ -59,6 +59,25 @@ yaml_get() {
   (grep "^${1}:" "$CONFIG" 2>/dev/null || true) | tail -1 | sed "s/^${1}: *//"
 }
 
+_load_default_workspace_from_export() {
+  local py="$PRISM_DIR/skills/workflow/shared/scripts/workspace_env_export.py"
+  [[ -f "$py" ]] || return 1
+  local out vault pwr
+  if [[ -x "${PRISM_DIR}/.venv/bin/python3" ]]; then
+    out=$("${PRISM_DIR}/.venv/bin/python3" "$py" "$CONFIG" 2>/dev/null) || return 1
+  elif command -v uv >/dev/null 2>&1; then
+    out=$(uv run python "$py" "$CONFIG" 2>/dev/null) || return 1
+  else
+    out=$(python3 "$py" "$CONFIG" 2>/dev/null) || return 1
+  fi
+  vault=$(echo "$out" | sed -n 's/^export PRISM_VAULT="\(.*\)"$/\1/p')
+  pwr=$(echo "$out" | sed -n 's/^export PRISM_WORKSPACE="\(.*\)"$/\1/p')
+  [[ -n "$vault" ]] && VAULT_PATH="$vault"
+  if [[ -n "$pwr" && -n "$vault" ]]; then
+    WS_SUBDIR="${pwr#"${vault}/"}"
+  fi
+}
+
 DEVICE_ID=$(yaml_get device_id)
 SDK_PATH=$(yaml_get sdk_path)
 SKILLS_PATH=$(yaml_get skills_path)
@@ -66,6 +85,10 @@ VAULT_PATH=$(yaml_get workspace_root)
 [[ -z "$VAULT_PATH" ]] && VAULT_PATH=$(yaml_get vault_path)
 WS_SUBDIR=$(yaml_get workspace_subdir)
 ENV_PATH=$(yaml_get env_path)
+
+if [[ -z "$VAULT_PATH" || -z "$WS_SUBDIR" ]]; then
+  _load_default_workspace_from_export || true
+fi
 
 # ── 必填字段校验（fail-fast）──────────
 _missing=""
