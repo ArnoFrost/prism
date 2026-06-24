@@ -429,6 +429,27 @@ do_migrate_config() {
   fi
 }
 
+do_migrate_multi_workspace() {
+  if [[ ! -f "$CONFIG" ]]; then
+    echo -e "${RED}✗ prism.local.yaml 不存在${NC}"
+    exit 1
+  fi
+  local py="$PRISM_DIR/skills/workflow/shared/scripts/migrate_multi_workspace.py"
+  if [[ ! -f "$py" ]]; then
+    echo -e "${RED}✗ 迁移脚本不存在: ${py}${NC}"
+    exit 1
+  fi
+  local args=()
+  $MIGRATE_DRY_RUN && args+=(--dry-run)
+  [[ -n "${MIGRATE_PERSONAL_ROOT:-}" ]] && args+=(--personal-root "$MIGRATE_PERSONAL_ROOT")
+  args+=("$CONFIG")
+  if command -v uv >/dev/null 2>&1; then
+    uv run python "$py" "${args[@]}"
+  else
+    python3 "$py" "${args[@]}"
+  fi
+}
+
 do_example() {
   cat <<EOF
 # Prism Local Configuration — core contract example
@@ -888,6 +909,7 @@ _sync_find_by_remote() {
 NON_INTERACTIVE=false
 ACTION=""
 MIGRATE_DRY_RUN=false
+MIGRATE_PERSONAL_ROOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -897,6 +919,11 @@ while [[ $# -gt 0 ]]; do
     --validate)         ACTION="validate"; shift ;;
     --sync)             ACTION="sync"; shift ;;
     --migrate-config)   ACTION="migrate-config"; shift ;;
+    --migrate-multi-workspace) ACTION="migrate-multi-workspace"; shift ;;
+    --personal-root)
+      MIGRATE_PERSONAL_ROOT="$2"
+      shift 2
+      ;;
     --dry-run)          MIGRATE_DRY_RUN=true; shift ;;
     --non-interactive)  NON_INTERACTIVE=true; shift ;;
     --help|-h)
@@ -908,6 +935,8 @@ while [[ $# -gt 0 ]]; do
       echo "  --export          输出 export 语句（配合 source 使用）"
       echo "  --validate        校验 prism.local.yaml 字段与路径"
       echo "  --migrate-config  升级 yaml 至 d02 canonical key（配合 --dry-run 预览）"
+      echo "  --migrate-multi-workspace  Phase C 多 workspace 迁移（配合 --dry-run）"
+      echo "  --personal-root PATH  multi-workspace 迁移时 personal workspace_root"
       echo "  --sync            从 Workspace project.yaml 同步项目注册"
       exit 0
       ;;
@@ -921,6 +950,7 @@ case "${ACTION:-show}" in
   export)   do_export ;;
   validate) do_validate ;;
   migrate-config) do_migrate_config ;;
+  migrate-multi-workspace) do_migrate_multi_workspace ;;
   sync)     do_sync ;;
   show)     show_config ;;
 esac
