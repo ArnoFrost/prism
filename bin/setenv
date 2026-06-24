@@ -148,9 +148,23 @@ do_export() {
   local sdk skills vault ws_sub
   sdk=$(yaml_get sdk_path)
   skills=$(yaml_get skills_path)
-  vault=$(yaml_get workspace_root)
-  [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
-  ws_sub=$(yaml_get workspace_subdir)
+
+  local env_export="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_env_export.py"
+  if [[ -f "$env_export" ]]; then
+    if [[ -x "${PRISM_DIR}/.venv/bin/python3" ]]; then
+      "${PRISM_DIR}/.venv/bin/python3" "$env_export" "$CONFIG"
+    elif command -v uv >/dev/null 2>&1; then
+      uv run python "$env_export" "$CONFIG"
+    else
+      python3 "$env_export" "$CONFIG"
+    fi
+  else
+    vault=$(yaml_get workspace_root)
+    [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
+    ws_sub=$(yaml_get workspace_subdir)
+    echo "export PRISM_VAULT=\"${vault}\""
+    echo "export PRISM_WORKSPACE=\"${vault}/${ws_sub}\""
+  fi
 
   local device_id
   device_id=$(yaml_get device_id)
@@ -160,8 +174,6 @@ do_export() {
   if [[ -n "$skills" ]]; then
     echo "export PRISM_SKILLS=\"${skills}\""
   fi
-  echo "export PRISM_VAULT=\"${vault}\""
-  echo "export PRISM_WORKSPACE=\"${vault}/${ws_sub}\""
 
   local env_p
   env_p=$(yaml_get env_path)

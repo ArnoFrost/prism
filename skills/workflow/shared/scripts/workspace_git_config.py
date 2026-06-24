@@ -39,17 +39,33 @@ def _find_config() -> str | None:
     return None
 
 
+def _resolve_git_workspace(cfg: str | None) -> dict:
+    """Git sync 绑定 default workspace（通常 work；d04 Phase C）。"""
+    wg_defaults = sniff_lib.parse_workspace_git("/dev/null")
+    if not cfg:
+        return {**wg_defaults, "config_path": None, "vault_path": None, "workspace_id": "work"}
+
+    parsed = sniff_lib.parse_prism_local_yaml(cfg) or {}
+    workspaces = sniff_lib.parse_workspaces(parsed, cfg)
+    default = parsed.get("default_workspace") or "work"
+    ws = workspaces.get(default, {})
+    wg = dict(ws.get("workspace_git") or sniff_lib.parse_workspace_git(cfg))
+    if ws.get("workspace_git", {}).get("present"):
+        wg["present"] = True
+    vault = ws.get("workspace_root") or sniff_lib.resolve_prism_local_paths(parsed).get(
+        "storage_root"
+    )
+    return {
+        **wg,
+        "config_path": cfg,
+        "vault_path": vault,
+        "workspace_id": default,
+    }
+
+
 def _merged_with_vault(wg: dict) -> dict:
     cfg_path = _find_config()
-    vault = None
-    if cfg_path:
-        parsed = sniff_lib.parse_prism_local_yaml(cfg_path)
-        if parsed:
-            vault = sniff_lib.resolve_prism_local_paths(parsed).get("storage_root")
-    out = dict(wg)
-    out["config_path"] = cfg_path
-    out["vault_path"] = vault
-    return out
+    return _resolve_git_workspace(cfg_path)
 
 
 def validate_schedule(schedule: list[str]) -> list[str]:
@@ -117,11 +133,12 @@ def cmd_summary(wg: dict) -> None:
     if not wg.get("present"):
         print("  workspace_git: (未配置)")
         return
+    ws_id = wg.get("workspace_id") or "work"
     en = "启用" if wg.get("enabled") else "关闭"
     sched = ", ".join(wg.get("schedule") or []) or "(无)"
     interval = wg.get("interval_minutes") or 0
     interval_s = f"{interval}min" if interval else "(无)"
-    print(f"  workspace_git: {en}")
+    print(f"  workspace_git [{ws_id}]: {en}")
     print(f"    branch: {wg.get('branch')}  remote: {wg.get('remote')}")
     print(f"    interval: {interval_s}  debounce: {wg.get('debounce_seconds')}s")
     print(f"    schedule: {sched}")
@@ -238,8 +255,7 @@ def main() -> int:
     args = parser.parse_args()
 
     cfg = _find_config()
-    wg = sniff_lib.parse_workspace_git(cfg) if cfg else sniff_lib.parse_workspace_git("/dev/null")
-    wg = _merged_with_vault(wg)
+    wg = _resolve_git_workspace(cfg)
 
     if args.write_plist:
         cmd_write_plist(wg, os.path.expanduser(args.write_plist))

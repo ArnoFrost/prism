@@ -65,25 +65,65 @@ def _prism_config_path() -> Path:
     return Path.home() / "prism" / "prism.local.yaml"
 
 
-def _load_resolved_paths() -> dict:
+def _load_config_context() -> tuple[dict | None, dict, dict[str, dict], str, str | None]:
     cfg = _prism_config_path()
+    cfg_str = str(cfg) if cfg.is_file() else None
     parsed = (
-        sniff_workspace.parse_prism_local_yaml(str(cfg))
-        if cfg.is_file()
-        else None
+        sniff_workspace.parse_prism_local_yaml(cfg_str) if cfg_str else None
     )
     resolved = sniff_workspace.resolve_prism_local_paths(parsed)
     if not resolved["obs_vault"]:
         resolved["obs_vault"] = _default_pkm_vault()
-    if not resolved["storage_root"]:
-        resolved["storage_root"] = _default_storage_root()
-    if not resolved["workspace_subdir"]:
-        resolved["workspace_subdir"] = "Prism/Workspace"
-    if not resolved["prism_workspace_root"]:
-        resolved["prism_workspace_root"] = os.path.join(
-            resolved["storage_root"], resolved["workspace_subdir"]
-        )
+    if not parsed or not parsed.get("workspaces"):
+        if not resolved["storage_root"]:
+            resolved["storage_root"] = _default_storage_root()
+        if not resolved["workspace_subdir"]:
+            resolved["workspace_subdir"] = "Prism/Workspace"
+        if not resolved["prism_workspace_root"]:
+            resolved["prism_workspace_root"] = os.path.join(
+                resolved["storage_root"], resolved["workspace_subdir"]
+            )
+    workspaces = sniff_workspace.parse_workspaces(parsed, cfg_str)
+    default = (parsed or {}).get("default_workspace") or "work"
+    return parsed, resolved, workspaces, default, cfg_str
+
+
+def _load_resolved_paths() -> dict:
+    _, resolved, _, _, _ = _load_config_context()
     return resolved
+
+
+def _probe_named_workspace(ws_id: str, ws: dict) -> dict:
+    root = ws.get("workspace_root")
+    subdir = ws.get("workspace_subdir")
+    pwr = ws.get("prism_workspace_root")
+    wg = ws.get("workspace_git") or {}
+
+    if not root:
+        return {
+            "id": ws_id,
+            "root": None,
+            "subdir": subdir,
+            "prism_workspace_root": None,
+            "workspace_git": {"enabled": wg.get("enabled", False)},
+            "obsidian_vault": False,
+            "status": "not_configured",
+        }
+
+    root_exp = os.path.expanduser(root)
+    status = _path_status(root_exp)
+    obsidian_vault = Path(root_exp, ".obsidian").is_dir()
+    pwr_status = _path_status(pwr) if pwr else "missing"
+
+    return {
+        "id": ws_id,
+        "root": root_exp,
+        "subdir": subdir,
+        "prism_workspace_root": os.path.expanduser(pwr) if pwr else None,
+        "workspace_git": {"enabled": bool(wg.get("enabled"))},
+        "obsidian_vault": obsidian_vault,
+        "status": status if status != "ok" else pwr_status,
+    }
 
 
 def _probe_obs_cli() -> dict:
@@ -216,13 +256,18 @@ def _legacy_vaults(pkm: dict, workspace: dict) -> dict:
 
 
 def sniff(targets: list[str]) -> dict:
-    resolved = _load_resolved_paths()
+    parsed, resolved, workspaces, default_ws_id, _ = _load_config_context()
     obs_cli = _probe_obs_cli()
 
     include_workspace = "workspace" in targets or "all" in targets
     include_vault = "vault" in targets or "all" in targets
 
-    workspace = _probe_prism_workspace(resolved) if include_workspace else None
+    default_entry = workspaces.get(default_ws_id, {})
+    workspace = (
+        _probe_named_workspace(default_ws_id, default_entry)
+        if include_workspace
+        else None
+    )
     pkm = _probe_pkm_vault(resolved["obs_vault"]) if include_vault else None
 
     if pkm:
@@ -232,9 +277,18 @@ def sniff(targets: list[str]) -> dict:
     lines: list[str] = []
     if workspace:
         if workspace["status"] == "ok":
-            lines.append(f"workspace: {workspace['prism_workspace_root']} [ok]")
+            lines.append(
+                f"workspace[{default_ws_id}]: {workspace['prism_workspace_root']} [ok]"
+            )
         else:
             lines.append(f"workspace: 不可用（{workspace['status']}）")
+    if len(workspaces) > 1:
+        for wid, ws in sorted(workspaces.items()):
+            if wid == default_ws_id:
+                continue
+            probed = _probe_named_workspace(wid, ws)
+            if probed["status"] == "ok":
+                lines.append(f"workspace[{wid}]: {probed['prism_workspace_root']} [ok]")
     if pkm:
         if pkm["status"] == "ok":
             cli = "CLI ✓" if pkm.get("has_obsidian_cli") else "CLI ✗"
@@ -248,6 +302,11 @@ def sniff(targets: list[str]) -> dict:
     }
     if workspace is not None:
         out["workspace"] = workspace
+        out["default_workspace"] = default_ws_id
+        out["workspaces"] = {
+            wid: _probe_named_workspace(wid, ws)
+            for wid, ws in workspaces.items()
+        }
     if pkm is not None:
         out["vault"] = {"pkm": pkm}
     if include_workspace and include_vault:

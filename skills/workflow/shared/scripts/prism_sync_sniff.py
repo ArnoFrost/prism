@@ -52,14 +52,21 @@ def _read_env_path() -> str | None:
 def _workspace_git_context() -> dict:
     cfg = _prism_config_path()
     if not cfg.exists():
-        wg = sniff_lib.parse_workspace_git(str(cfg))  # defaults
-        return {"enabled": False, "vault_path": None, "wg": wg}
+        wg = sniff_lib.parse_workspace_git(str(cfg))
+        return {"enabled": False, "vault_path": None, "wg": wg, "workspace_id": "work"}
     parsed = sniff_lib.parse_prism_local_yaml(str(cfg)) or {}
-    wg = sniff_lib.parse_workspace_git(str(cfg))
+    workspaces = sniff_lib.parse_workspaces(parsed, str(cfg))
+    default = parsed.get("default_workspace") or "work"
+    ws = workspaces.get(default, {})
+    wg = dict(ws.get("workspace_git") or sniff_lib.parse_workspace_git(str(cfg)))
+    if ws.get("workspace_git", {}).get("present"):
+        wg["present"] = True
+    vault = ws.get("workspace_root") or parsed.get("vault_path")
     return {
         "enabled": bool(wg.get("enabled")),
-        "vault_path": parsed.get("vault_path"),
+        "vault_path": vault,
         "wg": wg,
+        "workspace_id": default,
     }
 
 

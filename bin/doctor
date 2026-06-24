@@ -469,8 +469,12 @@ _stage_config() {
     return 0
   fi
 
-  # 用 python 解析 yaml，检验 core 必填字段、可选扩展路径与 uv 运行时
+  # 配置完整性 — doctor_config_check.py（含多 workspace）
+  local config_check="$PRISM_DIR/skills/workflow/shared/scripts/doctor_config_check.py"
   local report
+  if [[ -f "$config_check" ]]; then
+    report=$(run_python "$config_check" "$config_path" 2>/dev/null || echo "parse_error")
+  else
   report=$(run_python - "$config_path" <<'PYEOF' 2>/dev/null || echo "parse_error"
 import json, os, re, shutil, sys
 
@@ -587,6 +591,7 @@ if err == 0 and warn == 0:
 print(json.dumps({"err": err, "warn": warn, "lines": lines}, ensure_ascii=False))
 PYEOF
 )
+  fi
 
   if [[ "$report" == "parse_error" || -z "$report" ]]; then
     ! $JSON && echo -e "  ${YELLOW}⚠${NC} 配置解析失败"
