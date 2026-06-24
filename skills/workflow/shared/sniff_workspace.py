@@ -94,66 +94,8 @@ def _read_vault_path_from_yaml(yaml_path: str) -> str | None:
     return resolve_prism_local_paths(parsed).get("storage_root")
 
 
-def parse_prism_local_yaml(yaml_path: str) -> dict | None:
-    """解析 prism.local.yaml 顶层字段和 projects 块。
-
-    与 workspace-init/sniff.py 的同名函数对齐，零 PyYAML 依赖。
-    返回 dict 含: device_id, sdk_path, skills_path, vault_path,
-    workspace_subdir, projects (dict)。解析失败返回 None。
-    """
-    result = {
-        "device_id": None,
-        "sdk_path": None,
-        "skills_path": None,
-        "vault_path": None,
-        "workspace_root": None,
-        "workspace_subdir": None,
-        "obs_vault": None,
-        "obs_vault_personal": None,
-        "projects": {},
-    }
-
-    try:
-        with open(yaml_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-    except OSError:
-        return None
-
-    in_projects = False
-    for line in lines:
-        stripped = line.rstrip()
-        if stripped.lstrip().startswith("#") or not stripped:
-            continue
-
-        if stripped == "projects:":
-            in_projects = True
-            continue
-
-        if in_projects:
-            if line[0] != " " and line[0] != "\t":
-                in_projects = False
-            else:
-                m = re.match(r"^\s+([\w-]+):\s*(.+)", stripped)
-                if m:
-                    result["projects"][m.group(1)] = _strip_yaml_quotes(m.group(2).strip())
-                continue
-
-        m = re.match(r"^(\w+):\s*(.+)", stripped)
-        if m:
-            key, val = m.group(1), _strip_yaml_quotes(m.group(2).strip())
-            if key in result and key != "projects":
-                result[key] = val
-
-    return result
-
-
-def parse_workspace_git(yaml_path: str) -> dict:
-    """解析 prism.local.yaml 可选块 workspace_git（零 PyYAML 依赖）。
-
-    块缺失时返回 present=False, enabled=False 与默认值。
-    enabled 仅接受 true/false 字面量（d03：无 auto）。
-    """
-    defaults = {
+def _workspace_git_defaults() -> dict:
+    return {
         "present": False,
         "enabled": False,
         "branch": "master",
@@ -165,6 +107,163 @@ def parse_workspace_git(yaml_path: str) -> dict:
         "notify_on_block": True,
         "schedule": [],
     }
+
+
+def _apply_workspace_git_field(result: dict, key: str, raw: str) -> None:
+    val = _strip_yaml_quotes(raw.strip())
+    if key == "enabled":
+        result["enabled"] = val.lower() == "true"
+    elif key in ("notify_on_success", "notify_on_block"):
+        result[key] = val.lower() == "true"
+    elif key == "branch" and val:
+        result["branch"] = val
+    elif key == "remote" and val:
+        result["remote"] = val
+    elif key in ("debounce_seconds", "interval_minutes", "large_file_mb") and val.isdigit():
+        result[key] = int(val)
+
+
+def parse_prism_local_yaml(yaml_path: str) -> dict | None:
+    """解析 prism.local.yaml 顶层字段、workspaces 块与 projects 块。
+
+    零 PyYAML 依赖。projects 值可为 string（legacy）或 {path, workspace} object。
+    workspaces 块缺失时 workspaces={}，由 parse_workspaces 合成 flat work。
+    """
+    result = {
+        "device_id": None,
+        "sdk_path": None,
+        "skills_path": None,
+        "vault_path": None,
+        "workspace_root": None,
+        "workspace_subdir": None,
+        "obs_vault": None,
+        "obs_vault_personal": None,
+        "default_workspace": None,
+        "workspaces": {},
+        "projects": {},
+    }
+
+    try:
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except OSError:
+        return None
+
+    section: str | None = None
+    ws_id: str | None = None
+    in_ws_git = False
+    in_ws_git_schedule = False
+    project_code: str | None = None
+
+    top_keys = set(result.keys()) - {"workspaces", "projects"}
+
+    for line in lines:
+        stripped = line.rstrip()
+        if not stripped or stripped.lstrip().startswith("#"):
+            continue
+
+        if line[0] not in (" ", "\t"):
+            section = None
+            ws_id = None
+            in_ws_git = False
+            in_ws_git_schedule = False
+            project_code = None
+
+            if stripped == "workspaces:":
+                section = "workspaces"
+                continue
+            if stripped == "projects:":
+                section = "projects"
+                continue
+
+            m = re.match(r"^(\w+):\s*(.*)$", stripped)
+            if m:
+                key, val = m.group(1), _strip_yaml_quotes(m.group(2).strip())
+                if key in top_keys:
+                    result[key] = val
+            continue
+
+        if section == "workspaces":
+            m_id = re.match(r"^  ([\w-]+):\s*$", stripped)
+            if m_id:
+                ws_id = m_id.group(1)
+                result["workspaces"][ws_id] = {
+                    "workspace_root": None,
+                    "workspace_subdir": None,
+                    "workspace_git": _workspace_git_defaults(),
+                }
+                in_ws_git = False
+                in_ws_git_schedule = False
+                continue
+
+            if ws_id and re.match(r"^    workspace_git:\s*$", stripped):
+                in_ws_git = True
+                in_ws_git_schedule = False
+                result["workspaces"][ws_id]["workspace_git"]["present"] = True
+                continue
+
+            if in_ws_git and ws_id:
+                if in_ws_git_schedule:
+                    m_item = re.match(r'^\s+-\s*["\']?([^"\']+)["\']?\s*$', stripped)
+                    if m_item:
+                        result["workspaces"][ws_id]["workspace_git"]["schedule"].append(
+                            m_item.group(1).strip()
+                        )
+                        continue
+                    if re.match(r"^\s+\w", stripped) and not stripped.strip().startswith("- "):
+                        in_ws_git_schedule = False
+                    else:
+                        continue
+
+                m_wg = re.match(r"^      (\w+):\s*(.*)$", stripped)
+                if m_wg:
+                    key, raw = m_wg.group(1), m_wg.group(2)
+                    wg = result["workspaces"][ws_id]["workspace_git"]
+                    if key == "schedule" and raw.strip() == "":
+                        in_ws_git_schedule = True
+                        continue
+                    _apply_workspace_git_field(wg, key, raw)
+                continue
+
+            if ws_id:
+                m_field = re.match(r"^    (\w+):\s*(.+)$", stripped)
+                if m_field:
+                    key, val = m_field.group(1), _strip_yaml_quotes(m_field.group(2).strip())
+                    if key in ("workspace_root", "workspace_subdir"):
+                        result["workspaces"][ws_id][key] = val
+            continue
+
+        if section == "projects":
+            m_inline = re.match(r"^  ([\w-]+):\s*(.+)$", stripped)
+            if m_inline:
+                code, val = m_inline.group(1), _strip_yaml_quotes(m_inline.group(2).strip())
+                result["projects"][code] = val
+                project_code = None
+                continue
+
+            m_obj = re.match(r"^  ([\w-]+):\s*$", stripped)
+            if m_obj:
+                project_code = m_obj.group(1)
+                result["projects"][project_code] = {}
+                continue
+
+            if project_code:
+                m_sub = re.match(r"^    (\w+):\s*(.+)$", stripped)
+                if m_sub:
+                    key, val = m_sub.group(1), _strip_yaml_quotes(m_sub.group(2).strip())
+                    result["projects"][project_code][key] = val
+            continue
+
+    return result
+
+
+def parse_workspace_git(yaml_path: str) -> dict:
+    """解析 prism.local.yaml 可选块 workspace_git（零 PyYAML 依赖）。
+
+    块缺失时返回 present=False, enabled=False 与默认值。
+    enabled 仅接受 true/false 字面量（d03：无 auto）。
+    """
+    defaults = _workspace_git_defaults()
     try:
         with open(yaml_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
@@ -186,7 +285,7 @@ def parse_workspace_git(yaml_path: str) -> dict:
                 result["present"] = True
             continue
 
-        # 退出 workspace_git 块（下一个顶层 key）
+        # 退出顶层 workspace_git 块（下一个顶层 key）
         if line[0] not in (" ", "\t"):
             break
 
@@ -207,19 +306,101 @@ def parse_workspace_git(yaml_path: str) -> dict:
         if key == "schedule" and raw == "":
             in_schedule = True
             continue
-        val = _strip_yaml_quotes(raw)
-        if key == "enabled":
-            result["enabled"] = val.lower() == "true"
-        elif key in ("notify_on_success", "notify_on_block"):
-            result[key] = val.lower() == "true"
-        elif key == "branch" and val:
-            result["branch"] = val
-        elif key == "remote" and val:
-            result["remote"] = val
-        elif key in ("debounce_seconds", "interval_minutes", "large_file_mb") and val.isdigit():
-            result[key] = int(val)
+        _apply_workspace_git_field(result, key, raw)
 
     return result
+
+
+def _normalize_project_entry(value: str | dict | None, default_workspace: str) -> dict | None:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        path = value.get("path")
+        workspace = value.get("workspace") or default_workspace
+        if not path:
+            return None
+        return {"path": path, "workspace": workspace}
+    if isinstance(value, str) and value:
+        return {"path": value, "workspace": default_workspace}
+    return None
+
+
+def parse_workspaces(parsed: dict | None, yaml_path: str | None = None) -> dict[str, dict]:
+    """解析命名 workspaces；无 workspaces 块时合成 flat work（Phase A 双读）。"""
+    if not parsed:
+        return {}
+
+    if parsed.get("workspaces"):
+        out: dict[str, dict] = {}
+        for wid, ws in parsed["workspaces"].items():
+            root = ws.get("workspace_root")
+            sub = ws.get("workspace_subdir")
+            pwr = os.path.join(root, sub) if root and sub else None
+            out[wid] = {
+                "workspace_root": root,
+                "workspace_subdir": sub,
+                "prism_workspace_root": pwr,
+                "workspace_git": dict(ws.get("workspace_git") or _workspace_git_defaults()),
+            }
+        return out
+
+    paths = resolve_prism_local_paths(parsed)
+    wg = parse_workspace_git(yaml_path) if yaml_path else _workspace_git_defaults()
+    return {
+        "work": {
+            "workspace_root": paths["storage_root"],
+            "workspace_subdir": paths["workspace_subdir"],
+            "prism_workspace_root": paths["prism_workspace_root"],
+            "workspace_git": wg,
+        }
+    }
+
+
+def resolve_project_binding(
+    parsed: dict | None,
+    code: str,
+    yaml_path: str | None = None,
+) -> dict | None:
+    """按 CODE 解析 workspace 绑定与 instance_path（d04 Phase C）。"""
+    if not parsed:
+        return None
+    default_ws = parsed.get("default_workspace") or "work"
+    raw = parsed.get("projects", {}).get(code)
+    norm = _normalize_project_entry(raw, default_ws)
+    if not norm:
+        return None
+
+    workspaces = parse_workspaces(parsed, yaml_path)
+    ws_id = norm["workspace"]
+    ws = workspaces.get(ws_id)
+    if not ws or not ws.get("prism_workspace_root"):
+        return None
+
+    pwr = ws["prism_workspace_root"]
+    return {
+        "code": code,
+        "path": norm["path"],
+        "workspace_id": ws_id,
+        "storage_root": ws.get("workspace_root"),
+        "workspace_subdir": ws.get("workspace_subdir"),
+        "prism_workspace_root": pwr,
+        "instance_path": os.path.join(pwr, code),
+        "workspace_git": ws.get("workspace_git"),
+    }
+
+
+def resolve_all_project_bindings(
+    parsed: dict | None,
+    yaml_path: str | None = None,
+) -> list[dict]:
+    if not parsed:
+        return []
+    out: list[dict] = []
+    for code in parsed.get("projects", {}):
+        binding = resolve_project_binding(parsed, code, yaml_path)
+        if binding:
+            out.append(binding)
+    return out
 
 
 def resolve_prism_local_paths(parsed: dict | None) -> dict:
@@ -279,6 +460,10 @@ def find_prism_context(project_dir: str) -> dict | None:
         return None
 
     paths = resolve_prism_local_paths(parsed)
+    workspaces = parse_workspaces(parsed, yaml_path)
+    default_ws = parsed.get("default_workspace") or "work"
+    default_root = (workspaces.get(default_ws) or {}).get("prism_workspace_root")
+    prism_workspace_root = default_root or paths["prism_workspace_root"]
 
     return {
         "device_id": parsed["device_id"],
@@ -287,19 +472,35 @@ def find_prism_context(project_dir: str) -> dict | None:
         "vault_path": paths["storage_root"],
         "storage_root": paths["storage_root"],
         "workspace_subdir": paths["workspace_subdir"],
-        "workspace_root": paths["prism_workspace_root"],
-        "prism_workspace_root": paths["prism_workspace_root"],
+        "workspace_root": prism_workspace_root,
+        "prism_workspace_root": prism_workspace_root,
+        "default_workspace": default_ws,
+        "workspaces": workspaces,
         "obs_vault": paths["obs_vault"],
         "projects": parsed["projects"],
+        "config_path": yaml_path,
     }
 
 
-def resolve_workspace_path(prism_context: dict, project_code: str) -> str | None:
-    """根据项目代号解析其 Workspace 目录的绝对路径。
+def resolve_workspace_path(
+    prism_context: dict,
+    project_code: str,
+    yaml_path: str | None = None,
+) -> str | None:
+    """根据项目代号解析其 Workspace 实例目录的绝对路径。
 
-    路径 = {workspace_root}/{project_code}/
+    多 workspace 时按 projects 绑定；否则 {workspace_root}/{CODE}/。
     仅在目录实际存在时返回，否则返回 None。
     """
+    cfg = yaml_path or prism_context.get("config_path")
+    if cfg and os.path.isfile(cfg):
+        parsed = parse_prism_local_yaml(cfg)
+        if parsed:
+            binding = resolve_project_binding(parsed, project_code, cfg)
+            if binding:
+                inst = binding["instance_path"]
+                return inst if os.path.isdir(inst) else None
+
     if not prism_context or not prism_context.get("workspace_root"):
         return None
     ws_path = os.path.join(prism_context["workspace_root"], project_code)

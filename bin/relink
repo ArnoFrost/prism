@@ -89,6 +89,18 @@ fi
 
 WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
 
+RESOLVER="$SDK_PATH/skills/workflow/shared/scripts/workspace_resolve.py"
+_run_resolver_tsv() {
+  if [[ ! -f "$RESOLVER" ]]; then
+    return 1
+  fi
+  if command -v uv >/dev/null 2>&1; then
+    uv run python "$RESOLVER" --config "$CONFIG" --tsv 2>/dev/null
+  else
+    python3 "$RESOLVER" --config "$CONFIG" --tsv 2>/dev/null
+  fi
+}
+
 TOTAL=0
 OK=0
 FIXED=0
@@ -334,8 +346,51 @@ else
   log_ok "Workspace: ${WS_ROOT}"
 fi
 
-# 2. 刷新项目软链接
+# 2. 刷新项目软链接（多 workspace：按 CODE 解析 instance_path）
 echo -e "\n${CYAN}[项目软链接]${NC}"
+_relink_projects=false
+if _resolver_out=$(_run_resolver_tsv); then
+  _relink_projects=true
+  while IFS=$'\t' read -r code local_path ws_target workspace_id; do
+    [[ -z "$code" ]] && continue
+    if [[ -n "$TARGET_PROJECT" && "$code" != "$TARGET_PROJECT" ]]; then
+      continue
+    fi
+
+    code_lower=$(echo "$code" | tr '[:upper:]' '[:lower:]')
+    echo -e "  ${CYAN}${code}${NC} (${local_path}) ${DIM}[${workspace_id}]${NC}"
+
+    ws_link="${local_path}/workspace.${code_lower}.local"
+    ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
+
+    agents_target="${ws_target}/AGENTS.md"
+    legacy_target="${ws_target}/AGENT.md"
+    if [[ -f "$legacy_target" && -f "$agents_target" ]]; then
+      log_warn "    ${code}: vault 内同时存在 AGENT.md 与 AGENTS.md，请手动确认后保留 AGENTS.md"
+    elif [[ -f "$legacy_target" && ! -f "$agents_target" ]]; then
+      if $CHECK_ONLY; then
+        log_warn "    ${code}: vault 内仍是老命名 AGENT.md（v1.1.4+ 应已迁移；运行 bin/relink 自动 mv）"
+      elif $DRY_RUN; then
+        log_fix "    ${code}: 将 mv ${legacy_target} → ${agents_target}"
+      else
+        if mv "$legacy_target" "$agents_target" 2>/dev/null; then
+          log_fix "    ${code}: 自动迁移 AGENT.md → AGENTS.md（vault 内）"
+        else
+          log_err "    ${code}: AGENT.md → AGENTS.md mv 失败（iCloud 占位符？请手动处理）"
+        fi
+      fi
+    fi
+    if [[ -f "$agents_target" ]]; then
+      ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"
+    fi
+
+    if [[ -n "$DEVICE_ID" && -d "$ws_target" ]] && ! $CHECK_ONLY && ! $DRY_RUN; then
+      _relink_writeback_path "${ws_target}/project.yaml" "$DEVICE_ID" "$local_path"
+    fi
+  done <<< "$_resolver_out"
+fi
+
+if ! $_relink_projects; then
 in_projects=false
 while IFS= read -r line; do
   if [[ "$line" == "projects:" ]]; then
@@ -359,8 +414,6 @@ while IFS= read -r line; do
       ws_link="${local_path}/workspace.${code_lower}.local"
       ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
 
-      # AGENTS.md 协作契约软链（vault → workspace 桥接）
-      # 老命名 AGENT.md 自动迁移：仅限 vault 内 prism 工作区路径，无感升级
       agents_target="${WS_ROOT}/${code}/AGENTS.md"
       legacy_target="${WS_ROOT}/${code}/AGENT.md"
       if [[ -f "$legacy_target" && -f "$agents_target" ]]; then
@@ -382,7 +435,6 @@ while IFS= read -r line; do
         ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"
       fi
 
-      # 回写 project.yaml paths（跨设备支持）
       if [[ -n "$DEVICE_ID" && -d "$ws_target" ]] && ! $CHECK_ONLY && ! $DRY_RUN; then
         _relink_writeback_path "${ws_target}/project.yaml" "$DEVICE_ID" "$local_path"
       fi
@@ -392,6 +444,7 @@ while IFS= read -r line; do
     fi
   fi
 done < "$CONFIG"
+fi
 
 # 3. 探测可用 IDE 平台目录
 PLATFORM_TARGETS=()
