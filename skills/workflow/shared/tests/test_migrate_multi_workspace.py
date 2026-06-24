@@ -50,6 +50,22 @@ class TestMigrateMultiWorkspace:
         assert b["workspace_id"] == "personal"
         assert b["instance_path"] == "/data/icloud/Prism/PRISM"
 
+    def test_migrate_expands_tilde_personal_root(self, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        icloud = home / "icloud"
+        icloud.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        cfg = tmp_path / "prism.local.yaml"
+        cfg.write_text(FLAT_YAML, encoding="utf-8")
+        assert mmw.migrate(cfg, dry_run=False, personal_root="~/icloud") == 0
+        text = cfg.read_text()
+        assert "~/icloud" not in text.split("personal:")[1].split("projects:")[0]
+        assert str(icloud) in text
+        parsed = sniff_lib.parse_prism_local_yaml(str(cfg))
+        b = sniff_lib.resolve_project_binding(parsed, "PRISM", str(cfg))
+        assert b["instance_path"].startswith(str(icloud))
+        assert not b["instance_path"].startswith("~")
+
     def test_skip_when_already_multi(self, tmp_path):
         cfg = tmp_path / "prism.local.yaml"
         cfg.write_text(

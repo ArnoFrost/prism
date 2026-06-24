@@ -168,6 +168,7 @@ def build_multi_workspace_yaml(
     wg = sniff_workspace.parse_workspace_git(config_path)
     work_root = paths["storage_root"]
     work_subdir = paths["workspace_subdir"] or DEFAULT_WORK_SUBDIR
+    personal_root_abs = os.path.normpath(os.path.expanduser(personal_root))
 
     personal_wg = sniff_workspace._workspace_git_defaults()
     personal_wg["enabled"] = False
@@ -198,7 +199,7 @@ def build_multi_workspace_yaml(
     head_lines.append(f"    workspace_subdir: {work_subdir}")
     head_lines.extend(_workspace_git_lines(wg, "    "))
     head_lines.append("  personal:")
-    head_lines.append(f"    workspace_root: {_yaml_scalar(personal_root)}")
+    head_lines.append(f"    workspace_root: {_yaml_scalar(personal_root_abs)}")
     head_lines.append(f"    workspace_subdir: {personal_subdir}")
     head_lines.extend(_workspace_git_lines(personal_wg, "    "))
     head_lines.append("")

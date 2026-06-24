@@ -94,6 +94,13 @@ def _read_vault_path_from_yaml(yaml_path: str) -> str | None:
     return resolve_prism_local_paths(parsed).get("storage_root")
 
 
+def _expand_config_path(path: str | None) -> str | None:
+    """展开 yaml 中的 ~ 为用户主目录绝对路径（relink/bash 不展开变量内 ~）。"""
+    if not path:
+        return None
+    return os.path.normpath(os.path.expanduser(path))
+
+
 def _workspace_git_defaults() -> dict:
     return {
         "present": False,
@@ -333,7 +340,7 @@ def parse_workspaces(parsed: dict | None, yaml_path: str | None = None) -> dict[
     if parsed.get("workspaces"):
         out: dict[str, dict] = {}
         for wid, ws in parsed["workspaces"].items():
-            root = ws.get("workspace_root")
+            root = _expand_config_path(ws.get("workspace_root"))
             sub = ws.get("workspace_subdir")
             pwr = os.path.join(root, sub) if root and sub else None
             out[wid] = {
@@ -346,11 +353,14 @@ def parse_workspaces(parsed: dict | None, yaml_path: str | None = None) -> dict[
 
     paths = resolve_prism_local_paths(parsed)
     wg = parse_workspace_git(yaml_path) if yaml_path else _workspace_git_defaults()
+    storage = _expand_config_path(paths["storage_root"])
+    subdir = paths["workspace_subdir"]
+    pwr = os.path.join(storage, subdir) if storage and subdir else None
     return {
         "work": {
-            "workspace_root": paths["storage_root"],
-            "workspace_subdir": paths["workspace_subdir"],
-            "prism_workspace_root": paths["prism_workspace_root"],
+            "workspace_root": storage,
+            "workspace_subdir": subdir,
+            "prism_workspace_root": pwr,
             "workspace_git": wg,
         }
     }
@@ -377,14 +387,15 @@ def resolve_project_binding(
         return None
 
     pwr = ws["prism_workspace_root"]
+    instance_path = os.path.join(pwr, code) if pwr else None
     return {
         "code": code,
-        "path": norm["path"],
+        "path": _expand_config_path(norm["path"]) or norm["path"],
         "workspace_id": ws_id,
         "storage_root": ws.get("workspace_root"),
         "workspace_subdir": ws.get("workspace_subdir"),
         "prism_workspace_root": pwr,
-        "instance_path": os.path.join(pwr, code),
+        "instance_path": instance_path,
         "workspace_git": ws.get("workspace_git"),
     }
 
@@ -419,13 +430,17 @@ def resolve_prism_local_paths(parsed: dict | None) -> dict:
     if not parsed:
         return dict(empty)
 
-    storage_root = parsed.get("workspace_root") or parsed.get("vault_path")
+    storage_root = _expand_config_path(
+        parsed.get("workspace_root") or parsed.get("vault_path")
+    )
     subdir = parsed.get("workspace_subdir")
     prism_workspace_root = None
     if storage_root and subdir:
         prism_workspace_root = os.path.join(storage_root, subdir)
 
-    obs_vault = parsed.get("obs_vault") or parsed.get("obs_vault_personal")
+    obs_vault = _expand_config_path(
+        parsed.get("obs_vault") or parsed.get("obs_vault_personal")
+    )
 
     return {
         "storage_root": storage_root,

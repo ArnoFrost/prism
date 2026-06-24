@@ -101,6 +101,64 @@ class TestResolveProjectBinding:
         codes = {b["code"] for b in all_b}
         assert codes == {"PRISM", "TVKMM", "ARNOOBS"}
 
+    def test_tilde_workspace_root_expands_instance_path(self, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        icloud = home / "icloud" / "AI Obsidian"
+        inst = icloud / "Prism" / "PRISM"
+        inst.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        cfg = tmp_path / "prism.local.yaml"
+        cfg.write_text(
+            "default_workspace: work\n"
+            "workspaces:\n"
+            "  work:\n"
+            "    workspace_root: /data/work\n"
+            "    workspace_subdir: S\n"
+            "  personal:\n"
+            "    workspace_root: ~/icloud/AI Obsidian\n"
+            "    workspace_subdir: Prism\n"
+            "projects:\n"
+            "  PRISM:\n"
+            "    path: /code/prism\n"
+            "    workspace: personal\n",
+            encoding="utf-8",
+        )
+        parsed = sniff_lib.parse_prism_local_yaml(str(cfg))
+        b = sniff_lib.resolve_project_binding(parsed, "PRISM", str(cfg))
+        assert b["instance_path"] == str(inst)
+        assert not b["instance_path"].startswith("~")
+        assert os.path.isdir(b["instance_path"])
+
+
+class TestWorkspaceResolveTsv:
+    def test_tsv_instance_path_absolute(self, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        icloud = home / "icloud" / "AI Obsidian" / "Prism" / "PRISM"
+        icloud.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        cfg = tmp_path / "prism.local.yaml"
+        cfg.write_text(
+            "device_id: D\nsdk_path: /sdk\n"
+            "default_workspace: work\n"
+            "workspaces:\n"
+            "  personal:\n"
+            "    workspace_root: ~/icloud/AI Obsidian\n"
+            "    workspace_subdir: Prism\n"
+            "projects:\n"
+            "  PRISM:\n"
+            "    path: /code/prism\n"
+            "    workspace: personal\n",
+            encoding="utf-8",
+        )
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+        import workspace_resolve as wr  # noqa: E402
+
+        parsed, path = wr._load(cfg)
+        bindings = sniff_lib.resolve_all_project_bindings(parsed, path)
+        assert len(bindings) == 1
+        assert bindings[0]["instance_path"] == str(icloud)
+        assert not bindings[0]["instance_path"].startswith("~")
+
 
 class TestFindPrismContextMulti:
     def test_default_workspace_root_is_work(self, tmp_path, monkeypatch):
