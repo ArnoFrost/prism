@@ -103,6 +103,56 @@ def resolve_active_task_entries(structures_dir: str) -> dict:
     return {"active": active, "skipped": skipped, "conflicts": conflicts}
 
 
+def _split_markdown_row(line: str) -> list[str]:
+    line = line.strip()
+    if not line.startswith("|"):
+        return []
+    return [c.strip() for c in line.strip("|").split("|")]
+
+
+def parse_task_index_entries(structures_dir: str) -> list[dict]:
+    """从 task.index.md 解析 Task 列表数据行（cite tidy._find_task_table 口径）。"""
+    path = os.path.join(structures_dir, "task.index.md")
+    if not os.path.isfile(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return []
+
+    for i, line in enumerate(lines):
+        headers = _split_markdown_row(line)
+        if not headers:
+            continue
+        if "task" not in {h.lower() for h in headers}:
+            continue
+        if not any("稳定 id" in h for h in headers):
+            continue
+        task_col = next((j for j, h in enumerate(headers) if h.lower() == "task"), 0)
+        entries: list[dict] = []
+        for row_line in lines[i + 2:]:
+            cells = _split_markdown_row(row_line)
+            if not cells:
+                break
+            if len(cells) < len(headers):
+                continue
+            task_cell = cells[task_col] if task_col < len(cells) else ""
+            m = re.search(r"(task-\d+(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?)", task_cell, re.I)
+            if not m:
+                continue
+            em = _TASK_DIR_RE.match(m.group(1))
+            if not em:
+                continue
+            entries.append({
+                "number": int(em.group(1)),
+                "entry": m.group(1),
+                "raw": task_cell,
+            })
+        return entries
+    return []
+
+
 def _task_entry_metadata(tdir: str, entry: str, number: int) -> dict:
     waves = sorted(
         f for f in os.listdir(tdir)
@@ -127,6 +177,7 @@ def enumerate_structures(topic_dir: str) -> dict:
       task_count       - 活跃 task 数
       tasks_superseded - 跳过的废止 task（同序号留档目录）
       task_id_conflicts - 同序号多个活跃目录时的仲裁记录
+      orphan_index      - task.index 有数据行但无对应 task-N 目录
 
     设计：structures/ 按需出现（无 task topic 不预建）；task-N_slug 内仅 scope.md +
     wave-N_slug.md（单一决策链，task 内不开 reviews/decisions）。
@@ -140,6 +191,7 @@ def enumerate_structures(topic_dir: str) -> dict:
         "task_count": 0,
         "tasks_superseded": [],
         "task_id_conflicts": [],
+        "orphan_index": False,
     }
     structures_dir = os.path.join(topic_dir, "structures")
     if not os.path.isdir(structures_dir):
@@ -158,6 +210,12 @@ def enumerate_structures(topic_dir: str) -> dict:
     result["task_count"] = len(tasks)
     result["tasks_superseded"] = resolved["skipped"]
     result["task_id_conflicts"] = resolved["conflicts"]
+    index_rows = parse_task_index_entries(structures_dir)
+    result["orphan_index"] = (
+        result["task_index"]
+        and result["task_count"] == 0
+        and len(index_rows) > 0
+    )
     return result
 
 
@@ -217,8 +275,9 @@ def struct_vacuum_signals(topic_dir: str) -> dict:
     """Detect struct-vacuum advisory / require_fork_gate.
 
     struct-absent = structures/ 不存在或 task_count=0。
-    struct-present（已有 task）→ 不进入 struct-vacuum。
-    硬触发仅 SIG-L（SR-S1）与 SIG-V（SR-Vn 未勾）。契约见 scope-templates §struct-vacuum。
+    struct-present（已有 task）→ 不进入 struct-vacuum SR 路径。
+    硬触发：SIG-L（SR-S1）、SIG-V（SR-Vn 未勾）、SIG-INDEX-ORPHAN（index 有行无目录，advisory）。
+    契约见 scope-templates §struct-vacuum。
     """
     structs = enumerate_structures(topic_dir)
     struct_absent = not structs["present"] or structs["task_count"] == 0
@@ -227,6 +286,7 @@ def struct_vacuum_signals(topic_dir: str) -> dict:
         "struct_absent": struct_absent,
         "struct_present": not struct_absent,
         "task_count": structs["task_count"],
+        "orphan_index": structs.get("orphan_index", False),
         "signals": [],
         "advisory": False,
         "require_fork_gate": False,
@@ -239,19 +299,34 @@ def struct_vacuum_signals(topic_dir: str) -> dict:
     if not struct_absent:
         return base
 
+    signals: list[str] = []
+    if structs.get("orphan_index"):
+        signals.append("SIG-INDEX-ORPHAN")
+
     metrics = _scope_readability_metrics(topic_dir)
     if metrics["skipped"]:
-        return {**base, "skipped": True, "reason": metrics.get("reason", "no-scope.md")}
+        advisory = bool(signals)
+        return {
+            **base,
+            "skipped": True,
+            "reason": metrics.get("reason", "no-scope.md"),
+            "signals": signals,
+            "advisory": advisory,
+            "handoff": "workflow-scope" if advisory else None,
+        }
 
     s1 = metrics["sr_s1_lines"]
     vn = metrics["sr_v_unchecked"]
-    signals = []
     if s1 > _STRUCT_VACUUM_S1_ADVISORY:
         signals.append("SIG-L")
     if vn > _STRUCT_VACUUM_VN_ADVISORY:
         signals.append("SIG-V")
 
-    advisory = s1 > _STRUCT_VACUUM_S1_ADVISORY or vn > _STRUCT_VACUUM_VN_ADVISORY
+    advisory = bool(signals) and (
+        structs.get("orphan_index")
+        or s1 > _STRUCT_VACUUM_S1_ADVISORY
+        or vn > _STRUCT_VACUUM_VN_ADVISORY
+    )
     require = (
         s1 > _STRUCT_VACUUM_S1_REQUIRE
         or (s1 > _STRUCT_VACUUM_S1_ADVISORY and vn > _STRUCT_VACUUM_VN_REQUIRE)

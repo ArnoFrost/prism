@@ -115,7 +115,7 @@ scope 原地修改，不追加新文件：
 workflow-scope Phase 3 执行时：
   → 读取本规范（focus-derive-spec.md）
   → 按映射规则更新 scope.md + 刷新 focus.md（rewrite）
-  → 若 topic 有 structures/ → 同步 task.index.md
+  → 若升格 task → 先建/更新 `structures/task-N_{slug}/scope.md`，再同步 `task.index.md`（cite topic-format-spec 三元组，禁止孤儿 index）
   → 若 topic 仍维护 README → 最小镜像 next_action（grandfather only）
 ```
 

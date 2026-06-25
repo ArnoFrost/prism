@@ -11,7 +11,7 @@ related:
 
 # Task Index — {topic-name} 结构分解导航
 
-> `structures/` 的导航面（mutable / 按需出现）。**长期结构性工作分解的 SSOT**。
+> `structures/` 的导航面（mutable / 按需出现）。**长期分解导航面（state，kind≠structure）**。
 > 工作分解三层：**focus**（短期注意力）/ **本文件**（长期结构）/ **reviews·decisions**（历史）。
 > **按需出现**：无 task 的 topic 不预建空 index——出现 task 才落盘。
 

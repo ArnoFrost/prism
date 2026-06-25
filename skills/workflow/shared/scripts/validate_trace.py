@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from sniff_lib import resolve_active_task_entries  # noqa: E402
+from sniff_lib import parse_task_index_entries, resolve_active_task_entries  # noqa: E402
 
 
 # 内部统一 schema：workflow_trace → phase → 既有外部 family。
@@ -407,6 +407,7 @@ def validate_intake_file(
 # 的某条 topic-V（承诺单源 / 1:1 引用 / 投影存在）。
 
 CONSERVATION_FAMILY = "scope_conservation"
+INTEGRITY_FAMILY = "structures_integrity"
 
 
 def extract_topic_v_ids(scope_text: str) -> set[str]:
@@ -469,6 +470,55 @@ def extract_task_v_refs(task_scope_text: str) -> list[dict]:
         refs = re.findall(r"\bV\d+\b", col1)
         rows.append({"task_v": task_v, "refs": refs})
     return rows
+
+
+def validate_structures_integrity(topic_dir: Path, strict: bool = True) -> dict:
+    """task.index 行 ↔ task-N 目录一致性（cite scope-templates §orphan-index；lenient=WARN，strict=ERROR）。"""
+    orphan_level = "ERROR" if strict else "WARN"
+    issues: list[Issue] = []
+    structures_dir = topic_dir / "structures"
+    result_base = {
+        "checked": False,
+        "structures_present": structures_dir.is_dir(),
+        "index_entries": [],
+        "active_tasks": [],
+        "errors": [],
+        "warnings": [],
+    }
+    if not structures_dir.is_dir():
+        return result_base
+
+    index_path = structures_dir / "task.index.md"
+    index_entries = parse_task_index_entries(str(structures_dir))
+    resolved = resolve_active_task_entries(str(structures_dir))
+    index_by_entry = {e["entry"]: e for e in index_entries}
+
+    for row in index_entries:
+        ent = row["entry"]
+        if not (structures_dir / ent).is_dir():
+            issues.append(Issue(
+                orphan_level, str(index_path), INTEGRITY_FAMILY, "task-index-orphan-row",
+                f"task.index 引用 {ent}/ 但目录不存在",
+            ))
+
+    for item in resolved["active"]:
+        ent = item["entry"]
+        if ent not in index_by_entry:
+            issues.append(Issue(
+                "WARN", str(structures_dir / ent), INTEGRITY_FAMILY, "task-index-missing-row",
+                f"{ent}/ 存在但 task.index 无对应行",
+            ))
+
+    errors = [i.to_dict() for i in issues if i.level == "ERROR"]
+    warnings = [i.to_dict() for i in issues if i.level == "WARN"]
+    return {
+        "checked": True,
+        "structures_present": True,
+        "index_entries": [e["entry"] for e in index_entries],
+        "active_tasks": [a["entry"] for a in resolved["active"]],
+        "errors": errors,
+        "warnings": warnings,
+    }
 
 
 def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
@@ -582,6 +632,11 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
 
     errors = [i.to_dict() for i in issues if i.level == "ERROR"]
     warnings = [i.to_dict() for i in issues if i.level == "WARN"]
+
+    integrity = validate_structures_integrity(topic_dir, strict=strict)
+    errors.extend(integrity.get("errors", []))
+    warnings.extend(integrity.get("warnings", []))
+
     return {
         "checked": True,
         "structures_present": True,
@@ -589,6 +644,7 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
         "tasks": tasks_out,
         "tasks_superseded": resolved["skipped"],
         "task_id_conflicts": resolved["conflicts"],
+        "structures_integrity": integrity,
         "errors": errors,
         "warnings": warnings,
     }
