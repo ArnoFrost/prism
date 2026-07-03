@@ -178,7 +178,7 @@ sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构
 | `scripts/sniff.py` | `../../workflow-review/scripts/sniff.py`（**跨 skill**） | 复用 review 的 sniff；bundle 独立时该软链悬空，按脚本降级 |
 
 - **可解析前提**：在 prism monorepo relink 后软链有效。
-- **安装前提 / 版本**：需 prism SDK（`~/prism`，`git clone` 后运行 `bin/relink` 分发软链）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
 - **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；跨 skill 依赖 review 的治本方案（快照或抽公共 sniff）见 topic 002 P2。
 
 ## 9. few-shot 示例
