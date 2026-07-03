@@ -7,7 +7,7 @@ description_zh: "在决策后更新 scope.md 并刷新 focus.md，确保合同�
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -144,3 +144,15 @@ Phase 3 必读 focus-derive 时**只应用 3.0 刷新律**。遇 §2.x / plan �
 ## 8. Maintainer
 
 README grandfather、2.x redirect、skill 关系表、目录结构见 [scope-maintainer.md](references/scope-maintainer.md)。
+
+## 9. 依赖声明
+
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+
+| 依赖 | 来源 | 不可用时（bundle 缺 shared） |
+|------|------|------------------------------|
+| references 软链：`focus-derive-spec`、`context-pack-spec`、`plan-derive-spec`、`vocabulary` | `../../shared/` | Phase 3 必读缺失 → 无法执行 focus-derive，须提示补依赖 |
+| `sniff_lib.struct_vacuum_signals()` | `../../shared/sniff_lib.py`（经 `prism` CLI 调用） | struct-vacuum 检测降级为 advisory |
+
+- **可解析前提**：在 prism monorepo relink 后软链有效；scope 无独立 scripts，走 `prism` CLI 消费 shared。
+- **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。

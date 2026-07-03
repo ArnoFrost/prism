@@ -7,7 +7,7 @@ description_zh: "单视角轻量评审，直接输出结论与行动项；日常
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -166,3 +166,16 @@ topic / scope-focus 场景必须按 `../shared/context-pack-spec.md` 装配 ligh
 ## 7. Maintainer
 
 sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构见 [review-lite-maintainer.md](references/review-lite-maintainer.md)。
+
+## 8. 依赖声明
+
+本 skill 依赖 prism `skills/workflow/shared/` 与兄弟 skill `workflow-review`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+
+| 依赖 | 来源 | 不可用时（bundle 缺依赖） |
+|------|------|---------------------------|
+| references 软链：`vocabulary`、`trace-artifacts-spec`、`askquestion-fallback` | `../../shared/`、`../../shared/references/` | 渐进加载缺失 → 按主入口内联口径降级 |
+| `scripts/sniff_lib.py` | `../../shared/sniff_lib.py` | 脚本优雅降级：清晰报错 + exit 2 |
+| `scripts/sniff.py` | `../../workflow-review/scripts/sniff.py`（**跨 skill**） | 复用 review 的 sniff；bundle 独立时该软链悬空，按脚本降级 |
+
+- **可解析前提**：在 prism monorepo relink 后软链有效。
+- **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；跨 skill 依赖 review 的治本方案（快照或抽公共 sniff）见 topic 002 P2。

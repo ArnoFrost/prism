@@ -5,7 +5,7 @@ description_zh: "多角色协作评审，用于方向变更、范围调整或里
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -177,3 +177,17 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 | `scope.md` / `focus.md` | **禁止直改** | 须 accepted dXX 或 `/workflow-scope` |
 
 命名规则见 `review-templates.md`；索引、raw、finalize 疑难排查见 `review-maintainer.md`。
+
+## 9. 依赖声明
+
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+
+| 依赖 | 来源 | 不可用时（bundle 缺 shared） |
+|------|------|------------------------------|
+| references 软链：`vocabulary`、`parallel-execution`、`review-merge-spec`、`trace-artifacts-spec`、`obsidian-config`、`askquestion-fallback` | `../../shared/`、`../../shared/references/` | 渐进加载缺失 → 按主入口内联口径降级 |
+| `scripts/sniff_lib.py` | `../../shared/sniff_lib.py` | 脚本优雅降级：清晰报错 + exit 2 |
+| `scripts/validate_product.py` | `../../shared/scripts/validate_product.py` | 同上 |
+| 正文引用 `../shared/context-pack-spec.md` | `../../shared/` | 仅 topic/milestone 装配时按需读 |
+
+- **可解析前提**：在 prism monorepo（`~/prism/skills/workflow/`）relink 后软链有效。
+- **独立 bundle**：软链/越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。

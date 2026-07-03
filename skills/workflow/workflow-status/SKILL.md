@@ -5,7 +5,7 @@ description_zh: "扫描活跃专项的健康度，输出结构化报告。report
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -187,3 +187,16 @@ workflow/workflow-status/
 | **scope** | 边界收敛与合同维护 | status 统计验收进度 |
 | **archive** | 归档已验收专项 | status 仅建议 preview；移动必须由 archive Gate + 用户接受 |
 | **digest** | 对外状态通报 | 用户有通报意图时由 Agent 建议，不由 CLI status 猜测 |
+
+## 依赖声明
+
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+
+| 依赖 | 来源 | 不可用时（bundle 缺 shared） |
+|------|------|------------------------------|
+| `scripts/sniff_lib.py` | `../../shared/sniff_lib.py` | `status.py` 优雅降级：清晰报错 + exit 2 |
+| `scripts/parse_utils.py`（`resolve_work_file`） | `../../shared/scripts/parse_utils.py` | 同上（已 try/except 包裹） |
+| references 软链：`context-pack-spec` | `../../shared/` | 按需读，缺失不阻断主流程 |
+
+- **可解析前提**：在 prism monorepo relink 后软链有效。
+- **独立 bundle**：越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。

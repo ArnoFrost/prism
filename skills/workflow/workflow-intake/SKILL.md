@@ -5,7 +5,7 @@ description_zh: "接收新需求并默认创建新的 3.0 topic；仅在显式 a
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -150,3 +150,16 @@ intake_gate_out:
 - 2.x 兼容、`migration: pending`、plan 回退读取口径见 [focus-derive-spec.md](../shared/focus-derive-spec.md)
 - archive topic 只读冻结，不升级
 - 执行环境受限时见 [intake-fallback.md](references/intake-fallback.md)
+
+## 依赖声明
+
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+
+| 依赖 | 来源 | 不可用时（bundle 缺 shared） |
+|------|------|------------------------------|
+| references 软链：`vocabulary`、`topic-sniff-spec`、`trace-artifacts-spec`、`obsidian-config`、`askquestion-fallback` | `../../shared/`、`../../shared/references/` | 渐进加载缺失 → 按主入口内联口径降级 |
+| `scripts/sniff_lib.py` | `../../shared/sniff_lib.py` | 脚本优雅降级：清晰报错 + exit 2 |
+| `scripts/index_update.py`（`archive_layout`） | `../../shared/scripts/archive_layout.py` | 同上（已 try/except 包裹） |
+
+- **可解析前提**：在 prism monorepo relink 后软链有效。
+- **独立 bundle**：越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
