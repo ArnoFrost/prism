@@ -1,0 +1,27 @@
+# evals — workflow-review 基线回归用例
+# task-1 模板（供 Wave 2 复用）。kind: should_trigger | should_not_trigger | boundary
+# 字段：id / kind / input（触发语境）/ expect（route+behavior）/ notes（判据）
+skill: workflow-review
+version: 3.0.0
+cases:
+  - id: trigger-01
+    kind: should_trigger
+    input: "方向有大调整，帮我对这个方案做一次多角色评审，看看盲区"
+    expect:
+      route: workflow-review (mode=full)
+      behavior: "Align→Explore(并行角色)→Merge→Gate4，输出分级 findings + 行动计划到 reviews/rXX"
+    notes: "方向变更 + 需多视角对冲 → 命中 full review 主场景"
+  - id: negative-01
+    kind: should_not_trigger
+    input: "这个小改动帮我快速确认一下就行，不用大动干戈"
+    expect:
+      route: workflow-review-lite
+      behavior: "单视角轻量评审；不启动多角色并行与 merge 仲裁"
+    notes: "日常小改 / 快速对齐属 lite 场景，不应升 full review"
+  - id: boundary-01
+    kind: boundary
+    input: "改动只碰了 1 个文件几十行，但这是里程碑检查点"
+    expect:
+      route: workflow-review (mode=full)
+      behavior: "里程碑裁决优先级高于材料规模；仍走 full + Gate4，但 Align 说明规模偏小"
+    notes: "规模小但里程碑语义触发 full；防止用规模误降级为 lite（伪 fallback）"

@@ -1,0 +1,26 @@
+# evals — workflow-intake 基线回归用例
+# task-1 模板（供 Wave 2 复用）。kind: should_trigger | should_not_trigger | boundary
+skill: workflow-intake
+version: 3.0.0
+cases:
+  - id: trigger-01
+    kind: should_trigger
+    input: "有个新需求，帮我建一个新的专项来跟踪"
+    expect:
+      route: workflow-intake (默认新建 3.0 topic)
+      behavior: "输出专项骨架 + index 更新 + intake_gate_out 痕迹"
+    notes: "新需求入料默认新建 topic → intake 主场景"
+  - id: negative-01
+    kind: should_not_trigger
+    input: "把已有专项的 scope 验收口径更新一下"
+    expect:
+      route: workflow-scope
+      behavior: "既有专项合同维护属 scope；intake 不改已有 scope 内容"
+    notes: "更新已有合同 → scope，非 intake"
+  - id: boundary-01
+    kind: boundary
+    input: "这个需求和现有 002 专项有点像，要不要并进去"
+    expect:
+      route: workflow-intake（默认新建；仅显式 append/migrate 才追加）
+      behavior: "默认新建独立 topic；相似不等于合并，除非用户显式 append/migrate/upgrade"
+    notes: "相似专项：默认不聚合，防止 silent 合并稀释边界"

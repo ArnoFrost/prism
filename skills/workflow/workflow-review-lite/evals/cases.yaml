@@ -1,0 +1,26 @@
+# evals — workflow-review-lite 基线回归用例
+# task-1 模板（供 Wave 2 复用）。kind: should_trigger | should_not_trigger | boundary
+skill: workflow-review-lite
+version: 3.0.0
+cases:
+  - id: trigger-01
+    kind: should_trigger
+    input: "这个小改动帮我快速对齐一下 scope/focus，给个结论和行动项"
+    expect:
+      route: workflow-review-lite
+      behavior: "单视角评审，直接输出结论 + 行动项 + Gate4；无多角色并行/merge"
+    notes: "日常迭代 / 快速对齐 → lite 主场景"
+  - id: negative-01
+    kind: should_not_trigger
+    input: "方向大变更，需要多个角色独立找盲区再仲裁"
+    expect:
+      route: workflow-review (mode=full)
+      behavior: "多角色并行 + merge 仲裁，非 lite"
+    notes: "需多视角对冲 → full review，不应降为 lite"
+  - id: boundary-01
+    kind: boundary
+    input: "改了两三个文件、约一百多行，说不清算大改还是小改"
+    expect:
+      route: workflow-review-lite（或按 sniff 升 full）
+      behavior: "接近 full 阈值（>200 行 / 3+ 文件）时 lite 显式提示可升 full，由用户/材料量裁定"
+    notes: "边界规模；lite 不吞该升 full 的场景，须显式给出升级提示"

@@ -1,0 +1,26 @@
+# evals — workflow-scope 基线回归用例
+# task-1 模板（供 Wave 2 复用）。kind: should_trigger | should_not_trigger | boundary
+skill: workflow-scope
+version: 3.0.0
+cases:
+  - id: trigger-01
+    kind: should_trigger
+    input: "刚 Accept 了 review 决策（dXX），把合同同步一下"
+    expect:
+      route: workflow-scope
+      behavior: "Context→Delta→Update→Sync；scope 原地更新 + focus rewrite；输出 Delta 摘要"
+    notes: "accepted dXX 后同步合同 → scope 主场景"
+  - id: negative-01
+    kind: should_not_trigger
+    input: "只帮我改一下 focus.md，别动 scope"
+    expect:
+      route: 拒绝（FS-scope-upstream）
+      behavior: "focus/task.index 不脱离 scope 改写；先 scope 再 focus-derive 刷新"
+    notes: "违反 scope 上游律 → 必须拒绝直改 focus"
+  - id: boundary-01
+    kind: boundary
+    input: "review-lite 里我说了 Accept，就照它直接改 scope 吧"
+    expect:
+      route: 需 accepted dXX 或显式 /workflow-scope 授权
+      behavior: "lite Accept 不等于 scope 写盘许可（FS-lite-no-direct）；补 dXX 或显式授权后再改"
+    notes: "lite ≠ 授权；防止 review-lite 结论直改合同"
