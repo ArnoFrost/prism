@@ -143,7 +143,7 @@ VERB_REGISTRY = {
     "update": {
         "stability": "experimental",
         "schema_compliant": False,
-        "description": "SDK git pull --rebase → doctor release --quick → relink（dirty 时 abort；可选 --skills）",
+        "description": "SDK git pull --rebase → doctor ci --quick → relink --no-workspace（dirty 时 abort；可选 --skills）",
     },
     "finalize": {
         "stability": "experimental",
@@ -671,7 +671,11 @@ def _yaml_scalar(config_path: str, key: str) -> str | None:
 
 
 def cmd_update(args: argparse.Namespace) -> int:
-    """拉取 SDK（可选 Skills）并执行 release 体检 + relink。"""
+    """拉取 SDK（可选 Skills）并执行核心体检 + 代码层 relink。
+
+    update 的核心职责是让 SDK / Skills 更新生效；Workspace/Vault 是可选协作状态，
+    缺失或未同步不应阻断代码层升级。
+    """
     config = os.path.join(SDK_ROOT, "prism.local.yaml")
     status = subprocess.run(
         ["git", "status", "--porcelain"],
@@ -709,8 +713,8 @@ def cmd_update(args: argparse.Namespace) -> int:
     doctor = os.path.join(SDK_ROOT, "bin", "doctor")
     relink = os.path.join(SDK_ROOT, "bin", "relink")
     steps.extend([
-        ("doctor --scope release --quick", [doctor, "--scope", "release", "--quick"], SDK_ROOT),
-        ("relink", [relink], SDK_ROOT),
+        ("doctor --scope ci --quick", [doctor, "--scope", "ci", "--quick"], SDK_ROOT),
+        ("relink --no-workspace", [relink, "--no-workspace"], SDK_ROOT),
     ])
 
     for label, cmd, cwd in steps:

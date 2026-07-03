@@ -7,6 +7,8 @@
 #   bin/relink --dry-run    预览变更，不实际执行
 #   bin/relink --project X  仅刷新指定项目
 #   bin/relink --prune      清理陈旧/失效软链接（可与 --dry-run 组合）
+#   bin/relink --no-workspace
+#                           跳过 Workspace/Vault 链接，仅刷新代码层 Skills 分发
 
 set -euo pipefail
 
@@ -25,12 +27,14 @@ DRY_RUN=false
 CHECK_ONLY=false
 PRUNE=false
 TARGET_PROJECT=""
+SKIP_WORKSPACE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check)    CHECK_ONLY=true; shift ;;
     --dry-run)  DRY_RUN=true; shift ;;
     --prune)    PRUNE=true; shift ;;
+    --no-workspace|--code-only) SKIP_WORKSPACE=true; shift ;;
     --project)
       if [[ $# -lt 2 || -z "$2" ]]; then
         echo -e "${RED}✗ --project 需要指定项目代号${NC}" >&2; exit 1
@@ -38,19 +42,21 @@ while [[ $# -gt 0 ]]; do
       TARGET_PROJECT="$2"; shift 2
       ;;
     --help|-h)
-      echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE]"
+      echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE|--no-workspace]"
       echo "  (无参数)     刷新所有软链接"
       echo "  --check      仅检查状态"
       echo "  --dry-run    预览变更"
       echo "  --prune      清理陈旧/失效软链接（可与 --dry-run 组合）"
       echo "  --project X  仅刷新指定项目"
+      echo "  --no-workspace / --code-only"
+      echo "               跳过 Workspace/Vault 链接，仅刷新代码层 Skills 分发"
       exit 0
       ;;
     *) echo "未知参数: $1"; exit 1 ;;
   esac
 done
 
-if [[ ! -f "$CONFIG" ]]; then
+if [[ ! -f "$CONFIG" && "$SKIP_WORKSPACE" != true ]]; then
   echo -e "${RED}✗ prism.local.yaml 不存在，运行 bin/setenv --init 初始化${NC}"
   exit 1
 fi
@@ -78,24 +84,35 @@ _load_default_workspace_from_export() {
   fi
 }
 
-DEVICE_ID=$(yaml_get device_id)
-SDK_PATH=$(yaml_get sdk_path)
-SKILLS_PATH=$(yaml_get skills_path)
-VAULT_PATH=$(yaml_get workspace_root)
-[[ -z "$VAULT_PATH" ]] && VAULT_PATH=$(yaml_get vault_path)
-WS_SUBDIR=$(yaml_get workspace_subdir)
-ENV_PATH=$(yaml_get env_path)
+if [[ -f "$CONFIG" ]]; then
+  DEVICE_ID=$(yaml_get device_id)
+  SDK_PATH=$(yaml_get sdk_path)
+  SKILLS_PATH=$(yaml_get skills_path)
+  VAULT_PATH=$(yaml_get workspace_root)
+  [[ -z "$VAULT_PATH" ]] && VAULT_PATH=$(yaml_get vault_path)
+  WS_SUBDIR=$(yaml_get workspace_subdir)
+  ENV_PATH=$(yaml_get env_path)
+else
+  DEVICE_ID=""
+  SDK_PATH="$PRISM_DIR"
+  SKILLS_PATH=""
+  VAULT_PATH=""
+  WS_SUBDIR=""
+  ENV_PATH=""
+fi
 
-if [[ -z "$VAULT_PATH" || -z "$WS_SUBDIR" ]]; then
+if [[ "$SKIP_WORKSPACE" != true && ( -z "$VAULT_PATH" || -z "$WS_SUBDIR" ) ]]; then
   _load_default_workspace_from_export || true
 fi
 
 # ── 必填字段校验（fail-fast）──────────
 _missing=""
-[[ -z "$DEVICE_ID" ]]  && _missing="$_missing device_id"
 [[ -z "$SDK_PATH" ]]   && _missing="$_missing sdk_path"
-[[ -z "$VAULT_PATH" ]] && _missing="$_missing workspace_root/vault_path"
-[[ -z "$WS_SUBDIR" ]]  && _missing="$_missing workspace_subdir"
+if [[ "$SKIP_WORKSPACE" != true ]]; then
+  [[ -z "$DEVICE_ID" ]]  && _missing="$_missing device_id"
+  [[ -z "$VAULT_PATH" ]] && _missing="$_missing workspace_root/vault_path"
+  [[ -z "$WS_SUBDIR" ]]  && _missing="$_missing workspace_subdir"
+fi
 
 if [[ -n "$_missing" ]]; then
   echo -e "${RED}✗ prism.local.yaml 缺少必填字段:${_missing}${NC}" >&2
@@ -110,7 +127,10 @@ elif [[ ! -d "$ENV_PATH" ]]; then
   echo -e "${YELLOW}⚠ env_path 配置但路径不存在: ${ENV_PATH}${NC}" >&2
 fi
 
-WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
+WS_ROOT=""
+if [[ -n "$VAULT_PATH" && -n "$WS_SUBDIR" ]]; then
+  WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
+fi
 
 RESOLVER="$SDK_PATH/skills/workflow/shared/scripts/workspace_resolve.py"
 _run_resolver_tsv() {
@@ -134,16 +154,18 @@ PLATFORM_TARGETS=()
 # 解析 archived_skills 列表
 ARCHIVED_SKILLS=()
 _in_archived=false
-while IFS= read -r line; do
-  if [[ "$line" =~ ^archived_skills: ]]; then _in_archived=true; continue; fi
-  if $_in_archived; then
-    if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+(.*) ]]; then
-      ARCHIVED_SKILLS+=("${BASH_REMATCH[1]}")
-    elif [[ ! "$line" =~ ^[[:space:]] && ! "$line" =~ ^$ && ! "$line" =~ ^# ]]; then
-      break
+if [[ -f "$CONFIG" ]]; then
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^archived_skills: ]]; then _in_archived=true; continue; fi
+    if $_in_archived; then
+      if [[ "$line" =~ ^[[:space:]]+-[[:space:]]+(.*) ]]; then
+        ARCHIVED_SKILLS+=("${BASH_REMATCH[1]}")
+      elif [[ ! "$line" =~ ^[[:space:]] && ! "$line" =~ ^$ && ! "$line" =~ ^# ]]; then
+        break
+      fi
     fi
-  fi
-done < "$CONFIG"
+  done < "$CONFIG"
+fi
 
 is_archived() {
   local name="$1"
@@ -235,7 +257,7 @@ ensure_link() {
     fi
 
     # 冲突检测：链接指向非 Prism 路径时警告（含 env 层）
-    if [[ "$current" != *prism* && ( -z "$SKILLS_PATH" || "$current" != "$SKILLS_PATH"* ) && "$current" != "$WS_ROOT"* && ( -z "$ENV_PATH" || "$current" != "$ENV_PATH"* ) ]]; then
+    if [[ "$current" != *prism* && ( -z "$SKILLS_PATH" || "$current" != "$SKILLS_PATH"* ) && ( -z "$WS_ROOT" || "$current" != "$WS_ROOT"* ) && ( -z "$ENV_PATH" || "$current" != "$ENV_PATH"* ) ]]; then
       log_warn "${label}: 已有非 Prism 链接 ${DIM}${current}${NC}，跳过覆盖"
       return
     fi
@@ -344,6 +366,9 @@ if $CHECK_ONLY; then
 elif $DRY_RUN; then
   echo -e "${DIM}模式: 预览（不实际修改）${NC}"
 fi
+if $SKIP_WORKSPACE; then
+  echo -e "${DIM}模式: 跳过 Workspace/Vault，仅刷新代码层 Skills 分发${NC}"
+fi
 echo "─────────────────────────────────"
 
 # 1. 检查基础路径
@@ -356,9 +381,17 @@ elif [[ -n "$SKILLS_PATH" ]]; then
 else
   log_skip "Skills: ${DIM}(未配置 skills_path，跳过外部技能)${NC}"
 fi
-[[ -d "$VAULT_PATH" ]] && log_ok "Vault: ${VAULT_PATH}" || log_err "Vault 不存在: ${VAULT_PATH}"
+if $SKIP_WORKSPACE; then
+  log_skip "Vault/Workspace: ${DIM}(--no-workspace，跳过)${NC}"
+elif [[ -d "$VAULT_PATH" ]]; then
+  log_ok "Vault: ${VAULT_PATH}"
+else
+  log_err "Vault 不存在: ${VAULT_PATH}"
+fi
 
-if [[ ! -d "$WS_ROOT" ]]; then
+if $SKIP_WORKSPACE; then
+  :
+elif [[ ! -d "$WS_ROOT" ]]; then
   if $CHECK_ONLY || $DRY_RUN; then
     log_warn "Workspace 根目录不存在: ${WS_ROOT}"
   else
@@ -372,7 +405,9 @@ fi
 # 2. 刷新项目软链接（多 workspace：按 CODE 解析 instance_path）
 echo -e "\n${CYAN}[项目软链接]${NC}"
 _relink_projects=false
-if _resolver_out=$(_run_resolver_tsv); then
+if $SKIP_WORKSPACE; then
+  log_skip "已跳过 Workspace/Vault 项目软链接"
+elif _resolver_out=$(_run_resolver_tsv); then
   _relink_projects=true
   while IFS=$'\t' read -r code local_path ws_target workspace_id; do
     [[ -z "$code" ]] && continue
@@ -413,7 +448,7 @@ if _resolver_out=$(_run_resolver_tsv); then
   done <<< "$_resolver_out"
 fi
 
-if ! $_relink_projects; then
+if ! $SKIP_WORKSPACE && ! $_relink_projects; then
 in_projects=false
 while IFS= read -r line; do
   if [[ "$line" == "projects:" ]]; then
@@ -689,29 +724,31 @@ if $PRUNE; then
   done
 
   # 4b. 项目目录：清理指向 WS_ROOT 下已不存在 Workspace 的桥接链接
-  in_projects=false
-  while IFS= read -r line; do
-    if [[ "$line" == "projects:" ]]; then
-      in_projects=true
-      continue
-    fi
-    if $in_projects; then
-      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
-        local_path="${BASH_REMATCH[2]}"
-        [[ -d "$local_path" ]] || continue
-        # 扫描 workspace.*.local 和 AGENTS.local.md
-        for link in "$local_path"/workspace.*.local "$local_path"/AGENTS.local.md; do
-          [[ -L "$link" ]] || continue
-          link_target=$(readlink "$link")
-          if [[ ! -e "$link_target" ]]; then
-            prune_link "$link" "项目: $(basename "$link")"
-          fi
-        done
-      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
-        break
+  if ! $SKIP_WORKSPACE; then
+    in_projects=false
+    while IFS= read -r line; do
+      if [[ "$line" == "projects:" ]]; then
+        in_projects=true
+        continue
       fi
-    fi
-  done < "$CONFIG"
+      if $in_projects; then
+        if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
+          local_path="${BASH_REMATCH[2]}"
+          [[ -d "$local_path" ]] || continue
+          # 扫描 workspace.*.local 和 AGENTS.local.md
+          for link in "$local_path"/workspace.*.local "$local_path"/AGENTS.local.md; do
+            [[ -L "$link" ]] || continue
+            link_target=$(readlink "$link")
+            if [[ ! -e "$link_target" ]]; then
+              prune_link "$link" "项目: $(basename "$link")"
+            fi
+          done
+        elif [[ ! "$line" =~ ^[[:space:]] ]]; then
+          break
+        fi
+      fi
+    done < "$CONFIG"
+  fi
 
   if [[ $PRUNED -eq 0 ]]; then
     echo -e "  ${GREEN}✓${NC} 无陈旧链接"

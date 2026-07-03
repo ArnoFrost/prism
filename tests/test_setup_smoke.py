@@ -3,6 +3,7 @@
 
 import os
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -318,6 +319,35 @@ def test_prism_update_dry_run():
     assert result.returncode == 0, result.stdout + result.stderr
     assert "[dry-run]" in result.stdout
     assert "git pull" in result.stdout
+    assert "doctor --scope ci --quick" in result.stdout
+    assert "relink --no-workspace" in result.stdout
+
+
+def test_relink_no_workspace_does_not_require_vault_config(tmp_path):
+    """relink --no-workspace 应允许只刷新代码层，不要求 vault/workspace 字段。"""
+    tmp_sdk = tmp_path / "sdk"
+    (tmp_sdk / "bin").mkdir(parents=True)
+    (tmp_sdk / "skills/workflow").mkdir(parents=True)
+    shutil.copy(SDK_ROOT / "bin" / "relink", tmp_sdk / "bin" / "relink")
+    (tmp_sdk / "bin" / "relink").chmod(0o755)
+    (tmp_sdk / "prism.local.yaml").write_text(
+        f"device_id: test\nsdk_path: {tmp_sdk}\n",
+        encoding="utf-8",
+    )
+
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path / "home")
+    result = subprocess.run(
+        [str(tmp_sdk / "bin" / "relink"), "--no-workspace", "--check"],
+        cwd=str(tmp_sdk),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "跳过 Workspace/Vault" in result.stdout
+    assert "错误: 0" in result.stdout or "错误:0" in result.stdout.replace(" ", "")
 
 
 def test_bin_prism_header_has_python3_fallback():
