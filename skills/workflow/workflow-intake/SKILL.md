@@ -163,3 +163,18 @@ intake_gate_out:
 
 - **可解析前提**：在 prism monorepo relink 后软链有效。
 - **独立 bundle**：越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+
+## few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范入口路由与 mode 边界：
+
+- **正常触发（默认新建）**：用户「有个新需求，建个专项」→ 默认新建 3.0 topic 骨架 + 更新 index，产物遵循 intake_gate_out 契约。
+- **边界（显式 append/migrate/upgrade）**：用户「把这个并进已有 topic / 升级这个 2.x topic」→ 仅在**显式**指令下追加/聚合/升级，非默认；升级 2.x 走 `--mode upgrade`。
+- **错误（隐式改存量）**：未给显式 append/migrate 却想改动已有 topic → 不擅自聚合，按新建处理或提示改用对应 mode，避免误伤存量合同。
+
+## 失败回退 / 完工 checklist
+
+- [ ] mode 判定正确：默认新建；仅显式 append/migrate/upgrade 才追加/聚合/升级
+- [ ] topic 骨架 + workspace index 均已更新，产物符合 intake_gate_out / Delta 契约
+- [ ] **失败回退**：`sniff_lib` / `index_update`(archive_layout) 缺 shared 时优雅降级（清晰报错 + exit 2），未抛裸栈；index 更新失败时给出手动补写提示而非静默
+- [ ] 澄清门（AskQuestion 不可用 / `PRISM_NO_INTERACTIVE=1`）按 SSOT fallback，未默认建目录

@@ -156,3 +156,19 @@ README grandfather、2.x redirect、skill 关系表、目录结构见 [scope-mai
 
 - **可解析前提**：在 prism monorepo relink 后软链有效；scope 无独立 scripts，走 `prism` CLI 消费 shared。
 - **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+- **兄弟 skill 引用（可解析）**：`workflow-review` / `workflow-review-lite`（结束验证 handoff）、`workflow-intake --mode upgrade`（2.x/plan redirect）为**运行时 handoff 目标**，按 skill 名/斜杠命令松耦合调用，非文件链接、非 bundle 依赖；评估场景视为可解析，不计入死链。
+
+## 10. few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范合同维护边界：
+
+- **正常触发**：accepted dXX 落地后「同步 scope」→ 按决策更新 scope.md，并顺流刷新 focus.md（scope 是 focus 唯一上游）。
+- **边界（intake 交接）**：intake 后「从原始输入收敛正式边界」→ 走 scope 收敛；若属全新需求则回 `workflow-intake` 新建，不在 scope 里造 topic。
+- **错误（越权改合同）**：拿 review / review-lite 的裸结论直接改 scope/focus → 拒绝：合同变更须 accepted dXX 或显式 `/workflow-scope` 授权。
+
+## 11. 完工 checklist
+
+- [ ] scope 变更有明确授权来源（accepted dXX / 显式 `/workflow-scope`），未按 review 裸结论落权
+- [ ] focus.md 已随 scope 刷新（上游→下游一致）
+- [ ] 遇 §2.x / plan 迁移内容已 redirect `workflow-intake --mode upgrade`，未按 3.0 律硬套
+- [ ] structures/task.index 与 scope 的 V 投影仍一致（scope_conservation 未破）
