@@ -28,16 +28,26 @@ _SHARED_SCRIPTS = os.path.normpath(
 if _SHARED_SCRIPTS not in sys.path:
     sys.path.insert(0, _SHARED_SCRIPTS)
 
-from archive_layout import (
-    INDEX_STYLE_ANCHORED,
-    INDEX_STYLE_MANUAL,
-    INDEX_STYLE_NARRATIVE,
-    PRISM_TOPICS_START,
-    archive_month,
-    archive_relative_link,
-    detect_index_style,
-    topic_slug,
-)
+# 依赖声明：本脚本依赖 workflow/shared/scripts/archive_layout.py。
+# prism monorepo 内可解析；独立 bundle 缺 shared 时优雅降级（清晰报错 + exit 2），不抛裸栈。
+try:
+    from archive_layout import (
+        INDEX_STYLE_ANCHORED,
+        INDEX_STYLE_MANUAL,
+        INDEX_STYLE_NARRATIVE,
+        PRISM_TOPICS_START,
+        archive_month,
+        archive_relative_link,
+        detect_index_style,
+        topic_slug,
+    )
+except ImportError as _dep_err:
+    sys.stderr.write(
+        f"workflow-intake 依赖 workflow/shared 未就位: {_dep_err}\n"
+        "需将 prism `skills/workflow/shared/scripts`（archive_layout）置于可解析路径；"
+        "详见 SKILL.md『依赖』声明。\n"
+    )
+    sys.exit(2)
 
 START_MARKER = PRISM_TOPICS_START
 END_MARKER = "<!-- prism:topics:end -->"
