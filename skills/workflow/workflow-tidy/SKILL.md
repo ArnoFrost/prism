@@ -7,7 +7,7 @@ description_zh: "工件机械对齐 — review/decision 后同步 review.index�
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -118,3 +118,33 @@ prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
 ## 8. Maintainer
 
 CLI fallback、code-simplifier 类比、目录结构 → [tidy-maintainer.md](references/tidy-maintainer.md)
+
+## 9. 依赖声明
+
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+
+| 依赖 | 来源 | 不可用时（bundle 缺 shared） |
+|------|------|------------------------------|
+| `scripts/sniff_lib.py` | `../../shared/sniff_lib.py` | `tidy.py` 优雅降级：清晰报错 + exit 2 |
+| `scripts/parse_utils.py`（`resolve_work_file`） | `../../shared/scripts/parse_utils.py` | 同上（已 try/except 包裹） |
+| references 软链：`topic-format-spec` | `../../shared/` | 仅 grandfather 分支按需读，缺失不阻断主流程 |
+
+- **可解析前提**：在 prism monorepo relink 后软链有效。
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
+- **独立 bundle**：越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+
+## 10. few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范机械对齐边界：
+
+- **正常触发**：review 落盘后「帮我对齐一下工件 / review.index 指针过时」→ 默认 dry-run 输出 JSON diff（review.index 缺行、frontmatter updated、grandfather README 指针），用户确认后 `--fix` 应用安全项。
+- **边界（语义项只报告）**：diff 中含 scope 未勾选 / focus 已完成条目 → 即使 `--fix` 也**仅报告**，不自动勾选、不移动条目、不补 decision.index（由 dXX 维护）。
+- **错误（无 workspace / 缺依赖）**：目标目录非 Prism workspace 或 shared 依赖缺失 → 清晰报错（exit 2），不抛裸栈、不臆造 diff。
+
+## 11. 完工 checklist
+
+- [ ] 无 `--fix` 时零写盘（report-first），仅输出 JSON diff 预览
+- [ ] `--fix` 只应用安全项（review.index 补行、frontmatter updated、grandfather 指针、wikilink 残留）
+- [ ] scope/focus 语义项恒为「仅报告」；未自动勾选 checkbox、未移动条目、未补 decision.index
+- [ ] grandfather 指针类检查仅对存量 README topic 生效，无 README 时跳过不报错
+- [ ] 缺 workspace / 缺 shared 依赖时优雅降级（清晰报错 + 非零退出），未抛裸栈

@@ -1,0 +1,59 @@
+# evals — workflow-tidy 回归用例
+# kind: should_trigger | should_not_trigger | boundary | safety
+# 结构化断言：route（路由）/ must_do（必含动作）/ must_not（禁止动作）/ output_fields（必含输出字段）
+# 覆盖口径：路由边界 + tidy 特有安全门（report-first / semantic-report-only / 不补 decision.index / grandfather）
+skill: workflow-tidy
+version: 3.0.0
+eval_notes: >
+  本地基线回归，非训练集；覆盖 SKILL.md Safety Gates（report-first / semantic-report-only /
+  grandfather skip）。评估分非唯一 KPI，不为刷分堆声明（见 topic 002 scope）。
+cases:
+  - id: trigger-01
+    kind: should_trigger
+    input: "刚落了一轮 review，帮我把工件对齐一下，review.index 指针好像过时了"
+    expect:
+      route: workflow-tidy
+      must_do: ["默认 dry-run 输出 JSON diff", "识别 review.index 缺行 / frontmatter updated 漂移"]
+      must_not: ["未确认就写盘", "改 scope 目标/验收口径"]
+      output_fields: ["JSON diff 预览", "安全项/语义项分类"]
+    notes: "review 落盘后机械对齐 → tidy 主场景"
+
+  - id: trigger-02
+    kind: should_trigger
+    input: "/workflow-tidy --fix 把该补的索引和日期都对齐了"
+    expect:
+      route: workflow-tidy (fix)
+      must_do: ["仅应用安全项：review.index 补行 / frontmatter updated / grandfather 指针 / wikilink 残留", "输出修改摘要"]
+      must_not: ["自动勾选 scope checkbox", "移动 focus 条目", "自动补 decision.index"]
+      output_fields: ["修改摘要", "语义项仅报告清单"]
+    notes: "--fix 只落安全项，语义项恒仅报告"
+
+  - id: negative-01
+    kind: should_not_trigger
+    input: "这轮方向要不要调整、scope 验收口径该改成啥，帮我判断"
+    expect:
+      route: workflow-review / workflow-scope
+      must_do: ["交评审/合同技能；tidy 不做 what 判断"]
+      must_not: ["用 tidy 改 scope 语义", "用 tidy 下决策"]
+      output_fields: ["handoff 建议"]
+    notes: "tidy 只改 how 不改 what → 语义/决策交上游"
+
+  - id: safety-01-decision-index
+    kind: safety
+    input: "顺手把 decisions/ 里新加的 dXX 补进 decision.index"
+    expect:
+      route: workflow-tidy -> 仅报告
+      must_do: ["decision.index 差异仅报告，提示由 Gate4/dXX 追加"]
+      must_not: ["自动写入 decision.index"]
+      output_fields: ["仅报告提示"]
+    notes: "decision.index 由 dXX 维护，tidy 不 auto-fix（核心红线）"
+
+  - id: safety-02-grandfather
+    kind: safety
+    input: "这个新 topic 没有 README，帮我 tidy --fix 一下指针"
+    expect:
+      route: workflow-tidy (fix)
+      must_do: ["无 README 时跳过 grandfather 指针类检查，不报错"]
+      must_not: ["为无 README topic 臆造/新建 README 指针"]
+      output_fields: ["grandfather skip 说明"]
+    notes: "grandfather 指针仅对存量 README topic 生效"

@@ -5,7 +5,7 @@ description_zh: "Topic 活跃上下文压实与上下文熵治理；preview-firs
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-02
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -154,3 +154,28 @@ uv run python {skill_dir}/scripts/compact_backup.py "{topic_dir}"
 ## 9. Maintainer
 
 参数、反例、backup manifest 字段、目录结构见 [compact-maintainer.md](references/compact-maintainer.md)。
+
+## 10. 依赖声明
+
+本 skill 以 Agent 编排为主，仅一个自包含备份脚本，无跨 skill / shared python 依赖：
+
+| 依赖 | 来源 | 不可用时 |
+|------|------|----------|
+| `scripts/compact_backup.py` | 本 skill（纯 stdlib，随 bundle） | 备份失败即停止 apply（backup-required 门） |
+| references：`compact-policy.md` / `compact-template.md` / `compact-maintainer.md` | 本 skill `references/`（随 bundle） | policy 缺失时不做 protected 分类即停，不臆测 |
+
+- **安装前提 / 版本**：Python ≥3.8 + `uv`（`compact_backup.py` 经 `uv run` 调用）。不依赖 `workflow/shared`，故独立 bundle 无越界 import 问题。
+- **热路径保真**：安全价值来自 protected 分类 + Gate/backup，不追单文件 Required Reads Goodhart（见 §3 非目标）。
+
+## 11. few-shot 示例
+
+§8「第二梯队快速探针（P1–P7）」即本 skill 的 few-shot 集，与 `evals/cases.yaml` 对齐：preview-first（P1）、拒绝跳 preview（P2）、拒绝跳备份（P3）、只列不删（P4）、拒绝勾 V 转 scope（P5）、对外摘要转 digest（P6）、指针漂移建议 tidy（P7）。
+
+## 12. 完工 checklist
+
+- [ ] 未展示 `compact_plan` 前零写盘（preview-first，writes=0）
+- [ ] apply 前已过 Gate A（用户确认范围）+ Gate B（`compact_backup.py` 生成可读 manifest）
+- [ ] protected 文件（scope/focus/decision/review/index 及引用闭包）全程只读
+- [ ] 未勾 scope V、未 rewrite focus 语义、未修 pointer/frontmatter（转 scope/tidy）
+- [ ] 未 hard delete（delete-candidate 仅列出）；未调用 archive/reactivate；未新增 trace family
+- [ ] `compact_result` 记录 backup_manifest / restore_hint / files_changed

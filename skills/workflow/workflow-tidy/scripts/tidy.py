@@ -17,10 +17,19 @@ import re
 import sys
 from datetime import date, datetime
 
-from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
-
+# 依赖声明：本脚本依赖 workflow/shared（同目录 sniff_lib.py 软链 + shared/scripts/parse_utils.py）。
+# prism monorepo 内可解析；独立 bundle 缺 shared 时优雅降级（清晰报错 + exit 2），不抛裸栈。
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared", "scripts"))
-from parse_utils import resolve_work_file
+try:
+    from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
+    from parse_utils import resolve_work_file
+except ImportError as _dep_err:
+    sys.stderr.write(
+        f"workflow-tidy 依赖 workflow/shared 未就位: {_dep_err}\n"
+        "需将 prism `skills/workflow/shared`（sniff_lib、scripts/parse_utils）置于可解析路径；"
+        "详见 SKILL.md『依赖声明』。\n"
+    )
+    sys.exit(2)
 
 
 def _read(path: str) -> str | None:

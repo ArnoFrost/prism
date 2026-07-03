@@ -6,7 +6,7 @@ description_zh: "Topic Attention Lifecycle — archive/reactivate 双向；previ
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-03
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -137,3 +137,32 @@ bin/prism reactivate <workspace_path> <topic_dirname>   # Gate R 后
 | scope/focus | **不改** — 可选 `/workflow-scope` |
 
 **结束建议**：`/workflow-status` 或 active 维护三角（tidy/compact/status）。
+
+## 9. 依赖声明
+
+本 skill 由 Agent 编排 + prism 统一 CLI 执行，无 skill 内独立 python 脚本（`archive` / `reactivate` 逻辑在 SDK 侧）：
+
+| 依赖 | 来源 | 不可用时 |
+|------|------|----------|
+| `prism archive` / `prism reactivate` verb | prism SDK（`bin/prism`） | CLI 缺失时停在 preview，报「CLI 未就位」，不手工移目录 |
+| `archive_layout`（布局探测 / index 风格） | SDK 内部 | 随 CLI；不可解析时按 flat 默认并提示 |
+| references：`archive-maintainer.md` | 本 skill `references/`（随 bundle） | 缺失时按 §3/§8 Happy Path 兜底 |
+
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`。缺 CLI 时不得绕过 preview-first / user-confirm 直接手工移目录。
+- **独立 bundle**：CLI 不随 bundle 分发属评估场景伪问题，不计入 must_fix（d01/OQ-B）。
+
+## 10. few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范 preview-first 与生命周期边界：
+
+- **正常触发**：「这个 topic 验收完了，归档吧」→ 先 `--dry-run` 确认布局/目标绝对路径/index 预期，Gate A 确认后 execute，移入 `archive/` 并置 frozen。
+- **边界（reactivate ≠ restore）**：「把 compact 备份的旧内容恢复回来」→ **redirect**，说明这是 `.compact_backups` restore（compact 域），不是 reactivate（整 topic 拉回活跃）。
+- **错误 / 越权**：未 preview 就要求直接移动，或要求在 archive/ 内改 scope → 拒绝：preview-first + frozen-grandfather，合同变更转 `/workflow-scope`。
+
+## 11. 完工 checklist
+
+- [ ] 无 `--dry-run` preview 不 execute（preview-first）；移目录经 Gate A/Gate R 显式确认
+- [ ] dry-run 已确认布局（flat / monthly_topic）+ 目标绝对路径 + index 预期（narrative 含活跃区 checklist）
+- [ ] reactivate 未自动改 scope/focus（no-auto-scope）；未与 compact restore 混淆（no-compact-restore）
+- [ ] archive/ 内未做 upgrade / scope 改写（frozen-grandfather）
+- [ ] 缺 CLI 时停在 preview 并清晰报错，未手工绕过移目录

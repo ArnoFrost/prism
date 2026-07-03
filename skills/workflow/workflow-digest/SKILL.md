@@ -5,7 +5,7 @@ description_zh: "专项状态通报 — 从 topic 工件生成面向协作者的
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -146,3 +146,32 @@ workflow/workflow-digest/
 | 输出 | 技术变更摘要 | 专项状态通报 |
 | 读者 | 技术负责人 | 产品 / 协作者 / 自己 |
 | 触发 | 代码变更后 | 需要对外沟通时 |
+
+## 依赖声明
+
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+
+| 依赖 | 来源 | 不可用时（bundle 缺 shared） |
+|------|------|------------------------------|
+| `scripts/sniff_lib.py` | `../../shared/sniff_lib.py` | `collect.py` 优雅降级：清晰报错 + exit 2 |
+| `scripts/parse_utils.py`（`read_file`/`extract_field`/`extract_section`/`count_checkboxes`/`resolve_work_file`） | `../../shared/scripts/parse_utils.py` | 同上（已 try/except 包裹） |
+
+- **可解析前提**：在 prism monorepo relink 后软链有效。
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
+- **独立 bundle**：越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+
+## few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范「快照非 SSOT」边界：
+
+- **正常触发**：用户「帮我给产品同步下这个专项进度」→ `prism digest` 采集 scope/focus/reviews/decisions，生成 < 40 行、说人话的摘要，覆写 topic 根 `digest.md`。
+- **边界（无输入上下文）**：用户只给 topic 不给沟通目的 → 按工件如实生成状态快照，卡点为空就写「无卡点」，不凑数、不臆测协作诉求。
+- **错误（缺 topic / 缺依赖）**：未指定且多活跃 topic / shared 依赖缺失 → 先澄清目标 topic 或清晰报错（exit 2），不抛裸栈、不改写 scope/focus 等 SSOT 工件。
+
+## 完工 checklist
+
+- [ ] 仅覆写 topic 根 `digest.md`，未触碰 scope/focus/reviews/decisions 等 SSOT 工件
+- [ ] 正文 < 40 行、说人话不贴代码、结论不模棱两可
+- [ ] frontmatter 含 `generated` 日期与 `stale_after` 标注
+- [ ] 无卡点如实写「无」，未凑数
+- [ ] 缺 topic 先澄清 / 缺 shared 依赖优雅降级（清晰报错 + 非零退出），未抛裸栈
