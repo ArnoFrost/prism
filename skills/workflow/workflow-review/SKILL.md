@@ -191,3 +191,20 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 
 - **可解析前提**：在 prism monorepo（`~/prism/skills/workflow/`）relink 后软链有效。
 - **独立 bundle**：软链/越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+
+## 10. few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范 full review 边界与产物：
+
+- **正常触发（full）**：方向变更 / 里程碑检查 → 走四阶段 Align→Explore(三角色并行)→Merge→Gate4，输出分级 findings + 行动计划到 `reviews/rXX.md`。
+- **边界（`--incremental`）**：小范围复评 → 按最小协议复用上次 context-pack 与已 accepted 决策，只增量评估变更面，不重跑全量三角色。
+- **错误（越权改合同）**：拿 review 结论直接改 scope/focus → 拒绝：review 只产 findings + 决策建议，合同变更须 accepted dXX 或 `workflow-scope`。
+
+**Before/After（本次修正范围）**：before = 无 evals / 无 few-shot / 无完工 checklist；after = 补齐三者。**执行路径（Align/Explore 并行热路径/Merge/Gate4）与写盘口径未改**，默认路径行为不变（V8：热路径不变声明；token 快照由复评侧采集）。
+
+## 11. 完工 checklist
+
+- [ ] Gate4 决策已产出并落 `reviews/rXX.md`，写盘口径合规（§8）
+- [ ] **热路径**：Explore 三角色并行成功即用之；失败按串行冷路径回退，行为与产物结构一致（未为评分牺牲热路径）
+- [ ] 未越权改 scope/focus（review 只产 findings + 决策建议，落权走 dXX/`workflow-scope`）
+- [ ] **路径安全**：产物路径经 output_dir 规范拼接、跨平台正斜杠；澄清门 / `PRISM_NO_INTERACTIVE=1` 按 SSOT fallback，未误建目录
