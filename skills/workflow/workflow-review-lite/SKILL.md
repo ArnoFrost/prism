@@ -1,9 +1,9 @@
 ---
 name: workflow-review-lite
 description: |
-  单视角轻量评审，直接输出结论 + 行动项，无多角色仲裁。适用于日常迭代、小改动确认、scope/focus 快速对齐。
-  Use when: 日常迭代检查、小改动确认、快速对齐、轻量评审、workflow-review-lite
-description_zh: "单视角轻量评审，直接输出结论与行动项；日常迭代与 scope/focus 快速对齐。"
+  单视角轻量评审：读取 scope（专项边界合同）与 focus（当前工作集/关注点）后，直接输出结论 + 行动项，不做多角色仲裁。适用于日常迭代、小改动确认、边界快速对齐。
+  Use when: 日常迭代检查、小改动确认、快速对齐、轻量评审、单视角评审、改动确认、review lite、review-lite、workflow-review-lite
+description_zh: "单视角轻量评审：读 scope（边界合同）/ focus（当前工作集）后直接给结论与行动项，不做多角色仲裁；用于日常迭代与快速对齐。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -178,6 +178,7 @@ sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构
 | `scripts/sniff.py` | `../../workflow-review/scripts/sniff.py`（**跨 skill**） | 复用 review 的 sniff；bundle 独立时该软链悬空，按脚本降级 |
 
 - **可解析前提**：在 prism monorepo relink 后软链有效。
+- **安装前提 / 版本**：需 prism SDK（`~/prism`，`git clone` 后运行 `bin/relink` 分发软链）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
 - **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；跨 skill 依赖 review 的治本方案（快照或抽公共 sniff）见 topic 002 P2。
 
 ## 9. few-shot 示例
