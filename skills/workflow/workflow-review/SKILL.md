@@ -190,6 +190,7 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 | 正文引用 `../shared/context-pack-spec.md` | `../../shared/` | 仅 topic/milestone 装配时按需读 |
 
 - **可解析前提**：在 prism monorepo（`~/prism/skills/workflow/`）relink 后软链有效。
+- **安装前提 / 版本**：需 prism SDK（`~/prism`，`git clone` 后运行 `bin/relink` 分发软链）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
 - **独立 bundle**：软链/越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
 
 ## 10. few-shot 示例
