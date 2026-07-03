@@ -426,8 +426,8 @@ cd "$HOME/prism-skills"
 git pull origin main              # Skills（双仓同 semver，需同步）
 
 cd "$HOME/prism"
-bin/doctor --scope release --quick    # 升级后体检
-bin/relink                        # 刷软链接（如果 relink 规则有变化）
+bin/doctor --scope ci --quick         # 升级后核心体检（不要求 Vault/Workspace）
+bin/relink --no-workspace             # 刷代码层软链接（如果 relink 规则有变化）
 prism --version                   # 自查版本号（同源根目录 VERSION）
 ```
 

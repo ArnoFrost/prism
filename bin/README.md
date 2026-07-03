@@ -68,6 +68,8 @@ bin/relink --check      # 仅检查状态，不修改
 bin/relink --dry-run    # 预览变更，不实际执行
 bin/relink --prune      # 清理陈旧/失效软链接（可与 --dry-run 组合）
 bin/relink --project X  # 仅刷新指定项目
+bin/relink --no-workspace
+                        # 跳过 Vault/Workspace，仅刷新代码层 Skills 分发
 ```
 
 `relink` 会在目录存在时自动映射 Skills 到以下平台：

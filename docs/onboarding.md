@@ -16,7 +16,7 @@
 | `./setup.sh check` | `bin/setup --check` | 健康检查（不修改） |
 | `./setup.sh relink` | `bin/relink` | 刷新项目/Skills 软链 |
 | `./setup.sh doctor` | `bin/doctor` | 深度体检（参数透传） |
-| `./setup.sh update` | `prism update` | pull → doctor release → relink |
+| `./setup.sh update` | `prism update` | pull → doctor ci → relink --no-workspace |
 
 ```bash
 # 首次（示例）
@@ -40,7 +40,7 @@ setup.sh init → prism --version 验收 → workspace-init / 桥接
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
 | **桥接** | `prism relink` · `./setup.sh relink` | vault + IDE 分发 |
 | **topic** | `prism status` · `/workflow-intake` | 可选治理路径 |
-| **升级** | `prism update` · `./setup.sh update` | pull + release doctor + relink |
+| **升级** | `prism update` · `./setup.sh update` | pull + core doctor + code-only relink |
 | **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope；`--json` 为 flat passthrough |
 | **桥接修复** | `prism relink` | 软链漂移时 |
 
@@ -112,12 +112,12 @@ Agent slash：`/workflow-status` · `/workflow-intake` · `/workflow-scope` · `
 ./setup.sh update
 # 等价分步：
 cd ~/prism && git pull origin main
-prism doctor --scope release --quick
-prism relink
+prism doctor --scope ci --quick
+prism relink --no-workspace
 prism --version
 ```
 
-> `prism update` 遇 dirty working tree 会 abort。不含 Vault pull（见下）。
+> `prism update` 遇 dirty working tree 会 abort。它只保证 SDK/Skills 代码层更新与分发，不要求 Vault/Workspace 配置完整；Vault pull 仍是可选独立动作（见下）。
 
 ---
 

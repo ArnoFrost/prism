@@ -219,7 +219,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism sync` | **exempt** | ⬜ | 嗅探 SDK/Skills/Env 三仓 Git 状态（历史豁免） |
 | `prism relink` | stable | ⬜ | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism doctor` | stable | ⬜ | 仓库/环境体检（委托 `bin/doctor`；`--json` 为 flat passthrough） |
-| `prism update` | experimental | ⬜ | SDK `git pull --rebase` → `doctor release --quick` → `relink`（dirty 时 abort） |
+| `prism update` | experimental | ⬜ | SDK `git pull --rebase` → `doctor ci --quick` → `relink --no-workspace`（dirty 时 abort；Vault/Workspace 可选） |
 | `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示 |
 | `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
 | `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |

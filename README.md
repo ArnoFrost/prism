@@ -110,7 +110,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 | **桥接** | `prism relink` · `./setup.sh relink` | vault + IDE 软链 |
 | **接入** | `/workspace-init` | 已有仓库挂 workspace |
 | **topic** | `prism status` · `/workflow-intake` | 可选治理（见下节） |
-| **升级** | `prism update` · `./setup.sh update` | pull → doctor release → relink |
+| **升级** | `prism update` · `./setup.sh update` | pull → doctor ci → relink --no-workspace |
 | **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope 体检 |
 
 ---
@@ -216,7 +216,7 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 | `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态 |
 | `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
-| `prism update`   | 拉取 SDK 并 doctor + relink（experimental） |
+| `prism update`   | 拉取 SDK 并执行核心 doctor + 代码层 relink（experimental；Vault/Workspace 可选） |
 | `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |
 | `prism tidy`     | 工件机械对齐（focus 入口 / 索引 / frontmatter；README 仅存量兜底） |
 | `prism status`   | Workspace 活跃 topic 健康度扫描 |
