@@ -179,3 +179,18 @@ sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构
 
 - **可解析前提**：在 prism monorepo relink 后软链有效。
 - **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；跨 skill 依赖 review 的治本方案（快照或抽公共 sniff）见 topic 002 P2。
+
+## 9. few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范触发边界与产物：
+
+- **正常触发**：用户「这个小改动帮我快速对齐下 scope」→ 进入单视角 lite，直接输出「结论 + 行动项」，不做多角色仲裁、不写 review.index。
+- **边界（升格 full）**：改动涉及方向变更 / 里程碑 / 多角色分歧 → lite 不硬扛，输出「建议升 `workflow-review` full」并说明触发条件，不越权给 Gate4 结论。
+- **错误（越权）**：用户「用 lite 直接把 scope 改了」→ 拒绝：lite 只产结论建议，scope 变更须经 accepted dXX 或 `workflow-scope`；`PRISM_NO_INTERACTIVE=1` 下澄清门必须 fail 而非默认建目录。
+
+## 10. 完工 checklist
+
+- [ ] 单视角结论 + 行动项已输出，未擅自触发多角色/Gate4
+- [ ] 触及方向/里程碑/分歧时已给出升 full 建议，未硬扛
+- [ ] 未写 review.index、未改 scope/focus（lite 只建议不落权）
+- [ ] 澄清门场景（null output_dir / AskQuestion 不可用 / NO_INTERACTIVE）已按 SSOT fallback，未误建目录

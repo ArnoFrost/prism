@@ -109,12 +109,17 @@ def _extract_status(readme_path: str) -> str | None:
     return None
 
 
+def _posix(path: str) -> str:
+    """输出路径统一正斜杠，避免 Windows 反斜杠泄漏到报告/JSON（跨平台防御）。"""
+    return str(path).replace(os.sep, "/") if path else ""
+
+
 def scan_topic(topic_dir: str) -> dict:
     name = os.path.basename(topic_dir)
     readme = os.path.join(topic_dir, "README.md")
     scope = os.path.join(topic_dir, "scope.md")
     work = _work_file(topic_dir)  # focus.md（3.0）或 plan.md（2.x grandfather）
-    work_label = os.path.basename(work).replace(".md", "")
+    work_label = os.path.basename(work or "").removesuffix(".md") or "focus"
 
     scope_unchecked, scope_checked = _count_unchecked(scope)
     work_unchecked, work_checked = _count_unchecked(work)
@@ -348,7 +353,7 @@ def scan_workspace(project_dir: str) -> dict:
     attention = sum(1 for t in active_topics if t["health"] == "attention")
 
     return {
-        "workspace": workspace["path"],
+        "workspace": _posix(workspace["path"]),
         "scan_date": date.today().isoformat(),
         "topics": topics,
         "next_actions": _build_next_actions(topics),

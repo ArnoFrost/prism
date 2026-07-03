@@ -200,3 +200,19 @@ workflow/workflow-status/
 
 - **可解析前提**：在 prism monorepo relink 后软链有效。
 - **独立 bundle**：越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+
+## few-shot 示例
+
+对应 evals 三类（`evals/cases.yaml`），示范只读扫描边界：
+
+- **正常触发**：用户「看下现在项目状态 / 各 topic 健康度」→ 扫描 topics/ 与 archive/，输出健康分级 + next_actions 建议，只报告不写盘。
+- **边界（查中带改意图）**：用户「顺便把过期的归档了」→ status 只输出 next_action 建议（execution_policy=handoff/preview），归档动作交 `workflow-archive`，status 自身绝不写盘。
+- **错误（无 workspace）**：目标目录非 Prism workspace 或 shared 依赖缺失 → 清晰报错（找不到 workspace / 依赖未就位 exit 2），不抛裸栈、不猜测路径。
+
+## 完工 checklist
+
+- [ ] 报告为只读产物，未写入/apply 任何变更（execution_policy 恒为 handoff/preview/no_action）
+- [ ] 输出路径统一正斜杠（跨平台），workspace/topic 路径无反斜杠泄漏
+- [ ] topics/ 与 archive/ 均已扫描，活跃与归档分别计数
+- [ ] 缺 workspace / 缺 shared 依赖时优雅降级（清晰报错 + 非零退出），未抛裸栈
+- [ ] `--format markdown|json` 两种输出均可正常渲染
