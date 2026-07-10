@@ -29,6 +29,9 @@ focus refresh
   ↓
 task / structures（按需）
   ↓
+execute（单游标：实现 → 验证 → 工件闭环）
+  ↺ focus / task wave
+  ↓
 archive
 ```
 
@@ -44,6 +47,7 @@ archive
 | 评审 | `reviews/rXX_*.md` | 暴露问题、风险、行动项 | append-only |
 | 决策 | `decisions/dXX_*.md` / `decision.index.md` | 固化裁决，避免重复争论 | append-only / mutable index |
 | 结构 | `structures/task-N_slug/` | 当某个 scope-V 深化到自带 scope + wave 时出现 | 按需 |
+| 执行 | 当前 task wave、`verify/`、派生 focus | 推进一个已授权游标并闭合实现、验证与工件状态 | 单批次 |
 | 归档 | `archive/` | topic 结束或废弃后移出热区 | terminal |
 
 ---
@@ -105,6 +109,8 @@ structures/task-N_slug/
 - 新发现是否仍能冒泡回 topic 根的 review / decision？
 
 如果答案是否，继续用 scope-V + focus。
+
+已有唯一 task/wave 且方向已经获权时，可用 `workflow-execute` 推进一个批次。它不会选择下一任务；多游标或合同变化会停止并回到 scope/review/decision。
 
 ---
 

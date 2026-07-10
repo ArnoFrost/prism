@@ -70,6 +70,14 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-03-20"
     rationale: "Scope SSOT maintenance — delta-based scope update + plan derivation."
+  - id: workflow-execute
+    visibility: dev
+    stability: experimental
+    source_repo: prism
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-07-10"
+    rationale: "Prism 3.0 current-cursor executor — runs one authorized task/wave and closes code, verification, wave/focus, and mechanical validation without becoming Next or an orchestrator."
   - id: workflow-status
     visibility: dev
     stability: experimental

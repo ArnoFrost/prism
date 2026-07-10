@@ -18,6 +18,7 @@ skills/
 │   ├── workflow-digest/
 │   ├── workflow-compact/          # dev experimental：preview-first；授权后 backup→apply
 │   ├── workflow-archive/          # dev experimental：topic 生命周期归档
+│   ├── workflow-execute/          # Prism 3.0：单游标执行 + 工件闭环
 │   ├── workflow-intake/
 │   ├── workflow-review/
 │   ├── workflow-review-lite/
@@ -43,7 +44,7 @@ skills/
 内置 workflow skills 组成完整的人机协作管线。人类文档导航见 [docs/README.md](../docs/README.md)。
 
 ```
-init → intake → scope → review / review-lite → decision → scope（更新）→ ...
+init → intake → scope → execute ↔ review / review-lite → decision → scope（更新）→ ...
   ├─ tidy（工件对齐）  ├─ digest（状态通报）  ├─ status（健康巡检 + next_actions handoff）
   ├─ compact（低频压实，dev experimental）  └─ archive / reactivate（生命周期，dev experimental）
 ```
@@ -53,6 +54,7 @@ init → intake → scope → review / review-lite → decision → scope（更�
 | `workspace-init` | `/workspace-init` | 项目路径 + 用户信息 | workspace 骨架 + 注册 + 软链接 |
 | `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + references/intake.md + scope 草稿 |
 | `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + focus.md 刷新 |
+| `workflow-execute` | `/workflow-execute` | 唯一 task/wave 游标 | 授权变更 + 验证 + wave/verify/focus + 机械校验 |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
 | `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |

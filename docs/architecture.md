@@ -107,6 +107,7 @@ intake ──→ scope(v1) ──→ focus(当前工作集)
                  └── structures/task-N_slug ←─┘  # 仅当某个 V 深化到自带 scope + wave
 
 status ── 任意阶段可用，report-first 健康巡检 + next_actions handoff
+execute ─ 单一已授权 task/wave：实现 → 验证 → wave/verify/focus → 机械校验
 tidy ──── 决策/评审后，工件机械对齐
 digest ── 需要沟通时，生成状态通报
 compact ─ 膨胀 topic 低频压实（preview-first；dev experimental）
@@ -122,6 +123,7 @@ archive ─ topic 终态归档 / reactivate（dev experimental）
 | `workspace-init` | `/workspace-init` | 项目级初始化（workspace 容器 + 路径迁移） |
 | `workflow-intake` | `/workflow-intake` | 入料 → 亲和路由 → topic 创建/内聚 |
 | `workflow-scope` | `/workflow-scope` | scope 合同维护 → focus 刷新 / task 同步 |
+| `workflow-execute` | `/workflow-execute` | 单一已授权游标的实现、验证与工件闭环；不选择 Next |
 | `workflow-review` | `/workflow-review` | 正式评审（多角色总分总） |
 | `workflow-review-lite` | `/workflow-review-lite` | 轻量评审（单视角快速扫描） |
 | `workflow-tidy` | `/workflow-tidy` | 工件机械对齐（review/decision 后状态同步） |
@@ -228,6 +230,7 @@ prism/
 │   │   └── SKILL.template.md
 │   ├── workflow/                    # ★ 内置工作流技能（目录名 = name）
 │   │   ├── workflow-intake/
+│   │   ├── workflow-execute/
 │   │   ├── workflow-review/
 │   │   ├── workflow-review-lite/
 │   │   ├── workflow-scope/
@@ -303,4 +306,3 @@ prism/
 | v3 rc 已落地锚点 + 开放验证 | [prism-3.0.md](./prism-3.0.md) |
 | 文档分类与读序 | [docs/README.md](./README.md) |
 | 发行（`prism --version`） | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |
-

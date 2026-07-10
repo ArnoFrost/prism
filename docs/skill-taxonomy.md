@@ -14,6 +14,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 - 判断隐性化
 - 决策重演
 - 当前工作集膨胀
+- 执行态与工件态脱节
 - 工件状态漂移
 - 对外沟通成本
 - 上下文恢复成本
@@ -33,6 +34,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 | `workspace-init` | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 |
 | `workflow-intake` | 输入熵 | 原始需求、散落上下文 | `references/intake.md`、初始 scope/focus | 按需 |
 | `workflow-scope` | 边界熵 / 注意力熵 | decision / review / scope | 更新 `scope.md`，刷新 `focus.md`，同步 task.index | 按需 |
+| `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 focus/task/wave + 项目代码 | 实现、验证、wave/verify、派生 focus 与机械校验 | 按需 |
 | `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色 findings、actions、rXX | 按需 |
 | `workflow-review-lite` | 轻量分析熵 | 小改动、日常对齐点 | 单视角 findings、actions | 按需 |
 | `workflow-tidy` | 工件熵 | topic 工件、索引、frontmatter | 机械对齐后的索引/元数据 | 辅助 |
@@ -56,6 +58,10 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 ### 方向变了，或需要多视角判断
 
 用 `workflow-review`。review 的价值是把隐性判断变成可追溯 findings。
+
+### 已有明确游标，需要继续执行
+
+用 `workflow-execute`。它只推进一个显式或唯一的 task/wave，并在验证后同步既有工件；多游标、合同变化或新方向会停止并交回治理流程。
 
 ### 日常小改或快速校准
 
@@ -82,6 +88,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 ## 边界
 
 - Skill taxonomy 不是 vocabulary，不新增受控术语。
+- `workflow-execute` 是 Prism 3.0 单游标执行能力；它不消费 `next_actions[]`、不选择 Next、不循环调度。
 - `compact` / `archive` 为 dev experimental，不进 mini/full 默认分发；`next_actions[]` 是 status 的 handoff 建议，不是自动编排器。
 - 跨对话 `handoff` 文档形态仍非默认流程。
 - 不需要 workflow skills 时，可以纯手写 workspace 状态；Prism core contract 不强制 review/decision/scope 全套。

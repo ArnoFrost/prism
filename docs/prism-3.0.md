@@ -42,11 +42,14 @@ v3.0 rc 不改变 Prism 的 core contract：SDK + Vault Workspace + `uv` 仍是�
 | `decision.index` | 决策重演、结论丢失 |
 | `review` | 隐性判断、发现不可追溯 |
 | `task / structures` | 长期问题切片失控 |
+| `execute` | 代码执行与 wave/verify/focus 工件状态脱节（单游标，不选择 Next） |
 | `status` + `next_actions[]` | 不知道下一步该做什么（只建议，不自动执行） |
 | `compact`（preview → apply） | 长期 topic 上下文膨胀、接续成本过高 |
 | `archive` / `reactivate` | topic 终态归档与再激活（注意力熵） |
 
 这也是 `focus` 成为 topic 单入口、`task` 只在某个 scope-V 深化到自带 scope + wave 时才出现的原因：Prism 不追求把目录变复杂，而是让复杂问题在有限上下文里仍可恢复。
+
+`workflow-execute` 是 Prism 3.0 的轻量执行闭环：只消费显式或唯一的 task/wave 游标，完成实现、验证与既有工件对齐；它不承担 Next 选择、循环调度或治理裁决。
 
 `workflow-compact` 与 `workflow-archive` 为 **dev experimental** 低频维护技能：默认不进 mini/full 分发面。compact **默认 preview**（writes=0）；仅在用户显式授权且通过 backup Gate 后才 apply。archive / `prism reactivate` 走 preview-first 生命周期门，不替代 review 决策链。
 
