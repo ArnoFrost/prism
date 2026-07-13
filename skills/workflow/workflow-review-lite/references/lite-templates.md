@@ -18,13 +18,13 @@ related:
 ---
 ```
 
-## review.index.md 追加格式
+## review.index.md 追加格式（仅 Gate 4 写 dXX 后）
 
 ```markdown
-| RXX | [rXX_{title}](./reviews/rXX_{title}.md) | done | lite · {简要说明} |
+| rXX | [rXX_{title}](./reviews/rXX_{title}.md) | {status} | [dXX](./decisions/dXX_{title}.md) | lite · {简要说明} |
 ```
 
-`lite` 标注让索引一眼区分轻重。
+`lite` 标注让索引一眼区分轻重。Accept/Reject/Defer 均写 dXX 并赋予索引资格；Other 不追加。
 
 ## format=ofm（GFM 基线 + Obsidian 增量）
 

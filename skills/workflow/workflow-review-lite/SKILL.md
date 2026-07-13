@@ -65,8 +65,8 @@ Align 显式输出：`base: gfm` + `extensions: obsidian|none`。
 ```text
 Phase 1  Align  — sniff / format / 路由 / 编号 / 已加载 references
 Phase 2  Scan   — 单视角 findings + actions
-Phase 3  Write  — reviews/rXX + 稀疏索引联动
-Phase 4  Gate 4 — AskQuestion 4 选项 → decision_artifact
+Phase 3  Write  — reviews/rXX + 决策前只读 validators（不写 index）
+Phase 4  Gate 4 — AskQuestion → dXX/index（Accept/Reject/Defer）→ finalize / decision_artifact
 ```
 
 ### Phase 1 Align
@@ -96,7 +96,7 @@ Phase 4  Gate 4 — AskQuestion 4 选项 → decision_artifact
 ### Phase 3 Write
 
 - `reviews/rXX_{title}.md`（frontmatter `type: review-lite`）
-- `review.index.md` 仅在被 decision 引用时追加（标 `lite`）；`decision.index.md` 由后续 dXX 追加
+- Phase 3 不写 index；Accept/Reject/Defer 写 dXX 后追加 decision.index + sparse review.index（标 `lite`）
 - 正文模板见 [lite-templates.md](references/lite-templates.md)
 
 ### Phase 4 Gate 4
@@ -117,9 +117,9 @@ Phase 4  Gate 4 — AskQuestion 4 选项 → decision_artifact
 
 | 选择 | 后续动作 |
 |------|----------|
-| `accept` | 写 `decisions/dXX.md` + `prism finalize`；影响 scope 再调 `/workflow-scope` |
-| `reject` | 写 `dXX_拒绝`（status=rejected）；重启评审或调 scope |
-| `defer` | 写 `dXX_暂缓`（status=deferred）；不改 scope/focus |
+| `accept` | 写 dXX + 双索引 → `prism finalize`；影响 scope 再调 `/workflow-scope` |
+| `reject` | 写 rejected dXX + 双索引 → `prism finalize`；重启评审或调 scope |
+| `defer` | 写 deferred dXX + 双索引 → `prism finalize`；不改 scope/focus |
 | `type_something` | **不写 dXX**；回收修订意图；**禁止**把含糊文本当 Accept |
 
 `decision_artifact` yaml 必填（`review_kind: review-lite`）— 字段表见 [trace-artifacts-spec.md §decision_artifact](references/trace-artifacts-spec.md)。
@@ -133,7 +133,7 @@ Fallback：**模糊回复 = 未确认**；`PRISM_NO_INTERACTIVE=1` 必须 fail�
 | 文件 | 操作 | 说明 |
 |------|------|------|
 | `reviews/rXX_{title}.md` | 新建 | 单文件；`type: review-lite` |
-| `review.index.md` | 稀疏追加 | 仅被 dXX 引用时 |
+| `review.index.md` | 稀疏追加 | Accept/Reject/Defer 的 dXX 引用后追加；Other 不追加 |
 | `decision.index.md` | 由 dXX 追加 | review-lite 不直写主索引 |
 | `scope.md` / `focus.md` | **禁止直改** | 须 accepted dXX 或 `/workflow-scope` |
 
@@ -191,7 +191,8 @@ sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构
 
 ## 10. 完工 checklist
 
-- [ ] 单视角结论 + 行动项已输出，未擅自触发多角色/Gate4
+- [ ] 单视角结论 + 行动项已输出，未擅自触发多角色；Gate 4 已完成或明确等待用户
 - [ ] 触及方向/里程碑/分歧时已给出升 full 建议，未硬扛
-- [ ] 未写 review.index、未改 scope/focus（lite 只建议不落权）
+- [ ] Gate 4 前未写 index；Accept/Reject/Defer 后已写 dXX + 双索引并 finalize，Other 未写
+- [ ] 未直接改 scope/focus（lite 只建议不落权）
 - [ ] 澄清门场景（null output_dir / AskQuestion 不可用 / NO_INTERACTIVE）已按 SSOT fallback，未误建目录

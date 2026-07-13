@@ -57,7 +57,7 @@ topics/{NNN}_{topic}/
 │       └── rXX-role-{A,B,C}.md
 ├── decisions/
 │   └── dXX_{简短描述}.md      # 决策记录（accept/reject/defer）
-├── decision.index.md          # 决策链主索引（事件链 SSOT，决策 accept 后追加）
+├── decision.index.md          # 决策链主索引（Accept/Reject/Defer 写 dXX 后追加）
 ├── review.index.md            # 评审辅助索引（仅当本 review 被新 dXX 引用时追加）
 ├── scope.md                   # 必要时更新
 └── focus.md                   # 从 review 收敛后刷新
@@ -70,8 +70,8 @@ topics/{NNN}_{topic}/
 - `reviews/rXX_简短描述.md` — Merge 综合报告（**必须**）
 - `reviews/raw/rXX-role-{A|B|C}.md` — 独立角色报告（**条件落盘**：角色报告含合并时被裁剪的独立产物 / 独立发现率 ≥ 60% / 用户要求时写入）
 - **索引联动**（稀疏关联律）：
-  - `decision.index.md`（主索引）：在 Gate 4 决策 accept 后由 dXX 落盘步骤追加（**不在 review 阶段自动追加**）
-  - `review.index.md`（辅助索引）：仅当本 review 被新 dXX 引用时才追加；探索 / 调研 / 辩证性 review 不上索引
+  - `decision.index.md`（主索引）：Gate 4 的 Accept/Reject/Defer 写 dXX 后追加（**不在 review 阶段自动追加**）
+  - `review.index.md`（辅助索引）：仅当本 review 被新 dXX 引用时才追加；Other/未决探索不上索引
 
 ## mode=quick 产物
 

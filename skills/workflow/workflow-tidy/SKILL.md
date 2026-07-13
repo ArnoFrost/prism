@@ -87,7 +87,7 @@ prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
 | README `updated` 日期（grandfather）| README.md vs mtime | 是（无 README 跳过）|
 | README `latest review` 指针（grandfather）| reviews/ 最新 | 是（无 README 跳过）|
 | README `latest decision` 指针（grandfather）| decisions/ 最新 | 是（无 README 跳过）|
-| review.index.md 缺失条目 | reviews/ 扫描 | 是 |
+| review.index.md 缺失条目 | decisions/*.md 的 `review_ref` → reviews/ | 是 |
 | frontmatter `updated` 日期 | scope/focus/plan mtime | 是 |
 | focus 已完成条目未移动 | focus.md 结构 | **仅报告** |
 | scope 未勾选提醒 | scope.md checkbox | **仅报告** |
@@ -106,6 +106,8 @@ prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
 
 - **review.index.md**：缺失行可 `--fix` 补全
 - **decision.index.md**：**仅 report** — 由 Gate 4 / dXX 追加，tidy 不得自动写入
+
+稀疏资格：Accept/Reject/Defer 都会写 dXX，其 `review_ref` 可赋予 review.index 资格；Other 不写 dXX，磁盘上单独存在 review 不构成资格。
 
 ## 7. Handoff
 
@@ -137,14 +139,14 @@ CLI fallback、code-simplifier 类比、目录结构 → [tidy-maintainer.md](re
 
 对应 evals 三类（`evals/cases.yaml`），示范机械对齐边界：
 
-- **正常触发**：review 落盘后「帮我对齐一下工件 / review.index 指针过时」→ 默认 dry-run 输出 JSON diff（review.index 缺行、frontmatter updated、grandfather README 指针），用户确认后 `--fix` 应用安全项。
+- **正常触发**：dXX 已引用 review 后「帮我对齐 review.index」→ 默认 dry-run 只报告 eligible 缺行，用户确认后 `--fix` 应用安全项；裸 review 不入索引。
 - **边界（语义项只报告）**：diff 中含 scope 未勾选 / focus 已完成条目 → 即使 `--fix` 也**仅报告**，不自动勾选、不移动条目、不补 decision.index（由 dXX 维护）。
 - **错误（无 workspace / 缺依赖）**：目标目录非 Prism workspace 或 shared 依赖缺失 → 清晰报错（exit 2），不抛裸栈、不臆造 diff。
 
 ## 11. 完工 checklist
 
 - [ ] 无 `--fix` 时零写盘（report-first），仅输出 JSON diff 预览
-- [ ] `--fix` 只应用安全项（review.index 补行、frontmatter updated、grandfather 指针、wikilink 残留）
+- [ ] `--fix` 只应用安全项（eligible review.index 补行、frontmatter updated、grandfather 指针、wikilink 残留）
 - [ ] scope/focus 语义项恒为「仅报告」；未自动勾选 checkbox、未移动条目、未补 decision.index
 - [ ] grandfather 指针类检查仅对存量 README topic 生效，无 README 时跳过不报错
 - [ ] 缺 workspace / 缺 shared 依赖时优雅降级（清晰报错 + 非零退出），未抛裸栈

@@ -9,7 +9,7 @@ cases:
     input: "方向有大调整，帮我对这个方案做一次多角色评审，看看盲区"
     expect:
       route: workflow-review (mode=full)
-      behavior: "Align→Explore(并行角色)→Merge→Gate4，输出分级 findings + 行动计划到 reviews/rXX"
+      behavior: "Align→Explore(并行角色并记录 task_probe)→Merge→只读校验→Gate4→dXX/index→finalize"
     notes: "方向变更 + 需多视角对冲 → 命中 full review 主场景"
   - id: negative-01
     kind: should_not_trigger

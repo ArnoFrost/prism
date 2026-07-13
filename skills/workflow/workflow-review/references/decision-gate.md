@@ -34,9 +34,9 @@ question:
     - id: accept
       label: "Accept — 记录 decisions/d{NN}.md，方案落地（AP-X ~ AP-Y）+ prism finalize 收尾"
     - id: reject
-      label: "Reject — 说明原因后重新 review 或调整 scope"
+      label: "Reject — 记录 rejected d{NN} + 双索引 + finalize，再重新 review 或调整 scope"
     - id: defer
-      label: "Defer — 标记为待决，先确认 OQ-X 后再定（不立即更新 scope/focus）"
+      label: "Defer — 记录 deferred d{NN} + 双索引 + finalize，先确认 OQ-X（不更新 scope/focus）"
     - id: type_something
       label: "Other — 自由说明 / 修订方案后再决"
 ```
@@ -81,10 +81,12 @@ Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 
 
 | 选择 | 后续动作 |
 |------|---------|
-| `accept` | 立即写 `decisions/dXX.md`（模板见 `workspace.schema.yaml → topic_artifacts.decision.template`），调用 `prism finalize <topic_dir>` 串联 tidy / validate / validate-trace (Step 2.5) / validate-review-call (Step 2.6) / scope_hint；若决策影响 scope，再调 `/workflow-scope` |
-| `reject` | 写 `decisions/dXX_拒绝XXX.md`（type=decision、status=rejected），按用户意图重启 review 或调 `/workflow-scope` 调整边界 |
-| `defer` | 写 `decisions/dXX_暂缓XXX.md`（status=deferred），README latest decision 指针更新；不修改 scope/focus |
+| `accept` | 写 accepted dXX + decision.index + sparse review.index，随后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
+| `reject` | 写 rejected dXX + 双索引，随后 `prism finalize`；按用户意图重启 review 或调 scope |
+| `defer` | 写 deferred dXX + 双索引，随后 `prism finalize`；不修改 scope/focus |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向 / 回答 OQ / 调整 AP，之后重新 Gate 4。**禁止**把含糊文本解释为 Accept |
+
+> **事务顺序**：review 落盘 → 决策前只读 validators → Gate 4 → dXX + decision.index + eligible review.index → write-mode finalize。禁止 Gate 4 前 finalize。
 
 ## 决策痕迹义务
 
@@ -97,11 +99,11 @@ Gate 4 决策后必须输出 `decision_artifact` yaml 块。
 
 降级要点（与 SSOT §4.2 严格一致）：
 
-- 输出三选项文本清单 + 编号 + 等待用户单次自由文本回复
+- 输出四选项文本清单（Accept/Reject/Defer/Other）+ 编号 + 等待用户单次自由文本回复
 - 解析按 SSOT §5 协议严格匹配：`1` / `Accept` / `accept it` / `选 1` 命中即可
 - **禁止**静默选 Accept；模糊回复（"好" / "行" / "OK" / "嗯"）一律视为未确认，重展候选 + 再问
 - `PRISM_NO_INTERACTIVE=1` 路径下决策门**必须 fail**，调用方需用 `--decision=accept|reject|defer` 显式提供
 - 解析失败 / 超时 / 用户取消时**禁止写入** `decisions/dXX.md`
-- text_fallback 路径下解析成功后必须立即写 dXX.md + 输出 `decision_artifact` 块（`decision_source: text_fallback`）
+- text_fallback 命中 Accept/Reject/Defer 后必须立即写 dXX + 双索引 + 输出 `decision_artifact`；Other 不写
 
 ⛔ 决策门不可跳过。错选 + 串联 `prism finalize` 会固化错误共识，回溯成本高。

@@ -345,12 +345,12 @@ def validate_decision_file(
             f"`decision_artifact:` 块缺字段: {sorted(missing_fields)}（必需: {sorted(required)}）",
         ))
 
-    # 语义检查：accept/reject 必 written=true
+    # 语义检查：accept/reject/defer 均是持久化裁决，必须 written=true
     decision = block.get("decision", "").lower()
     written = block.get("written", "").lower()
-    if decision in ("accept", "reject") and written != "true":
+    if decision in ("accept", "reject", "defer") and written != "true":
         issues.append(Issue(
-            level, rel, "decision_artifact", "decision-accept-must-write",
+            level, rel, "decision_artifact", "decision-persistent-must-write",
             f"decision={decision} 必须 written=true（dXX 必须落盘）",
         ))
     if decision == "other" and written == "true":

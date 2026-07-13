@@ -171,14 +171,20 @@ def run_finalize(args: argparse.Namespace) -> int:
             for t in tidy_result["topics"]:
                 fix_count += t.get("fix_count", 0)
 
+        tidy_failed = result.returncode != 0
         steps.append({
             "step": "tidy",
-            "status": "ok" if result.returncode == 0 else "warn",
+            "status": "error" if tidy_failed else "ok",
             "fixes_applied": fix_count,
             "dry_run": dry_run,
+            "returncode": result.returncode,
+            **({"stderr": result.stderr.strip()[:1000]} if tidy_failed and result.stderr.strip() else {}),
         })
+        if tidy_failed:
+            has_error = True
     else:
-        steps.append({"step": "tidy", "status": "skipped", "reason": "tidy.py 未找到"})
+        steps.append({"step": "tidy", "status": "error", "reason": "required tidy.py 未找到"})
+        has_error = True
 
     shared_scripts = os.path.join(WORKFLOW_DIR, "shared", "scripts")
     validate_path = os.path.join(shared_scripts, "validate_product.py")
@@ -197,25 +203,32 @@ def run_finalize(args: argparse.Namespace) -> int:
             timeout=30,
             env=_subprocess_env(),
         )
+        parse_failed = False
         try:
             validate_result = json.loads(result.stdout) if result.stdout.strip() else {}
         except json.JSONDecodeError:
             validate_result = {"raw_output": result.stdout}
+            parse_failed = True
 
         error_count = len(validate_result.get("errors", []))
         fix_count = len(validate_result.get("fixes_applied", []))
+        validate_failed = result.returncode != 0 or error_count > 0 or parse_failed
 
         steps.append({
             "step": "validate",
-            "status": "ok" if error_count == 0 else "error",
+            "status": "error" if validate_failed else "ok",
             "errors": error_count,
             "fixes_applied": fix_count,
             "dry_run": dry_run,
+            "returncode": result.returncode,
+            **({"reason": "validator 输出不是合法 JSON"} if parse_failed else {}),
+            **({"stderr": result.stderr.strip()[:1000]} if validate_failed and result.stderr.strip() else {}),
         })
-        if error_count > 0:
+        if validate_failed:
             has_error = True
     else:
-        steps.append({"step": "validate", "status": "skipped", "reason": "validate_product.py 未找到"})
+        steps.append({"step": "validate", "status": "error", "reason": "required validate_product.py 未找到"})
+        has_error = True
 
     trace_cli_override = None
     if getattr(args, "no_trace_validate", False):
@@ -269,11 +282,12 @@ def run_finalize(args: argparse.Namespace) -> int:
             else:
                 steps.append({
                     "step": "validate-trace",
-                    "status": "skipped",
-                    "reason": "validate_trace.py 未找到",
+                    "status": "error",
+                    "reason": "required validate_trace.py 未找到",
                     "mode": trace_mode,
                     "source": trace_source,
                 })
+                has_error = True
         except Exception as exc:
             steps.append({
                 "step": "validate-trace",
@@ -282,6 +296,7 @@ def run_finalize(args: argparse.Namespace) -> int:
                 "source": trace_source,
                 "error": f"{type(exc).__name__}: {exc}",
             })
+            has_error = True
 
     if trace_mode != "off":
         try:
@@ -322,10 +337,11 @@ def run_finalize(args: argparse.Namespace) -> int:
             else:
                 steps.append({
                     "step": "validate-review-call",
-                    "status": "skipped",
-                    "reason": "validate_review_call.py 未找到",
+                    "status": "error",
+                    "reason": "required validate_review_call.py 未找到",
                     "mode": trace_mode,
                 })
+                has_error = True
         except Exception as exc:
             steps.append({
                 "step": "validate-review-call",
@@ -333,6 +349,7 @@ def run_finalize(args: argparse.Namespace) -> int:
                 "mode": trace_mode,
                 "error": f"{type(exc).__name__}: {exc}",
             })
+            has_error = True
 
     if trace_mode != "off":
         try:
@@ -370,10 +387,11 @@ def run_finalize(args: argparse.Namespace) -> int:
             else:
                 steps.append({
                     "step": "validate-scope-conservation",
-                    "status": "skipped",
-                    "reason": "validate_trace.py 未找到",
+                    "status": "error",
+                    "reason": "required validate_trace.py 未找到",
                     "mode": trace_mode,
                 })
+                has_error = True
         except Exception as exc:
             steps.append({
                 "step": "validate-scope-conservation",
@@ -381,6 +399,7 @@ def run_finalize(args: argparse.Namespace) -> int:
                 "mode": trace_mode,
                 "error": f"{type(exc).__name__}: {exc}",
             })
+            has_error = True
 
     scope_path = os.path.join(topic_dir, "scope.md")
     focus_path = os.path.join(topic_dir, "focus.md")

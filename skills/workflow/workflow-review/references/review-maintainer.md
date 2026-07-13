@@ -139,7 +139,7 @@ prism/skills/                         ← SDK 仓库内置
 
 **修复**：Gate 4 决策后必须输出 `decision_artifact` 块，校验规则：
 
-- `decision in {accept, reject}` 且 `written: false` → 违约
+- `decision in {accept, reject, defer}` 且 `written: false` → 违约
 - `decision == "other"` 时禁止 `written=true`，必须填 `user_text`
 - `written: true` 但 `path` 为 null / 不存在 → 违约
 - text_fallback 路径下解析成功后必须立即写 dXX.md + 输出 `decision_artifact` 块（`decision_source: text_fallback`）

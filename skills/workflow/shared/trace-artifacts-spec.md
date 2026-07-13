@@ -10,7 +10,7 @@
 |------|----------|---------|---------|
 | `task_probe` | review (mode=full) | reviews/rXX_*.md | mode=full Align 末尾必填 |
 | `merge_artifact` | review (mode=full) | reviews/rXX_*.md | mode=full Merge 6 步后必填 |
-| `decision_artifact` | review / review-lite (Gate 4) | decisions/dXX_*.md（accept/reject）或 review 主体（defer/other）| 任一 Gate 4 决策后必填 |
+| `decision_artifact` | review / review-lite (Gate 4) | decisions/dXX_*.md（accept/reject/defer）或 review 主体（other）| 任一 Gate 4 决策后必填 |
 | `intake_gate_out` | intake | references/intake.md（3.0；2.x grandfather 根级 intake.md）| intake Phase 3 完成后必填 |
 
 > 共同原则：**无痕迹 = 未执行**。痕迹缺失即视为对应门未关闭，禁止宣布完成。
@@ -87,8 +87,7 @@ decision_artifact:
 ```
 
 **校验规则**（任一违反 → Gate 4 未关闭）：
-- `decision in {accept, reject}` 且 `written: false` → **违约**：accept/reject 必须立即落盘 dXX.md
-- `decision == "defer"` 时 `written` true/false 均合规
+- `decision in {accept, reject, defer}` 且 `written: false` → **违约**：三类裁决都必须立即落盘 dXX.md
 - `decision == "other"` 时 **禁止 `written=true`**：必须填 `user_text`，让用户继续描述方向
 - `written: true` 但 `path` 为 null / 不存在 → **违约**：路径必须可审计
 - 缺失 `decision_artifact` 块本身 → Gate 4 未关闭，禁止"已完成"语义

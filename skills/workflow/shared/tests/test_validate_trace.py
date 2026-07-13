@@ -314,7 +314,22 @@ class TestCompleteAndIncomplete:
         )
         result = vt.scan_topic(topic, strict=True)
         rules = {e["rule"] for e in result["errors"]}
-        assert "decision-accept-must-write" in rules
+        assert "decision-persistent-must-write" in rules
+
+    def test_decision_defer_must_write_violation(self, tmp_path: Path):
+        topic = tmp_path / "030"
+        (topic / "decisions").mkdir(parents=True)
+        (topic / "decisions" / "d01_test.md").write_text(
+            "# d01\n\n"
+            "decision_artifact:\n"
+            "  decision: defer\n"
+            "  decision_source: askquestion\n"
+            "  written: false\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        rules = {e["rule"] for e in result["errors"]}
+        assert "decision-persistent-must-write" in rules
 
     def test_decision_other_must_not_write_violation(self, tmp_path: Path):
         topic = tmp_path / "030"

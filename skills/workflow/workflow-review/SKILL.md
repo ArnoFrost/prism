@@ -80,8 +80,8 @@ Gate 1   探测门  — full 缺 task_probe 不得进入 Explore
 Phase 2  Explore — 独立 subagent / role findings / subagent_self_check
 Gate 2   角色门  — 角色数、TL;DR、Findings 齐全
 Phase 3  Merge   — 去重仲裁 / 独立发现率 / 行动计划 / merge_artifact
-Gate 3   落盘门  — reviews/rXX + 条件 raw + finalize 通过
-Phase 4  Gate 4  — AskQuestion 4 选项 / decision_artifact
+Gate 3   落盘门  — reviews/rXX + 条件 raw + 决策前只读 validators 通过
+Phase 4  Gate 4  — AskQuestion → dXX/index（Accept/Reject/Defer）→ finalize / decision_artifact
 ```
 
 ### Phase 1 Align
@@ -90,11 +90,11 @@ Phase 4  Gate 4  — AskQuestion 4 选项 / decision_artifact
 2. READ `review-templates.md`；`format=ofm` 时 READ `review-ofm.md`。
 3. 显式输出 topic route、评审对象、范围、角色、mode 决策、已加载 references。
 4. topic / milestone / 方法论评审装配 context-pack full 或等价输入包。
-5. **mode=full 热路径：直接尝试并行，失败再降级 quick**（⚡ 90% 场景支持并行，不浪费 token 做前置 probe）：
+5. **mode=full 热路径：直接尝试并行，失败再降级 quick**（不额外发起空 probe）：
    - **直接发起 ≥2 个并行 task/subagent call**，不要先 probe 再决定
-   - 并行全部成功返回 → mode=full，正常进入 Phase 2 Explore
-   - 并行失败（任意 subagent 报错）→ mode=quick，在 Align 输出中说明降级理由（`fallback_reason: {具体 error}`）
-   - `task_probe` 字段**移除**：不再需要前置 probe，热路径零额外 cost
+   - 并行全部成功返回 → mode=full；在主报告记录 `task_probe: {called: true, result: success, fallback_decision: parallel, fallback_reason: 并行}`
+   - 并行失败（任意 subagent 报错）→ mode=quick；按白名单记录 `task_probe` 的 error/result/fallback_reason
+   - `task_probe` 是真实 Explore 调用的可审计回执，**不是**额外的前置探测调用
    - 仅当用户**显式说"不支持并行"**或历史对话已确认不支持时，才跳过并行直接 mode=quick
 `next_review_source = none`、sniff 失败或 mode 判定不可信 → 边界澄清门，见 [askquestion-fallback.md](references/askquestion-fallback.md)；sniff 维护 fallback 见 [review-maintainer.md](references/review-maintainer.md)。
 
@@ -122,7 +122,7 @@ Merge 必须保留理由，而不是只做摘要：
 | 统一行动计划 | Owner / priority / acceptance |
 | 写综合报告 | `reviews/rXX_{title}.md`；模板见 [review-templates.md](references/review-templates.md) |
 | 条件 raw | 触发阈值时写 `reviews/raw/`；未写须给 `raw_skip_reason` |
-| finalize | `prism finalize <topic_dir>` 通过后再进入 Gate 4 |
+| 决策前校验 | 只读运行 product / trace / review-call / conservation；**不得**在 Gate 4 前运行 write-mode finalize |
 | `merge_artifact` | raw 判定、独立发现率、路径与 skip reason 可审计 |
 合并细则见 [review-merge-spec.md](references/review-merge-spec.md)；raw 与 trace 字段表见 [trace-artifacts-spec.md](references/trace-artifacts-spec.md)。
 
@@ -146,9 +146,9 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 
 | 选择 | 后续动作 |
 |------|----------|
-| `accept` | 写 `decisions/dXX.md` + `decision_artifact`；影响 scope 再调 `/workflow-scope` |
-| `reject` | 写 rejected dXX；重启评审或调 scope |
-| `defer` | 写 deferred dXX；不改 scope/focus |
+| `accept` | 写 dXX + decision.index + sparse review.index → `prism finalize`；影响 scope 再调 `/workflow-scope` |
+| `reject` | 写 rejected dXX + 双索引 → `prism finalize`；再重启评审或调 scope |
+| `defer` | 写 deferred dXX + 双索引 → `prism finalize`；不改 scope/focus |
 | `type_something` | **不写 dXX**；原样回收为修订意图；禁止当 Accept |
 
 完整 Gate 4 契约见 [decision-gate.md](references/decision-gate.md)。AskQuestion 不可用时按 [askquestion-fallback.md](references/askquestion-fallback.md)；`PRISM_NO_INTERACTIVE=1` 必须 fail。
@@ -172,7 +172,7 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 |------|------|------|
 | `reviews/rXX_{title}.md` | 新建 | 综合报告 |
 | `reviews/raw/rXX-role-{A,B,C}.md` | 条件新建 | raw 阈值或审计需要 |
-| `review.index.md` | 稀疏追加 | 仅当本 review 被 dXX 引用 |
+| `review.index.md` | 稀疏追加 | Accept/Reject/Defer 的 dXX 引用后追加；Other 不追加 |
 | `decision.index.md` | 由 dXX 追加 | 主事件链 |
 | `scope.md` / `focus.md` | **禁止直改** | 须 accepted dXX 或 `/workflow-scope` |
 
@@ -205,7 +205,8 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 
 ## 11. 完工 checklist
 
-- [ ] Gate4 决策已产出并落 `reviews/rXX.md`，写盘口径合规（§8）
+- [ ] review 已在 Gate 4 前落盘并通过只读校验；Gate 4 后的决策已落 `decisions/dXX.md`（Other 除外）
+- [ ] Accept/Reject/Defer 已维护 decision.index + sparse review.index 并运行 finalize；Other 未写 dXX/index
 - [ ] **热路径**：Explore 三角色并行成功即用之；失败按串行冷路径回退，行为与产物结构一致（未为评分牺牲热路径）
 - [ ] 未越权改 scope/focus（review 只产 findings + 决策建议，落权走 dXX/`workflow-scope`）
 - [ ] **路径安全**：产物路径经 output_dir 规范拼接、跨平台正斜杠；澄清门 / `PRISM_NO_INTERACTIVE=1` 按 SSOT fallback，未误建目录

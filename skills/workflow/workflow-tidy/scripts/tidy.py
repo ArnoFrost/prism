@@ -113,11 +113,54 @@ def _find_wikilinks(content: str) -> list[str]:
     return results
 
 
+def _extract_frontmatter_scalar(content: str, field: str) -> str | None:
+    """读取 frontmatter 中的单行标量；tidy 只需机械字段，不引入 YAML 依赖。"""
+    if not content.startswith("---\n"):
+        return None
+    end = content.find("\n---", 4)
+    if end < 0:
+        return None
+    match = re.search(
+        rf"^{re.escape(field)}:\s*['\"]?([^'\"#\n]+?)['\"]?\s*(?:#.*)?$",
+        content[4:end],
+        re.MULTILINE,
+    )
+    return match.group(1).strip() if match else None
+
+
+def _decision_review_refs(topic_dir: str) -> dict[str, list[dict]]:
+    """返回 review id → 引用它的 dXX 列表。
+
+    review.index 的资格只来自持久化 decision.review_ref。Accept/Reject/Defer
+    都会写 dXX，因此均可赋予资格；Other 不写 dXX，自然不会进入结果。
+    """
+    decisions_dir = os.path.join(topic_dir, "decisions")
+    refs: dict[str, list[dict]] = {}
+    if not os.path.isdir(decisions_dir):
+        return refs
+
+    for filename in sorted(os.listdir(decisions_dir)):
+        if not re.fullmatch(r"d\d{2}(?:_[^/]+)?\.md", filename):
+            continue
+        path = os.path.join(decisions_dir, filename)
+        content = _read(path) or ""
+        review_ref = _extract_frontmatter_scalar(content, "review_ref")
+        if not review_ref or not re.fullmatch(r"r\d{2}", review_ref):
+            continue
+        refs.setdefault(review_ref, []).append({
+            "id": filename[:3],
+            "filename": filename,
+            "path": f"decisions/{filename}",
+            "status": _extract_frontmatter_scalar(content, "status") or "—",
+        })
+    return refs
+
+
 def _scan_reviews_for_index(topic_dir: str) -> dict:
-    """扫描 reviews/ 与 review.index.md 做双向对账。
+    """按 decision.review_ref 资格扫描 reviews/ 与 review.index.md。
 
     返回 dict:
-      missing  - 磁盘有但 index 未登记的评审
+      missing  - 已被 dXX 引用但 index 未登记的评审
       stale    - index 中提到但磁盘无对应文件的 rXX 编号
       legacy   - 使用子目录格式的评审（建议迁移）
     """
@@ -131,13 +174,23 @@ def _scan_reviews_for_index(topic_dir: str) -> dict:
 
     all_reviews = enumerate_reviews(reviews_dir)
     index_content = _read(index_path) or ""
+    decision_refs = _decision_review_refs(topic_dir)
 
     disk_ids = set()
     for rev in all_reviews:
         disk_ids.add(rev["id"])
         name_stem = os.path.splitext(rev["filename"])[0]
-        if name_stem not in index_content and rev["filename"] not in index_content:
-            result["missing"].append({"file": rev["filename"], "path": rev["path"]})
+        eligible = rev["id"] in decision_refs
+        if eligible and name_stem not in index_content and rev["filename"] not in index_content:
+            review_content = _read(os.path.join(topic_dir, rev["path"])) or ""
+            latest_decision = decision_refs[rev["id"]][-1]
+            result["missing"].append({
+                "id": rev["id"],
+                "file": rev["filename"],
+                "path": rev["path"],
+                "status": _extract_frontmatter_scalar(review_content, "status") or "—",
+                "decision": latest_decision,
+            })
         if rev["format"] == "subdir":
             result["legacy"].append(rev["id"])
 
@@ -376,8 +429,12 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             index_content = _read(index_path)
             if index_content:
                 for m in index_scan["missing"]:
-                    stem = os.path.splitext(m["file"])[0]
-                    new_row = f"| {stem} | [{m['file']}](./{m['path']}) | — | — |"
+                    decision = m["decision"]
+                    new_row = (
+                        f"| {m['id']} | [{m['file']}](./{m['path']}) | {m['status']} | "
+                        f"[{decision['id']}](./{decision['path']}) | "
+                        f"由 {decision['id']} `review_ref` 赋予索引资格 |"
+                    )
                     index_content = index_content.rstrip("\n") + "\n" + new_row + "\n"
                 _write(index_path, index_content)
                 changes_made.append("review.index.md")
