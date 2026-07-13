@@ -8,13 +8,13 @@ device_id: YOUR_DEVICE_ID
 # SDK 路径（Prism 仓库位置）
 sdk_path: ~/prism
 
-# Vault 基础路径（Git 仓库根或 iCloud Obsidian 路径）
-vault_path: ~/PrismWorkspace
+# Workspace backend 物理根（默认本地目录；也可指向 iCloud/Obsidian Vault）
+workspace_root: ~/.local/share/prism
 
-# Vault 内 Workspace 子目录（相对于 vault_path）
-workspace_subdir: Prism/Workspace
+# backend 内 Workspace 子目录（相对于 workspace_root）
+workspace_subdir: Workspace
 
-# 可选：外部 Skills 扩展仓库路径（mini profile/package 不要求）
+# 可选：外部 Skills 扩展仓库路径
 # skills_path: ~/prism-skills
 
 # 可选：env 层路径（如 ArnoDotFiles）

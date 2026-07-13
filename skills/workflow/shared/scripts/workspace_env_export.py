@@ -29,6 +29,8 @@ def export_lines(config_path: str | Path) -> list[str]:
     storage = default_ws.get("workspace_root")
     pwr = default_ws.get("prism_workspace_root")
     if storage:
+        lines.append(f'export PRISM_WORKSPACE_ROOT="{storage}"')
+        # 兼容旧调用方；新代码应优先 PRISM_WORKSPACE_ROOT。
         lines.append(f'export PRISM_VAULT="{storage}"')
     if pwr:
         lines.append(f'export PRISM_WORKSPACE="{pwr}"')

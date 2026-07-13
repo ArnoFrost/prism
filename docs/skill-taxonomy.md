@@ -89,7 +89,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 - Skill taxonomy 不是 vocabulary，不新增受控术语。
 - `workflow-execute` 是 Prism 3.0 单游标执行能力；它不消费 `next_actions[]`、不选择 Next、不循环调度。
-- `compact` / `archive` 为 dev experimental，不进 mini/full 默认分发；`next_actions[]` 是 status 的 handoff 建议，不是自动编排器。
+- `compact` / `archive` 为 dev experimental，不列入 3.0 GA formal 能力面；`next_actions[]` 是 status 的 handoff 建议，不是自动编排器。
 - 跨对话 `handoff` 文档形态仍非默认流程。
 - 不需要 workflow skills 时，可以纯手写 workspace 状态；Prism core contract 不强制 review/decision/scope 全套。
 - 不把 Prism 缩窄成 workflow：workflow 是内置治理工作流，Prism 还包含协议、CLI、技能分发和 workspace 状态容器。

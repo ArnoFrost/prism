@@ -8,7 +8,7 @@
 #   bin/relink --project X  仅刷新指定项目
 #   bin/relink --prune      清理陈旧/失效软链接（可与 --dry-run 组合）
 #   bin/relink --no-workspace
-#                           跳过 Workspace/Vault 链接，仅刷新代码层 Skills 分发
+#                           跳过 Workspace backend 链接，仅刷新代码层 Skills 分发
 
 set -euo pipefail
 
@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --prune      清理陈旧/失效软链接（可与 --dry-run 组合）"
       echo "  --project X  仅刷新指定项目"
       echo "  --no-workspace / --code-only"
-      echo "               跳过 Workspace/Vault 链接，仅刷新代码层 Skills 分发"
+      echo "               跳过 Workspace backend 链接，仅刷新代码层 Skills 分发"
       exit 0
       ;;
     *) echo "未知参数: $1"; exit 1 ;;
@@ -367,7 +367,7 @@ elif $DRY_RUN; then
   echo -e "${DIM}模式: 预览（不实际修改）${NC}"
 fi
 if $SKIP_WORKSPACE; then
-  echo -e "${DIM}模式: 跳过 Workspace/Vault，仅刷新代码层 Skills 分发${NC}"
+  echo -e "${DIM}模式: 跳过 Workspace backend，仅刷新代码层 Skills 分发${NC}"
 fi
 echo "─────────────────────────────────"
 
@@ -382,11 +382,14 @@ else
   log_skip "Skills: ${DIM}(未配置 skills_path，跳过外部技能)${NC}"
 fi
 if $SKIP_WORKSPACE; then
-  log_skip "Vault/Workspace: ${DIM}(--no-workspace，跳过)${NC}"
+  log_skip "Workspace backend: ${DIM}(--no-workspace，跳过)${NC}"
 elif [[ -d "$VAULT_PATH" ]]; then
-  log_ok "Vault: ${VAULT_PATH}"
+  log_ok "Workspace backend: ${VAULT_PATH}"
+elif $CHECK_ONLY || $DRY_RUN; then
+  log_warn "Workspace backend 不存在: ${VAULT_PATH}"
 else
-  log_err "Vault 不存在: ${VAULT_PATH}"
+  mkdir -p "$VAULT_PATH"
+  log_fix "已创建 Workspace backend: ${VAULT_PATH}"
 fi
 
 if $SKIP_WORKSPACE; then
@@ -406,7 +409,7 @@ fi
 echo -e "\n${CYAN}[项目软链接]${NC}"
 _relink_projects=false
 if $SKIP_WORKSPACE; then
-  log_skip "已跳过 Workspace/Vault 项目软链接"
+  log_skip "已跳过 Workspace backend 项目软链接"
 elif _resolver_out=$(_run_resolver_tsv); then
   _relink_projects=true
   while IFS=$'\t' read -r code local_path ws_target workspace_id; do

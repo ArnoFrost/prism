@@ -17,7 +17,7 @@ Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过
 
 **问题**：上下文断裂、决策难追溯、topic 越写越胖，接手成本高。
 
-**Prism 做什么**：软链接桥接把协作状态挂在项目旁；最小依赖 `SDK + Vault + uv`。workflow 是**可选**认知熵治理工作流，不强制全员评审/痕迹义务。
+**Prism 做什么**：软链接桥接把协作状态挂在项目旁；core 只依赖 `SDK + uv`，Workspace 默认落本地 backend，Vault 可选。workflow 是**可选**认知熵治理工作流，不强制全员评审/痕迹义务。
 
 **v3 rc 增量**：`focus` 作 topic 入口；`status` 只读建议下一步（`next_actions[]` handoff）；tidy/compact/archive 分工维护工件与生命周期；主路径技能已做热路径压缩（044/046 治理）。
 

@@ -33,7 +33,7 @@ Prism 3.0 把 2.0 已经收敛的本地工作流系统，进一步上提为一�
 
 ## 3.0 做了什么
 
-v3.0 rc 不改变 Prism 的 core contract：SDK + Vault Workspace + `uv` 仍是最小运行集合。变化在于 topic 内的状态治理方式更明确：
+v3.0 rc 将 core contract 收敛为 SDK + `uv`。Protocol + Workspace 仍是逻辑最小模型，但 Workspace 默认可使用本地 backend；Vault、Skills 与 Env 都是可选部署。topic 内的状态治理方式同时更明确：
 
 | 机制 | 治理的熵源 |
 |------|------------|
@@ -51,7 +51,7 @@ v3.0 rc 不改变 Prism 的 core contract：SDK + Vault Workspace + `uv` 仍是�
 
 `workflow-execute` 是 Prism 3.0 的轻量执行闭环：只消费显式或唯一的 task/wave 游标，完成实现、验证与既有工件对齐；它不承担 Next 选择、循环调度或治理裁决。
 
-`workflow-compact` 与 `workflow-archive` 为 **dev experimental** 低频维护技能：默认不进 mini/full 分发面。compact **默认 preview**（writes=0）；仅在用户显式授权且通过 backup Gate 后才 apply。archive / `prism reactivate` 走 preview-first 生命周期门，不替代 review 决策链。
+`workflow-compact` 与 `workflow-archive` 为 **dev experimental** 低频维护技能：不列入 3.0 GA formal 能力面。compact **默认 preview**（writes=0）；仅在用户显式授权且通过 backup Gate 后才 apply。archive / `prism reactivate` 走 preview-first 生命周期门，不替代 review 决策链。
 
 ---
 

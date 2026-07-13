@@ -48,7 +48,7 @@ bin/setup --non-interactive  # 非交互模式（适合脚本调用）
 bin/setenv                          # 显示当前配置和路径状态
 bin/setenv --init                   # 交互式创建 prism.local.yaml
 bin/setenv --init --non-interactive # 从环境变量读取路径（CI/脚本友好）
-bin/setenv --example                # 输出 core contract 配置样例
+bin/setenv --example                # 输出本地 Workspace backend 配置样例
 bin/setenv --validate               # 校验必填字段 + 路径可达性
 bin/setenv --export                 # 输出 export 语句
 
@@ -56,7 +56,7 @@ bin/setenv --export                 # 输出 export 语句
 source <(bin/setenv --export)
 
 # 非交互模式环境变量
-# PRISM_SDK_PATH / PRISM_VAULT_PATH / PRISM_WS_SUBDIR
+# PRISM_SDK_PATH / PRISM_WORKSPACE_ROOT / PRISM_WS_SUBDIR
 # PRISM_SKILLS_PATH 可选；留空时仅使用 SDK 内置 workflow/workspace 能力
 ```
 
@@ -69,7 +69,7 @@ bin/relink --dry-run    # 预览变更，不实际执行
 bin/relink --prune      # 清理陈旧/失效软链接（可与 --dry-run 组合）
 bin/relink --project X  # 仅刷新指定项目
 bin/relink --no-workspace
-                        # 跳过 Vault/Workspace，仅刷新代码层 Skills 分发
+                        # 跳过 Workspace backend，仅刷新代码层 Skills 分发
 ```
 
 `relink` 会在目录存在时自动映射 Skills 到以下平台：
@@ -221,7 +221,7 @@ bin/rename-artifacts <path>       # 直接扫描指定目录（无需 prism.loca
 
 ```yaml
 sdk_path: /Users/xuxin/prism
-vault_path: /Users/xuxin/Library/Mobile Documents/iCloud~md~obsidian/Documents/AI Obsidian
+workspace_root: /Users/xuxin/.local/share/prism
 workspace_subdir: Prism/Workspace
 
 # 可选：外部 Skills 扩展仓库
@@ -238,8 +238,9 @@ projects:
 |------|:----:|------|
 | `sdk_path` | ✅ | Prism SDK 仓库绝对路径 |
 | `skills_path` | — | Skills 独立仓库绝对路径（可选，不配置则跳过外部技能分发） |
-| `vault_path` | ✅ | iCloud Obsidian vault 基础路径 |
-| `workspace_subdir` | ✅ | Vault 内 Workspace 子目录（相对路径） |
+| `workspace_root` | ✅ | Workspace backend 物理根；默认本地，可选 Vault |
+| `vault_path` | — | deprecated 兼容键，迁移到 `workspace_root` |
+| `workspace_subdir` | ✅ | backend 内 Workspace 子目录（相对路径） |
 | `projects` | — | 注册项目映射（CODE: 绝对路径），手动追加 |
 
 完整 schema 定义见 [`prism-local-schema.yaml`](./prism-local-schema.yaml)。可通过 `bin/setenv --validate` 校验。

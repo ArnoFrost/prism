@@ -64,7 +64,7 @@ flowchart TB
 ```bash
 git clone git@github.com:ArnoFrost/prism.git ~/prism
 cd ~/prism
-PRISM_VAULT_PATH="$HOME/PrismWorkspace" PRISM_WS_SUBDIR="Prism/Workspace" ./setup.sh init
+./setup.sh init
 prism --version
 ```
 
@@ -84,7 +84,7 @@ git clone git@github.com:ArnoFrost/prism.git ~/prism
 
 ### Agent 引导
 
-> 帮我 clone `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，设置 `PRISM_VAULT_PATH`，执行 `./setup.sh init`，并读 `SETUP_AGENT.md` 完成验收。
+> 帮我 clone `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并读 `SETUP_AGENT.md` 完成验收。
 
 ### 首屏闭环
 
@@ -107,7 +107,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 |------|------|--------|
 | **init** | `./setup.sh init` | 配置 + relink + CLI + uv |
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
-| **桥接** | `prism relink` · `./setup.sh relink` | vault + IDE 软链 |
+| **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 软链 |
 | **接入** | `/workspace-init` | 已有仓库挂 workspace |
 | **topic** | `prism status` · `/workflow-intake` | 可选治理（见下节） |
 | **升级** | `prism update` · `./setup.sh update` | pull → doctor ci → relink --no-workspace |
@@ -141,11 +141,11 @@ Prism 的交付术语分三层：
 
 | 术语 | 含义 |
 |------|------|
-| **core contract** | 最小运行合同：SDK 内置 workflow/workspace + Vault Workspace + `uv`。它回答“Prism 最少依赖什么还能跑”。 |
-| **mini profile / package** | 基于 core contract 的默认轻量交付形态。它回答“如何给别人一个开箱可用的精简版”。 |
-| **full profile** | core contract + 外部 Skills / Env 等扩展能力。它回答“维护者或进阶用户如何组合完整能力”。 |
+| **core contract** | 最小运行合同：SDK + `uv`。Protocol / Workspace 保持逻辑模型；Workspace 实例默认可落本地目录。 |
+| **optional deployment** | Skills、Env、Vault/Git backend 都按需组合，缺失不阻断 SDK/CLI。 |
+| **legacy mini/full** | 旧 zip profile，仅 maintenance-only；不再承担 3.0 GA certification 或新增特性承诺。 |
 
-因此 `core` 不是一个单独分支或产品；`mini` 也不是长期并行分支。`mini` 是基于 core contract 的轻量 profile / package。
+`core` 不是独立分支；3.0 的统一外部入口是 `prism` CLI。仍需维护旧 mini/full 包时使用 experimental `prism dist`，由 SDK 内部 Python adapter 委托可选兼容实现。
 
 ---
 
@@ -174,7 +174,7 @@ Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Sk
 
 > **workflow / 痕迹义务家族都是可选项**
 >
-> Prism 的 core contract（最小运行合同）只要求 SDK + Vault Workspace + `uv`。**workflow 系列技能** 与配套的 **痕迹义务家族**（`task_probe` / `decision_artifact` / `intake_gate_out` / `merge_artifact`，自 v2.0 起永久封顶在 4 族）是认知熵治理工作流的可选增强：
+> Prism 的 core contract（最小运行合同）只要求 SDK + `uv`；本地 Workspace backend 可由 setup 自动建立，Vault 不是硬依赖。**workflow 系列技能** 与配套的 **痕迹义务家族**（`task_probe` / `decision_artifact` / `intake_gate_out` / `merge_artifact`，自 v2.0 起永久封顶在 4 族）是认知熵治理工作流的可选增强：
 >
 > - **不用 workflow 技能**：项目状态可纯手写到 `workspace.{code}.local/` 下，Prism 不强制 review/decision/scope 三件套
 > - **不用痕迹义务（默认行为）**：`prism finalize` Step 2.5 默认 lenient — 只 WARN 不 ERR，不阻塞 `success: true`；`bin/prism validate-trace --lenient` 同效
@@ -187,9 +187,9 @@ Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Sk
 
 ## 工具入口
 
-Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作，`prism <verb>` 管 workspace/topic 级动作：
+Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为首次 bootstrap。`bin/` 是 CLI 内部适配与维护者调试面，不作为新增用户能力的首选入口。
 
-### `bin/` — 仓库级工具
+### `bin/` — 内部适配 / 维护者工具
 
 
 | 命令                     | 职责                                                                               |
@@ -204,7 +204,7 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 | `bin/rename-artifacts` | 批量重命名产物                                                                          |
 
 
-### `prism <verb>` — workflow 级 CLI
+### `prism <verb>` — 统一外部 CLI
 
 
 | 命令               | 职责                                                |
@@ -218,6 +218,7 @@ Prism 的命令面分两层，职责正交——`bin/` 管仓库/环境级动作
 | `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
 | `prism update`   | 拉取 SDK 并执行核心 doctor + 代码层 relink（experimental；Vault/Workspace 可选） |
+| `prism dist`     | 分发统一 facade（experimental）；mini/full 仅 legacy maintenance-only |
 | `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |
 | `prism tidy`     | 工件机械对齐（focus 入口 / 索引 / frontmatter；README 仅存量兜底） |
 | `prism status`   | Workspace 活跃 topic 健康度扫描 |
@@ -242,7 +243,7 @@ prism --json manifest
 
 - **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
-- **experimental 标记**：标注为 experimental 的 verb（当前：`prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism validate-trace` / `prism manifest`）可能在下一个 minor 改名或改参数
+- **experimental 标记**：标注为 experimental 的 verb（当前含 `prism dist` / `prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism validate-trace` / `prism manifest`）可能在下一个 minor 改名或改参数
 - **历史 breaking change**：`prism pipeline` 已物理移除；旧调用方请改用 `prism finalize`
 - **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 

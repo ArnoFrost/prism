@@ -250,6 +250,7 @@ def test_setup_sh_help():
         timeout=10,
     )
     assert result.returncode == 0
+    assert "PRISM_WORKSPACE_ROOT" in result.stdout
     assert "PRISM_VAULT_PATH" in result.stdout
     assert "relink" in result.stdout
 
@@ -346,7 +347,7 @@ def test_relink_no_workspace_does_not_require_vault_config(tmp_path):
         timeout=30,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "跳过 Workspace/Vault" in result.stdout
+    assert "跳过 Workspace backend" in result.stdout
     assert "错误: 0" in result.stdout or "错误:0" in result.stdout.replace(" ", "")
 
 

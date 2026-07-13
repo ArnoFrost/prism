@@ -129,7 +129,7 @@ def check_config(config_path: str) -> dict:
             warn += 1
 
     if shutil.which("uv") is None:
-        lines.append("✗ uv 未安装（core contract 必需，mini profile/package 继承）")
+        lines.append("✗ uv 未安装（core contract 必需）")
         err += 1
 
     if len(workspaces) > 1:

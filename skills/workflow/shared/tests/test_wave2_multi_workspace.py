@@ -46,6 +46,7 @@ class TestWorkspaceEnvExport:
         lines = wee.export_lines(str(cfg))
         text = "\n".join(lines)
         assert 'PRISM_DEFAULT_WORKSPACE="work"' in text
+        assert 'PRISM_WORKSPACE_ROOT="/data/work-store"' in text
         assert 'PRISM_VAULT="/data/work-store"' in text
         assert 'PRISM_WORKSPACE="/data/work-store/Prism/Workspace"' in text
         assert 'PRISM_WORKSPACE_PERSONAL="/data/icloud/AI Obsidian/Prism"' in text

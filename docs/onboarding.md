@@ -21,7 +21,7 @@
 ```bash
 # 首次（示例）
 cd ~/prism
-PRISM_VAULT_PATH="$HOME/PrismWorkspace" PRISM_WS_SUBDIR="Prism/Workspace" ./setup.sh init
+./setup.sh init
 ```
 
 ---
@@ -38,10 +38,11 @@ setup.sh init → prism --version 验收 → workspace-init / 桥接
 | 阶段 | 人类常用 | 说明 |
 |------|----------|------|
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
-| **桥接** | `prism relink` · `./setup.sh relink` | vault + IDE 分发 |
+| **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 分发 |
 | **topic** | `prism status` · `/workflow-intake` | 可选治理路径 |
 | **升级** | `prism update` · `./setup.sh update` | pull + core doctor + code-only relink |
 | **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope；`--json` 为 flat passthrough |
+| **旧包维护** | `prism dist --adapter-info` | experimental；mini/full 仅 legacy maintenance-only |
 | **桥接修复** | `prism relink` | 软链漂移时 |
 
 > **`prism doctor --json`** 不是 outer envelope。见 [cli-contract §4.3](./cli-contract.md)。
@@ -117,13 +118,13 @@ prism relink --no-workspace
 prism --version
 ```
 
-> `prism update` 遇 dirty working tree 会 abort。它只保证 SDK/Skills 代码层更新与分发，不要求 Vault/Workspace 配置完整；Vault pull 仍是可选独立动作（见下）。
+> `prism update` 遇 dirty working tree 会 abort。它只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
 
 ---
 
-## Vault 跨设备（可选）
+## Workspace backend 与 Vault 跨设备（可选）
 
-Workspace Git **非** core contract 硬依赖。启用后见 vault `047` migration-guide（经 `workspace.*.local` 桥接）。
+默认 backend 为 `~/.local/share/prism/Workspace`。Vault 与 Workspace Git **均非** core contract 硬依赖；启用后仍经 `workspace.*.local` 桥接。
 
 ---
 
@@ -131,7 +132,7 @@ Workspace Git **非** core contract 硬依赖。启用后见 vault `047` migrati
 
 | # | 检查 | 命令 | 预期 |
 |---|------|------|------|
-| E1 | init | `PRISM_VAULT_PATH=~/PrismWorkspace ./setup.sh init` | 无 error |
+| E1 | init | `./setup.sh init` | 默认本地 Workspace backend，无 error |
 | E2 | 配置 | `bin/setenv --validate` | 路径可达 |
 | E3 | CLI | `prism --version` | 输出版本 |
 | E4 | 软链 | `prism relink --check` | 错误: 0 |

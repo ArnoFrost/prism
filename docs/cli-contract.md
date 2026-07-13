@@ -13,8 +13,8 @@ Prism 的命令面分两层，职责正交：
 
 | 层 | 入口 | 承载动作 | 典型示例 |
 |----|------|---------|---------|
-| **`bin/`** | 直接可执行脚本 | 仓库/环境级维护动作（一次性、跨 workspace、会碰到本地文件系统/shell 环境） | `bin/setup`、`bin/doctor`、`bin/relink`、`bin/setenv`、`bin/validate-skills`、`bin/create-skill`、`bin/clean`、`bin/rename-artifacts` |
-| **`prism <verb>`** | `bin/prism` 统一入口（bash 壳 → `prism_cli.py` 分派） | workspace/topic 级动作（作用于具体专项产物，可重复、面向 Agent） | `prism sniff`、`prism validate`、`prism archive`、`prism migrate`、`prism finalize` |
+| **`bin/`** | 直接可执行脚本 | 内部适配与维护者调试面：仓库/环境级动作、底层实现 | `bin/setup`、`bin/doctor`、`bin/relink`、`bin/setenv`、`bin/validate-skills` |
+| **`prism <verb>`** | `bin/prism` 统一入口（bash 壳 → `prism_cli.py` 分派） | 对外日常动作：workspace/topic 治理，以及经 SDK adapter 暴露的产品级 facade | `prism validate`、`prism finalize`、`prism doctor`、`prism update`、`prism dist` |
 
 ### Agent 执行入口优先级
 
@@ -22,7 +22,7 @@ Prism 的命令面分两层，职责正交：
 
 | 优先级 | 入口 | 使用场景 | 文档写法 |
 |--------|------|----------|----------|
-| 1 | `prism <verb>` | Agent 执行 topic / workspace 主流程 | 直接写 `prism sniff` / `prism finalize` / `prism tidy` 等首选命令 |
+| 1 | `prism <verb>` | Agent / 人类执行日常主流程 | 直接写 `prism sniff` / `prism finalize` / `prism dist` 等首选命令 |
 | 2 | `uv run python <script>` | 维护者直调、调试底层脚本、或 `bin/prism` 不可用时的 fallback | 必须显式标注为“底层脚本 / fallback / 调试入口” |
 
 因此，SKILL / workflow 文档里凡是同时存在高层 verb 与底层脚本的能力，必须以 `prism <verb>` 为主入口；底层 `uv run python ...` 只能作为实现说明或 fallback 示例，不能写成 Agent 的默认执行路径。
@@ -37,6 +37,8 @@ Prism 的命令面分两层，职责正交：
 │  └─ 归 bin/
 ├─ 某个具体 topic 或 workspace 内的产物（reviews/ decisions/ scope.md 等）
 │  └─ 归 prism <verb>
+├─ 面向用户的跨仓产品能力，且可由 SDK 内部薄 adapter 提供统一入口
+│  └─ 归 prism <verb>；底层外部实现必须保持可选，不得反向成为 core 依赖
 └─ 不确定
    └─ 默认归 bin/；如果后续发现 10+ 个同类动作再抽离到 prism
 ```
@@ -47,7 +49,7 @@ Prism 的命令面分两层，职责正交：
 |------|-------|------|------|
 | `prism sync` | 实际是 repo 级动作（偏 bin/ 语义） | **永久豁免，不改名** | v1.0 历史豁免[^v1.0-decision] |
 
-> **重要**：`prism sync` 是**唯一**历史豁免，不可援引为新豁免的先例。任何新命令必须严格按上述判断树归属，不接受"比照 sync"。
+> **重要**：`prism sync` 是**唯一历史豁免**，不可援引为新豁免的先例。`prism dist` 不是豁免：它属于上方新增的产品级 facade 分支，SDK adapter 为 Owner，legacy packer 保持可选。
 
 ---
 
@@ -220,6 +222,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism relink` | stable | ⬜ | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism doctor` | stable | ⬜ | 仓库/环境体检（委托 `bin/doctor`；`--json` 为 flat passthrough） |
 | `prism update` | experimental | ⬜ | SDK `git pull --rebase` → `doctor ci --quick` → `relink --no-workspace`（dirty 时 abort；Vault/Workspace 可选） |
+| `prism dist` | experimental | ⬜ | 分发统一入口；经 SDK Python adapter 委托可选 legacy mini/full maintenance-only 实现 |
 | `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示 |
 | `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
 | `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |
@@ -248,6 +251,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 2026-05-13 | v1.1.7 | §5.2 finalize description 加 "validate-trace (Step 2.5)"；pipeline 行加"不支持 trace flag"脚注 |
 | 2026-05-14 | **v2.0.0-alpha** | §5.2 `prism pipeline` 行从 deprecated 改为 ~~removed (v2.0)~~（物理移除 alias，调用方 hard fail exit 2）；§2.2 改名示例段更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径）；§1 / §2 / §4 默认路径脱敏（移除内部 review/decision 链路引用）；§6 表 vault link 迁出主表[^variant-history]；VERSION / manifest / 默认文档口径对齐。<br>（开发期 v2.0-canary 阶段的契约迭代已收编进本行。）|
 | 2026-05-16 | **v2.0.0-beta.1** | 版本口径从 v2.1.0 统一为 v2.0.0-beta.1（v2 尚未对外发布，重新梳理版本号）；`prism --version` 与 SDK `VERSION` 同步。|
+| 2026-07-13 | **v3.0.0-rc** | 新增 experimental `prism dist` 产品级 facade；外部入口统一到 Prism CLI，SDK Python adapter 委托可选 legacy mini/full maintenance-only 实现。 |
 
 [^variant-history]: 各版本变更的详细 review / decision 推导链路保留在 vault Workspace 内部历史档案中，不在本契约暴露；参与维护的人员可通过 SDK 内 `references/maintainer.md` 等维护者文档定位。
 

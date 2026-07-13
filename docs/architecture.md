@@ -13,7 +13,7 @@
 | **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（schema + 模板 + 内置技能） |
 | **Workspace** | 项目级 AI 协作状态容器 | 是 | `workspace/`（schema + 模板） |
 
-Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和 Env 是**可选的能力扩展层**。Prism 的 **core contract** 是：SDK 内置 workflow/workspace + Vault Workspace + `uv` 运行时。
+Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和 Env 是**可选的能力扩展层**。Prism 的 **core contract** 是 SDK + `uv`；Protocol + Workspace 构成逻辑最小模型，但 Workspace backend 不等于 Vault，默认可使用本地目录。
 
 为了开箱即用，SDK 在 `skills/workflow/` 内置了一套工作流最佳实践，这是便利性设计，不改变 Skills 层可选的架构定位。
 
@@ -23,11 +23,13 @@ Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和
 
 | 术语 | 定义 | 维护方式 |
 |------|------|----------|
-| **core contract** | 最小运行合同：SDK 内置 workflow/workspace、Vault Workspace、`uv` 运行时 | 主干架构合同，不是分支 |
-| **mini profile / package** | 基于 core contract 的默认轻量交付形态，不要求外部 Skills / Env | 用户侧可见的 profile / zip package |
-| **full profile** | core contract + 外部 Skills / Env / 个人 vault 等扩展组合 | 进阶用户或维护者组合 |
+| **core contract** | 最小运行合同：SDK + `uv`；Workspace 实例默认可落本地 backend | 主干架构合同，不是分支 |
+| **optional deployment** | 外部 Skills、Env、Vault/Git backend 按需组合 | 缺失不阻断 SDK/CLI |
+| **legacy mini/full** | 历史 zip profile，仅保留安全修复、迁移兼容与弃用窗口 | maintenance-only，不参与 3.0 GA certification |
 
-三者是交付范围关系，不是三套并行代码线。`core` 回答“最小能跑需要什么”，`mini` 回答“如何轻量交付”，`full` 回答“如何组合扩展能力”。
+`core` 回答“最小能跑需要什么”；可选部署回答“状态和扩展落在哪里”。mini/full 不再是 3.0 主交付面，统一外部入口改为 `prism` CLI。
+
+> 兼容窗口：旧 `/prism-dist` Skill 仅作为可选兼容壳存在；新文档与自动化一律调用 `prism dist`。SDK 内部 Python adapter 负责定位 legacy packer，未安装时清晰降级，不影响 core。
 
 ---
 
@@ -39,19 +41,19 @@ Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和
 |------|------|:----:|--------|
 | **SDK 仓库** | 协议 + schema + 内置 workflow/workspace + bin 工具 | 是 | Protocol + Skills(内置) + Workspace(模板) |
 | **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
-| **Vault** (iCloud 或本地目录) | 项目状态、评审记录 | 是 | Workspace(实例) |
+| **Workspace backend**（默认本地，可选 Vault/Git） | 项目状态、评审记录 | 是（逻辑实例） | Workspace(实例) |
 
-SDK 内置 workflow/workspace 是 core contract 的一部分。外部技能仓库按需创建，提供个人工具和 git 同步能力；Env 层按设备/个人配置扩展。它们通过 `bin/relink` 参与 IDE 分发，但缺失时不阻塞 core contract。
+SDK 提供 Protocol、Workspace schema/模板、可选内置 workflow 与 CLI。外部技能仓库、Env 和 Vault backend 均按需配置；缺失时不阻断 core contract。
 
 ---
 
 ## 桥接模式
 
-Prism 通过 `.local` 后缀软链接将 Vault 中的 Workspace 挂载到工作仓库：
+Prism 通过 `.local` 后缀软链接将 backend 中的 Workspace 挂载到工作仓库：
 
 ```
 工作仓库/
-├── workspace.{code}.local     → Vault Workspace/{CODE}/
+├── workspace.{code}.local     → Workspace backend/{CODE}/
 ├── AGENTS.local.md            → 用户级协作上下文（可选）
 └── AGENTS.personal.local.md   → 个人偏好（可选）
 ```

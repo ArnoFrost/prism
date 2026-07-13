@@ -31,7 +31,7 @@ Prism 采用三正交分离 + 软链接桥接：
 |------|------|------|
 | **SDK 路径** (`PRISM_DIR`) | 协议、模板、schema、工具 | `~/prism` |
 | **Skills 路径** | 外部个人技能（独立 Git，**可选**） | `~/prism-skills` |
-| **Vault 路径** | Workspace 实例的 iCloud 同步存储 | `~/Library/.../AI Obsidian` |
+| **Workspace backend** | Workspace 实例的物理存储；默认本地，Vault 可选 | `~/.local/share/prism` |
 | **桥接路径** | 工作仓库中的软链接 | `workspace.{code}.local` |
 
 路径通过 `prism.local.yaml`（不入库）统一管理，`bin/setenv` 读写，`bin/relink` 据此刷新所有软链接。
@@ -44,8 +44,8 @@ Prism 采用三正交分离 + 软链接桥接：
 
 ```
 工作仓库/
-├── workspace.{code}.local  -> Vault Workspace/{CODE}/
-└── AGENTS.local.md         -> Vault Workspace/{CODE}/AGENTS.md
+├── workspace.{code}.local  -> Workspace backend/{CODE}/
+└── AGENTS.local.md         -> Workspace backend/{CODE}/AGENTS.md
 ```
 
 命名约定：`workspace.{code}.local`，`{code}` 为项目代号小写。
@@ -62,12 +62,12 @@ Prism 采用三正交分离 + 软链接桥接：
 
 ---
 
-## Vault 结构
+## Workspace backend 结构
 
-Vault 仅承载 Workspace 实例（项目状态），不存放 Skills。
+Workspace backend 仅承载 Workspace 实例（项目状态），不存放 Skills。默认使用本地目录；iCloud/Obsidian Vault、Git 等属于可选 backend。
 
 ```
-Prism vault (iCloud)/
+Workspace backend/
 └── Workspace/
     ├── PRISM/                     # Prism 项目自身的工作区
     │   ├── project.yaml
@@ -115,7 +115,7 @@ Prism vault (iCloud)/
 - 保持状态与逻辑分离。
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
-- **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + Vault + `uv`；review / decision / `task_probe` 等只在结构化协作场景启用。Agent 不应当把"必须先用 workflow"作为协作前置条件。
+- **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + `uv`；Workspace 是逻辑状态层，默认可落本地目录，Vault 仅为可选 backend。review / decision / `task_probe` 等只在结构化协作场景启用。
 - **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（裸 slash 调用永远 new，显式 `--append <topic>` 优先，不因 cohesion 静默 append）；`workflow-review` / `workflow-review-lite` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic；`workflow-compact` 是 explicit-topic-only 低频维护技能，不跟随 review cohesion。路由语义 SSOT 见 [`skills/workflow/workflow-intake/references/intake-routing-spec.md`](skills/workflow/workflow-intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) §0.1 — cite 不复制。
 
 ---
@@ -136,7 +136,7 @@ Prism vault (iCloud)/
 Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 workflow 技能是一套开箱即用的最佳实践，不改变 Skills 层可选的架构定位。外部个人技能仓库（`~/prism-skills`）按需配置，提供个人工具和 git 同步能力。两者通过各自的 `bin/relink` 独立分发到 IDE。
 
 ### Workspace
-项目级 AI 协作状态容器。SDK 内的 `workspace/` 保存 schema 和模板（系统层），项目状态作为实例层存放在 Vault 的 `Workspace/` 目录中，通过 `workspace.{code}.local` 桥接。
+项目级 AI 协作状态容器。SDK 内的 `workspace/` 保存 schema 和模板（系统层）；项目状态实例默认可存放在本地 backend，也可选用 Vault，并通过 `workspace.{code}.local` 桥接。
 
 ---
 
@@ -148,7 +148,7 @@ Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 workf
 |------|------|:----:|--------|
 | **SDK 仓库** | 协议 + schema + 内置 workflow | 是 | Protocol + Skills(内置) + Workspace(模板) |
 | **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
-| **Vault** (iCloud) | 项目状态、评审记录 | 是 | Workspace(实例) |
+| **Workspace backend** | 项目状态、评审记录；默认本地，可选 Vault/Git | 是（逻辑实例） | Workspace(实例) |
 
 ---
 
@@ -159,8 +159,8 @@ Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 workf
 ```yaml
 sdk_path: ~/prism
 skills_path: ~/prism-skills
-vault_path: ~/Library/.../AI Obsidian
-workspace_subdir: Prism/Workspace
+workspace_root: ~/.local/share/prism
+workspace_subdir: Workspace
 projects:
   PRISM: ~/prism
 ```
@@ -198,10 +198,10 @@ prism.local.yaml        # 本地配置
 
 四层模型中 Skills 和 Env 是可选扩展层，Prism 不强制外部依赖：
 
-- **Prism SDK** 单独 clone + `bin/setenv --init` 初始化后即可使用内置 workflow 最佳实践，不要求配置 Skills 或 Env 仓库。
+- **Prism SDK** 单独 clone + `./setup.sh init` 即可建立本地 Workspace backend；不要求配置 Skills、Env 或 Vault。
 - **Skills 仓库**（prism-skills）是**可选扩展**——提供个人工具和 git 同步，按需创建。
 - **DotFiles 仓库**（ArnoDotFiles）可以在没有 Prism 的情况下独立运行。
-- **AI-TASK**（Obsidian vault）可以在没有 Prism 的情况下独立运行。
+- **Vault / AI-TASK** 是可选 Workspace backend，也可以在没有 Prism 的情况下独立运行。
 
 Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 + 外部可选是架构硬约束。
 
@@ -235,8 +235,8 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
 | workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
 | workflow-status | `/workflow-status` | 健康度巡检 — report-first + `next_actions[]` handoff（不自动写盘） |
-| workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不进 mini/full） |
-| workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不进 mini/full） |
+| workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不列入 3.0 GA formal 能力面） |
+| workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不列入 3.0 GA formal 能力面） |
 
 ---
 

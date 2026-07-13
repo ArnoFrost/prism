@@ -8,9 +8,7 @@
 git clone git@github.com:ArnoFrost/prism.git ~/prism
 cd ~/prism
 
-# 一键 init（推荐）
-PRISM_VAULT_PATH="$HOME/PrismWorkspace" \
-PRISM_WS_SUBDIR="Prism/Workspace" \
+# 一键 init（推荐；默认本地 Workspace backend）
 ./setup.sh init
 
 prism --version
@@ -30,8 +28,10 @@ init 之后日常命令 → [docs/onboarding.md](docs/onboarding.md)（`setup.sh
 ```bash
 cat prism.local.yaml.example   # 或 bin/setenv --example
 
-PRISM_SDK_PATH="$HOME/prism" \
-PRISM_VAULT_PATH="$HOME/PrismWorkspace" \
+PRISM_SDK_PATH="$HOME/prism" bin/setenv --init --non-interactive
+
+# 可选：改用 Vault backend
+PRISM_WORKSPACE_ROOT="$HOME/PrismWorkspace" \
 PRISM_WS_SUBDIR="Prism/Workspace" \
 bin/setenv --init --non-interactive
 

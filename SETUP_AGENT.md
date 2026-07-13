@@ -109,7 +109,7 @@ echo "SDK_DIR=$(pwd)"
 command -v uv >/dev/null 2>&1 && echo "UV=$(uv --version)" || echo "UV=missing"
 test -f prism.local.yaml && echo "CONFIG=exists" || echo "CONFIG=missing"
 if [ -f prism.local.yaml ]; then
-  for key in device_id sdk_path vault_path workspace_subdir skills_path env_path; do
+  for key in device_id sdk_path workspace_root vault_path workspace_subdir skills_path env_path; do
     grep -q "^${key}:" prism.local.yaml 2>/dev/null && echo "CONFIG_HAS: $key" || echo "CONFIG_MISS: $key"
   done
 fi
@@ -142,7 +142,7 @@ echo "=== Probe Done ==="
 
 ### 场景 A: 首次安装（CONFIG=missing）
 
-先用 `bin/setenv --example` 展示 core contract 配置样例，确认用户理解只有 `sdk_path`、`vault_path`、`workspace_subdir` 是初始化必填项；外部 Skills / Env / 个人知识库都属于可选扩展。
+先用 `bin/setenv --example` 展示配置样例：core contract 只要求 SDK + `uv`；setup 默认建立本地 Workspace backend。Vault、外部 Skills / Env / 个人知识库都属于可选扩展。
 
 #### 模式 A 交互（Cursor — 结构化选择）
 
@@ -155,13 +155,13 @@ echo "=== Probe Done ==="
   - "我指定其他路径"
   - "跳过 Skills（稍后配置）"
 
-问题 2（单选）: "Vault 路径"
-  - "使用探测到的路径: {vault}" (如果存在)
+问题 2（单选）: "Workspace backend"
+  - "使用默认本地目录: ~/.local/share/prism"
+  - "使用探测到的 Vault: {vault}" (如果存在)
   - "我指定其他路径"
-  - "帮我创建本地目录"
 
 问题 3（单选）: "Workspace 子目录"
-  - "使用默认: Prism/Workspace"
+  - "使用默认: Workspace"
   - "我指定其他路径"
 ```
 
@@ -178,8 +178,8 @@ echo "=== Probe Done ==="
 |--------|---------|--------|
 | SDK 路径 | {当前目录} | {当前目录} |
 | 外部 Skills 扩展 | {存在/未找到} | 可选，检测到 `~/prism-skills` 时可接入 |
-| Vault 路径 | {存在/未找到} | {iCloud 路径或提示手动填写} |
-| Workspace 子目录 | — | Prism/Workspace |
+| Workspace backend | 默认本地 / 检测到 Vault | `~/.local/share/prism`（推荐） |
+| Workspace 子目录 | — | Workspace |
 
 如果以上路径都正确，回复"确认"即可。
 需要调整请告诉我哪项需要改。
@@ -195,7 +195,7 @@ prism-skills 仓库未找到。这是可选的个人工具仓库，不影响核�
 （跳过也完全没问题，SDK 内置了全部工作流技能）
 ```
 
-**Vault 未找到时**（非 macOS / 无 iCloud），请用户提供路径或创建本地目录。
+**Vault 未找到时**无需阻断，直接使用默认本地 Workspace backend；只有用户明确需要跨设备/Obsidian 时才配置 Vault。
 
 ### 场景 B: 已有配置（CONFIG=exists）
 
@@ -217,7 +217,7 @@ prism-skills 仓库未找到。这是可选的个人工具仓库，不影响核�
 已检测到 Prism 配置：
   SDK:       {sdk_path}
   外部 Skills: {skills_path 或 未配置}
-  Vault:     {vault_path}
+  Workspace backend: {workspace_root 或兼容 vault_path}
   Workspace: {workspace_subdir}
   已注册项目: {projects 列表}
 
@@ -234,18 +234,18 @@ prism-skills 仓库未找到。这是可选的个人工具仓库，不影响核�
 
 ### 3a. 首次安装
 
-人类可改用仓库根 **`./setup.sh init`**（需已设 `PRISM_VAULT_PATH` 或已有 `prism.local.yaml`）；等价于本节的 setenv + `bin/setup --non-interactive`。
+人类可直接使用仓库根 **`./setup.sh init`**；未提供 backend 时自动采用 `~/.local/share/prism/Workspace`。它等价于本节的 setenv + `bin/setup --non-interactive`。
 
 用户确认路径后，通过环境变量创建配置：
 
 ```bash
 PRISM_SDK_PATH="{确认的 SDK 路径}" \
-PRISM_VAULT_PATH="{确认的 Vault 路径}" \
-PRISM_WS_SUBDIR="{确认的子目录，默认 Prism/Workspace}" \
+PRISM_WORKSPACE_ROOT="{确认的 backend，默认 ~/.local/share/prism}" \
+PRISM_WS_SUBDIR="{确认的子目录，默认 Workspace}" \
 bin/setenv --init --non-interactive
 ```
 
-如果用户选择接入外部 Skills，再额外传入 `PRISM_SKILLS_PATH="{确认的 Skills 路径}"`；留空时仍满足 core contract。mini profile / package 默认只依赖 SDK 内置 workflow/workspace 能力。
+如果用户选择接入外部 Skills，再额外传入 `PRISM_SKILLS_PATH="{确认的 Skills 路径}"`；留空时仍满足 core contract。
 
 如果用户需要先看完整配置形态，执行：
 
@@ -423,7 +423,7 @@ done
 cd "$HOME/prism"
 git pull origin main              # SDK（GitHub）
 cd "$HOME/prism-skills"
-git pull origin main              # Skills（双仓同 semver，需同步）
+git pull origin main              # Skills（仅在配置了可选扩展时）
 
 cd "$HOME/prism"
 bin/doctor --scope ci --quick         # 升级后核心体检（不要求 Vault/Workspace）
@@ -431,7 +431,7 @@ bin/relink --no-workspace             # 刷代码层软链接（如果 relink �
 prism --version                   # 自查版本号（同源根目录 VERSION）
 ```
 
-**zip 分发路径**：参见 `INSTALL_INTERNAL.md` 的 Step 3a（mv-swap 模式，自动保留本地配置）。
+**legacy zip 路径**：统一从 `prism dist` 进入；mini/full 仅 maintenance-only，参见包内 `INSTALL_INTERNAL.md`。
 
 ### 回滚（降回上一个稳定版本）
 
@@ -455,7 +455,7 @@ bin/relink                        # 重新分发软链接
 ```bash
 cp prism.local.yaml "prism.local.yaml.bak.$(date +%Y%m%d%H%M%S)"
 rm prism.local.yaml
-PRISM_SDK_PATH=... PRISM_VAULT_PATH=... bin/setenv --init --non-interactive
+PRISM_SDK_PATH=... PRISM_WORKSPACE_ROOT=... bin/setenv --init --non-interactive
 # 如需外部扩展技能，再补 PRISM_SKILLS_PATH=...
 # 手动将旧 projects 段追加回新生成的配置
 ```
@@ -488,8 +488,8 @@ bin/relink                        # 刷新软链接排除它
 | 场景 | 处理 |
 |------|------|
 | Skills 仓库不存在 | 提示 clone，允许跳过 |
-| Vault 路径不存在 | 让用户提供或新建本地目录 |
-| 非 macOS（无 iCloud） | vault_path 改为本地路径 |
+| Workspace backend 不存在 | 默认由 relink 创建本地目录；只在权限失败时阻断 |
+| 非 macOS（无 iCloud） | 继续使用默认本地 `workspace_root`，无需降级 |
 | prism.local.yaml 已存在 | 不调用 `--init`，走场景 B |
 | bin/relink 报错 | 展示错误，逐项排查 |
 | IDE 技能目录不存在 | relink 自动跳过，无需处理 |

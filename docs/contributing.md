@@ -57,7 +57,7 @@ SDK 层应当只表达**通用结论 / 规则 / 防护目标**，例如：
 
 **实操约束**：每次修改 SDK 层文件时（特别是 `skills/workflow/workflow-*/SKILL.md` / `shared/scripts/*` / `bin/*`），顺手 grep 当次 diff 中是否含 workspace 痕迹关键词；若有，改写为通用句或删除。
 
-> 公共分发到外部（mini / full profile）的视角下，外部读者看到 `r01 F-P0-2` 没有任何可解释性，反而是污染。
+> 公共发行视角下，外部读者看到 `r01 F-P0-2` 没有任何可解释性，反而是污染。
 
 ## 对外写作 Checklist
 
@@ -101,7 +101,7 @@ audience: maintainer
 
 - 小改动优先跟随现有模块，不引入新抽象。
 - CLI 行为变更需要同步 `docs/cli-contract.md` 和测试。
-- 分发行为变更需要同步 `prism-dist` 文档和测试。
+- 分发 facade / adapter 变更先同步 SDK `prism dist` 契约和测试；legacy packer 行为变更再同步可选 `prism-dist` 兼容实现。
 - 破坏性变化必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
 - 涉及默认用户面的治理扫描变更，需要跑对应扫描器或测试。
 

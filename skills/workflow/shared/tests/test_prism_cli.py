@@ -50,7 +50,7 @@ class TestBinPrismShell:
     def test_shell_help(self):
         result = subprocess.run([BIN_PRISM, "--help"], capture_output=True, text=True, timeout=5)
         assert result.returncode == 0
-        assert "workflow 统一 CLI 入口" in result.stdout
+        assert "Prism — 统一 CLI 入口" in result.stdout
         assert "sniff" in result.stdout
         assert "validate" in result.stdout
 

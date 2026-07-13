@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prism — workflow 统一 CLI 入口，转发到 shared/scripts/prism_cli.py。
+# Prism — 统一 CLI 入口，转发到 shared/scripts/prism_cli.py。
 #
 # 用法:
 #   prism <verb> [args...]       运行指定子命令
@@ -22,6 +22,7 @@
 #   relink          刷新项目/Skills IDE 软链接（委托 bin/relink）
 #   doctor          仓库/环境体检（委托 bin/doctor）
 #   update          pull SDK → doctor ci → relink --no-workspace（experimental）
+#   dist            分发统一入口；委托 SDK Python adapter（experimental）
 #   finalize        Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示
 #   tidy            工件机械对齐（README/review.index/frontmatter）
 #   status          Workspace 活跃 topic 健康度扫描

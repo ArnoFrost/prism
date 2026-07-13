@@ -32,8 +32,8 @@
 7. 痕迹义务家族永久封顶为 4 族，不再新增第五类用户可见块。
 8. README 首屏弱化治理路径，默认用户不需要理解 review / decision 历史链路。
 9. core contract 不要求外部 Skills 仓库存在。
-10. `mini profile` 是轻量分发形态，不是独立产品分支。
-11. `full profile` 表示额外携带外部 Skills / Env 等扩展能力。
+10. （v2 历史口径）`mini/full profile` 曾表示 zip 分发范围；自 3.0 起已降为 legacy maintenance-only。
+11. 3.0 对外分发入口统一为 experimental `prism dist`；Skills / Env / Vault backend 均为可选部署。
 12. `AGENTS.md` 成为标准协作契约文件名。
 13. `AGENTS.local.md` 和 `workspace.*.local` 继续保持本地状态，不入仓库。
 14. `bin/doctor` / `prism --json manifest` 等自省能力保留，便于维护者确认升级结果。

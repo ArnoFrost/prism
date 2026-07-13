@@ -47,11 +47,11 @@ log_err()  { echo -e "  ${RED}✗${NC} $1"; ERRORS=$((ERRORS + 1)); }
 log_info() { echo -e "  ${DIM}$1${NC}"; }
 
 print_init_guidance() {
-  log_info "core contract 必填: PRISM_SDK_PATH, PRISM_VAULT_PATH, PRISM_WS_SUBDIR"
-  log_info "外部 Skills / Env / 个人知识库均为可选扩展"
+  log_info "core contract 必填: PRISM_SDK_PATH + uv；Workspace 逻辑层默认使用本地 backend"
+  log_info "Vault / 外部 Skills / Env / 个人知识库均为可选扩展"
   log_info "查看样例: bin/setenv --example"
   log_info "Agent/脚本初始化示例:"
-  log_info "  PRISM_SDK_PATH=\"$PRISM_DIR\" PRISM_VAULT_PATH=\"<vault>\" PRISM_WS_SUBDIR=\"Prism/Workspace\" bin/setenv --init --non-interactive"
+  log_info "  PRISM_SDK_PATH=\"$PRISM_DIR\" PRISM_WORKSPACE_ROOT=\"$HOME/.local/share/prism\" PRISM_WS_SUBDIR=\"Workspace\" bin/setenv --init --non-interactive"
 }
 
 install_uv() {
@@ -61,7 +61,7 @@ install_uv() {
   fi
 
   if $CHECK_ONLY; then
-    log_err "uv 未安装（core contract 必需，mini profile/package 继承）"
+    log_err "uv 未安装（core contract 必需）"
     log_info "手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh"
     return 1
   fi
@@ -215,7 +215,7 @@ else
 fi
 
 if [[ -z "$SKILLS_PATH" ]]; then
-  log_info "外部 Skills: 未配置（可选，mini 不需要）"
+  log_info "外部 Skills: 未配置（可选）"
 elif [[ -d "$SKILLS_PATH/.git" ]]; then
   SKILLS_REMOTE=$(cd "$SKILLS_PATH" && git remote get-url origin 2>/dev/null || echo "无")
   log_ok "Skills: $SKILLS_PATH ${DIM}($SKILLS_REMOTE)${NC}"
@@ -223,7 +223,7 @@ elif [[ -d "$SKILLS_PATH" ]]; then
   log_warn "Skills 目录存在但非 Git 仓库: $SKILLS_PATH"
 else
   log_warn "外部 Skills 配置但不存在: $SKILLS_PATH"
-  log_info "如需扩展技能，可 clone 后写入 skills_path；mini 可跳过"
+  log_info "如需扩展技能，可 clone 后写入 skills_path"
 fi
 
 # Env（可选）
@@ -254,7 +254,7 @@ if [[ -f "$CONFIG" ]]; then
   echo -e "  ${CYAN}Profile: core contract${NC}"
 
   # 校验必填字段
-  REQUIRED_FIELDS="device_id sdk_path vault_path workspace_subdir"
+  REQUIRED_FIELDS="device_id sdk_path"
   MISSING=""
   for field in $REQUIRED_FIELDS; do
     val=$(yaml_get "$field")
@@ -263,30 +263,43 @@ if [[ -f "$CONFIG" ]]; then
     fi
   done
 
+  WORKSPACE_ROOT=$(yaml_get workspace_root)
+  [[ -z "$WORKSPACE_ROOT" ]] && WORKSPACE_ROOT=$(yaml_get vault_path)
+  WORKSPACE_SUBDIR=$(yaml_get workspace_subdir)
+  if ! grep -q '^workspaces:' "$CONFIG" 2>/dev/null; then
+    [[ -z "$WORKSPACE_ROOT" ]] && MISSING="$MISSING workspace_root/vault_path"
+    [[ -z "$WORKSPACE_SUBDIR" ]] && MISSING="$MISSING workspace_subdir"
+  fi
+
   if [[ -n "$MISSING" ]]; then
     log_err "缺失必填字段:$MISSING"
     if ! $CHECK_ONLY; then
       print_init_guidance
     fi
   else
-    log_ok "core contract 必填字段完整: device_id, sdk_path, vault_path, workspace_subdir"
+    if grep -q '^workspaces:' "$CONFIG" 2>/dev/null; then
+      log_ok "配置字段完整: device_id, sdk_path, named workspaces"
+    else
+      log_ok "配置字段完整: device_id, sdk_path, workspace backend, workspace_subdir"
+    fi
   fi
 
   # 可选扩展字段只报告，不阻塞 core contract。
   SKILLS_PATH=$(yaml_get skills_path)
   ENV_PATH=$(yaml_get env_path)
   OBS_PATH=$(yaml_get obs_vault_personal)
-  [[ -n "$SKILLS_PATH" ]] && log_ok "外部 Skills 扩展已配置" || log_info "外部 Skills 扩展: 未配置（mini 默认可跳过）"
+  [[ -n "$SKILLS_PATH" ]] && log_ok "外部 Skills 扩展已配置" || log_info "外部 Skills 扩展: 未配置（可选）"
   [[ -n "$ENV_PATH" ]] && log_ok "Env 扩展已配置" || log_info "Env 扩展: 未配置（可选）"
   [[ -n "$OBS_PATH" ]] && log_ok "个人知识库扩展已配置" || log_info "个人知识库扩展: 未配置（可选）"
 
   # 路径有效性
-  VAULT_PATH=$(yaml_get vault_path)
+  VAULT_PATH=$(yaml_get workspace_root)
+  [[ -z "$VAULT_PATH" ]] && VAULT_PATH=$(yaml_get vault_path)
   WS_SUBDIR=$(yaml_get workspace_subdir)
   if [[ -n "$VAULT_PATH" && -d "$VAULT_PATH" ]]; then
-    log_ok "Vault 路径有效: ${DIM}$(basename "$VAULT_PATH")${NC}"
+    log_ok "Workspace backend 有效: ${DIM}$(basename "$VAULT_PATH")${NC}"
   elif [[ -n "$VAULT_PATH" ]]; then
-    log_warn "Vault 路径不存在: $VAULT_PATH"
+    log_warn "Workspace backend 不存在: $VAULT_PATH（首次 relink 时创建）"
   fi
 
   if [[ -n "$VAULT_PATH" && -n "$WS_SUBDIR" && -d "$VAULT_PATH/$WS_SUBDIR" ]]; then

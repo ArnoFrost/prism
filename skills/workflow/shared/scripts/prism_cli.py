@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""prism — Prism workflow 统一 CLI 入口。
+"""prism — Prism 统一 CLI 入口。
 
 将分散的脚本整合为一个命令入口，降低心智负担。
 
@@ -15,6 +15,7 @@
   uv run python prism_cli.py status <project_dir> [--format json|markdown]
   uv run python prism_cli.py digest <project_dir> --topic <主题>
   uv run python prism_cli.py relink [--check] [--dry-run] [--prune] [--project CODE]
+  uv run python prism_cli.py dist [legacy mini/full options]
   uv run python prism_cli.py manifest            # verb 元数据清单
 
 顶层选项:
@@ -144,6 +145,11 @@ VERB_REGISTRY = {
         "stability": "experimental",
         "schema_compliant": False,
         "description": "SDK git pull --rebase → doctor ci --quick → relink --no-workspace（dirty 时 abort；可选 --skills）",
+    },
+    "dist": {
+        "stability": "experimental",
+        "schema_compliant": False,
+        "description": "分发统一入口；经 SDK Python adapter 委托可选 legacy mini/full maintenance-only 实现",
     },
     "finalize": {
         "stability": "experimental",
@@ -734,6 +740,14 @@ def cmd_update(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dist(args: argparse.Namespace) -> int:
+    """统一分发 facade；实现边界位于 SDK，legacy packer 保持可选。"""
+    _add_to_path(SCRIPT_DIR)
+    from dist_adapter import run_dist
+
+    return run_dist(args, SDK_ROOT)
+
+
 # ============================================================
 # 主入口
 # ============================================================
@@ -769,7 +783,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         prog="prism",
-        description="Prism workflow 统一 CLI 入口",
+        description="Prism 统一 CLI 入口",
     )
     parser.add_argument("--version", "-V", action=_VersionAction)
     parser.add_argument(
@@ -854,6 +868,30 @@ def main():
     p_update.add_argument("--skills", action="store_true", help="同时 pull prism-skills")
     p_update.add_argument("--dry-run", action="store_true", help="只打印步骤")
 
+    # dist（experimental；SDK facade → 可选 legacy adapter）
+    p_dist = subparsers.add_parser(
+        "dist",
+        help="分发统一入口（experimental；mini/full 仅 legacy maintenance-only）",
+    )
+    p_dist.add_argument("--tag", default=None, help="legacy 包版本（如 v3.0.0）")
+    p_dist.add_argument("--profile", choices=["mini", "full"], default="mini")
+    p_dist.add_argument("--output", default="~/Desktop", help="legacy 包输出目录")
+    p_dist.add_argument("--verify", default=None, help="验证已有 legacy zip")
+    p_dist.add_argument("--sdk-path", default=None, help="verify 时读取 whitelist 的 SDK 路径")
+    p_dist.add_argument("--skip-health-gate", action="store_true")
+    p_dist.add_argument("--full-health", action="store_true")
+    p_dist.add_argument("--health-scope", choices=["release", "ci"], default="release")
+    p_dist.add_argument(
+        "--legacy-root",
+        default=None,
+        help="可选兼容实现 prism-dist 根目录（默认从 skills_path / ~/prism-skills 定位）",
+    )
+    p_dist.add_argument(
+        "--adapter-info",
+        action="store_true",
+        help="只报告 adapter 与 legacy 实现可用性，不执行打包",
+    )
+
     # finalize（v2.0 取代 pipeline；含 --decision flag + trace flags）
     p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → validate-review-call → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
@@ -935,6 +973,7 @@ def main():
         "relink": cmd_relink,
         "doctor": cmd_doctor,
         "update": cmd_update,
+        "dist": cmd_dist,
         "finalize": cmd_finalize,
         "tidy": cmd_tidy,
         "status": cmd_status,
