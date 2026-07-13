@@ -8,9 +8,16 @@ license: MIT
 metadata:
   author: ArnoFrost
   version: 3.0.0
-visibility: dev
-stability: experimental
+visibility: public
+stability: stable
 user_invocable: true
+public_gate:
+  reviewed: true
+  reviewed_by: ArnoFrost
+  reviewed_at: "2026-07-13"
+  rationale: "Prism 3.0 工件机械对齐入口，只修 how、不改变 scope 的 what。"
+  rollback: "将 catalog 与 SKILL 镜像恢复为 dev/experimental；机械修复结果无需回滚。"
+  ssot_id: workflow-tidy
 ---
 
 ## 职责边界
@@ -123,7 +130,7 @@ CLI fallback、code-simplifier 类比、目录结构 → [tidy-maintainer.md](re
 
 ## 9. 依赖声明
 
-本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle）：
 
 | 依赖 | 来源 | 不可用时（bundle 缺 shared） |
 |------|------|------------------------------|
@@ -132,8 +139,8 @@ CLI fallback、code-simplifier 类比、目录结构 → [tidy-maintainer.md](re
 | references 软链：`topic-format-spec` | `../../shared/` | 仅 grandfather 分支按需读，缺失不阻断主流程 |
 
 - **可解析前提**：在 prism monorepo relink 后软链有效。
-- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
-- **独立 bundle**：越界 import 缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.11 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
+- **独立 bundle**：越界 import 缺失时须附带 shared 只读依赖后再评估，不把依赖缺失误判为 skill 主路径缺陷。
 
 ## 10. few-shot 示例
 

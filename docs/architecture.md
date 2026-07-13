@@ -1,6 +1,6 @@
 # Prism — 架构详解
 
-> 本文档包含 Prism 的**结构客观面**（四层模型、部署、workflow 管线）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；v3 rc 叙事见 [prism-3.0.md](./prism-3.0.md)；v2 历史见 [prism-2.0.md](./prism-2.0.md)。
+> 本文档包含 Prism 的**结构客观面**（四层模型、部署、workflow 管线）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；v3.0 叙事见 [prism-3.0.md](./prism-3.0.md)；v2 历史见 [prism-2.0.md](./prism-2.0.md)。
 
 ---
 
@@ -33,7 +33,7 @@ Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和
 
 ---
 
-## 部署视图（v3.0 rc 当前阶段）
+## 部署视图（v3.0）
 
 四层模型是逻辑架构，实际部署分为三个物理位置：
 
@@ -76,7 +76,7 @@ Prism 通过 `.local` 后缀软链接将 backend 中的 Workspace 挂载到工�
 
 ## 设计锚点：轻量认知熵管理
 
-v3.0 rc 在既有 workflow 基础上，把 Prism 的上层目标收敛为**长期人机协作中的轻量认知熵管理**。这里的认知熵不是协议级术语，而是架构叙事锚点：复杂问题在时间维度上会出现理解发散、上下文遗忘、决策漂移、结构膨胀与重复重建，Prism 通过协议、CLI、技能分发和 workspace 状态容器提供轻量管理框架；内置 workflow 则是一套可选的认知熵治理工作流。
+v3.0 在既有 workflow 基础上，把 Prism 的上层目标收敛为**长期人机协作中的轻量认知熵管理**。这里的认知熵不是协议级术语，而是架构叙事锚点：复杂问题在时间维度上会出现理解发散、上下文遗忘、决策漂移、结构膨胀与重复重建，Prism 通过协议、CLI、技能分发和 workspace 状态容器提供轻量管理框架；内置 workflow 则是一套可选的认知熵治理工作流。
 
 | 熵源 | 典型表现 | Prism 机制 |
 |------|----------|------------|
@@ -93,7 +93,7 @@ v3.0 rc 在既有 workflow 基础上，把 Prism 的上层目标收敛为**长�
 
 ---
 
-## Workflow 管线（v3.0 rc 当前阶段）
+## Workflow 管线（v3.0）
 
 Prism Workflow 是一套基于 AI Skill 的认知熵治理工作流。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮事件，不是顶层组织单位**。它是 Prism 框架内置的可选治理路径，不等同于 Prism 全部。
 
@@ -109,7 +109,7 @@ intake ──→ scope(v1) ──→ focus(当前工作集)
                  └── structures/task-N_slug ←─┘  # 仅当某个 V 深化到自带 scope + wave
 
 status ── 任意阶段可用，report-first 健康巡检 + next_actions handoff
-execute ─ 单一已授权 task/wave：实现 → 验证 → wave/verify/focus → 机械校验
+execute ─ 单一已授权 task/wave：实现 → 验证 → wave/verify/focus → 机械校验（dev experimental）
 tidy ──── 决策/评审后，工件机械对齐
 digest ── 需要沟通时，生成状态通报
 compact ─ 膨胀 topic 低频压实（preview-first；dev experimental）
@@ -125,7 +125,7 @@ archive ─ topic 终态归档 / reactivate（dev experimental）
 | `workspace-init` | `/workspace-init` | 项目级初始化（workspace 容器 + 路径迁移） |
 | `workflow-intake` | `/workflow-intake` | 入料 → 亲和路由 → topic 创建/内聚 |
 | `workflow-scope` | `/workflow-scope` | scope 合同维护 → focus 刷新 / task 同步 |
-| `workflow-execute` | `/workflow-execute` | 单一已授权游标的实现、验证与工件闭环；不选择 Next |
+| `workflow-execute` | `/workflow-execute` | 单一已授权游标的实现、验证与工件闭环；不选择 Next（dev experimental） |
 | `workflow-review` | `/workflow-review` | 正式评审（多角色总分总） |
 | `workflow-review-lite` | `/workflow-review-lite` | 轻量评审（单视角快速扫描） |
 | `workflow-tidy` | `/workflow-tidy` | 工件机械对齐（review/decision 后状态同步） |
@@ -138,7 +138,7 @@ archive ─ topic 终态归档 / reactivate（dev experimental）
 
 ### Topic 工件
 
-已有 workspace 的 v3.0 rc 接入口径见 [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)：它强调新 topic 默认 `focus`，存量 `README` / `plan` grandfather，不批量迁移旧 topic。topic 生命周期的阅读版说明见 [topic-lifecycle.md](./topic-lifecycle.md)，skill 全景图见 [skill-taxonomy.md](./skill-taxonomy.md)。
+已有 workspace 的 v3.0 接入口径见 [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)：它强调新 topic 默认 `focus`，存量 `README` / `plan` grandfather，不批量迁移旧 topic。topic 生命周期的阅读版说明见 [topic-lifecycle.md](./topic-lifecycle.md)，skill 全景图见 [skill-taxonomy.md](./skill-taxonomy.md)。
 
 | 文件 | 职责 | 操作模式 |
 |------|------|---------|
@@ -232,7 +232,7 @@ prism/
 │   │   └── SKILL.template.md
 │   ├── workflow/                    # ★ 内置工作流技能（目录名 = name）
 │   │   ├── workflow-intake/
-│   │   ├── workflow-execute/
+│   │   ├── workflow-execute/      # dev experimental
 │   │   ├── workflow-review/
 │   │   ├── workflow-review-lite/
 │   │   ├── workflow-scope/
@@ -299,12 +299,12 @@ prism/
 
 ## 当前阶段
 
-本页描述**结构客观面**，不重复 rc 进度 checklist。
+本页描述**结构客观面**，不重复 GA 能力 checklist。
 
 **发行 SSOT（文档侧唯二入口）**：仓库根 [README](../README.md) 与下表「发行」行；其余 `docs/` 叙事**不写** semver，避免联动维护。
 
 | 面 | 入口 |
 |----|------|
-| v3 rc 已落地锚点 + 开放验证 | [prism-3.0.md](./prism-3.0.md) |
+| v3.0 GA 已落地锚点 + 后续观察 | [prism-3.0.md](./prism-3.0.md) |
 | 文档分类与读序 | [docs/README.md](./README.md) |
 | 发行（`prism --version`） | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |

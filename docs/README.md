@@ -37,13 +37,13 @@
 
 ---
 
-## B — 当前 rc 叙事（guide）
+## B — 当前 3.0 叙事（guide）
 
-随 v3 rc dogfood 演进；允许改措辞，不进 vocabulary。不写发行号。
+随 3.x 产品演进；允许改措辞，不进 vocabulary。不重复发行号。
 
 | 文档 | 用途 |
 |------|------|
-| [prism-3.0.md](./prism-3.0.md) | v3 rc 定位、已落地锚点、开放验证项 |
+| [prism-3.0.md](./prism-3.0.md) | v3.0 GA 定位、已落地锚点、后续观察项 |
 | [skill-taxonomy.md](./skill-taxonomy.md) | 按认知熵源选 workflow skill |
 | [topic-lifecycle.md](./topic-lifecycle.md) | topic 从 intake 到 archive |
 | [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
@@ -69,7 +69,7 @@
 |----------|------|
 | `contract` | 协议 / schema，改须守门测试 |
 | `reference` | 稳定参考，cite SSOT |
-| `guide` | 当前产品叙事，可随 rc 调整 |
+| `guide` | 当前产品叙事，可随 3.x 调整 |
 | `historical` | 历史版本说明，少改 |
 | `internal` | 对内口径，扫描器可跳过默认面 |
 

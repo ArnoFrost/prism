@@ -229,7 +229,7 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workspace-init | `/workspace-init` | 项目初始化 / 工作区创建（含路径迁移） |
 | workflow-intake | `/workflow-intake` | 入料 → 路由 → 专项初始化 |
 | workflow-scope | `/workflow-scope` | 合同收敛 → focus 刷新 |
-| workflow-execute | `/workflow-execute` | 单游标执行 — 授权变更 → 验证 → wave/verify/focus 工件闭环 |
+| workflow-execute | `/workflow-execute` | 单游标执行 — 授权变更 → 验证 → wave/verify/focus 工件闭环（3.0 能力，dev experimental） |
 | workflow-review | `/workflow-review` | 正式评审 — 多角色协作（总分总结构） |
 | workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
 | workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
@@ -237,6 +237,8 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-status | `/workflow-status` | 健康度巡检 — report-first + `next_actions[]` handoff（不自动写盘） |
 | workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不列入 3.0 GA formal 能力面） |
 | workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不列入 3.0 GA formal 能力面） |
+
+3.0 GA formal 能力面为 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status`、`workflow-digest`（catalog: public/stable）。`workflow-execute` 随 3.0 提供但保持 dev/experimental；`workflow-compact` 与 `workflow-archive` 同样保持实验标记。
 
 ---
 
@@ -246,7 +248,7 @@ Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`]
 
 | 分发面 | 路径 | 角色 |
 |--------|------|------|
-| **文档分类索引** | [`docs/README.md`](docs/README.md) | SDK 客观面 / beta 叙事 / 历史内部；人类读 docs 先读 |
+| **文档分类索引** | [`docs/README.md`](docs/README.md) | SDK 客观面 / 当前叙事 / 历史内部；人类读 docs 先读 |
 | **SDK 协议级 SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 唯一 SSOT；其他面 cite 不复制 |
 | **人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
 | **OFM / GFM callout 速查** | [`docs/ofm-cheatsheet.md`](docs/ofm-cheatsheet.md) | G0 词汇 + review 主报告映射；cite `obsidian-config` + `review-ofm` |

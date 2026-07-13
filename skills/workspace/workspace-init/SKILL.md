@@ -5,12 +5,19 @@ description_zh: "初始化新项目 Prism 工作区或重新对齐已有项目�
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: 3.0.0
   based_on: prism-workspace-init@0.5.0
   replaces_future: prism-workspace-init
-visibility: dev
-stability: experimental
+visibility: public
+stability: stable
 user_invocable: true
+public_gate:
+  reviewed: true
+  reviewed_by: ArnoFrost
+  reviewed_at: "2026-07-13"
+  rationale: "Prism 3.0 的通用项目接入入口；默认本地 Workspace backend，外部 Skills、Env 与 Vault 均为可选。"
+  rollback: "将 catalog 与 SKILL 镜像恢复为 dev/experimental，不影响已有 workspace 数据。"
+  ssot_id: workspace-init
 ---
 # 项目初始化 (Workspace Init)
 

@@ -252,6 +252,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 2026-05-14 | **v2.0.0-alpha** | §5.2 `prism pipeline` 行从 deprecated 改为 ~~removed (v2.0)~~（物理移除 alias，调用方 hard fail exit 2）；§2.2 改名示例段更新为"已发生改名链"叙事（v1.1 → v2.0 完整路径）；§1 / §2 / §4 默认路径脱敏（移除内部 review/decision 链路引用）；§6 表 vault link 迁出主表[^variant-history]；VERSION / manifest / 默认文档口径对齐。<br>（开发期 v2.0-canary 阶段的契约迭代已收编进本行。）|
 | 2026-05-16 | **v2.0.0-beta.1** | 版本口径从 v2.1.0 统一为 v2.0.0-beta.1（v2 尚未对外发布，重新梳理版本号）；`prism --version` 与 SDK `VERSION` 同步。|
 | 2026-07-13 | **v3.0.0-rc** | 新增 experimental `prism dist` 产品级 facade；外部入口统一到 Prism CLI，SDK Python adapter 委托可选 legacy mini/full maintenance-only 实现。 |
+| 2026-07-13 | **v3.0.0** | GA 发行元数据对齐；CLI verb 稳定性保持不变，`prism dist` 继续为 experimental。 |
 
 [^variant-history]: 各版本变更的详细 review / decision 推导链路保留在 vault Workspace 内部历史档案中，不在本契约暴露；参与维护的人员可通过 SDK 内 `references/maintainer.md` 等维护者文档定位。
 

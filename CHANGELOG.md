@@ -1,5 +1,29 @@
 ## [Unreleased]
 
+## [v3.0.0] — 2026-07-13
+
+> **Prism 3.0 GA** — core contract 收敛为 SDK + `uv`；Workspace 默认使用本地 backend，Skills、Env 与 Vault 均为可选部署。正式 workflow 能力完成 public/stable 审计，实验能力继续保持显式标记。
+
+### Added
+
+- **`workflow-execute`** — 单游标执行闭环：授权变更 → 验证 → wave/verify/focus 工件对齐；不选择 Next、不循环调度
+- **`prism dist` facade** — 统一外部 CLI 入口，SDK Python adapter 按需委托 legacy mini/full packer
+- **多 Workspace 配置** — `workspace_root` 成为 canonical 配置，支持 named workspaces 与本地默认 backend
+- **格式与治理门禁** — GFM 基线、OFM 增量、scope/task 结构守恒与 public skill 审计
+
+### Changed
+
+- **core contract** — 从 SDK + Vault 依赖收敛为 SDK + `uv`；`./setup.sh init` 无需 Vault、外部 Skills 或 Env
+- **正式 Skill 能力面** — `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status`、`workflow-digest` 晋升为 public/stable
+- **实验能力边界** — `workflow-execute`、`workflow-compact`、`workflow-archive` 保持 dev/experimental；其中 execute 随 3.0 发布但不承诺稳定接口，compact/archive 不列入 GA formal 能力面
+- **分发口径** — mini/full 降为 legacy maintenance-only，不再承担 3.0 GA certification；外部入口统一为 `prism` CLI
+- **Python 基线** — 项目元数据与文档统一为 Python 3.11+
+
+### Fixed
+
+- **review/finalize 一致性** — 评审索引落盘、decision 选择与 finalize 事务边界收紧，避免半完成状态
+- **Workspace 可选性** — setup/relink/doctor 在无 Vault、无外部 Skills 时保持核心链路可用
+
 ## [v3.0.0-rc] — 2026-06-11
 
 > **Prism 3.0 rc** — Workflow SDK 脚本复杂度治理 wave 0–3 闭合 + 版本消费面校准。`VERSION` / `cli-contract` / 叙事层统一为 `v3.0.0-rc`。

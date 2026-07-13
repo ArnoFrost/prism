@@ -5,7 +5,7 @@
 **轻量管理长期人机协作中的认知熵。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Stage](https://img.shields.io/badge/stage-v3--rc-orange)](docs/prism-3.0.md)
+[![Stage](https://img.shields.io/badge/stage-v3.0-GA-brightgreen)](docs/prism-3.0.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
 [快速开始](#快速开始) · [生命周期](#生命周期总览) · [认知熵与 Skills](#认知熵与-workflow-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
@@ -16,7 +16,7 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 
 > 共享规则，本地状态，清晰边界。
 
-**当前阶段**：v3 rc dogfood — `focus` 单入口、按需 `task` 递归分解、README grandfather 兼容；内置 **workflow** 是一套可选的认知熵治理工作流。  
+**当前阶段**：v3.0 GA — `focus` 单入口、按需 `task` 递归分解、README grandfather 兼容；内置 **workflow** 是一套可选的认知熵治理工作流。
 **发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）  
 **快速判断 Prism 是否成立** → [docs/prism-3.0.md](docs/prism-3.0.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **v2.0 历史** → [docs/prism-2.0.md](docs/prism-2.0.md)
 
@@ -151,7 +151,7 @@ Prism 的交付术语分三层：
 
 ## 读什么
 
-README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md)**（SDK 客观面 / beta 叙事 / 历史内部）。
+README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md)**（SDK 客观面 / 当前叙事 / 历史内部）。
 
 | 你想了解 | 入口 |
 |----------|------|

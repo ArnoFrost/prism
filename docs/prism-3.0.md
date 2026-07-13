@@ -1,7 +1,7 @@
-# Prism 3.0 — rc 定位说明
+# Prism 3.0 — GA 定位说明
 
-> 这不是安装文档，也不是完整架构文档。它只回答一个问题：**v3.0 rc 为什么要把 Prism 定位为轻量认知熵管理框架，并把 workflow 解释为认知熵治理工作流。**
-> 当前阶段：v3 rc dogfood。本页是叙事层说明，不新增受控术语；发行见 [README](../README.md)。skill / CLI / validator 的具体演进走 decision gate，不在此页定义实现细节。
+> 这不是安装文档，也不是完整架构文档。它只回答一个问题：**Prism 3.0 为什么定位为轻量认知熵管理框架，并把 workflow 解释为认知熵治理工作流。**
+> 当前阶段：v3.0 GA。本页是叙事层说明，不新增受控术语；发行见 [README](../README.md)。skill / CLI / validator 的具体演进走 decision gate，不在此页定义实现细节。
 
 ---
 
@@ -33,7 +33,7 @@ Prism 3.0 把 2.0 已经收敛的本地工作流系统，进一步上提为一�
 
 ## 3.0 做了什么
 
-v3.0 rc 将 core contract 收敛为 SDK + `uv`。Protocol + Workspace 仍是逻辑最小模型，但 Workspace 默认可使用本地 backend；Vault、Skills 与 Env 都是可选部署。topic 内的状态治理方式同时更明确：
+v3.0 将 core contract 收敛为 SDK + `uv`。Protocol + Workspace 仍是逻辑最小模型，但 Workspace 默认可使用本地 backend；Vault、Skills 与 Env 都是可选部署。topic 内的状态治理方式同时更明确：
 
 | 机制 | 治理的熵源 |
 |------|------------|
@@ -49,7 +49,9 @@ v3.0 rc 将 core contract 收敛为 SDK + `uv`。Protocol + Workspace 仍是逻�
 
 这也是 `focus` 成为 topic 单入口、`task` 只在某个 scope-V 深化到自带 scope + wave 时才出现的原因：Prism 不追求把目录变复杂，而是让复杂问题在有限上下文里仍可恢复。
 
-`workflow-execute` 是 Prism 3.0 的轻量执行闭环：只消费显式或唯一的 task/wave 游标，完成实现、验证与既有工件对齐；它不承担 Next 选择、循环调度或治理裁决。
+`workflow-execute` 是 Prism 3.0 的轻量执行闭环：只消费显式或唯一的 task/wave 游标，完成实现、验证与既有工件对齐；它不承担 Next 选择、循环调度或治理裁决。该能力随 3.0 提供，但保持 **dev experimental**，为未来 Next 留出接口校准空间。
+
+3.0 GA formal 能力面包含 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status` 与 `workflow-digest`，其 catalog 状态为 **public / stable**。
 
 `workflow-compact` 与 `workflow-archive` 为 **dev experimental** 低频维护技能：不列入 3.0 GA formal 能力面。compact **默认 preview**（writes=0）；仅在用户显式授权且通过 backup Gate 后才 apply。archive / `prism reactivate` 走 preview-first 生命周期门，不替代 review 决策链。
 
@@ -71,7 +73,7 @@ OpenSpec 产出的 spec、design、tasks 可以进入 Prism topic；Prism 负责
 
 ## 当前边界
 
-认知熵在 v3.0 rc 中是**设计哲学与叙事锚点**，不是新的 workflow 受控术语。
+认知熵在 v3.0 中是**设计哲学与叙事锚点**，不是新的 workflow 受控术语。
 
 因此叙事层当前不做这些事：
 
@@ -82,25 +84,27 @@ OpenSpec 产出的 spec、design、tasks 可以进入 Prism topic；Prism 负责
 
 这些边界需要更多异构项目 dogfood 之后，再由 review / decision 决定是否进入公共协议层。
 
-已有 workspace 不需要批量迁移。渐进采用 `focus` / `references` / `structures` 的接入口径见 [Workspace v3.0 Beta 接入口径](./workspace-v3-upgrade.md)。
+已有 workspace 不需要批量迁移。渐进采用 `focus` / `references` / `structures` 的接入口径见 [Workspace v3.0 接入口径](./workspace-v3-upgrade.md)。
 
 如果想看实际运转方式，读 [Topic Lifecycle](./topic-lifecycle.md)；如果想看每个 workflow skill 分别治理哪类熵，读 [Skill Taxonomy](./skill-taxonomy.md)。
 
 ---
 
-## rc 已落地锚点
+## GA 已落地锚点
 
-> 架构客观描述见 [architecture.md](./architecture.md)；此处只列 **v3 rc dogfood 已验收** 的能力锚点。
+> 架构客观描述见 [architecture.md](./architecture.md)；此处只列 **v3.0 GA 已验收** 的能力锚点。
 
 - [x] `focus.md` 成为 topic 入口；README grandfather 兜底
 - [x] `structures/task-N_slug/` 按需递归分解（task-scope 1:1 投影 topic-V）
 - [x] 主路径 skill 热路径压缩 + `skill-governance-contract.md`（044）
 - [x] 维护技能三角：tidy / compact / status `next_actions[]` / archive+reactivate（046）
-- [x] 默认文档叙事对齐 rc（`docs/README.md` 三层索引）
+- [x] 默认文档叙事对齐 GA（`docs/README.md` 三层索引）
+- [x] core contract 收敛为 SDK + `uv`，Workspace 默认本地 backend
+- [x] 正式 workflow 能力 public/stable 审计；实验技能保持显式标记
 
 ---
 
-## 现在还差什么
+## GA 后继续观察什么
 
 v3.0 的主线不是再堆功能，而是继续验证：
 
@@ -108,6 +112,6 @@ v3.0 的主线不是再堆功能，而是继续验证：
 2. `task` 是否只在 S3 深化时自然长出，而不是变成“复杂就拆”的习惯。
 3. `status` 的 `next_actions[]` 是否能降低方向熵，而不替代人类治理决策。
 4. 认知熵叙事是否帮助非 Prism 项目更快理解为什么要保留 scope / focus / decision。
-5. catalog `dev → public` 晋升与更多异构项目 dogfood。
+5. `workflow-execute`、`compact`、`archive` 的实验成熟度与更多异构项目 dogfood。
 
-如果这些验证成立，Prism 3.0 才能从 rc 进入 GA。
+这些观察进入 3.x 后续演进，不再阻断 3.0 GA。

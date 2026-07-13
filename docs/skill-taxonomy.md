@@ -7,7 +7,7 @@
 
 ## 为什么需要这张图
 
-Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认知熵治理工作流，而不只是“工具列表”。在 v3.0 rc 叙事里，这些 skills 分别治理长期人机协作中的不同认知熵源：
+Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认知熵治理工作流，而不只是“工具列表”。在 v3.0 中，这些 skills 分别治理长期人机协作中的不同认知熵源：
 
 - 输入混沌
 - 边界漂移
@@ -29,19 +29,19 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 ## Workflow Skills 全景
 
-| Skill | 治理的熵源 | 读取 | 输出 | 默认行为 |
-|---|---|---|---|---|
-| `workspace-init` | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 |
-| `workflow-intake` | 输入熵 | 原始需求、散落上下文 | `references/intake.md`、初始 scope/focus | 按需 |
-| `workflow-scope` | 边界熵 / 注意力熵 | decision / review / scope | 更新 `scope.md`，刷新 `focus.md`，同步 task.index | 按需 |
-| `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 focus/task/wave + 项目代码 | 实现、验证、wave/verify、派生 focus 与机械校验 | 按需 |
-| `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色 findings、actions、rXX | 按需 |
-| `workflow-review-lite` | 轻量分析熵 | 小改动、日常对齐点 | 单视角 findings、actions | 按需 |
-| `workflow-tidy` | 工件熵 | topic 工件、索引、frontmatter | 机械对齐后的索引/元数据 | 辅助 |
-| `workflow-status` | 方向熵 / 健康熵 | workspace / topic | report-first 健康报告 + `next_actions[]` handoff | 辅助 |
-| `workflow-digest` | 沟通熵 | topic 工件 | 面向协作者的状态快照 | 辅助 |
-| `workflow-compact` | 上下文熵 | 膨胀 topic | 默认 `compact_plan` preview；授权后 backup→apply | dev experimental |
-| `workflow-archive` | 注意力熵 | 已结束 / 尘封 topic | preview→移入 `archive/`；`prism reactivate` 可拉回 | dev experimental |
+| Skill | 治理的熵源 | 读取 | 输出 | 默认行为 | 3.0 成熟度 |
+|---|---|---|---|---|---|
+| `workspace-init` | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 | public / stable |
+| `workflow-intake` | 输入熵 | 原始需求、散落上下文 | `references/intake.md`、初始 scope/focus | 按需 | public / stable |
+| `workflow-scope` | 边界熵 / 注意力熵 | decision / review / scope | 更新 `scope.md`，刷新 `focus.md`，同步 task.index | 按需 | public / stable |
+| `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 focus/task/wave + 项目代码 | 实现、验证、wave/verify、派生 focus 与机械校验 | 按需 | dev / experimental |
+| `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色 findings、actions、rXX | 按需 | public / stable |
+| `workflow-review-lite` | 轻量分析熵 | 小改动、日常对齐点 | 单视角 findings、actions | 按需 | public / stable |
+| `workflow-tidy` | 工件熵 | topic 工件、索引、frontmatter | 机械对齐后的索引/元数据 | 辅助 | public / stable |
+| `workflow-status` | 方向熵 / 健康熵 | workspace / topic | report-first 健康报告 + `next_actions[]` handoff | 辅助 | public / stable |
+| `workflow-digest` | 沟通熵 | topic 工件 | 面向协作者的状态快照 | 辅助 | public / stable |
+| `workflow-compact` | 上下文熵 | 膨胀 topic | 默认 `compact_plan` preview；授权后 backup→apply | 低频 | dev / experimental |
+| `workflow-archive` | 注意力熵 | 已结束 / 尘封 topic | preview→移入 `archive/`；`prism reactivate` 可拉回 | 低频 | dev / experimental |
 
 ---
 
@@ -88,7 +88,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 ## 边界
 
 - Skill taxonomy 不是 vocabulary，不新增受控术语。
-- `workflow-execute` 是 Prism 3.0 单游标执行能力；它不消费 `next_actions[]`、不选择 Next、不循环调度。
+- `workflow-execute` 随 Prism 3.0 提供，但保持 dev / experimental；它不消费 `next_actions[]`、不选择 Next、不循环调度。
 - `compact` / `archive` 为 dev experimental，不列入 3.0 GA formal 能力面；`next_actions[]` 是 status 的 handoff 建议，不是自动编排器。
 - 跨对话 `handoff` 文档形态仍非默认流程。
 - 不需要 workflow skills 时，可以纯手写 workspace 状态；Prism core contract 不强制 review/decision/scope 全套。

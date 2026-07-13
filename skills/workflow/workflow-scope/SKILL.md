@@ -8,9 +8,16 @@ license: MIT
 metadata:
   author: ArnoFrost
   version: 3.0.0
-visibility: dev
-stability: experimental
+visibility: public
+stability: stable
 user_invocable: true
+public_gate:
+  reviewed: true
+  reviewed_by: ArnoFrost
+  reviewed_at: "2026-07-13"
+  rationale: "Prism 3.0 scope→focus 合同维护入口，具备明确守恒门与结构升级边界。"
+  rollback: "将 catalog 与 SKILL 镜像恢复为 dev/experimental；不回滚既有 scope/focus。"
+  ssot_id: workflow-scope
 ---
 ## 职责边界
 
@@ -147,7 +154,7 @@ README grandfather、2.x redirect、skill 关系表、目录结构见 [scope-mai
 
 ## 9. 依赖声明
 
-本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle）：
 
 | 依赖 | 来源 | 不可用时（bundle 缺 shared） |
 |------|------|------------------------------|
@@ -155,8 +162,8 @@ README grandfather、2.x redirect、skill 关系表、目录结构见 [scope-mai
 | `sniff_lib.struct_vacuum_signals()` | `../../shared/sniff_lib.py`（经 `prism` CLI 调用） | struct-vacuum 检测降级为 advisory |
 
 - **可解析前提**：在 prism monorepo relink 后软链有效；scope 无独立 scripts，走 `prism` CLI 消费 shared。
-- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`；CLI/shared 不可用时 struct-vacuum 检测降级为 advisory，focus-derive 提示补依赖。
-- **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；治本（上传附带 shared 只读快照）见 topic 002 P2。
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.11 + `uv`；CLI/shared 不可用时 struct-vacuum 检测降级为 advisory，focus-derive 提示补依赖。
+- **独立 bundle**：软链缺失时须附带 shared 只读依赖后再评估，不把依赖缺失误判为 skill 主路径缺陷。
 - **兄弟 skill 引用（可解析）**：`workflow-review` / `workflow-review-lite`（结束验证 handoff）、`workflow-intake --mode upgrade`（2.x/plan redirect）为**运行时 handoff 目标**，按 skill 名/斜杠命令松耦合调用，非文件链接、非 bundle 依赖；评估场景视为可解析，不计入死链。
 
 ## 10. few-shot 示例

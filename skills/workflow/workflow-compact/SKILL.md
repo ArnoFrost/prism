@@ -164,7 +164,7 @@ uv run python {skill_dir}/scripts/compact_backup.py "{topic_dir}"
 | `scripts/compact_backup.py` | 本 skill（纯 stdlib，随 bundle） | 备份失败即停止 apply（backup-required 门） |
 | references：`compact-policy.md` / `compact-template.md` / `compact-maintainer.md` | 本 skill `references/`（随 bundle） | policy 缺失时不做 protected 分类即停，不臆测 |
 
-- **安装前提 / 版本**：Python ≥3.8 + `uv`（`compact_backup.py` 经 `uv run` 调用）。不依赖 `workflow/shared`，故独立 bundle 无越界 import 问题。
+- **安装前提 / 版本**：Python ≥3.11 + `uv`（`compact_backup.py` 经 `uv run` 调用）。不依赖 `workflow/shared`，故独立 bundle 无越界 import 问题。
 - **热路径保真**：安全价值来自 protected 分类 + Gate/backup，不追单文件 Required Reads Goodhart（见 §3 非目标）。
 
 ## 11. few-shot 示例

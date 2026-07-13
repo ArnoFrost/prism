@@ -11,7 +11,7 @@ doc_kind: internal
 
 ## 一句话版
 
-Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过程：不改主仓、不打乱现有节奏。v3 rc 在 v2「治理可选」之上，用 **focus 单入口 + 维护技能三角** 降低长期协作里的认知熵。
+Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过程：不改主仓、不打乱现有节奏。v3.0 在 v2「治理可选」之上，用 **focus 单入口 + 按需 task + 单游标 execute** 降低长期协作里的认知熵。
 
 ## 简版口径
 
@@ -19,11 +19,11 @@ Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过
 
 **Prism 做什么**：软链接桥接把协作状态挂在项目旁；core 只依赖 `SDK + uv`，Workspace 默认落本地 backend，Vault 可选。workflow 是**可选**认知熵治理工作流，不强制全员评审/痕迹义务。
 
-**v3 rc 增量**：`focus` 作 topic 入口；`status` 只读建议下一步（`next_actions[]` handoff）；tidy/compact/archive 分工维护工件与生命周期；主路径技能已做热路径压缩（044/046 治理）。
+**v3.0 增量**：`focus` 作 topic 入口；`execute` 推进唯一游标并同步代码与工件；`status` 只读建议下一步（`next_actions[]` handoff）；tidy/compact/archive 分工维护工件与生命周期。
 
-**当前状态**：v3 rc dogfood（发行见仓库 [README](../README.md)）。
+**当前状态**：v3.0 GA（发行见仓库 [README](../README.md)）。
 
-**下一步**：选一个小项目试点「可追踪、可接续」；或准备 GA 对外口径。
+**下一步**：在更多异构项目观察恢复成本，并按 3.x 节奏演进实验能力。
 
 **不做什么**：不替代项目管理、不要求全员 workflow、不接管代码仓。
 

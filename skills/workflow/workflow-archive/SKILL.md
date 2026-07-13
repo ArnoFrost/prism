@@ -148,8 +148,8 @@ bin/prism reactivate <workspace_path> <topic_dirname>   # Gate R 后
 | `archive_layout`（布局探测 / index 风格） | SDK 内部 | 随 CLI；不可解析时按 flat 默认并提示 |
 | references：`archive-maintainer.md` | 本 skill `references/`（随 bundle） | 缺失时按 §3/§8 Happy Path 兜底 |
 
-- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`。缺 CLI 时不得绕过 preview-first / user-confirm 直接手工移目录。
-- **独立 bundle**：CLI 不随 bundle 分发属评估场景伪问题，不计入 must_fix（d01/OQ-B）。
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发、`prism` CLI 装入 PATH）+ Python ≥3.11 + `uv`。缺 CLI 时不得绕过 preview-first / user-confirm 直接手工移目录。
+- **独立 bundle**：CLI 不随 bundle 分发时须先补齐 SDK 依赖，再评估 skill 主路径。
 
 ## 10. few-shot 示例
 

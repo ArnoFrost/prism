@@ -8,9 +8,16 @@ license: MIT
 metadata:
   author: ArnoFrost
   version: 3.0.0
-visibility: dev
-stability: experimental
+visibility: public
+stability: stable
 user_invocable: true
+public_gate:
+  reviewed: true
+  reviewed_by: ArnoFrost
+  reviewed_at: "2026-07-13"
+  rationale: "Prism 3.0 单视角轻量评审入口，与正式 review 的决策边界和索引规则一致。"
+  rollback: "将 catalog 与 SKILL 镜像恢复为 dev/experimental；已生成 review-lite 保持有效。"
+  ssot_id: workflow-review-lite
 ---
 
 ## 职责边界
@@ -169,7 +176,7 @@ sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构
 
 ## 8. 依赖声明
 
-本 skill 依赖 prism `skills/workflow/shared/` 与兄弟 skill `workflow-review`（外部依赖，不复制进 bundle；见 topic 002 d01/OQ-B）：
+本 skill 依赖 prism `skills/workflow/shared/` 与兄弟 skill `workflow-review`（外部依赖，不复制进 bundle）：
 
 | 依赖 | 来源 | 不可用时（bundle 缺依赖） |
 |------|------|---------------------------|
@@ -178,8 +185,8 @@ sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构
 | `scripts/sniff.py` | `../../workflow-review/scripts/sniff.py`（**跨 skill**） | 复用 review 的 sniff；bundle 独立时该软链悬空，按脚本降级 |
 
 - **可解析前提**：在 prism monorepo relink 后软链有效。
-- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.8 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
-- **独立 bundle**：软链缺失属评估场景伪问题，不计入 must_fix（d01/OQ-B）；跨 skill 依赖 review 的治本方案（快照或抽公共 sniff）见 topic 002 P2。
+- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.11 + `uv`（脚本经 `uv run` 调用）；缺任一项时按上表「不可用时」列降级，不裸崩。
+- **独立 bundle**：软链缺失时须补齐 shared 快照或公共 sniff 能力后再评估，不把依赖缺失误判为 skill 主路径缺陷。
 
 ## 9. few-shot 示例
 

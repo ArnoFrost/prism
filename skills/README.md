@@ -18,7 +18,7 @@ skills/
 │   ├── workflow-digest/
 │   ├── workflow-compact/          # dev experimental：preview-first；授权后 backup→apply
 │   ├── workflow-archive/          # dev experimental：topic 生命周期归档
-│   ├── workflow-execute/          # Prism 3.0：单游标执行 + 工件闭环
+│   ├── workflow-execute/          # Prism 3.0：单游标执行 + 工件闭环（dev experimental）
 │   ├── workflow-intake/
 │   ├── workflow-review/
 │   ├── workflow-review-lite/
@@ -39,7 +39,7 @@ skills/
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
-## Workflow 管线（v3.0 beta）
+## Workflow 管线（v3.0）
 
 内置 workflow skills 组成完整的人机协作管线。人类文档导航见 [docs/README.md](../docs/README.md)。
 
@@ -54,14 +54,14 @@ init → intake → scope → execute ↔ review / review-lite → decision → 
 | `workspace-init` | `/workspace-init` | 项目路径 + 用户信息 | workspace 骨架 + 注册 + 软链接 |
 | `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + references/intake.md + scope 草稿 |
 | `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + focus.md 刷新 |
-| `workflow-execute` | `/workflow-execute` | 唯一 task/wave 游标 | 授权变更 + 验证 + wave/verify/focus + 机械校验 |
+| `workflow-execute` | `/workflow-execute` | 唯一 task/wave 游标 | 授权变更 + 验证 + wave/verify/focus + 机械校验（experimental） |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
 | `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |
 | `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
 | `workflow-status` | `/workflow-status` | 无 | 健康度报告 + `next_actions[]` handoff（不自动写盘） |
-| `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁 |
-| `workflow-archive` | `/workflow-archive` | workspace + topic | preview-first 生命周期归档（topics/ → archive/）|
+| `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁（experimental） |
+| `workflow-archive` | `/workflow-archive` | workspace + topic | preview-first 生命周期归档（experimental） |
 
 共享依赖位于 `workflow/shared/`：`sniff_lib.py`、`obsidian-config.md`、`parallel-execution.md`、`scripts/archive.py`。
 
@@ -110,7 +110,7 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 
 ## 治理与 SSOT
 
-- 人类文档分类与读序：[docs/README.md](../docs/README.md)（SDK 客观面 / beta 叙事 / 历史内部）
+- 人类文档分类与读序：[docs/README.md](../docs/README.md)（SDK 客观面 / 当前叙事 / 历史内部）
 - CLI 契约：[docs/cli-contract.md](../docs/cli-contract.md) · 术语：[docs/glossary.md](../docs/glossary.md)（cite `workflow/shared/vocabulary.md`）
 - **SDK 内置技能**：`schema/skills-catalog.yaml` 是 `visibility` / `stability` 的权威值；`SKILL.md` 可省略 C 层字段（validate 从 catalog 继承），写明则必须与 catalog 一致（见 `frontmatter-spec.md`）
 - **外部 prism-skills**：未入 catalog 者须在 `SKILL.md` 写明 `visibility` + `stability`（默认 `internal` + `experimental`）
