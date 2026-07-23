@@ -138,7 +138,8 @@ execution_result:
 | **FE-structure-inconsistent** | orphan、duplicate id、缺 task-scope/wave、守恒或状态冲突 | 零写入阻断；handoff workflow-scope |
 | **FE-flat-ineligible** | structures absent，但 focus 非唯一/非有界/无 V 回链或授权不清 | 不执行 scope；询问或治理 handoff |
 | **FE-fork-required** | fork-S3、require gate、新承诺或需多个持久批次 | 不 silent flat；handoff workflow-scope |
-| **FE-target-state-conflict** | focus/index/task-scope/wave 状态不一致 | 不选择任一方覆盖；治理 handoff |
+| **FE-target-state-conflict** | focus/index/task-scope/wave 状态不一致或 target 不存在 | 不选择任一方覆盖；治理 handoff |
+| **FE-target-inactive** | 显式 target 为 pending/废止状态 | blocked；不自动激活或换选其它 target |
 | **FE-scope-delta** | 需要改变 G/V/约束/OQ/structure | 不写治理工件；handoff workflow-scope/review |
 | **FE-verify-fail** | 验证失败 | 不写 completed，不推进 focus |
 | **FE-partial-write** | 代码成功但 Workspace 写入失败，或反之 | 返回 partial，列出已完成面与补偿路径 |
@@ -155,6 +156,8 @@ execution_result:
 - 术语：[vocabulary.md](references/vocabulary.md)
 - mode 探测复用 shared `enumerate_structures()` / `struct_vacuum_signals()` 与
   integrity/conservation validators；这些输出不可用时 fail-closed，不复制解析器。
+- target 解析优先复用 shared `execute_target.resolve_execute_target()`；该 resolver
+  只读且要求 caller 提供 flat preflight envelope，不生成 allowed paths/验证计划。
 - 复用 `workflow-tidy` 与 Prism validators；decision 后完整收尾才使用 `prism finalize`。
 - 不依赖 CodeBuddy/Cursor 等单一 IDE hook；核心闭环由 skill 自身完成。
 

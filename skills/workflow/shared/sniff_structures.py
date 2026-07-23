@@ -130,6 +130,14 @@ def parse_task_index_entries(structures_dir: str) -> list[dict]:
         if not any("稳定 id" in h for h in headers):
             continue
         task_col = next((j for j, h in enumerate(headers) if h.lower() == "task"), 0)
+        stable_id_col = next(
+            (j for j, h in enumerate(headers) if "稳定 id" in h),
+            None,
+        )
+        status_col = next(
+            (j for j, h in enumerate(headers) if h.lower() == "status"),
+            None,
+        )
         entries: list[dict] = []
         for row_line in lines[i + 2:]:
             cells = _split_markdown_row(row_line)
@@ -148,6 +156,16 @@ def parse_task_index_entries(structures_dir: str) -> list[dict]:
                 "number": int(em.group(1)),
                 "entry": m.group(1),
                 "raw": task_cell,
+                "stable_id": (
+                    cells[stable_id_col]
+                    if stable_id_col is not None and stable_id_col < len(cells)
+                    else None
+                ),
+                "status": (
+                    cells[status_col].strip().lower()
+                    if status_col is not None and status_col < len(cells)
+                    else None
+                ),
             })
         return entries
     return []

@@ -31,6 +31,17 @@
 idempotent inspect；`superseded|archived|cancelled` 排除；未知状态 fail-closed。
 shared structures 输出中的 `active_tasks` 仅表示非废止身份，不可直接视为 execution eligibility。
 
+薄 resolver 接口：
+
+```python
+resolve_execute_target(topic_dir, explicit_target=None, flat_batch=None)
+```
+
+- 只读返回 route，不写 Workspace、不创建结构、不排序 Next。
+- `flat_batch` 由 caller 的 preflight 提供 authorization / V refs / goal /
+  allowed paths / verification；resolver 不从 scope checkbox 或 focus 猜这些字段。
+- flat fingerprint 对列表去重排序、空白归一后计算，输入顺序变化不改变 target key。
+
 ## 3. Read / Write / Handoff Matrix
 
 | 面 | Structured | Topic-focus | Handoff |
@@ -98,7 +109,7 @@ focus/校验。相同 fingerprint + 完整证据 → 重验现状后 idempotent 
 ```yaml
 execution_route:
   mode: structured | topic-focus
-  decision: execute | ask_target | governance_handoff | upgrade_handoff | idempotent_noop
+  decision: execute | ask_target | blocked | governance_handoff | upgrade_handoff | idempotent_noop
   reason_code: <FE-* | null>
   target: <stable-key | null>
   v_refs: [Vn]
