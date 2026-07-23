@@ -15,13 +15,12 @@ import sniff_workspace  # noqa: E402
 
 
 def export_lines(config_path: str | Path) -> list[str]:
-    path = str(Path(config_path).expanduser())
-    parsed = sniff_workspace.parse_prism_local_yaml(path)
-    if not parsed:
+    resolved = sniff_workspace.resolve_prism_config(str(config_path))
+    if not resolved:
         return []
 
-    workspaces = sniff_workspace.parse_workspaces(parsed, path)
-    default = parsed.get("default_workspace") or "work"
+    workspaces = resolved["workspaces"]
+    default = resolved["default_workspace"]
     default_ws = workspaces.get(default, {})
 
     lines: list[str] = [f'export PRISM_DEFAULT_WORKSPACE="{default}"']

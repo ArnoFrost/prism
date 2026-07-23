@@ -32,6 +32,7 @@ class TestParsePrismLocalYaml:
         yaml_file.write_text(
             "device_id: MY-DEVICE\n"
             "sdk_path: /home/user/prism\n"
+            "env_path: /home/user/ArnoDotFiles\n"
             "vault_path: /home/user/vault\n"
             "workspace_subdir: Prism/Workspace\n"
             "projects:\n"
@@ -42,10 +43,41 @@ class TestParsePrismLocalYaml:
         assert result is not None
         assert result["device_id"] == "MY-DEVICE"
         assert result["sdk_path"] == "/home/user/prism"
+        assert result["env_path"] == "/home/user/ArnoDotFiles"
         assert result["vault_path"] == "/home/user/vault"
         assert result["workspace_subdir"] == "Prism/Workspace"
         assert result["projects"]["PROJ1"] == "/home/user/project1"
         assert result["projects"]["PROJ2"] == "/home/user/project2"
+
+    def test_resolve_prism_config_normalizes_optional_paths(self, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        sdk = home / "sdk"
+        skills = home / "skills"
+        env = home / "Arno DotFiles"
+        backend = home / "backend"
+        for path in (sdk, skills, env, backend / "Workspace"):
+            path.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        yaml_file = tmp_path / "prism.local.yaml"
+        yaml_file.write_text(
+            "device_id: DEV\n"
+            "sdk_path: ~/sdk\n"
+            "skills_path: ~/skills\n"
+            "env_path: \"~/Arno DotFiles\"\n"
+            "workspace_root: ~/backend\n"
+            "workspace_subdir: Workspace\n"
+            "projects:\n",
+            encoding="utf-8",
+        )
+
+        result = sniff_lib.resolve_prism_config(str(yaml_file))
+
+        assert result is not None
+        assert result["schema"] == "legacy-flat"
+        assert result["sdk_path"] == str(sdk)
+        assert result["skills_path"] == str(skills)
+        assert result["env_path"] == str(env)
+        assert result["prism_workspace_root"] == str(backend / "Workspace")
 
     def test_quoted_values(self, tmp_path):
         yaml_file = tmp_path / "prism.local.yaml"

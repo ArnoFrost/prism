@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import shutil
@@ -29,12 +30,13 @@ def check_config(config_path: str) -> dict:
     except OSError as e:
         return {"err": 1, "warn": 0, "lines": [f"✗ 读取失败: {e}"]}
 
-    parsed = sniff_workspace.parse_prism_local_yaml(config_path)
-    if not parsed:
+    resolved = sniff_workspace.resolve_prism_config(config_path)
+    if not resolved:
         return {"err": 1, "warn": 0, "lines": ["✗ 配置解析失败"]}
 
-    workspaces = sniff_workspace.parse_workspaces(parsed, config_path)
-    default = parsed.get("default_workspace") or "work"
+    parsed = resolved["parsed"]
+    workspaces = resolved["workspaces"]
+    default = resolved["default_workspace"]
     flat_paths = sniff_workspace.resolve_prism_local_paths(parsed)
 
     for field in ("device_id", "sdk_path"):
@@ -67,9 +69,9 @@ def check_config(config_path: str) -> dict:
             lines.append("✗ 冲突: 顶层 vault_path 与 workspaces.work.workspace_root 不一致")
             err += 1
 
-    sdk = parsed.get("sdk_path")
+    sdk = resolved.get("sdk_path")
     if sdk:
-        p = os.path.expanduser(sdk)
+        p = sdk
         if not p.startswith("/"):
             lines.append(f"✗ sdk_path 非绝对路径: {p}")
             err += 1
@@ -104,7 +106,10 @@ def check_config(config_path: str) -> dict:
                 warn += 1
 
     for code in parsed.get("projects", {}):
-        binding = sniff_workspace.resolve_project_binding(parsed, code, config_path)
+        binding = next(
+            (item for item in resolved["projects"] if item["code"] == code),
+            None,
+        )
         if not binding:
             lines.append(f"✗ projects.{code}: workspace 绑定无法解析")
             err += 1
@@ -118,7 +123,7 @@ def check_config(config_path: str) -> dict:
             lines.append(f"⚠ projects.{code}: instance_path 不可达: {inst}")
             warn += 1
 
-    skills_path = parsed.get("skills_path") or ""
+    skills_path = resolved.get("skills_path") or ""
     if skills_path:
         p = os.path.expanduser(skills_path)
         if not p.startswith("/"):
@@ -141,9 +146,33 @@ def check_config(config_path: str) -> dict:
     return {"err": err, "warn": warn, "lines": lines}
 
 
+def _render_human(result: dict) -> None:
+    for line in result["lines"]:
+        print(f"  {line}")
+    print("─────────────────────────────────")
+    if result["err"]:
+        print(f"  校验失败：{result['err']} 个错误，{result['warn']} 个警告")
+    elif result["warn"]:
+        print(f"  ✓ 校验通过：0 个错误，{result['warn']} 个警告")
+    else:
+        print("  ✓ 校验通过")
+
+
 def main() -> None:
-    path = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/prism/prism.local.yaml")
+    parser = argparse.ArgumentParser(description="Prism 本地配置校验")
+    parser.add_argument(
+        "config",
+        nargs="?",
+        default=os.path.expanduser("~/prism/prism.local.yaml"),
+    )
+    parser.add_argument("--human", action="store_true", help="人类可读输出；错误时退出 1")
+    args = parser.parse_args()
+
+    path = args.config
     result = check_config(path)
+    if args.human:
+        _render_human(result)
+        raise SystemExit(1 if result["err"] else 0)
     print(json.dumps(result, ensure_ascii=False))
 
 

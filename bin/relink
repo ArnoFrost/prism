@@ -65,6 +65,38 @@ yaml_get() {
   (grep "^${1}:" "$CONFIG" 2>/dev/null || true) | tail -1 | sed "s/^${1}: *//"
 }
 
+RESOLVER="$PRISM_DIR/skills/workflow/shared/scripts/workspace_resolve.py"
+_run_resolver() {
+  if [[ ! -f "$RESOLVER" ]]; then
+    return 1
+  fi
+  if [[ -x "${PRISM_DIR}/.venv/bin/python3" ]]; then
+    "${PRISM_DIR}/.venv/bin/python3" "$RESOLVER" "$@"
+  elif command -v uv >/dev/null 2>&1; then
+    uv run python "$RESOLVER" "$@"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 "$RESOLVER" "$@"
+  else
+    return 127
+  fi
+}
+
+_load_resolved_config() {
+  local out key value
+  out=$(_run_resolver --config "$CONFIG" --config-tsv) || return 1
+  while IFS=$'\t' read -r key value; do
+    case "$key" in
+      DEVICE_ID) DEVICE_ID="$value" ;;
+      SDK_PATH) SDK_PATH="$value" ;;
+      SKILLS_PATH) SKILLS_PATH="$value" ;;
+      ENV_PATH) ENV_PATH="$value" ;;
+      VAULT_PATH) VAULT_PATH="$value" ;;
+      WS_SUBDIR) WS_SUBDIR="$value" ;;
+      WS_ROOT) WS_ROOT="$value" ;;
+    esac
+  done <<< "$out"
+}
+
 _load_default_workspace_from_export() {
   local py="$PRISM_DIR/skills/workflow/shared/scripts/workspace_env_export.py"
   [[ -f "$py" ]] || return 1
@@ -101,7 +133,12 @@ else
   ENV_PATH=""
 fi
 
-if [[ "$SKIP_WORKSPACE" != true && ( -z "$VAULT_PATH" || -z "$WS_SUBDIR" ) ]]; then
+if [[ -f "$RESOLVER" ]]; then
+  if ! _load_resolved_config; then
+    echo -e "${RED}✗ shared config resolver 失败；拒绝使用 Shell 猜测配置${NC}" >&2
+    exit 1
+  fi
+elif [[ "$SKIP_WORKSPACE" != true && ( -z "$VAULT_PATH" || -z "$WS_SUBDIR" ) ]]; then
   _load_default_workspace_from_export || true
 fi
 
@@ -127,21 +164,13 @@ elif [[ ! -d "$ENV_PATH" ]]; then
   echo -e "${YELLOW}⚠ env_path 配置但路径不存在: ${ENV_PATH}${NC}" >&2
 fi
 
-WS_ROOT=""
-if [[ -n "$VAULT_PATH" && -n "$WS_SUBDIR" ]]; then
+WS_ROOT="${WS_ROOT:-}"
+if [[ -z "$WS_ROOT" && -n "$VAULT_PATH" && -n "$WS_SUBDIR" ]]; then
   WS_ROOT="${VAULT_PATH}/${WS_SUBDIR}"
 fi
 
-RESOLVER="$SDK_PATH/skills/workflow/shared/scripts/workspace_resolve.py"
 _run_resolver_tsv() {
-  if [[ ! -f "$RESOLVER" ]]; then
-    return 1
-  fi
-  if command -v uv >/dev/null 2>&1; then
-    uv run python "$RESOLVER" --config "$CONFIG" --tsv 2>/dev/null
-  else
-    python3 "$RESOLVER" --config "$CONFIG" --tsv 2>/dev/null
-  fi
+  _run_resolver --config "$CONFIG" --tsv
 }
 
 TOTAL=0
@@ -410,45 +439,50 @@ echo -e "\n${CYAN}[项目软链接]${NC}"
 _relink_projects=false
 if $SKIP_WORKSPACE; then
   log_skip "已跳过 Workspace backend 项目软链接"
-elif _resolver_out=$(_run_resolver_tsv); then
+elif [[ -f "$RESOLVER" ]]; then
+  if ! _resolver_out=$(_run_resolver_tsv); then
+    echo -e "${RED}✗ shared config resolver 失败；拒绝回退到 flat-only parser${NC}" >&2
+    echo -e "  ${DIM}${RESOLVER}${NC}" >&2
+    exit 1
+  fi
   _relink_projects=true
   while IFS=$'\t' read -r code local_path ws_target workspace_id; do
-    [[ -z "$code" ]] && continue
-    if [[ -n "$TARGET_PROJECT" && "$code" != "$TARGET_PROJECT" ]]; then
-      continue
-    fi
+      [[ -z "$code" ]] && continue
+      if [[ -n "$TARGET_PROJECT" && "$code" != "$TARGET_PROJECT" ]]; then
+        continue
+      fi
 
-    code_lower=$(echo "$code" | tr '[:upper:]' '[:lower:]')
-    echo -e "  ${CYAN}${code}${NC} (${local_path}) ${DIM}[${workspace_id}]${NC}"
+      code_lower=$(echo "$code" | tr '[:upper:]' '[:lower:]')
+      echo -e "  ${CYAN}${code}${NC} (${local_path}) ${DIM}[${workspace_id}]${NC}"
 
-    ws_link="${local_path}/workspace.${code_lower}.local"
-    ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
+      ws_link="${local_path}/workspace.${code_lower}.local"
+      ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
 
-    agents_target="${ws_target}/AGENTS.md"
-    legacy_target="${ws_target}/AGENT.md"
-    if [[ -f "$legacy_target" && -f "$agents_target" ]]; then
-      log_warn "    ${code}: vault 内同时存在 AGENT.md 与 AGENTS.md，请手动确认后保留 AGENTS.md"
-    elif [[ -f "$legacy_target" && ! -f "$agents_target" ]]; then
-      if $CHECK_ONLY; then
-        log_warn "    ${code}: vault 内仍是老命名 AGENT.md（v1.1.4+ 应已迁移；运行 bin/relink 自动 mv）"
-      elif $DRY_RUN; then
-        log_fix "    ${code}: 将 mv ${legacy_target} → ${agents_target}"
-      else
-        if mv "$legacy_target" "$agents_target" 2>/dev/null; then
-          log_fix "    ${code}: 自动迁移 AGENT.md → AGENTS.md（vault 内）"
+      agents_target="${ws_target}/AGENTS.md"
+      legacy_target="${ws_target}/AGENT.md"
+      if [[ -f "$legacy_target" && -f "$agents_target" ]]; then
+        log_warn "    ${code}: vault 内同时存在 AGENT.md 与 AGENTS.md，请手动确认后保留 AGENTS.md"
+      elif [[ -f "$legacy_target" && ! -f "$agents_target" ]]; then
+        if $CHECK_ONLY; then
+          log_warn "    ${code}: vault 内仍是老命名 AGENT.md（v1.1.4+ 应已迁移；运行 bin/relink 自动 mv）"
+        elif $DRY_RUN; then
+          log_fix "    ${code}: 将 mv ${legacy_target} → ${agents_target}"
         else
-          log_err "    ${code}: AGENT.md → AGENTS.md mv 失败（iCloud 占位符？请手动处理）"
+          if mv "$legacy_target" "$agents_target" 2>/dev/null; then
+            log_fix "    ${code}: 自动迁移 AGENT.md → AGENTS.md（vault 内）"
+          else
+            log_err "    ${code}: AGENT.md → AGENTS.md mv 失败（iCloud 占位符？请手动处理）"
+          fi
         fi
       fi
-    fi
-    if [[ -f "$agents_target" ]]; then
-      ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"
-    fi
+      if [[ -f "$agents_target" ]]; then
+        ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"
+      fi
 
-    if [[ -n "$DEVICE_ID" && -d "$ws_target" ]] && ! $CHECK_ONLY && ! $DRY_RUN; then
-      _relink_writeback_path "${ws_target}/project.yaml" "$DEVICE_ID" "$local_path"
-    fi
-  done <<< "$_resolver_out"
+      if [[ -n "$DEVICE_ID" && -d "$ws_target" ]] && ! $CHECK_ONLY && ! $DRY_RUN; then
+        _relink_writeback_path "${ws_target}/project.yaml" "$DEVICE_ID" "$local_path"
+      fi
+    done <<< "$_resolver_out"
 fi
 
 if ! $SKIP_WORKSPACE && ! $_relink_projects; then

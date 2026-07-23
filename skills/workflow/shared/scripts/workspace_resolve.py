@@ -28,6 +28,10 @@ def _load(config: Path) -> tuple[dict | None, str]:
     return parsed, path
 
 
+def _resolve(config: Path) -> dict | None:
+    return sniff_workspace.resolve_prism_config(str(config))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="多 workspace 项目绑定解析")
     parser.add_argument(
@@ -42,15 +46,38 @@ def main() -> None:
         action="store_true",
         help="TSV 输出：CODE\\tPATH\\tINSTANCE_PATH\\tWORKSPACE_ID",
     )
+    parser.add_argument(
+        "--config-tsv",
+        action="store_true",
+        help="TSV 输出规范化配置：KEY\\tVALUE（供 bash 入口消费）",
+    )
     args = parser.parse_args()
 
-    parsed, path = _load(Path(args.config))
-    if not parsed:
+    resolved = _resolve(Path(args.config))
+    if not resolved:
         print(f"无法解析配置: {args.config}", file=sys.stderr)
         raise SystemExit(1)
 
-    default_ws = parsed.get("default_workspace") or "work"
-    workspaces = sniff_workspace.parse_workspaces(parsed, path)
+    parsed = resolved["parsed"]
+    path = resolved["config_path"]
+    default_ws = resolved["default_workspace"]
+    workspaces = resolved["workspaces"]
+
+    if args.config_tsv:
+        fields = (
+            ("DEVICE_ID", resolved["device_id"]),
+            ("SDK_PATH", resolved["sdk_path"]),
+            ("SKILLS_PATH", resolved["skills_path"]),
+            ("ENV_PATH", resolved["env_path"]),
+            ("VAULT_PATH", resolved["workspace_root"]),
+            ("WS_SUBDIR", resolved["workspace_subdir"]),
+            ("WS_ROOT", resolved["prism_workspace_root"]),
+            ("DEFAULT_WORKSPACE", resolved["default_workspace"]),
+        )
+        for key, value in fields:
+            if value is not None:
+                print(f"{key}\t{value}")
+        return
 
     if args.code:
         binding = sniff_workspace.resolve_project_binding(parsed, args.code, path)
@@ -67,7 +94,7 @@ def main() -> None:
             print(binding["instance_path"])
         return
 
-    bindings = sniff_workspace.resolve_all_project_bindings(parsed, path)
+    bindings = resolved["projects"]
     if args.code:
         bindings = [b for b in bindings if b["code"] == args.code]
 
@@ -79,6 +106,11 @@ def main() -> None:
         return
 
     payload = {
+        "schema": resolved["schema"],
+        "config_path": resolved["config_path"],
+        "sdk_path": resolved["sdk_path"],
+        "skills_path": resolved["skills_path"],
+        "env_path": resolved["env_path"],
         "default_workspace": default_ws,
         "workspaces": workspaces,
         "projects": bindings,

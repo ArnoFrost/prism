@@ -140,6 +140,7 @@ def parse_prism_local_yaml(yaml_path: str) -> dict | None:
         "device_id": None,
         "sdk_path": None,
         "skills_path": None,
+        "env_path": None,
         "vault_path": None,
         "workspace_root": None,
         "workspace_subdir": None,
@@ -412,6 +413,44 @@ def resolve_all_project_bindings(
         if binding:
             out.append(binding)
     return out
+
+
+def resolve_prism_config(yaml_path: str) -> dict | None:
+    """解析并规范化完整 prism.local.yaml，作为稳定消费方的配置 SSOT。
+
+    parser 负责兼容 legacy flat / 3.0 named-workspaces；本 resolver 负责：
+    - 将配置路径和所有仓库/Workspace 路径展开为规范绝对路径；
+    - 统一 default workspace 与 project binding；
+    - 保留 ``parsed`` 供 validator 检查 deprecated/conflict 语义。
+
+    Shell 入口不得再自行解析 ``workspaces`` / object-form ``projects``。
+    """
+    config_path = os.path.abspath(os.path.expanduser(yaml_path))
+    parsed = parse_prism_local_yaml(config_path)
+    if not parsed:
+        return None
+
+    workspaces = parse_workspaces(parsed, config_path)
+    default_workspace = parsed.get("default_workspace") or "work"
+    default = workspaces.get(default_workspace, {})
+    paths = resolve_prism_local_paths(parsed)
+
+    return {
+        "config_path": config_path,
+        "schema": "named-workspaces" if parsed.get("workspaces") else "legacy-flat",
+        "parsed": parsed,
+        "device_id": parsed.get("device_id"),
+        "sdk_path": _expand_config_path(parsed.get("sdk_path")),
+        "skills_path": _expand_config_path(parsed.get("skills_path")),
+        "env_path": _expand_config_path(parsed.get("env_path")),
+        "obs_vault": _expand_config_path(paths.get("obs_vault")),
+        "default_workspace": default_workspace,
+        "workspace_root": default.get("workspace_root"),
+        "workspace_subdir": default.get("workspace_subdir"),
+        "prism_workspace_root": default.get("prism_workspace_root"),
+        "workspaces": workspaces,
+        "projects": resolve_all_project_bindings(parsed, config_path),
+    }
 
 
 def resolve_prism_local_paths(parsed: dict | None) -> dict:

@@ -216,198 +216,21 @@ do_validate() {
   echo -e "${CYAN}Prism 配置校验${NC}"
   echo "─────────────────────────────────"
 
-  local errors=0
-
-  # device_id 单独检查（非路径类型）
-  local did
-  did=$(yaml_get device_id)
-  if [[ -z "$did" ]]; then
-    echo -e "  ${YELLOW}⚠${NC} device_id: 缺失（运行 bin/setenv --sync 自动补充）"
-  else
-    echo -e "  ${GREEN}✓${NC} device_id: ${did}"
-  fi
-
-  local required_keys=("sdk_path" "workspace_subdir")
-  local vault_path_val workspace_root_val
-  vault_path_val=$(yaml_get vault_path)
-  workspace_root_val=$(yaml_get workspace_root)
-  if [[ -z "$vault_path_val" && -z "$workspace_root_val" ]]; then
-    echo -e "  ${RED}✗${NC} workspace_root/vault_path: 缺失（必填，至少其一）"
-    ((errors++)) || true
-  else
-    local storage_display="${workspace_root_val:-$vault_path_val}"
-    echo -e "  ${GREEN}✓${NC} workspace 物理根: ${storage_display}"
-    [[ -n "$vault_path_val" && -z "$workspace_root_val" ]] && \
-      echo -e "  ${YELLOW}⚠${NC} deprecated: vault_path → 运行 bin/setenv --migrate-config 升级"
-  fi
-
-  for key in "${required_keys[@]}"; do
-    local val
-    val=$(yaml_get "$key")
-    if [[ -z "$val" ]]; then
-      echo -e "  ${RED}✗${NC} ${key}: 缺失（必填字段）"
-      ((errors++)) || true
-    else
-      echo -e "  ${GREEN}✓${NC} ${key}: ${val}"
-    fi
-  done
-
-  # skills_path 可选：配置了就检查，未配置不阻塞 core contract。
-  local skills_optional
-  skills_optional=$(yaml_get skills_path)
-  if [[ -n "$skills_optional" ]]; then
-    echo -e "  ${GREEN}✓${NC} skills_path: ${skills_optional} ${DIM}(可选扩展)${NC}"
-  else
-    echo -e "  ${DIM}⊘${NC} skills_path: 未配置（可选扩展）"
-  fi
-
-  # env_path 可选字段检查
-  local env_p
-  env_p=$(yaml_get env_path)
-  if [[ -n "$env_p" ]]; then
-    echo -e "  ${GREEN}✓${NC} env_path: ${env_p}"
-  else
-    echo -e "  ${DIM}⊘${NC} env_path: 未配置（可选）"
-  fi
-
-  echo ""
-  echo -e "  ${CYAN}路径可达性:${NC}"
-
-  local sdk skills vault ws_sub
-  sdk=$(yaml_get sdk_path)
-  skills=$(yaml_get skills_path)
-  vault=$(yaml_get workspace_root)
-  [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
-  ws_sub=$(yaml_get workspace_subdir)
-
-  for pair in "SDK:${sdk}" "Backend:${vault}"; do
-    local label="${pair%%:*}"
-    local p="${pair#*:}"
-    if [[ -z "$p" ]]; then
-      continue
-    elif [[ -d "$p" ]]; then
-      echo -e "  ${GREEN}✓${NC} ${label}: 可达"
-    else
-      echo -e "  ${RED}✗${NC} ${label}: 不可达 ${p}"
-      ((errors++)) || true
-    fi
-  done
-
-  if [[ -n "$skills" ]]; then
-    if [[ -d "$skills" ]]; then
-      echo -e "  ${GREEN}✓${NC} Skills: 可达（可选扩展）"
-    else
-      echo -e "  ${YELLOW}⚠${NC} Skills: 不可达 ${skills}（可选扩展，不阻塞 core）"
-    fi
-  else
-    echo -e "  ${DIM}⊘${NC} Skills: 未配置（可选扩展）"
-  fi
-
-  echo ""
-  echo -e "  ${CYAN}运行时:${NC}"
-  if command -v uv >/dev/null 2>&1; then
-    echo -e "  ${GREEN}✓${NC} uv: $(uv --version 2>/dev/null || echo 可用)"
-  else
-    echo -e "  ${RED}✗${NC} uv: 未安装（core contract 必需）"
-    echo -e "    ${DIM}手动安装: curl -LsSf https://astral.sh/uv/install.sh | sh${NC}"
-    ((errors++)) || true
-  fi
-
-  if [[ -n "$env_p" ]]; then
-    if [[ -d "$env_p" ]]; then
-      echo -e "  ${GREEN}✓${NC} Env: 可达"
-    else
-      echo -e "  ${YELLOW}⚠${NC} Env: 不可达 ${env_p}（可选，不阻塞）"
-    fi
-  fi
-
-  local obs_p obs_canonical obs_legacy
-  obs_canonical=$(yaml_get obs_vault)
-  obs_legacy=$(yaml_get obs_vault_personal)
-  obs_p="${obs_canonical:-$obs_legacy}"
-  if [[ -n "$obs_p" ]]; then
-    if [[ -n "$obs_legacy" && -z "$obs_canonical" ]]; then
-      echo -e "  ${YELLOW}⚠${NC} deprecated: obs_vault_personal → 运行 bin/setenv --migrate-config 升级"
-    fi
-    if [[ -d "$obs_p" ]]; then
-      echo -e "  ${GREEN}✓${NC} 个人知识库: 可达"
-    else
-      echo -e "  ${YELLOW}⚠${NC} 个人知识库: 不可达 ${obs_p}（可选，不阻塞）"
-    fi
-  fi
-
-  if [[ -n "$vault" && -n "$ws_sub" ]]; then
-    local ws="${vault}/${ws_sub}"
-    if [[ -d "$ws" ]]; then
-      echo -e "  ${GREEN}✓${NC} Workspace: 可达"
-    else
-      echo -e "  ${YELLOW}⚠${NC} Workspace: 不存在（首次 relink 时自动创建）"
-    fi
-  fi
-
-  # projects 段检查
-  echo ""
-  echo -e "  ${CYAN}注册项目:${NC}"
-  local proj_count=0
-  local in_projects=false
-  while IFS= read -r line; do
-    if [[ "$line" == "projects:" ]]; then
-      in_projects=true
-      continue
-    fi
-    if $in_projects; then
-      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
-        local code="${BASH_REMATCH[1]}"
-        local p="${BASH_REMATCH[2]}"
-        ((proj_count++)) || true
-        if [[ -d "$p" ]]; then
-          echo -e "    ${GREEN}✓${NC} ${code}: ${p}"
-        else
-          echo -e "    ${RED}✗${NC} ${code}: 不可达 ${p}"
-          ((errors++)) || true
-        fi
-      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
-        break
-      fi
-    fi
-  done < "$CONFIG"
-
-  if [[ $proj_count -eq 0 ]]; then
-    echo -e "    ${YELLOW}⚠${NC} 无注册项目"
-  fi
-
-  if command -v uv >/dev/null 2>&1; then
-    local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
-    if [[ -f "$wg_script" ]]; then
-      echo ""
-      echo -e "  ${CYAN}workspace_git:${NC}"
-      if ! uv run python "$wg_script" --validate 2>&1; then
-        echo -e "  ${RED}✗${NC} workspace_git.schedule 格式无效"
-        ((errors++)) || true
-      else
-        local wg_json
-        wg_json=$(uv run python "$wg_script" --json 2>/dev/null || echo "{}")
-        if echo "$wg_json" | grep -q '"enabled": true'; then
-          if [[ -n "$vault" && ! -d "$vault/.git" ]]; then
-            echo -e "  ${RED}✗${NC} workspace_git.enabled=true 但 Workspace backend 不是 git 仓库: ${vault}"
-            ((errors++)) || true
-          else
-            echo -e "  ${GREEN}✓${NC} workspace_git: enabled，vault git 可达"
-          fi
-        else
-          echo -e "  ${DIM}⊘${NC} workspace_git: 未启用或缺块"
-        fi
-      fi
-    fi
-  fi
-
-  echo ""
-  echo "─────────────────────────────────"
-  if [[ $errors -gt 0 ]]; then
-    echo -e "  ${RED}校验失败：${errors} 个问题${NC}"
+  local checker="$PRISM_DIR/skills/workflow/shared/scripts/doctor_config_check.py"
+  if [[ ! -f "$checker" ]]; then
+    echo -e "  ${RED}✗ shared config validator 不存在: ${checker}${NC}" >&2
     exit 1
+  fi
+
+  if [[ -x "${PRISM_DIR}/.venv/bin/python3" ]]; then
+    "${PRISM_DIR}/.venv/bin/python3" "$checker" "$CONFIG" --human
+  elif command -v uv >/dev/null 2>&1; then
+    uv run python "$checker" "$CONFIG" --human
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 "$checker" "$CONFIG" --human
   else
-    echo -e "  ${GREEN}✓ 校验通过${NC}"
+    echo -e "  ${RED}✗ 无可用 Python runner，无法解析 prism.local.yaml${NC}" >&2
+    exit 127
   fi
 }
 
