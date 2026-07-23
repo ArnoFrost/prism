@@ -34,7 +34,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 | `workspace-init` | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 | public / stable |
 | `workflow-intake` | 输入熵 | 原始需求、散落上下文 | `references/intake.md`、初始 scope/focus | 按需 | public / stable |
 | `workflow-scope` | 边界熵 / 注意力熵 | decision / review / scope | 更新 `scope.md`，刷新 `focus.md`，同步 task.index | 按需 | public / stable |
-| `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 focus/task/wave + 项目代码 | 实现、验证、wave/verify、派生 focus 与机械校验 | 按需 | dev / experimental |
+| `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 structured task/wave 或合格 topic-focus + 项目代码 | 实现、验证、证据、派生 focus 与机械校验 | 按需 | dev / experimental |
 | `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色 findings、actions、rXX | 按需 | public / stable |
 | `workflow-review-lite` | 轻量分析熵 | 小改动、日常对齐点 | 单视角 findings、actions | 按需 | public / stable |
 | `workflow-tidy` | 工件熵 | topic 工件、索引、frontmatter | 机械对齐后的索引/元数据 | 辅助 | public / stable |
@@ -61,7 +61,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 ### 已有明确游标，需要继续执行
 
-用 `workflow-execute`。它只推进一个显式或唯一的 task/wave，并在验证后同步既有工件；多游标、合同变化或新方向会停止并交回治理流程。
+用 `workflow-execute`。它只推进一个显式或唯一的 structured task/wave；无 structures 时，也可在当前 focus 是唯一 V-backed 有界批次且 fork-S3 不成立时走 topic-focus。多游标、结构异常、合同变化或新方向会停止并交回治理流程。
 
 ### 日常小改或快速校准
 

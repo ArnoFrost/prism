@@ -54,7 +54,7 @@ init → intake → scope → execute ↔ review / review-lite → decision → 
 | `workspace-init` | `/workspace-init` | 项目路径 + 用户信息 | workspace 骨架 + 注册 + 软链接 |
 | `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + references/intake.md + scope 草稿 |
 | `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + focus.md 刷新 |
-| `workflow-execute` | `/workflow-execute` | 唯一 task/wave 游标 | 授权变更 + 验证 + wave/verify/focus + 机械校验（experimental） |
+| `workflow-execute` | `/workflow-execute` | 唯一 task/wave 或合格 topic-focus 游标 | 授权变更 + 验证 + 证据/focus + 机械校验（experimental） |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
 | `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |

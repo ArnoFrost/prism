@@ -49,7 +49,7 @@ v3.0 将 core contract 收敛为 SDK + `uv`。Protocol + Workspace 仍是逻辑�
 
 这也是 `focus` 成为 topic 单入口、`task` 只在某个 scope-V 深化到自带 scope + wave 时才出现的原因：Prism 不追求把目录变复杂，而是让复杂问题在有限上下文里仍可恢复。
 
-`workflow-execute` 是 Prism 3.0 的轻量执行闭环：只消费显式或唯一的 task/wave 游标，完成实现、验证与既有工件对齐；它不承担 Next 选择、循环调度或治理裁决。该能力随 3.0 提供，但保持 **dev experimental**，为未来 Next 留出接口校准空间。
+`workflow-execute` 是 Prism 3.0 的轻量执行闭环：有 structures 时只消费显式或唯一的 task/wave；无 structures 时，可在当前 focus 是唯一 V-backed 有界批次、结构真正缺失且 fork-S3 不成立时执行 topic-focus，并通过 verify/focus 闭合证据。它不承担 Next 选择、自动结构升级、循环调度或治理裁决。该能力随 3.0 提供，但保持 **dev experimental**，为未来 Next 留出接口校准空间。
 
 3.0 GA formal 能力面包含 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status` 与 `workflow-digest`，其 catalog 状态为 **public / stable**。
 

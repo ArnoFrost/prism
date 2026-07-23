@@ -105,7 +105,7 @@ entries:
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-07-10"
-    rationale: "Prism 3.0 current-cursor executor — runs one authorized task/wave and closes code, verification, wave/focus, and mechanical validation without becoming Next or an orchestrator."
+    rationale: "Prism 3.0 current-cursor executor — runs one authorized structured task/wave or eligible no-structures topic-focus batch, closing code, verification, evidence, focus, and mechanical validation without becoming Next or an orchestrator."
   - id: workflow-compact
     visibility: dev
     stability: experimental

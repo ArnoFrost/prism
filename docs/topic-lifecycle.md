@@ -110,7 +110,7 @@ structures/task-N_slug/
 
 如果答案是否，继续用 scope-V + focus。
 
-已有唯一 task/wave 且方向已经获权时，可用 `workflow-execute` 推进一个批次。它不会选择下一任务；多游标或合同变化会停止并回到 scope/review/decision。
+已有唯一 task/wave 且方向已获权时，可用 `workflow-execute` 推进一个 structured 批次。无 structures 时，若当前 focus 是唯一 V-backed 有界批次且 fork-S3 不成立，也可走 topic-focus；验证后必须先写 verify 再 rewrite focus。它不会选择下一任务；多游标、结构异常或合同变化会停止并回到 scope/review/decision。
 
 ---
 
