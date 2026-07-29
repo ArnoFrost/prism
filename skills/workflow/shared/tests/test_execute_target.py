@@ -87,6 +87,10 @@ status: {task_status}
 type: scope
 ---
 # Task scope
+
+| task-V | topic-V |
+|--------|---------|
+| tV1 | V2 |
 """,
     )
     mark = "x" if action_checked else " "
@@ -149,6 +153,15 @@ def test_flat_resolution_is_read_only(tmp_path):
         if path.is_file()
     }
     assert after == before
+
+
+def test_truly_absent_reports_non_applicable_validator_checks(tmp_path):
+    topic = _topic(tmp_path)
+    result = et.resolve_execute_target(str(topic), flat_batch=_flat_batch())
+    assert result["structure_state"] == "truly_absent"
+    assert result["preflight_checks"]["available"] is True
+    assert result["preflight_checks"]["integrity"]["checked"] is False
+    assert result["preflight_checks"]["conservation"]["checked"] is False
 
 
 def test_flat_struct_vacuum_advisory_is_not_a_hard_gate(tmp_path):
@@ -253,6 +266,54 @@ def test_status_conflict_is_malformed_structure(tmp_path):
     result = et.resolve_execute_target(str(topic), explicit_target="t1/wave-1")
     assert result["decision"] == "governance_handoff"
     assert result["reason_code"] == "FE-structure-inconsistent"
+
+
+def test_scope_conservation_error_blocks_before_target_selection(tmp_path):
+    topic = _topic(tmp_path)
+    _task(topic, 1)
+    _task_index(topic, [(1, "active")])
+    scope_path = topic / "structures" / "task-1_demo" / "scope.md"
+    scope_path.write_text(
+        scope_path.read_text(encoding="utf-8").replace("| tV1 | V2 |", "| tV1 | V9 |"),
+        encoding="utf-8",
+    )
+    result = et.resolve_execute_target(
+        str(topic),
+        explicit_target="t1/wave-1/action-999",
+    )
+    assert result["decision"] == "governance_handoff"
+    assert result["reason_code"] == "FE-structure-inconsistent"
+    assert result["structure_state"] == "malformed"
+    assert result["preflight_checks"]["conservation"]["errors"] == [
+        "conservation-ref-not-found",
+    ]
+
+
+def test_valid_structured_target_reports_preflight_checks(tmp_path):
+    topic = _topic(tmp_path)
+    _task(topic, 1)
+    _task_index(topic, [(1, "active")])
+    result = et.resolve_execute_target(
+        str(topic),
+        explicit_target="t1/wave-1/action-1",
+    )
+    assert result["decision"] == "execute"
+    assert result["structure_state"] == "valid"
+    assert result["preflight_checks"]["integrity"]["errors"] == []
+    assert result["preflight_checks"]["conservation"]["errors"] == []
+
+
+def test_validator_unavailable_fails_closed(tmp_path, monkeypatch):
+    topic = _topic(tmp_path)
+    monkeypatch.setattr(
+        et,
+        "_run_structure_validators",
+        lambda _topic: {"available": False, "blocking": True, "error": "ImportError"},
+    )
+    result = et.resolve_execute_target(str(topic), flat_batch=_flat_batch())
+    assert result["decision"] == "governance_handoff"
+    assert result["reason_code"] == "FE-validator-unavailable"
+    assert result["structure_state"] == "truly_absent"
 
 
 def test_pending_explicit_target_is_blocked(tmp_path):

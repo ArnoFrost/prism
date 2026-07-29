@@ -136,6 +136,7 @@ execution_result:
 |------|------|----------|
 | **FE-ambiguous-target** | 显式 target/focus 收窄后仍有多个合法候选 | 停止并询问，不猜 |
 | **FE-structure-inconsistent** | orphan、duplicate id、缺 task-scope/wave、守恒或状态冲突 | 零写入阻断；handoff workflow-scope |
+| **FE-validator-unavailable** | integrity/conservation validator 不可加载或异常 | fail-closed；零写入并 handoff workflow-scope |
 | **FE-flat-ineligible** | structures absent，但 focus 非唯一/非有界/无 V 回链或授权不清 | 不执行 scope；询问或治理 handoff |
 | **FE-fork-required** | fork-S3、require gate、新承诺或需多个持久批次 | 不 silent flat；handoff workflow-scope |
 | **FE-target-state-conflict** | focus/index/task-scope/wave 状态不一致或 target 不存在 | 不选择任一方覆盖；治理 handoff |
@@ -155,9 +156,13 @@ execution_result:
 - context 装配：[context-pack-spec.md](references/context-pack-spec.md)
 - 术语：[vocabulary.md](references/vocabulary.md)
 - mode 探测复用 shared `enumerate_structures()` / `struct_vacuum_signals()` 与
-  integrity/conservation validators；这些输出不可用时 fail-closed，不复制解析器。
+  strict integrity/conservation validators；target 选择前运行，ERROR 即
+  `FE-structure-inconsistent`，输出不可用即 `FE-validator-unavailable`。
 - target 解析优先复用 shared `execute_target.resolve_execute_target()`；该 resolver
   只读且要求 caller 提供 flat preflight envelope，不生成 allowed paths/验证计划。
+- topic-focus 在项目修改前调用 shared `execute_alignment.inspect_flat_evidence()`；
+  已有完整同 fingerprint 证据时禁止重复项目修改，只补 focus/校验。验证通过后调用
+  `align_topic_focus()`，由其原子执行 verify-first → focus-second。
 - 复用 `workflow-tidy` 与 Prism validators；decision 后完整收尾才使用 `prism finalize`。
 - 不依赖 CodeBuddy/Cursor 等单一 IDE hook；核心闭环由 skill 自身完成。
 

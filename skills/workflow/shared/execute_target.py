@@ -1,42 +1,27 @@
-"""Read-only target resolver for workflow-execute.
-
-The module resolves one existing structured cursor or one caller-supplied,
-V-backed topic-focus batch. It never writes files, creates structures, ranks
-candidates, or selects a "next" target.
-"""
+"""Read-only structured/topic-focus target resolver; never writes, ranks, or selects Next."""
 
 from __future__ import annotations
 
+import importlib
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
-from execute_target_flat import (
-    flat_batch_fingerprint,
-    normalize_v_refs,
-    resolve_flat,
-)
-from sniff_structures import (
-    enumerate_structures,
-    parse_scope_frontmatter,
-    parse_task_index_entries,
-)
+from execute_target_flat import flat_batch_fingerprint, normalize_v_refs, resolve_flat
+from sniff_structures import enumerate_structures, parse_scope_frontmatter, parse_task_index_entries
 
 EXECUTABLE_STATUS = frozenset({"active"})
 INACTIVE_STATUS = frozenset({"pending"})
 COMPLETED_STATUS = frozenset({"done", "completed"})
 EXCLUDED_STATUS = frozenset({"superseded", "archived", "cancelled"})
-KNOWN_STATUS = (
-    EXECUTABLE_STATUS | INACTIVE_STATUS | COMPLETED_STATUS | EXCLUDED_STATUS
-)
+KNOWN_STATUS = EXECUTABLE_STATUS | INACTIVE_STATUS | COMPLETED_STATUS | EXCLUDED_STATUS
 
 _TASK_TOKEN_RE = re.compile(r"\bt(\d+)\b", re.I)
 _WAVE_TOKEN_RE = re.compile(r"\bwave-(\d+)\b", re.I)
 _STEP_TOKEN_RE = re.compile(r"\b(?:action|step)-(\d+)\b", re.I)
-_WAVE_FILE_RE = re.compile(
-    r"^wave-(\d+)(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\.md$",
-)
+_WAVE_FILE_RE = re.compile(r"^wave-(\d+)(?:_[A-Za-z0-9][A-Za-z0-9_-]*)?\.md$")
 
 
 def _route(
@@ -47,6 +32,8 @@ def _route(
     v_refs: list[str] | None = None,
     candidates: list[str] | None = None,
     next_skill: str | None = None,
+    structure_state: str | None = None,
+    preflight_checks: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "mode": mode,
@@ -56,6 +43,8 @@ def _route(
         "v_refs": v_refs or [],
         "candidates": candidates or [],
         "next_skill": next_skill,
+        "structure_state": structure_state,
+        "preflight_checks": preflight_checks or {},
     }
 
 
@@ -74,6 +63,44 @@ def _frontmatter_status(path: Path) -> str | None:
     fm = parse_scope_frontmatter(str(path))
     value = _normalize_scalar(fm.get("status")).lower()
     return value or None
+
+
+def _run_structure_validators(topic: Path) -> dict[str, Any]:
+    """Run existing strict validators and return a compact read-only summary."""
+    scripts_dir = str(Path(__file__).with_name("scripts"))
+    inserted = scripts_dir not in sys.path
+    if inserted:
+        sys.path.insert(0, scripts_dir)
+    try:
+        module = importlib.import_module("validate_trace")
+        integrity = module.validate_structures_integrity(topic, strict=True)
+        conservation = module.validate_scope_conservation(topic, strict=True)
+    except Exception as error:  # fail-closed when validator cannot be loaded/run
+        return {
+            "available": False,
+            "error": type(error).__name__,
+            "blocking": True,
+        }
+    finally:
+        if inserted and scripts_dir in sys.path:
+            sys.path.remove(scripts_dir)
+
+    def compact(result: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "checked": bool(result.get("checked")),
+            "errors": [item.get("rule") for item in result.get("errors", [])],
+            "warnings": [item.get("rule") for item in result.get("warnings", [])],
+        }
+
+    checks = {
+        "available": True,
+        "integrity": compact(integrity),
+        "conservation": compact(conservation),
+    }
+    checks["blocking"] = bool(
+        checks["integrity"]["errors"] or checks["conservation"]["errors"]
+    )
+    return checks
 
 
 def _focus_body(focus_text: str) -> str:
@@ -303,12 +330,24 @@ def resolve_execute_target(
 
     structures = enumerate_structures(str(topic))
     structures_dir = topic / "structures"
+    checks = _run_structure_validators(topic)
+    structure_state = "valid" if structures["present"] else "truly_absent"
+    if not checks.get("available"):
+        return _route(
+            "structured" if structures["present"] else "topic-focus",
+            "governance_handoff",
+            "FE-validator-unavailable",
+            next_skill="workflow-scope",
+            structure_state=structure_state,
+            preflight_checks=checks,
+        )
     if structures["present"]:
         malformed = (
             not structures["task_index"]
             or structures["task_count"] == 0
             or structures["orphan_index"]
             or bool(structures["task_id_conflicts"])
+            or bool(checks.get("blocking"))
         )
         if malformed:
             return _route(
@@ -316,6 +355,8 @@ def resolve_execute_target(
                 "governance_handoff",
                 "FE-structure-inconsistent",
                 next_skill="workflow-scope",
+                structure_state="malformed",
+                preflight_checks=checks,
             )
         candidates, error = _structured_candidates(topic, topic_slug, structures)
         if error:
@@ -324,13 +365,18 @@ def resolve_execute_target(
                 "governance_handoff",
                 "FE-structure-inconsistent",
                 next_skill="workflow-scope",
+                structure_state="malformed",
+                preflight_checks=checks,
             )
-        return _select_structured(
+        result = _select_structured(
             topic_slug=topic_slug,
             focus_text=focus_text,
             explicit_target=explicit_target,
             candidates=candidates,
         )
+        result["structure_state"] = "valid"
+        result["preflight_checks"] = checks
+        return result
 
     if structures_dir.exists():
         return _route(
@@ -338,8 +384,10 @@ def resolve_execute_target(
             "governance_handoff",
             "FE-structure-inconsistent",
             next_skill="workflow-scope",
+            structure_state="malformed",
+            preflight_checks=checks,
         )
-    return resolve_flat(
+    result = resolve_flat(
         topic=topic,
         topic_slug=topic_slug,
         focus_body=_focus_body(focus_text),
@@ -347,3 +395,6 @@ def resolve_execute_target(
         flat_batch=flat_batch,
         route=_route,
     )
+    result["structure_state"] = "truly_absent"
+    result["preflight_checks"] = checks
+    return result

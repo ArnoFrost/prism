@@ -41,6 +41,9 @@ resolve_execute_target(topic_dir, explicit_target=None, flat_batch=None)
 - `flat_batch` 由 caller 的 preflight 提供 authorization / V refs / goal /
   allowed paths / verification；resolver 不从 scope checkbox 或 focus 猜这些字段。
 - flat fingerprint 对列表去重排序、空白归一后计算，输入顺序变化不改变 target key。
+- Resolve 在 target 选择前调用既有 strict structures integrity 与 scope
+  conservation validator；validator ERROR 将 `structure_state` 标为 malformed，
+  validator 不可加载/异常则 fail-closed，不得继续项目写入。
 
 ## 3. Read / Write / Handoff Matrix
 
@@ -72,6 +75,21 @@ resolve target
 
 topic-focus 中 verify 写入失败时不得推进 focus；verify 已写而 focus 失败，重试只补
 focus/校验。相同 fingerprint + 完整证据 → 重验现状后 idempotent no-op。
+
+共享 alignment adapter：
+
+```python
+inspect_flat_evidence(...)  # 项目修改前，只读
+align_topic_focus(...)      # 验证通过后，verify-first → focus-second
+```
+
+- caller 显式提供 verify 相对路径、完整 verify 内容、focus 六字段与 preflight
+  scope/focus digest；adapter 不创建执行计划或选择下一个 V。
+- 已有相同 target/fingerprint 的完整证据时，inspect 返回
+  `project_mutation_required=false`；文件名变化也不得复制证据。
+- verify 原子写失败时 focus 保持原状；verify 已存在而 focus 失败时，重试仅补
+  focus。scope/focus digest 漂移时保留 verify 事实并返回 `FE-scope-delta`。
+- 冲突证据、越界 verify 路径或非 canonical focus update 均 fail-closed。
 
 ## 5. Status Semantics
 
@@ -115,6 +133,11 @@ execution_route:
   v_refs: [Vn]
   candidates: []
   next_skill: <workflow-scope | workflow-intake | null>
+  structure_state: valid | truly_absent | malformed
+  preflight_checks:
+    available: true | false
+    integrity: {checked: true | false, errors: [], warnings: []}
+    conservation: {checked: true | false, errors: [], warnings: []}
 ```
 
 该块是会话输出，不是新 persistent artifact；不得根据 candidates 自动排序或执行。
