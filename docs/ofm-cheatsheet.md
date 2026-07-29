@@ -37,7 +37,7 @@
 | 结论 | `TIP` |
 | Open Questions | `- [ ]` 列表优先 |
 
-密度：`type: review` ≥ 3 callout；`type: review-lite` ≥ 2。  
+密度：`type: review` ≥ 3 callout；历史兼容 `type: review-lite` ≥ 2。  
 ofm 路径 Findings 推荐 ≥1 处 `==关键术语==`（点缀，非涂色）。
 
 ## v1 → v2 一句话

@@ -13,7 +13,7 @@ profiles:
       - workflow-scope             # [core] 合同收敛
       - workflow-execute           # [core] 单游标执行闭环
       - workflow-review            # [core] 多角色评审
-      - workflow-review-lite       # [core] 轻量评审
+      - workflow-review-lite       # [compat] 软废弃：保留显式调用与旧产物兼容
       - workflow-tidy              # [core] 工件对齐
       - workflow-digest            # [core] 状态摘要
       - workflow-status            # [core] 健康状态
@@ -27,7 +27,7 @@ profiles:
       - workflow-scope             # [core] 合同收敛
       - workflow-execute           # [core] 单游标执行闭环
       - workflow-review            # [core] 多角色评审
-      - workflow-review-lite       # [core] 轻量评审
+      - workflow-review-lite       # [compat] 软废弃：保留显式调用与旧产物兼容
       - workflow-tidy              # [core] 工件对齐
       - workflow-digest            # [core] 状态摘要
       - workflow-status            # [core] 健康状态

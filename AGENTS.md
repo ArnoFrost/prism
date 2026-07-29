@@ -231,14 +231,14 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-scope | `/workflow-scope` | 合同收敛 → focus 刷新 |
 | workflow-execute | `/workflow-execute` | 单游标执行 — structured task/wave 或受限 topic-focus → 授权变更 → 验证 → 证据/focus 闭环（3.0 能力，dev experimental） |
 | workflow-review | `/workflow-review` | 正式评审 — 多角色协作（总分总结构） |
-| workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 单视角快速扫描 |
+| workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 3.1 起软废弃；保留显式调用与旧产物兼容 |
 | workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
 | workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
 | workflow-status | `/workflow-status` | 健康度巡检 — report-first + `next_actions[]` handoff（不自动写盘） |
 | workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不列入 3.0 GA formal 能力面） |
 | workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不列入 3.0 GA formal 能力面） |
 
-3.0 GA formal 能力面为 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status`、`workflow-digest`（catalog: public/stable）。`workflow-execute` 随 3.0 提供但保持 dev/experimental；`workflow-compact` 与 `workflow-archive` 同样保持实验标记。
+3.0 GA formal 能力面为 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status`、`workflow-digest`（catalog: public/stable）。3.1 Lite 起 `workflow-review-lite` 进入 soft-deprecated 兼容面：不再作为推荐入口，但显式调用与旧 `type: review-lite` 产物仍保持兼容。`workflow-execute` 随 3.0 提供但保持 dev/experimental；`workflow-compact` 与 `workflow-archive` 同样保持实验标记。
 
 ---
 
@@ -322,7 +322,7 @@ git commit -m "feat: 新增 xxx 脚本"
 | 接受了评审决策（dXX），需更新边界或刷新 focus | 执行 `/workflow-scope` 同步 |
 | 已有唯一 task/wave，或无 structures 且当前 focus 为唯一 V-backed 有界批次，需要同步代码与工件 | 执行 `/workflow-execute`（多游标、fork-S3、结构异常或 scope 漂移时停止并交回治理） |
 | 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
-| 日常迭代、小改动确认、scope/focus 快速对齐 | 执行 `/workflow-review-lite` |
+| 日常迭代、小改动确认、scope/focus 快速对齐 | 3.1 起默认模型原生自检；需要持久评审时显式执行 `/workflow-review` |
 | 评审/决策落盘后，README 指针、review.index、frontmatter 需机械对齐 | 执行 `/workflow-tidy`（或随 `prism finalize` 自动串联） |
 | 想了解专项进度 / 检查骨架完整性 / 启动新一轮工作前的现状回顾 | 执行 `/workflow-status`（report-first + `next_actions[]` handoff，只报告不修改） |
 | 需要对外通报专项状态（产品 / 协作者 / 自我回顾） | 执行 `/workflow-digest`（生成 `digest.md` 快照） |
