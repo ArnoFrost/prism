@@ -27,7 +27,7 @@ public_gate:
 | **不是什么** | 不做 review、不记 findings、不建 scope-v2/focus-v2；review/lite 结论不得直改合同 |
 | **读什么** | context-pack light（scope/focus）；Phase 3 必读 `focus-derive-spec.md`、`scope-templates.md` |
 | **写什么** | `scope.md`（原地）、`focus.md`（rewrite）、`structures/task-N_slug/` + `task.index.md` 按需 |
-| **结束建议** | → `workflow-review` 或 `workflow-review-lite` 验证；或继续执行 |
+| **结束建议** | 验证通过后继续执行；仅在用户明确需要多视角判断时交 `workflow-review` |
 
 ---
 
@@ -54,7 +54,7 @@ public_gate:
 | Phase 1 Context | `context-pack-spec.md` light；struct-absent 时**必跑** `sniff_lib.struct_vacuum_signals()` 并在 Delta 前置摘要行 | `vocabulary.md` |
 | Phase 2 Delta | — | `require_fork_gate` 或 **FS-semantic-fork** 时必读 [scope-templates.md §task-fork gate](references/scope-templates.md) |
 | Phase 3 Update | `focus-derive-spec.md`, `scope-templates.md` | — |
-| Maintainer / 2.x | — | [scope-maintainer.md](references/scope-maintainer.md) |
+| Maintainer / README / 2.x | — | [scope-maintainer.md](references/scope-maintainer.md) |
 
 ## 3. 触发源判定
 
@@ -164,7 +164,7 @@ README grandfather、2.x redirect、skill 关系表、目录结构见 [scope-mai
 - **可解析前提**：在 prism monorepo relink 后软链有效；scope 无独立 scripts，走 `prism` CLI 消费 shared。
 - **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.11 + `uv`；CLI/shared 不可用时 struct-vacuum 检测降级为 advisory，focus-derive 提示补依赖。
 - **独立 bundle**：软链缺失时须附带 shared 只读依赖后再评估，不把依赖缺失误判为 skill 主路径缺陷。
-- **兄弟 skill 引用（可解析）**：`workflow-review` / `workflow-review-lite`（结束验证 handoff）、`workflow-intake --mode upgrade`（2.x/plan redirect）为**运行时 handoff 目标**，按 skill 名/斜杠命令松耦合调用，非文件链接、非 bundle 依赖；评估场景视为可解析，不计入死链。
+- **兄弟 skill 引用（可解析）**：`workflow-review`（用户明确需要多视角判断时）、`workflow-intake --mode upgrade`（2.x/plan redirect）为**运行时 handoff 目标**，按 skill 名/斜杠命令松耦合调用，非文件链接、非 bundle 依赖；评估场景视为可解析，不计入死链。
 
 ## 10. few-shot 示例
 
