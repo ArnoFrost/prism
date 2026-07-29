@@ -81,10 +81,10 @@ def _check_skeleton(topic_dir: str) -> list[str]:
 
     入口面 = focus.md（3.0）/ plan.md（2.x grandfather）二选一，必需。
     README.md 已 deprecate（topic-format-spec §2，入口归 focus 保留区）→ **不作必需项**，
-    缺失不算骨架缺陷（存量 grandfather 才有 README）。
+    review.index.md / decision.index.md 3.1 Lite 起懒加载，缺失不算骨架缺陷。
     """
     missing = []
-    for f in ("scope.md", "review.index.md"):
+    for f in ("scope.md",):
         if not os.path.isfile(os.path.join(topic_dir, f)):
             missing.append(f)
     # 当前工作集（入口）：focus.md（3.0）或 plan.md（2.x grandfather）二选一
@@ -143,8 +143,6 @@ def scan_topic(topic_dir: str) -> dict:
         issues.append(f"scope 超过 7 天未更新（{_days_since(scope_mtime)} 天）")
     if _days_since(work_mtime) is not None and _days_since(work_mtime) > 7:
         issues.append(f"{work_label} 超过 7 天未更新（{_days_since(work_mtime)} 天）")
-    if review_count == 0:
-        issues.append("无评审记录")
 
     if scope_unchecked == 0 and scope_checked > 0:
         hints.append("scope 验收全部完成，可考虑归档到 archive/YYYY-MM/topic/")
@@ -236,18 +234,6 @@ def _next_action_for_topic(t: dict) -> dict | None:
             blocking="由 workflow-tidy / scaffold 口径处理；status 只报告，不写盘。",
         )
 
-    if scope_unchecked > 0 and scope_checked == 0 and review_count == 0:
-        return _next_action(
-            action_id=f"scope-not-started-no-review:{name}",
-            priority="P1",
-            target_type="topic",
-            target=name,
-            skill="workflow-review-lite",
-            reason=f"scope {scope_unchecked} 项均未勾选且无 review，需要先判断是否继续推进或收口。",
-            execution_policy="handoff_only",
-            blocking="review-lite/full 由目标评审流程自行 Gate；status 不生成决策。",
-        )
-
     if scope_unchecked > 0 and scope_checked == 0:
         return _next_action(
             action_id=f"scope-sync-needed:{name}",
@@ -258,19 +244,6 @@ def _next_action_for_topic(t: dict) -> dict | None:
             reason=f"scope {scope_unchecked} 项均未勾选，建议先确认合同是否仍反映当前执行态。",
             execution_policy="handoff_only",
             blocking="scope/focus 只能由 accepted dXX 或显式 workflow-scope 更新。",
-            confidence="medium",
-        )
-
-    if review_count == 0:
-        return _next_action(
-            action_id=f"no-review:{name}",
-            priority="P2",
-            target_type="topic",
-            target=name,
-            skill="workflow-review-lite",
-            reason="活跃 topic 尚无 review 记录，建议补一个轻量检查点。",
-            execution_policy="handoff_only",
-            blocking="若涉及方向变更或里程碑，应升级为 workflow-review。",
             confidence="medium",
         )
 

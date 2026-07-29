@@ -25,7 +25,7 @@ public_gate:
 | **不是什么** | 不写关键工件、不自动发起 review、不重构 scope/focus、不自动执行修复或归档（report-first / handoff-only） |
 | **读取工件** | workspace 全部 topic 按 [context-pack-spec](references/context-pack-spec.md) light 档逐 topic 采集（scope.md / focus.md 入口；README.md 仅存量 grandfather）；另统计 reviews/ + decisions/ 文件数 |
 | **写入工件** | 无（只读报告） |
-| **结束建议** | 根据结构化状态建议 → `workflow-scope` / `workflow-tidy` / `workflow-review-lite` / `workflow-archive preview`；只 handoff，不执行 |
+| **结束建议** | 根据结构化状态建议 → `workflow-scope` / `workflow-tidy` / `workflow-archive preview`；只 handoff，不执行 |
 | **设计模式** | Pattern 4 — Context-aware Tool Selection（根据健康度状态和问题类型建议不同的下一步 skill） |
 
 ---
@@ -78,7 +78,7 @@ uv run python {skill_dir}/scripts/status.py <project_dir> --format markdown
 
 | 维度 | 数据源 | 说明 |
 |------|--------|------|
-| 骨架完整性 | 目录扫描 | scope/focus（入口）/review.index 是否齐全；README deprecate 不作必需项 |
+| 骨架完整性 | 目录扫描 | scope + focus（入口）是否齐全；README / decision.index / review.index 懒加载，不作必需项 |
 | scope 进度 | checkbox 统计 | 验收口径勾选比例 |
 | focus 进度 | checkbox 统计 | 待执行/已完成比例 |
 | 更新活跃度 | 文件 mtime | scope/focus 最近修改时间（README mtime 仅存量参考）|
@@ -102,7 +102,7 @@ next_actions:
     priority: P1 | P2 | P3
     target_type: topic | workspace
     target: <topic slug | null>
-    skill: workflow-scope | workflow-tidy | workflow-review-lite | workflow-archive | null
+    skill: workflow-scope | workflow-tidy | workflow-archive | null
     reason: <one sentence>
     source: status_report
     confidence: high | medium | low
@@ -115,9 +115,7 @@ next_actions:
 | 条件（结构化字段） | 建议动作 | priority | execution_policy |
 |--------------------|----------|----------|------------------|
 | `skeleton_missing` 非空 | `workflow-tidy` / scaffold 口径 | P1 | `handoff_only` |
-| `scope.unchecked > 0 && scope.checked == 0 && review_count == 0` | `workflow-review-lite` | P1 | `handoff_only` |
 | `scope.unchecked > 0 && scope.checked == 0` | `workflow-scope` | P1 | `handoff_only` |
-| `review_count == 0` | `workflow-review-lite` | P2 | `handoff_only` |
 | `location == topics && scope.unchecked == 0 && scope.checked > 0` | `workflow-archive` | P2 | `preview_required` |
 | 无可判定 action | workspace `no_action` | P3 | `no_action` |
 
@@ -151,7 +149,7 @@ next_actions:
 
 | 优先级 | 对象 | 建议 skill | 原因 | 策略 | 前置/阻塞 |
 |--------|------|------------|------|------|-----------|
-| P1 | 008_agent-workflow-patterns | workflow-review-lite | scope 未启动且无 review，需要先判断是否继续推进或收口。 | handoff_only | review-lite/full 由目标评审流程自行 Gate；status 不生成决策。 |
+| P1 | 008_agent-workflow-patterns | workflow-scope | scope 6 项均未勾选，建议先确认合同是否仍反映当前执行态。 | handoff_only | scope/focus 只能由 accepted dXX 或显式 workflow-scope 更新。 |
 
 ## 🟡 008_agent-workflow-patterns
 
