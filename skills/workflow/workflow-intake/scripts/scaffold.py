@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""scaffold.py — 在 workspace 的 topics/ 下一键创建完整专项骨架（3.0，模板驱动）。
+"""scaffold.py — 在 workspace 的 topics/ 下一键创建专项骨架（3.1 Lite，模板驱动）。
 
-用法: uv run python scaffold.py <workspace_path> <number> <topic_name> [--title <标题>] [--tag <tag>] [--templates-dir <dir>] [--dry-run]
+用法: uv run python scaffold.py <workspace_path> <number> <topic_name> [--title <标题>] [--tag <tag>] [--templates-dir <dir>] [--full-scaffold] [--dry-run]
 
-3.0 行为：
+3.1 Lite 行为：
   - 产 focus.md（不产 plan.md）；intake 落 references/intake.md（不占根级）
+  - 默认 minimal scaffold：scope/focus/references-intake 起步，README 与 index 懒加载
+  - --full-scaffold 保留 3.0 兼容骨架：README/decision.index/review.index 一并生成
   - 所有产物从 workspace/templates/ 读取并占位符替换（不再内联复制结构 = 治"模板孤儿"）
   - structures/ 按需出现，scaffold 不预建
 
 幂等：已存在的文件/目录跳过，只创建缺失的部分。
-输出 JSON：{ created: [...], skipped: [...], topic_dir: "..." }
+输出 JSON：{ created: [...], skipped: [...], topic_dir: "...", scaffold_profile: "minimal|full" }
 """
 
 import argparse
@@ -33,13 +35,16 @@ def _default_templates_dir() -> str:
     return os.path.join(repo_root, "workspace", "templates")
 
 
-# 产物文件 → workspace/templates/ 模板文件名
+# 默认产物文件 → workspace/templates/ 模板文件名
 # 注：structures/task 三件按需出现，不在 topic 创建时落盘。
-TEMPLATE_FILES = {
-    "README.md": "topic-readme.md",
+MINIMAL_TEMPLATE_FILES = {
     "scope.md": "topic-scope.md",
     "focus.md": "topic-focus.md",
     "references/intake.md": "topic-intake.md",
+}
+
+FULL_ONLY_TEMPLATE_FILES = {
+    "README.md": "topic-readme.md",
     "decision.index.md": "topic-decision-index.md",
     "review.index.md": "topic-review-index.md",
 }
@@ -60,7 +65,8 @@ def _render(template_text: str, ctx: dict) -> str:
 def scaffold(workspace_path: str, number: int, topic_name: str,
              title: str | None = None, tag: str | None = None,
              templates_dir: str | None = None,
-             dry_run: bool = False) -> dict:
+             dry_run: bool = False,
+             full_scaffold: bool = False) -> dict:
     nnn = f"{number:03d}"
     dir_name = f"{nnn}_{topic_name}"
     topics_dir = os.path.join(workspace_path, "topics")
@@ -102,7 +108,11 @@ def scaffold(workspace_path: str, number: int, topic_name: str,
                 os.makedirs(sub_path, exist_ok=True)
             created.append(sub_path)
 
-    for out_rel, tmpl_name in TEMPLATE_FILES.items():
+    template_files = dict(MINIMAL_TEMPLATE_FILES)
+    if full_scaffold:
+        template_files.update(FULL_ONLY_TEMPLATE_FILES)
+
+    for out_rel, tmpl_name in template_files.items():
         file_path = os.path.join(topic_dir, out_rel)
         if os.path.isfile(file_path):
             skipped.append(file_path)
@@ -126,6 +136,7 @@ def scaffold(workspace_path: str, number: int, topic_name: str,
         "skipped": skipped,
         "dry_run": dry_run,
         "templates_dir": templates_dir,
+        "scaffold_profile": "full" if full_scaffold else "minimal",
     }
 
 
@@ -141,6 +152,8 @@ def main():
     parser.add_argument("--tag", default=None, help="frontmatter tag（默认取 topic_name 首段）")
     parser.add_argument("--templates-dir", default=None,
                         help="模板目录（默认 <repo>/workspace/templates/）")
+    parser.add_argument("--full-scaffold", action="store_true",
+                        help="生成 3.0 兼容完整骨架（README + decision/review index）")
     parser.add_argument("--dry-run", action="store_true", help="只输出计划，不创建文件")
 
     args = parser.parse_args()
@@ -153,6 +166,7 @@ def main():
         args.workspace_path, args.number, args.topic_name,
         title=args.title, tag=args.tag,
         templates_dir=args.templates_dir, dry_run=args.dry_run,
+        full_scaffold=args.full_scaffold,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
