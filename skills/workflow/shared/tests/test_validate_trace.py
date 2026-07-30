@@ -202,6 +202,32 @@ class TestStrictMissing:
         assert result["ok"] is True
         assert result["errors"] == []
 
+    def test_pending_review_synthesis_does_not_require_decision_artifact(self, tmp_path: Path):
+        """3.1 Lite：rXX synthesis 可 pending 等待 Gate 4；decision_artifact 只约束 dXX。"""
+        topic = self._build_topic(tmp_path)
+        (topic / "reviews" / "r04_pending.md").write_text(
+            "---\n"
+            "mode: full\n"
+            "type: review\n"
+            "decision_status: pending\n"
+            "decision_ref: null\n"
+            "---\n"
+            "# r04\n\n"
+            "task_probe:\n"
+            "  called: true\n"
+            "  result: success\n"
+            "  fallback_decision: parallel\n"
+            "  fallback_reason: 并行\n"
+            "\n"
+            "merge_artifact:\n"
+            "  actual_independence: 0.4\n"
+            "  raw_landed: false\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        assert result["ok"] is True
+        assert not any(e["family"] == "decision_artifact" for e in result["errors"])
+
     def test_decision_missing_artifact(self, tmp_path: Path):
         """dXX.md 缺 decision_artifact → ERR。"""
         topic = self._build_topic(tmp_path)

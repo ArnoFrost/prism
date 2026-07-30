@@ -7,10 +7,10 @@
 
 | 入口 | Gate | 时机 |
 |------|------|------|
-| `workflow-review` | Gate 4 | Merge 产物落盘 + Gate 3 validate 通过后 |
+| `workflow-review` | Gate 4 | Merge 产物落盘为 `decision_status: pending` + Gate 3 validate 通过后 |
 | `workflow-review-lite` | Gate 4 | Write 落盘 + validate 通过后 |
 
-> **决策门定位**：每次 review / review-lite 仅触发 1 次，是评审产物归宿的低频锚点。
+> **决策门定位**：每次 review / review-lite 仅触发 1 次，是评审产物归宿的低频锚点；rXX synthesis 可先落盘并等待用户裁决。
 > 与高频「路由门」不同 — 决策门统一用 `AskQuestion` 结构化询问，禁止纯文字提示静默推进。
 > 跨 skill 决策门约定见 SSOT [shared/topic-sniff-spec.md](../../shared/topic-sniff-spec.md) §0.1 频率论。
 
@@ -81,16 +81,16 @@ Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 
 
 | 选择 | 后续动作 |
 |------|---------|
-| `accept` | 写 accepted dXX + decision.index + sparse review.index，随后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
-| `reject` | 写 rejected dXX + 双索引，随后 `prism finalize`；按用户意图重启 review 或调 scope |
-| `defer` | 写 deferred dXX + 双索引，随后 `prism finalize`；不修改 scope/focus |
+| `accept` | 写 accepted dXX + decision.index + sparse review.index，更新 rXX `decision_status/decision_ref`，随后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
+| `reject` | 写 rejected dXX + 双索引，更新 rXX `decision_status/decision_ref`，随后 `prism finalize`；按用户意图重启 review 或调 scope |
+| `defer` | 写 deferred dXX + 双索引，更新 rXX `decision_status/decision_ref`，随后 `prism finalize`；不修改 scope/focus |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向 / 回答 OQ / 调整 AP，之后重新 Gate 4。**禁止**把含糊文本解释为 Accept |
 
-> **事务顺序**：review 落盘 → 决策前只读 validators → Gate 4 → dXX + decision.index + eligible review.index → write-mode finalize。禁止 Gate 4 前 finalize。
+> **事务顺序**：review 落盘为 pending synthesis → 决策前只读 validators → Gate 4 → dXX + decision.index + eligible review.index + rXX decision_ref → write-mode finalize。禁止 Gate 4 前 finalize。
 
 ## 决策痕迹义务
 
-Gate 4 决策后必须输出 `decision_artifact` yaml 块。
+Gate 4 产生 Accept/Reject/Defer 并写 dXX 后，必须在 dXX 中输出 `decision_artifact` yaml 块。pending rXX synthesis 不需要 `decision_artifact`。
 **完整字段表 + 校验规则**见 [shared/trace-artifacts-spec.md §decision_artifact](../../shared/trace-artifacts-spec.md)。
 
 ## Fallback 行为（AskQuestion 不可用）

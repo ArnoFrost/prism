@@ -40,9 +40,9 @@ public_gate:
 | 方向变更、范围调整、里程碑检查点 | **workflow-review** |
 | 方案/规范/代码需要多视角独立发现盲区 | **workflow-review** |
 | 上次评审 Actions 已执行完毕，需验证效果 | `workflow-review --incremental` |
-| 日常迭代、小改动确认、快速对齐 | `workflow-review-lite` |
+| 日常迭代、小改动确认、快速对齐 | 模型原生自检；需要持久审计时显式 `workflow-review` |
 | 沿上一轮产物继续推进 | 直接追问，无需重启 review |
-判断：单视角足够 → lite；需多角色对冲、merge 仲裁或里程碑裁决 → full review。
+判断：用户明确需要多视角对冲、merge 仲裁或里程碑裁决 → full review；普通迭代不自动进入 review。
 
 ### `--incremental` 最小协议
 
@@ -88,7 +88,7 @@ Phase 2  Explore — 独立 subagent / role findings / subagent_self_check
 Gate 2   角色门  — 角色数、TL;DR、Findings 齐全
 Phase 3  Merge   — 去重仲裁 / 独立发现率 / 行动计划 / merge_artifact
 Gate 3   落盘门  — reviews/rXX + 条件 raw + 决策前只读 validators 通过
-Phase 4  Gate 4  — AskQuestion → dXX/index（Accept/Reject/Defer）→ finalize / decision_artifact
+Phase 4  Gate 4  — 展示 synthesis + AskQuestion；仅 Accept/Reject/Defer 后写 dXX/index/finalize/decision_artifact
 ```
 
 ### Phase 1 Align
@@ -127,7 +127,7 @@ Merge 必须保留理由，而不是只做摘要：
 | 去重仲裁 | 合并同类发现，保留冲突点 |
 | 独立发现率 | `仅由单个角色提出的发现 / 合并后唯一发现总数 × 100%`，目标 ≥50% |
 | 统一行动计划 | Owner / priority / acceptance |
-| 写综合报告 | `reviews/rXX_{title}.md`；模板见 [review-templates.md](references/review-templates.md) |
+| 写综合报告 | `reviews/rXX_{title}.md`；frontmatter `decision_status: pending`，模板见 [review-templates.md](references/review-templates.md) |
 | 条件 raw | 触发阈值时写 `reviews/raw/`；未写须给 `raw_skip_reason` |
 | 决策前校验 | 只读运行 product / trace / review-call / conservation；**不得**在 Gate 4 前运行 write-mode finalize |
 | `merge_artifact` | raw 判定、独立发现率、路径与 skip reason 可审计 |
@@ -149,7 +149,7 @@ P0 = 阻塞级；P1 = 重要缺陷 / 不一致；P2 = 改善项。`format=ofm` �
 
 ## 6. Gate 4 决策门
 
-Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `reject` / `defer` / `type_something`。
+Merge 落盘且 Gate 3 通过后，先返回友好的 rXX synthesis：TL;DR、核心判断、P0/P1/P2、OQ、行动项与风险。随后触发结构化决策门：`accept` / `reject` / `defer` / `type_something`。
 
 | 选择 | 后续动作 |
 |------|----------|
@@ -160,6 +160,8 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 
 完整 Gate 4 契约见 [decision-gate.md](references/decision-gate.md)。AskQuestion 不可用时按 [askquestion-fallback.md](references/askquestion-fallback.md)；`PRISM_NO_INTERACTIVE=1` 必须 fail。
 
+未收到用户明确选择前，rXX 保持 `decision_status: pending`，不得写 dXX / indexes / finalize / `decision_artifact`。
+
 ⛔ Gate 4 不可跳过；错选 + finalize 会固化错误共识。
 
 ## 7. Core Behavior Safety Gates
@@ -168,7 +170,7 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 |------|--------------|
 | Parallel | full review 必须真实探测并行能力；不得伪并行 |
 | Merge | 必须解释去重、冲突仲裁、独立发现率、行动计划 |
-| Trace | `task_probe` / `merge_artifact` / `decision_artifact` 三族不可丢；无痕迹 = 未执行 |
+| Trace | rXX synthesis 必含 `task_probe` / `merge_artifact`（full）；dXX 决策必含 `decision_artifact`；无痕迹 = 对应门未执行 |
 | Gate | Gate1–4 不可合并；Gate4 不可跳过 |
 
 `writable=false` 时降级为对话输出并说明限制；不得假装已落盘 / 已 finalize。README grandfather、完整 fallback、目录结构与维护说明见 [review-maintainer.md](references/review-maintainer.md)。
@@ -177,10 +179,10 @@ Merge 落盘且 Gate 3 通过后，必须触发结构化决策门：`accept` / `
 
 | 文件 | 操作 | 说明 |
 |------|------|------|
-| `reviews/rXX_{title}.md` | 新建 | 综合报告 |
+| `reviews/rXX_{title}.md` | 新建 | 综合报告；默认 `decision_status: pending` |
 | `reviews/raw/rXX-role-{A,B,C}.md` | 条件新建 | raw 阈值或审计需要 |
-| `review.index.md` | 稀疏追加 | Accept/Reject/Defer 的 dXX 引用后追加；Other 不追加 |
-| `decision.index.md` | 由 dXX 追加 | 主事件链 |
+| `review.index.md` | 稀疏追加 | Accept/Reject/Defer 写 dXX 后追加；pending/Other 不追加 |
+| `decision.index.md` | 由 dXX 追加 | 主事件链；pending rXX 不追加 |
 | `scope.md` / `focus.md` | **禁止直改** | 须 accepted dXX 或 `/workflow-scope` |
 
 命名规则见 `review-templates.md`；索引、raw、finalize 疑难排查见 `review-maintainer.md`。

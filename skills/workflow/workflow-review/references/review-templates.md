@@ -98,6 +98,8 @@ topics/{NNN}_{topic}/
 | `git_range` | review | mode=full 评审对象的 commit 范围（如 `1efa09e..d4b2e6b`） |
 | `independent_finding_rate` | review | mode=full 角色独立发现率（百分比，如 `92.9`），与 `merge_artifact.actual_independence` 对应 |
 | `trace_strict` | topic-readme | `true` / `false`，是否在 finalize Step 2.5 强制 strict |
+| `decision_status` | review | `pending` / `accepted` / `rejected` / `deferred` / `other`；rXX synthesis 默认 `pending` |
+| `decision_ref` | review | Gate 4 后关联的 `decisions/dXX_*.md`；pending / other 时可为 `null` |
 
 ### 时间戳字段（状态切换可观察化）
 
@@ -120,9 +122,11 @@ topics/{NNN}_{topic}/
 ```yaml
 ---
 date: 2026-05-12              # 创建日 — 写第一行时
-status: accepted              # 当前
+status: draft                 # synthesis 初始态；Gate 后可更新为 accepted / done
 type: review
 mode: full
+decision_status: pending
+decision_ref: null
 tags: [review, 029, governance]
 related:
   - "../README.md"
@@ -131,6 +135,6 @@ git_range: 1efa09e..d4b2e6b
 commit: cccf1b8
 independent_finding_rate: 92.9
 merged_at: 2026-05-12T22:15:00+08:00     # mode=full Merge 完成时
-accepted_at: 2026-05-13T00:00:00+08:00   # 决策接受时
+# Gate 4 后再补 decision_ref / accepted_at 等字段
 ---
 ```
