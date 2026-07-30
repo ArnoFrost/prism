@@ -158,3 +158,32 @@ def test_scaffold_full_scaffold_readme_has_frontmatter_and_indexes(tmp_path):
     assert "type: topic-readme" in readme
     assert os.path.isfile(os.path.join(topic, "decision.index.md"))
     assert os.path.isfile(os.path.join(topic, "review.index.md"))
+
+
+# ── context-pack 验收口径统计 ────────────────────────────────
+
+def test_context_pack_counts_canonical_scope_checkboxes(tmp_path):
+    topic = str(tmp_path)
+    _write(os.path.join(topic, "scope.md"),
+           "# Scope\n\n"
+           "## 验收口径\n\n"
+           "- [x] V1: 已完成\n"
+           "- [ ] V2: 未完成\n"
+           "- [ ] V3: 继续推进\n")
+    packed = context_pack._pack_scope(topic)
+    assert packed["acceptance_progress"] == "1/3"
+    assert packed["acceptance_unchecked"] == ["V2", "V3"]
+
+
+def test_context_pack_keeps_legacy_table_acceptance_compat(tmp_path):
+    topic = str(tmp_path)
+    _write(os.path.join(topic, "scope.md"),
+           "# Scope\n\n"
+           "## 验收口径\n\n"
+           "| V | 状态 |\n"
+           "|---|------|\n"
+           "| V1 | ✅ 完成 |\n"
+           "| V2 | 待做 |\n")
+    packed = context_pack._pack_scope(topic)
+    assert packed["acceptance_progress"] == "1/2"
+    assert packed["acceptance_unchecked"] == ["V2"]

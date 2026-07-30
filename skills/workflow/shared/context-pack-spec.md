@@ -106,11 +106,14 @@ light 模式下 `intake`、`review_index`、`decisions`、`reviews` 统一输出
 |---------|---------|---------|
 | `## 目标` | `goals` | 原文 |
 | `## 非目标` | `non_goals` | 原文 |
-| `## 验收口径` | `acceptance_progress` + `acceptance_unchecked` | 统计 ✅ vs 未标记行数，列出未完成项编号 |
+| `## 验收口径` | `acceptance_progress` + `acceptance_unchecked` | 统计 canonical `- [x] Vn` / `- [ ] Vn`；兼容旧表格 `✅`，列出未完成项编号 |
 | `## 关键约束` | `constraints` | 原文 |
 | `## 未决问题` | `open_questions` | 原文 |
 
-验收口径的完成判定：行首包含 `✅` 视为已完成，否则视为未完成。
+验收口径的完成判定：
+
+- canonical scope 使用 `- [x] Vn` / `- [ ] Vn`，以 checkbox mark 为准。
+- 旧表格形态使用 `| Vn | ... |`，包含 `✅` 或 `[x]` 视为已完成，否则视为未完成。
 
 ### focus.md
 

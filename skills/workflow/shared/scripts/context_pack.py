@@ -31,15 +31,29 @@ def _count_acceptance(content: str) -> tuple[int, int, list[str]]:
     unchecked: list[str] = []
 
     for line in section.splitlines():
-        m = re.match(r"\|\s*(V\d+)\s*\|", line)
-        if not m:
+        stripped = line.strip()
+
+        checklist = re.match(
+            r"^[-*]\s+\[(?P<mark>[ xX])\]\s+(?:\*\*)?(?P<vid>V\d+)(?:\*\*)?\b",
+            stripped,
+        )
+        if checklist:
+            vid = checklist.group("vid")
+            total += 1
+            if checklist.group("mark").lower() == "x":
+                completed += 1
+            else:
+                unchecked.append(vid)
             continue
-        vid = m.group(1)
-        total += 1
-        if "✅" in line:
-            completed += 1
-        else:
-            unchecked.append(vid)
+
+        table = re.match(r"^\|\s*(?:\*\*)?(?P<vid>V\d+)(?:\*\*)?\s*\|", stripped)
+        if table:
+            vid = table.group("vid")
+            total += 1
+            if "✅" in stripped or re.search(r"\[[xX]\]", stripped):
+                completed += 1
+            else:
+                unchecked.append(vid)
 
     return completed, total, unchecked
 

@@ -56,7 +56,7 @@ Align 最小动作：
 
 1. `prism sniff <target> --kind review --topic <主题>`；不可用时手动组装等价 envelope。
 2. 读取 `review-templates.md`；`format=ofm` 时读取 `review-ofm.md`。
-3. topic / milestone / 方法论评审装配 context-pack full 或等价输入包；缺上下文不得输出全局判断。
+3. topic / milestone / 方法论评审按 [context-pack-spec.md](references/context-pack-spec.md) 装配 full 或等价输入包；缺上下文不得输出全局判断。
 4. 输出 route、mode、角色/agent 数量、loaded references、pre/post validators。
 
 ## 3. Mode 与并发
