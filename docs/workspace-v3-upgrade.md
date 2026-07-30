@@ -128,7 +128,7 @@ structures/task-N_slug/
 | `workflow-execute` | 推进唯一 task/wave；无 structures 时可推进合格 topic-focus，并同步实现、验证与既有工件 | 仅 3.0 topic；不选择 Next、不改治理合同、不自动建 structures |
 | `workflow-compact` | 上下文熵治理 | 默认 preview；授权后 backup→apply |
 | `workflow-archive` | topic 归档 / 再激活 | preview-first；`prism archive` / `prism reactivate` |
-| `workflow-review-lite` | 快速检查单个 topic 是否对齐 | 不替代正式决策 |
+| `workflow-review-lite` | 3.1 起软废弃兼容入口；旧 `type: review-lite` 产物仍可校验 | 不作为默认推荐路径，不替代正式决策 |
 
 ---
 

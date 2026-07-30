@@ -44,8 +44,9 @@ skills/
 内置 workflow skills 组成完整的人机协作管线。人类文档导航见 [docs/README.md](../docs/README.md)。
 
 ```
-init → intake → scope → execute ↔ review / review-lite → decision → scope（更新）→ ...
+init → intake → scope → execute ↔ review → decision → scope（更新）→ ...
   ├─ tidy（工件对齐）  ├─ digest（状态通报）  ├─ status（健康巡检 + next_actions handoff）
+  ├─ review-lite（soft-deprecated 兼容入口）
   ├─ compact（低频压实，dev experimental）  └─ archive / reactivate（生命周期，dev experimental）
 ```
 
@@ -56,7 +57,7 @@ init → intake → scope → execute ↔ review / review-lite → decision → 
 | `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + focus.md 刷新 |
 | `workflow-execute` | `/workflow-execute` | 唯一 task/wave 或合格 topic-focus 游标 | 授权变更 + 验证 + 证据/focus + 机械校验（experimental） |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
-| `workflow-review-lite` | `/workflow-review-lite` | 评审主题 | 轻量报告 + review.index |
+| `workflow-review-lite` | `/workflow-review-lite` | 显式兼容调用 / 旧 topic | 轻量报告 + review.index（3.1 起 soft-deprecated） |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |
 | `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
 | `workflow-status` | `/workflow-status` | 无 | 健康度报告 + `next_actions[]` handoff（不自动写盘） |

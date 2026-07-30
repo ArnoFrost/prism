@@ -1,9 +1,9 @@
 ---
 name: workflow-review-lite
 description: |
-  单视角轻量评审：读取 scope（专项边界合同）与 focus（当前工作集/关注点）后，直接输出结论 + 行动项，不做多角色仲裁。适用于日常迭代、小改动确认、边界快速对齐。
-  Use when: 日常迭代检查、小改动确认、快速对齐、轻量评审、单视角评审、改动确认、review lite、review-lite、workflow-review-lite
-description_zh: "单视角轻量评审：读 scope（边界合同）/ focus（当前工作集）后直接给结论与行动项，不做多角色仲裁；用于日常迭代与快速对齐。"
+  单视角轻量评审（3.1 起 soft-deprecated）：读取 scope（专项边界合同）与 focus（当前工作集/关注点）后，直接输出结论 + 行动项，不做多角色仲裁。保留给显式兼容调用与旧 topic；日常小改默认使用模型原生自检或自然语言澄清。
+  Use when: 显式兼容调用、旧 topic 轻量评审、review lite、review-lite、workflow-review-lite
+description_zh: "单视角轻量评审（3.1 起 soft-deprecated）：保留显式调用与旧产物兼容；日常小改默认使用模型原生自检或自然语言澄清。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -20,11 +20,14 @@ public_gate:
   ssot_id: workflow-review-lite
 ---
 
+> [!WARNING]
+> **3.1 soft-deprecated**：本技能保留显式调用与旧 `type: review-lite` 产物兼容，但不再作为默认推荐治理入口。日常小改优先用模型原生自检；需要持久、多视角、可审计判断时使用 `workflow-review`。
+
 ## 职责边界
 
 | 维度 | 说明 |
 |------|------|
-| **是什么** | 低摩擦、单视角轻量检查：Align → Scan → Write → Gate 4 |
+| **是什么** | 软废弃兼容入口：低摩擦、单视角轻量检查：Align → Scan → Write → Gate 4 |
 | **不是什么** | 不做多角色拆分、不产 raw/、不启动并行 subagent；**不得**直改 scope/focus |
 | **读什么** | Align 必读 `lite-templates`、`vocabulary`、`review-templates`；topic / scope-focus 场景装配 context-pack light |
 | **写什么** | `reviews/rXX_描述.md`（`type: review-lite`）+ 稀疏索引联动 |
@@ -41,10 +44,11 @@ public_gate:
 
 | 场景 | 用哪个 |
 |------|--------|
-| 日常迭代、小改动确认、scope/focus 快速对齐 | **review-lite** |
+| 日常迭代、小改动确认、scope/focus 快速对齐 | 默认模型原生自检 / 自然语言澄清 |
+| 显式兼容调用、旧 topic 轻量评审 | **review-lite** |
 | 方向变更、里程碑检查点、需多视角独立发现盲区 | `workflow-review` |
 
-判断：单视角足够 → lite；需多角色对冲 → review。
+判断：无需持久治理 → 模型原生；需多角色对冲或审计 → review；只有显式兼容场景才用 lite。
 
 ## 2. References 加载策略
 

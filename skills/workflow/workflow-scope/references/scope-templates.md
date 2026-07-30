@@ -65,8 +65,8 @@ focus.md 不是独立编写的文档，而是 scope.md 当前状态的**当前�
 | `non-goal` | scope 非目标 + 本轮明确不碰 |
 | 光标快读面（当前态/下一步）| 综合当前进展 + 下一个可执行动作 |
 
-> 长期工作分解去向：有 task → `structures/task.index.md`；无 task → scope 的 V 条目（不再有独立 plan 总计划段）。
-> 2.x 存量兼容口径见 [focus-derive-spec §2.x 兼容](./focus-derive-spec.md)。
+> 长期工作分解去向：有 task → `structures/task.index.md`；无 task → scope 的 V 条目。
+> README / 2.x grandfather 见 [scope-maintainer.md](./scope-maintainer.md)，不进入 scope 热路径。
 
 ## delta 摘要输出格式
 
@@ -171,13 +171,10 @@ Scope Delta 在常规 `变更：` 之后追加（不可跳过，守 FS-skip-delt
 
 ### Escalation-3（维持 streak 上限）
 
-同一 topic **连续 3 次** workflow-scope 选「维持 topic-scope」且 SR-S1 仍 >60 → **禁止第 4 次维持**；强制 `/workflow-intake` 拆子 topic 或 `/workflow-review-lite`（F-struct-vacuum advisory）。须在 Delta 记录 escalation 计数。
+同一 topic **连续 3 次** workflow-scope 选「维持 topic-scope」且 SR-S1 仍 >60 → **禁止第 4 次维持**；强制 `/workflow-intake` 拆子 topic，或由用户显式要求 `workflow-review` 做多视角判断。须在 Delta 记录 escalation 计数。
 
-## README.md（deprecated，懒迁移兜底）
+## README.md（低频 grandfather）
 
-> [!warning] README 已 deprecate（d01 / topic-format-spec §2）
-> topic 唯一入口 = **focus 保留区**（双链 scope/decision.index/review.index）。README 不再是 scope 的同步目标。
+新 topic 不生成/维护 README；topic 入口归 focus 保留区。存量 README 仅作 grandfather 兜底，细节见 [scope-maintainer.md](./scope-maintainer.md)。
 
-- **新 topic**：不再生成/维护 README；入口与导航归 focus 保留区，关键决策归 `decision.index`。
-- **存量 topic（grandfather）**：保留既有 README，懒迁移（不强制批量改写）；仅当存量 README 仍被消费时，最小同步「当前焦点 / 阶段 / 关键决策表」。
-- delta 摘要的「受影响文件」默认不含 README（除非存量兜底同步）。
+delta 摘要的「受影响文件」默认不含 README（除非明确维护存量 README）。

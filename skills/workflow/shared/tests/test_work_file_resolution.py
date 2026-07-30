@@ -120,21 +120,41 @@ def test_filled_focus_switches_back(tmp_path):
     assert "NEWNEXT" in (packed["current_focus"] or "")
 
 
-# ── scaffold 产 focus 不产 plan ─────────────────────────────
+# ── scaffold 产 focus 不产 plan；3.1 默认 minimal ────────
 
 def test_scaffold_produces_focus_not_plan(tmp_path):
     ws = str(tmp_path)
     res = scaffold.scaffold(ws, 77, "demo-topic", templates_dir=TEMPLATES_DIR, dry_run=True)
     created = " ".join(res.get("created", []))
+    assert res["scaffold_profile"] == "minimal"
     assert "focus.md" in created
     assert "plan.md" not in created
     assert os.path.join("references", "intake.md") in created or "references/intake.md" in created
 
 
-def test_scaffold_readme_has_frontmatter(tmp_path):
-    """r07.S d07.S 回归：scaffold 产出的 README 必须有 frontmatter（否则新 topic validate 红）。"""
+def test_scaffold_minimal_skips_readme_and_indexes(tmp_path):
+    """3.1 默认懒加载导航和索引占位，降低新 topic 起步噪音。"""
     ws = str(tmp_path)
-    scaffold.scaffold(ws, 88, "fm-probe", templates_dir=TEMPLATES_DIR, dry_run=False)
-    readme = open(os.path.join(ws, "topics", "088_fm-probe", "README.md"), encoding="utf-8").read()
+    scaffold.scaffold(ws, 88, "minimal-probe", templates_dir=TEMPLATES_DIR, dry_run=False)
+    topic = os.path.join(ws, "topics", "088_minimal-probe")
+    assert os.path.isfile(os.path.join(topic, "scope.md"))
+    assert os.path.isfile(os.path.join(topic, "focus.md"))
+    assert os.path.isfile(os.path.join(topic, "references", "intake.md"))
+    assert not os.path.exists(os.path.join(topic, "README.md"))
+    assert not os.path.exists(os.path.join(topic, "decision.index.md"))
+    assert not os.path.exists(os.path.join(topic, "review.index.md"))
+
+
+def test_scaffold_full_scaffold_readme_has_frontmatter_and_indexes(tmp_path):
+    """3.0 兼容：显式 full scaffold 产出的 README 必须有 frontmatter。"""
+    ws = str(tmp_path)
+    res = scaffold.scaffold(
+        ws, 89, "fm-probe", templates_dir=TEMPLATES_DIR, dry_run=False, full_scaffold=True
+    )
+    topic = os.path.join(ws, "topics", "089_fm-probe")
+    assert res["scaffold_profile"] == "full"
+    readme = open(os.path.join(topic, "README.md"), encoding="utf-8").read()
     assert readme.startswith("---"), "README 缺 YAML frontmatter"
     assert "type: topic-readme" in readme
+    assert os.path.isfile(os.path.join(topic, "decision.index.md"))
+    assert os.path.isfile(os.path.join(topic, "review.index.md"))

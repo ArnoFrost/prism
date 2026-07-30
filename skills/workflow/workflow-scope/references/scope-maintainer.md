@@ -9,10 +9,23 @@
 | 场景 | 动作 |
 |------|------|
 | 2.x topic 含 plan.md / 缺 focus | `workflow-intake --mode upgrade <topic_dir>` |
-| plan → focus 迁移细则 | [focus-derive-spec.md §2.x](../../shared/focus-derive-spec.md)（maintainer 只读，非 scope 热路径） |
+| plan → focus 读取 | `shared/scripts/parse_utils.py::resolve_work_file(topic_dir)` |
 | archive 冻结 topic | 不升级、不改合同 |
 
 显式映射：`FI-upgrade-boundary`（intake）↔ `FS-no-2x-inline` + `FS-focus-derive-boundary`（scope）。
+
+### 工作集读取 SSOT
+
+所有消费方必须经 `resolve_work_file(topic_dir)` 判断读取 `focus.md` 还是 `plan.md`，禁止自行用文件存在性判断。返回态包括：
+
+| migration_state | 读取 | 含义 |
+|-----------------|------|------|
+| `focus_active` | focus | 3.0 正常态 |
+| `dual_pending` | plan | `focus.md` 是升级占位壳且 `plan.md` 仍在 |
+| `plan_legacy` | plan | 存量 / archive grandfather |
+| `none` | focus | 缺省路径 |
+
+`upgrade_topic.py` 只做机械补壳；人工把 plan 当前焦点收进 focus 后删除 `migration: pending`，消费方即切回 `focus_active`。
 
 ## README.md（grandfather 兜底）
 
@@ -24,13 +37,24 @@
 | 存量 grandfather | 仅最小同步「当前状态/阶段」；delta 默认不写 README |
 | 格式 | 见 [topic-format-spec.md](../../shared/topic-format-spec.md) §2 |
 
+README 在场时可把 focus「下一步」镜像为 README next_action；新 topic 只维护 focus 聚焦区。
+
+## 3.1 热路径校准
+
+SKILL.md 主入口只保留 Context → Delta → Update → Verify 四步。维护者需要记住的边界：
+
+- scope 仍是 focus 与 task.index 的唯一上游；任何合同语义变化都必须先进入 scope
+- CLI / validator 可提供 topic 路由、结构信号、required references 与验证计划，但不能决定 G/V/OQ/约束内容
+- 2.x 兼容、README grandfather、struct-vacuum / fork-S3 等低频细节留在 reference / shared spec，不回填主入口
+- review 接受后的 scope 同步是串行施工动作；这不约束 workflow-review 内部是否并发探索
+
 ## 与其他 workflow skill 的关系
 
 | 技能 | 与 scope 的关系 |
 |------|----------------|
 | **intake** | 产出初始 scope 草稿；2.x upgrade 唯一接入门 |
 | **scope**（本技能）| focus 与 task.index 的唯一上游 |
-| **review / review-lite** | 不改 scope/focus；通过 dXX 间接触发 |
+| **review / review-lite** | 不改 scope/focus；需要改变合同时通过 accepted dXX 间接触发 |
 | **tidy / finalize** | 机械对齐索引；不改合同 what |
 
 ## 目录结构

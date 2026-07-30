@@ -66,11 +66,13 @@ WORKFLOW_TRACE_SCHEMA: dict[str, object] = {
         {
             "phase": "intake_gate_out",
             "family": "intake_gate_out",
-            # 工作集字段（focus_md_present 3.0 / plan_md_present 2.x）不入硬必填集（grandfather：
-            # 旧 2.x intake 块用 plan_md_present）；机器只硬卡三个跨版本稳定项，工作集字段值由 Agent 自检。
-            "required_fields": {"scope_md_present", "readme_md_present", "review_index_present"},
+            # 3.1：README / decision.index / review.index 改为 lazy-create，
+            # intake trace 只硬卡合同入口 + 工作集入口 + intake 轻量性。
+            # 工作集入口兼容 3.0 focus_md_present 与 2.x grandfather plan_md_present，
+            # 由 validate_intake_file 做二选一语义检查。
+            "required_fields": {"scope_md_present", "intake_size_ok"},
             "applies_to": "intake_file",
-            "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失（稳定三项硬卡；工作集 focus/plan present 字段 grandfather）",
+            "description": "Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 合同/工作集入口缺失；README/index 3.1 起 lazy 兼容",
         },
         {
             "phase": "merge_artifact",
@@ -394,6 +396,56 @@ def validate_intake_file(
             level, rel, "intake_gate_out", "intake_gate_out-fields-incomplete",
             f"`intake_gate_out:` 块缺字段: {sorted(missing_fields)}",
         ))
+    issues.extend(_validate_intake_gate_out_semantics(block, rel, level))
+    return issues
+
+
+def _bool_value(raw: str | None) -> bool | None:
+    if raw is None:
+        return None
+    value = str(raw).strip().lower()
+    if value in {"true", "yes", "1"}:
+        return True
+    if value in {"false", "no", "0"}:
+        return False
+    return None
+
+
+def _validate_intake_gate_out_semantics(
+    block: dict[str, str],
+    rel: str,
+    level: str,
+) -> list[Issue]:
+    """3.1 intake gate 语义：minimal scaffold 允许 lazy index，但必须有 scope + work file."""
+    issues: list[Issue] = []
+
+    if _bool_value(block.get("scope_md_present")) is False:
+        issues.append(Issue(
+            level, rel, "intake_gate_out", "scope-md-must-exist",
+            "intake_gate_out.scope_md_present=false：intake 完成前必须至少有 scope.md",
+        ))
+
+    focus_present = _bool_value(block.get("focus_md_present"))
+    plan_present = _bool_value(block.get("plan_md_present"))
+    if focus_present is not True and plan_present is not True:
+        rule = "work-file-presence-missing"
+        message = "intake_gate_out 需声明 focus_md_present=true（3.0）或 plan_md_present=true（2.x grandfather）"
+        if focus_present is False:
+            rule = "focus-md-must-exist"
+            message = "intake_gate_out.focus_md_present=false：3.0 topic 必须有 focus.md，或声明 plan_md_present=true 作为 2.x grandfather"
+        elif plan_present is False:
+            rule = "plan-md-must-exist"
+            message = "intake_gate_out.plan_md_present=false：2.x grandfather topic 必须有 plan.md，或声明 focus_md_present=true"
+        issues.append(Issue(
+            level, rel, "intake_gate_out", rule, message,
+        ))
+
+    if _bool_value(block.get("intake_size_ok")) is False:
+        issues.append(Issue(
+            "WARN", rel, "intake_gate_out", "intake-size-warning",
+            "intake_size_ok=false：intake.md 可能吞噬合同面内容，应拆回 scope/focus",
+        ))
+
     return issues
 
 

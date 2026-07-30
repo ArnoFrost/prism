@@ -31,7 +31,7 @@ focus 主体 = **顶部光标快读面**（当前态 / 下一步）+ **4 字段*
 
 ## focus 双区契约（保留区 vs 聚焦区）
 
-README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templates/topic-focus.md`）：
+focus 是 topic 入口与当前光标，模板分两区（见 `templates/topic-focus.md`）：
 
 | 区 | 内容 | retention | rewrite 行为 |
 |----|------|-----------|-------------|
@@ -72,27 +72,9 @@ README deprecate 后 focus 是 topic 唯一入口，模板分两区（见 `templ
 
 **正样本校准口径**：当某个 topic 级 V 深化到需要独立审计、分批推进、并自带 task-scope 与 wave 时，视为 **S3 满足**。校准结论：S3 主触发口径已通过 dogfood 正样本验证，S1/S2 仅作伴随信号；仍维持 provisional，待更多异构样本后再评估是否升 confirmed。
 
-## README grandfather 联动规则
+## 低频兼容面
 
-```
-README.next_action = focus 光标快读面「下一步」的一句话摘要（README 在场时）
-```
-
-本规则**仅适用于仍维护 README 的 grandfather topic**。focus 刷新后，workflow-scope Phase 4 可把「下一步」镜像到 `README.md` 的 next action 字段；README deprecate 的 topic（见下节）无需回写，「下一步」只存在于 focus 聚焦区。
-
-## README deprecate（focus 单入口）
-
-> README 退役后，focus 双区成 topic 唯一入口。**懒迁移**（grandfather，同 plan→focus）：存量 README 保留只读，新 topic 以 focus 保留区为入口；不强推批量迁移。
-
-| 维度 | README 在场（存量） | README deprecate 后 |
-|------|--------------------|--------------------|
-| **入口** | README 控制台 | focus 保留区 |
-| **关键决策 SSOT** | README 表 + decision.index | `decision.index`（删 README 表）|
-| **参考资料** | README 表 | `references/` + focus 保留区双链 |
-| **next_action** | 回写 README | 只在 focus 聚焦区，无需回写 |
-
-- **scaffold**：仍可生成 README 作存量兜底，但**入口语义归 focus 保留区**。
-- **消费脚本迁移**（status/digest/context_pack 改读 focus 保留区而非 README）= 后续机械阶段，需回归测试；本节先定口径，不强行改线。
+README grandfather、2.x `plan.md` 回退与 archive 冻结规则不属于 focus 派生热路径；需要维护存量 topic 时读取 [scope-maintainer.md](../workflow-scope/references/scope-maintainer.md)。
 
 ## scope.md 更新规则（focus-derive 的上游）
 
@@ -118,41 +100,3 @@ workflow-scope Phase 3 执行时：
   → 若升格 task → 先建/更新 `structures/task-N_{slug}/scope.md`，再同步 `task.index.md`（cite topic-format-spec 三元组，禁止孤儿 index）
   → 若 topic 仍维护 README → 最小镜像 next_action（grandfather only）
 ```
-
-## 2.x 兼容（grandfather）— 唯一权威说明
-
-> 本节是 plan→focus 兼容口径的**单一落点**。其它 SKILL / spec 正文一律用纯 `focus` 口径，不再逐处加「回退 plan」限定语；需要兼容细节时 cite 本节。
-
-**存量规模**：13 active + 20 archive topic 仍用 `plan.md`（截至 3.0 alpha）。
-
-### 工作集解析算法（唯一 SSOT）
-
-所有"读哪个工作集文件"的判定**必须**经唯一函数 `shared/scripts/parse_utils.py::resolve_work_file(topic_dir)`，
-**禁止**各脚本自行用「文件存在」或「内容非空」判断——否则 `status` 与 `digest` 可能对同一 topic 报告矛盾焦点。
-
-判定顺序（返回 `migration_state`）：
-
-| 顺序 | 条件 | 读取 | migration_state |
-|:----:|------|:----:|-----------------|
-| 1 | `focus.md` 有内容**且非迁移占位壳** | focus | `focus_active` |
-| 2 | `focus.md` 是迁移占位壳（frontmatter 含 `migration: pending`）且 `plan.md` 存在 | **plan** | `dual_pending` |
-| 3 | `focus.md` 空/缺，`plan.md` 存在 | plan | `plan_legacy` |
-| 4 | 都没有 | focus（缺省路径） | `none` |
-
-**迁移占位壳标记**：`upgrade_topic.py` 在 2.x→3.0 补 focus 壳时写入 frontmatter `migration: pending`。
-此标记存在 = focus 尚未人工填实 → 工具回退读 `plan.md`（升级中间态**不读空壳**）。
-人工把 plan「当前焦点」收进 focus 后**删除该行**，工作集即从 plan 切回 focus。
-
-**消费方**（全部经 `resolve_work_file`）：`status.py` / `tidy.py` / `collect.py` / `context_pack.py`；
-输出的 `focus.source` / `work_label` 标明实际读到哪个。`prism_cli.py` finalize 的 `scope_hint` 另报 `focus_exists` / `plan_exists` 存在标志（非读取点）。
-
-### 升级路径
-
-懒触发、不强推：`/workflow-intake --mode upgrade <topic_dir>` 做机械补壳（建带 `migration: pending` 的 focus + intake 归位 references/ + README 控制台行），plan 内容拆分人工执行。详见 intake SKILL §mode=upgrade。
-
-### archive 与 sunset
-
-- **archive/ 永久 grandfather**：归档专项只读冻结，不升级、不重扫（平铺律「不强制重写 archive」）。`resolve_work_file` 对 archive 仍按上表回退读 `plan.md`。
-- **sunset 条件**：当所有 **active** topic 达到 `focus_active`（无 `plan.md`、无 `migration: pending`）后，可提 cleanup commit 收窄回退分支——**但 `resolve_work_file` 的顺序 3（`plan_legacy`）必须保留**，因为 archive topic 可能永久持有 `plan.md`；删除顺序 3 会使归档专项工作集归零。即 sunset 只删「为 active 升级中间态服务」的逻辑（顺序 2 的 `dual_pending` 可在 active 清零后简化），archive 回退路径不退役。
-
-旧 2.x 投影规则见 [plan-derive-spec.md](./plan-derive-spec.md)（deprecated）。

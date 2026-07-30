@@ -10,7 +10,7 @@
 |------|----------|---------|---------|
 | `task_probe` | review (mode=full) | reviews/rXX_*.md | mode=full Align 末尾必填 |
 | `merge_artifact` | review (mode=full) | reviews/rXX_*.md | mode=full Merge 6 步后必填 |
-| `decision_artifact` | review / review-lite (Gate 4) | decisions/dXX_*.md（accept/reject/defer）或 review 主体（other）| 任一 Gate 4 决策后必填 |
+| `decision_artifact` | review / review-lite (Gate 4) | decisions/dXX_*.md（accept/reject/defer）| Gate 4 写 dXX 后必填；pending rXX synthesis 不要求 |
 | `intake_gate_out` | intake | references/intake.md（3.0；2.x grandfather 根级 intake.md）| intake Phase 3 完成后必填 |
 
 > 共同原则：**无痕迹 = 未执行**。痕迹缺失即视为对应门未关闭，禁止宣布完成。
@@ -73,7 +73,7 @@ merge_artifact:
 
 ## decision_artifact
 
-防 Gate 4 静默跳过。Gate 4 决策后必填：
+防 Gate 4 静默跳过。Gate 4 写入 dXX 后必填；仅落 `reviews/rXX` synthesis 且 `decision_status: pending` 时不要求：
 
 ```yaml
 decision_artifact:
@@ -90,7 +90,8 @@ decision_artifact:
 - `decision in {accept, reject, defer}` 且 `written: false` → **违约**：三类裁决都必须立即落盘 dXX.md
 - `decision == "other"` 时 **禁止 `written=true`**：必须填 `user_text`，让用户继续描述方向
 - `written: true` 但 `path` 为 null / 不存在 → **违约**：路径必须可审计
-- 缺失 `decision_artifact` 块本身 → Gate 4 未关闭，禁止"已完成"语义
+- dXX 缺失 `decision_artifact` 块本身 → Gate 4 未关闭，禁止"已完成"语义
+- pending rXX synthesis 不得伪造 `decision_artifact`；它只表示等待用户裁决
 
 **同源约束**：`decision_artifact.review_kind` 必须与落盘报告 frontmatter `type` 一致。
 validator 的 Callout 阈值分档以 frontmatter `type` 为机器 SSOT；
@@ -121,21 +122,25 @@ intake_gate_out:
   intake_md_lines: <int>
   scope_md_present: true | false           # scope.md 至少占位（机器硬卡存在性）
   focus_md_present: true | false           # focus.md 至少占位（3.0 工作集字段）
-  readme_md_present: true | false          # README.md 至少占位（机器硬卡存在性）
-  review_index_present: true | false       # review.index.md 至少占位（机器硬卡存在性）
+  plan_md_present: true | false            # 2.x grandfather 可替代 focus_md_present
+  readme_md_present: true | false          # 3.1 起 lazy 兼容；存在性仅记录，不硬卡
+  decision_index_present: true | false     # 3.1 起 lazy 兼容；存在性仅记录，不硬卡
+  review_index_present: true | false       # 3.1 起 lazy 兼容；存在性仅记录，不硬卡
   intake_size_ok: true | false             # intake.md 行数 ≤ 100（建议阈值）
 ```
 
 **校验规则**（任一违反 → intake 未完成）：
-- `scope_md_present` / `focus_md_present` / `readme_md_present` / `review_index_present` 任一为 `false` → **违约**：intake 必须补占位骨架；intake 完成前**禁止**进入下游 scope/review 阶段
-- **机器卡点边界**：`validate_trace` 硬卡 `scope_md_present` / `readme_md_present` / `review_index_present` 三个跨版本稳定项的**存在性**（不校验值）；**工作集字段**为 `focus_md_present`（3.0）/ `plan_md_present`（2.x grandfather，旧 intake 块用此名），不入硬必填集，其值由 Agent 自检——避免对存量 2.x intake 块（持 `plan_md_present`）误报
-- `intake_size_ok: false`（intake.md > 100 行）→ **强警示**：intake 正在吞噬合同面内容，应当把 scope 边界 / focus 当前轮 / 验收门槛拆出到对应文件
+- `scope_md_present` 缺失或为 `false` → **违约**：intake 完成前必须至少有合同入口。
+- `focus_md_present=true`（3.0）或 `plan_md_present=true`（2.x grandfather）必须至少满足一个；两者均缺失或均非 `true` → **违约**。
+- `intake_size_ok` 缺失 → **违约**；`intake_size_ok: false`（intake.md > 100 行）→ **强警示**：intake 正在吞噬合同面内容，应当把 scope 边界 / focus 当前轮 / 验收门槛拆出到对应文件。
+- `README.md` / `decision.index.md` / `review.index.md` 3.1 起为 lazy-create：字段可记录实际存在性，但 `false` 不构成 trace 硬违约；`--full-scaffold` 路径可自检三者为 true。
 
 **SSOT 分工**（intake_size_ok 设计意图）：
 - `intake.md` — 入料事件 + 路由判定 + 派生背景（**轻量**）
 - `scope.md` — 边界 / 合同 / 验收 / 非目标（合同面 SSOT）
 - `focus.md` — 当前工作集 / 注意力光标（执行面，rewrite）
-- `README.md` — 当前状态 / 轮次索引（指针面 SSOT）
+- `README.md` — 存量 grandfather 指针面；新 topic 不作为硬入口
+- `decision.index.md` / `review.index.md` — 首次 decision / review 后 lazy-create 或由 Gate/finalize 维护
 - `decisions/dXX.md` — 路由 / 边界 / 方向决策（决策面 SSOT）
 
 ---

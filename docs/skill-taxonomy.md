@@ -36,7 +36,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 | `workflow-scope` | 边界熵 / 注意力熵 | decision / review / scope | 更新 `scope.md`，刷新 `focus.md`，同步 task.index | 按需 | public / stable |
 | `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 structured task/wave 或合格 topic-focus + 项目代码 | 实现、验证、证据、派生 focus 与机械校验 | 按需 | dev / experimental |
 | `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色 findings、actions、rXX | 按需 | public / stable |
-| `workflow-review-lite` | 轻量分析熵 | 小改动、日常对齐点 | 单视角 findings、actions | 按需 | public / stable |
+| `workflow-review-lite` | 轻量分析熵 | 旧 topic / 显式兼容调用 | 单视角 findings、actions | soft-deprecated | public / stable |
 | `workflow-tidy` | 工件熵 | topic 工件、索引、frontmatter | 机械对齐后的索引/元数据 | 辅助 | public / stable |
 | `workflow-status` | 方向熵 / 健康熵 | workspace / topic | report-first 健康报告 + `next_actions[]` handoff | 辅助 | public / stable |
 | `workflow-digest` | 沟通熵 | topic 工件 | 面向协作者的状态快照 | 辅助 | public / stable |
@@ -65,7 +65,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 ### 日常小改或快速校准
 
-用 `workflow-review-lite`。不要为了小改动重启 full review。
+3.1 起默认用模型原生自检或自然语言澄清，不再把小改动自动导向 `workflow-review-lite`。需要持久化、多视角或可审计判断时，显式使用 `workflow-review`；旧 topic 仍可显式调用 `workflow-review-lite` 读取和校验历史产物。
 
 ### 工件状态乱了
 

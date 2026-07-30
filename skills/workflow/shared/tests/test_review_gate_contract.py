@@ -4,6 +4,7 @@ from pathlib import Path
 SDK_ROOT = Path(__file__).resolve().parents[4]
 FULL = SDK_ROOT / "skills" / "workflow" / "workflow-review" / "SKILL.md"
 LITE = SDK_ROOT / "skills" / "workflow" / "workflow-review-lite" / "SKILL.md"
+SCOPE = SDK_ROOT / "skills" / "workflow" / "workflow-scope" / "SKILL.md"
 TRACE = SDK_ROOT / "skills" / "workflow" / "shared" / "trace-artifacts-spec.md"
 GATE = SDK_ROOT / "skills" / "workflow" / "workflow-review" / "references" / "decision-gate.md"
 
@@ -23,7 +24,38 @@ def test_gate_order_is_readonly_before_decision_and_finalize_after_indexes():
     full = _read(FULL)
     gate = _read(GATE)
     assert "不得**在 Gate 4 前运行 write-mode finalize" in full
-    assert "Gate 4 → dXX + decision.index + eligible review.index → write-mode finalize" in gate
+    assert "review 落盘为 pending synthesis" in gate
+    assert "Gate 4 → dXX + decision.index + eligible review.index + rXX decision_ref → write-mode finalize" in gate
+
+
+def test_full_review_two_stage_pending_before_decision():
+    full = _read(FULL)
+    gate = _read(GATE)
+    templates = _read(SDK_ROOT / "skills" / "workflow" / "workflow-review" / "references" / "review-templates.md")
+    trace = _read(TRACE)
+    assert "decision_status: pending" in full
+    assert "pending rXX synthesis 不需要 `decision_artifact`" in gate
+    assert "`decision_status`" in templates
+    assert "pending rXX synthesis 不要求" in trace
+
+
+def test_review_hotpath_keeps_parallel_exploration_and_friendlier_synthesis():
+    full = _read(FULL)
+    assert "hotpath-envelope-spec.md" in full
+    assert "施工串行 ≠ review 串行" in full
+    assert "按问题复杂度弹性选择" in full
+    assert "grillme-like" in full
+    assert "不内置 grillme/clarify" in full
+
+
+def test_scope_hotpath_uses_envelope_and_keeps_upstream_contract():
+    scope = _read(SCOPE)
+    assert "hotpath-envelope-spec.md" in scope
+    assert "scope 是 focus 与 task.index 的唯一上游" in scope
+    assert "Phase 1 Context" in scope
+    assert "Phase 2 Delta" in scope
+    assert "Phase 3 Update" in scope
+    assert "Phase 4 Verify" in scope
 
 
 def test_defer_persists_but_other_does_not():

@@ -16,15 +16,12 @@
 > ⚠️ 创建和更新文件时都必须遵守。更新已有文件时，发现旧的 `[[wikilink]]` 应一并修正为相对路径。
 > 短后缀规则：中英文均可，禁止空格。示例：`d01_接受R1解耦路径.md`、`r01_任务内聚评审.md`。
 
-## 新建专项骨架（3.0）
+## 新建专项骨架（3.1 默认）
 
 ```
 topics/{NNN}_{topic-name}/
-├── README.md              # 主线导航
 ├── scope.md               # 合同收敛（G/V/非目标/约束/未决/变更记录；persistent）
 ├── focus.md               # 当前工作集（光标快读面 + 4 字段；rewrite，主体≤30行）
-├── decision.index.md      # 决策链主索引（占位 — 事件链 SSOT）
-├── review.index.md        # 评审辅助索引（占位 — 稀疏关联律）
 ├── references/            # 依据/来源
 │   └── intake.md          # 输入整形（本次 intake 产物）
 ├── reviews/               # 评审轮次产物目录
@@ -33,24 +30,34 @@ topics/{NNN}_{topic-name}/
 ```
 
 > `artifacts/`、`snapshots/`、`verify/`、`structures/` 按需创建，不预生成。
-> `decision.index.md` 由 intake 自动生成（主索引）；`review.index.md` 由 intake 自动生成（辅助索引，仅在 review 被 decision 引用时填充）。
+> `README.md`、`decision.index.md`、`review.index.md` 默认懒加载；需要 3.0 兼容完整骨架时由 `scaffold.py --full-scaffold` 生成。
+
+## 完整兼容骨架（显式 `--full-scaffold`）
+
+`--full-scaffold` 在 minimal 骨架之外额外生成：
+
+```
+├── README.md              # 主线导航 / grandfather 兜底
+├── decision.index.md      # 决策链主索引（占位 — 事件链 SSOT）
+└── review.index.md        # 评审辅助索引（占位 — 稀疏关联律）
+```
 
 ## 模板 SSOT 映射（workspace/templates/）
 
 scaffold.py 从下列模板渲染产物（占位符替换 `{NNN}` / `{topic-name}` / `{topic-tag}` / `YYYY-MM-DD`）。**编辑模板请改 SSOT，不要在本文件内联复制**：
 
-| 产物文件 | 模板 SSOT |
-|---------|----------|
-| `README.md` | [topic-readme.md](../../../../workspace/templates/topic-readme.md) |
+| 产物文件 | 模板 SSOT | 生成时机 |
+|---------|----------|----------|
 | `scope.md` | [topic-scope.md](../../../../workspace/templates/topic-scope.md) |
 | `focus.md` | [topic-focus.md](../../../../workspace/templates/topic-focus.md) |
 | `references/intake.md` | [topic-intake.md](../../../../workspace/templates/topic-intake.md) |
-| `decision.index.md` | [topic-decision-index.md](../../../../workspace/templates/topic-decision-index.md) |
-| `review.index.md` | [topic-review-index.md](../../../../workspace/templates/topic-review-index.md) |
-| `structures/task.index.md`（按需）| [task-index.md](../../../../workspace/templates/task-index.md) |
-| `structures/task-N_slug/scope.md`（按需）| [task-scope.md](../../../../workspace/templates/task-scope.md) |
-| `structures/task-N_slug/wave-N_slug.md`（按需）| [task-wave.md](../../../../workspace/templates/task-wave.md) |
-| `plan.md`（2.x grandfather，deprecated）| [topic-plan.md](../../../../workspace/templates/topic-plan.md) |
+| `README.md` | [topic-readme.md](../../../../workspace/templates/topic-readme.md) | `--full-scaffold` 或 grandfather 兜底 |
+| `decision.index.md` | [topic-decision-index.md](../../../../workspace/templates/topic-decision-index.md) | `--full-scaffold` 或首次 decision 需求 |
+| `review.index.md` | [topic-review-index.md](../../../../workspace/templates/topic-review-index.md) | `--full-scaffold` 或首次 review 需求 |
+| `structures/task.index.md`（按需）| [task-index.md](../../../../workspace/templates/task-index.md) | `workflow-scope` |
+| `structures/task-N_slug/scope.md`（按需）| [task-scope.md](../../../../workspace/templates/task-scope.md) | `workflow-scope` |
+| `structures/task-N_slug/wave-N_slug.md`（按需）| [task-wave.md](../../../../workspace/templates/task-wave.md) | `workflow-scope` |
+| `plan.md`（2.x grandfather，deprecated）| [topic-plan.md](../../../../workspace/templates/topic-plan.md) | upgrade / grandfather |
 
 ## Append 到已有专项
 

@@ -1,7 +1,7 @@
 ---
 name: workflow-intake
-description: "接收新需求并默认创建新的 3.0 topic；仅在显式 append/migrate/upgrade 时追加、聚合或升级已有 topic。输出专项骨架 + index 更新。 Use when: 新需求入料、创建新 topic、2.x topic 升级、显式 append、显式 migrate、workflow-intake"
-description_zh: "接收新需求并默认创建新的 3.0 topic；仅在显式 append/migrate/upgrade 时追加、聚合或升级已有 topic。输出专项骨架 + index 更新。"
+description: "接收新需求并默认创建新的 3.0 topic；仅在显式 append/migrate/upgrade 时追加、聚合或升级已有 topic。输出 minimal 专项骨架；完整 index 骨架可用 --full-scaffold 兼容生成。 Use when: 新需求入料、创建新 topic、2.x topic 升级、显式 append、显式 migrate、workflow-intake"
+description_zh: "接收新需求并默认创建新的 3.0 topic；仅在显式 append/migrate/upgrade 时追加、聚合或升级已有 topic。输出 minimal 专项骨架；完整 index 骨架可用 --full-scaffold 兼容生成。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -24,7 +24,7 @@ public_gate:
 | **是什么** | 把混沌输入收成新的 3.0 topic；显式 append/migrate/upgrade 时才触碰已有 topic |
 | **不是什么** | 不定正式 scope，不刷新真实 focus，不做 review，不替代 human decision |
 | **读什么** | `prism sniff` 输出；Phase 1-2 必读 `intake-routing-spec.md`、`intake-templates.md`、`vocabulary.md` |
-| **写什么** | `references/intake.md` + scope/focus/decision.index/review.index 占位骨架 + workspace `index.md`；README 仅 deprecated 兜底 |
+| **写什么** | 默认写 `references/intake.md` + `scope.md` + `focus.md` + workspace `index.md`；`--full-scaffold` 兼容生成 README/decision.index/review.index |
 | **结束建议** | → `workflow-scope` 收敛正式合同 |
 
 ---
@@ -78,7 +78,7 @@ Phase 1  Intake
 Phase 2  Route
   按 intake-routing-spec：默认 new topic；append 必须显式目标
 Phase 3  Initialize
-  用 scaffold.py + workspace/templates 创建或补全骨架
+  用 scaffold.py + workspace/templates 创建或补全 minimal 骨架；需要 3.0 完整占位时显式 --full-scaffold
 Phase 4  Gate Out
   输出 intake_gate_out，确认骨架文件齐全
 ```
@@ -144,7 +144,7 @@ intake_gate_out:
 
 | 分支 | 写盘 |
 |------|------|
-| 新建 topic | 创建完整 3.0 骨架：`references/intake.md`、`scope.md`、`focus.md`、`decision.index.md`、`review.index.md`、README 兜底；更新 workspace `index.md` |
+| 新建 topic | 默认创建 minimal 骨架：`references/intake.md`、`scope.md`、`focus.md`；更新 workspace `index.md`。需要旧式完整占位时显式 `--full-scaffold` 生成 README/decision.index/review.index |
 | append 到已有 topic | 只补 topic 根文件、追加 `references/intake.md`、补 scope 未决问题、刷新 README 兜底；不得创建额外子目录 |
 | migrate | 用户确认后迁移任务、清旧引用、刷新 README 兜底 |
 | upgrade | 只机械补壳：focus / references intake / README 控制台；不删 plan、不改 scope 合同 |

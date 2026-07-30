@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """消费侧 skill 对标回归（041 task-1 wave-2 / tV2↑V9）。
 
-锁定 README-deprecate → focus 入口的两处脚本行为：
-  - status._check_skeleton：README 不再必需；focus(入口) 必需。
+锁定 README-deprecate / lazy index → focus 入口的脚本行为：
+  - status._check_skeleton：README / review.index 不再必需；focus(入口) 必需。
   - digest.collect._collect_focus：补 current_state（README 缺失时的状态源）。
 """
 
@@ -60,12 +60,12 @@ def test_skeleton_plan_grandfather_satisfies_entry(tmp_path):
     assert st._check_skeleton(d) == []  # plan 充当 2.x 入口
 
 
-def test_skeleton_scope_and_index_still_required(tmp_path):
+def test_skeleton_scope_required_but_lazy_index_not_required(tmp_path):
     d = str(tmp_path / "103_bare")
     _seed_topic(d, with_scope=False, with_index=False)
     missing = st._check_skeleton(d)
     assert "scope.md" in missing
-    assert "review.index.md" in missing
+    assert "review.index.md" not in missing
 
 
 def test_collect_focus_current_state(tmp_path):

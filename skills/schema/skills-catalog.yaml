@@ -61,7 +61,7 @@ entries:
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-07-13"
-    rationale: "Lightweight single-pass review — no multi-role, shared sniff with review."
+    rationale: "Soft-deprecated compatibility entry since Prism 3.1 Lite: explicit calls and legacy type=review-lite artifacts remain supported, but it is no longer a recommended default governance path."
   - id: workflow-scope
     visibility: public
     stability: stable

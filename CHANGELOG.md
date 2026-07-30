@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## [v3.1.0] — 2026-07-29
+
+> **Prism 3.1 boundary-stable line** — 在 v3.0 GA 基线上启动强模型时代的治理瘦身：降低默认 workflow 表面积与 skill 热路径复杂度，同时保留 `scope` / `focus` / `review` / `decision` 的跨会话状态、审计与迁移价值。
+
+### Changed
+
+- **版本与公开口径** — `VERSION` / `pyproject.toml` / `uv.lock` 显性化为 `v3.1.0` / `3.1.0`，README 首屏标注 3.1 boundary-stable line。
+- **发布叙事** — 明确 3.1 是治理瘦身主线且当前达到 boundary-stable，不宣称 release-ready 或完成 tag 发布。
+
 ## [v3.0.0] — 2026-07-13
 
 > **Prism 3.0 GA** — core contract 收敛为 SDK + `uv`；Workspace 默认使用本地 backend，Skills、Env 与 Vault 均为可选部署。正式 workflow 能力完成 public/stable 审计，实验能力继续保持显式标记。
