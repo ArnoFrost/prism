@@ -65,7 +65,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 ### 日常小改或快速校准
 
-3.1 Lite 起默认用模型原生自检或自然语言澄清，不再把小改动自动导向 `workflow-review-lite`。需要持久化、多视角或可审计判断时，显式使用 `workflow-review`；旧 topic 仍可显式调用 `workflow-review-lite` 读取和校验历史产物。
+3.1 起默认用模型原生自检或自然语言澄清，不再把小改动自动导向 `workflow-review-lite`。需要持久化、多视角或可审计判断时，显式使用 `workflow-review`；旧 topic 仍可显式调用 `workflow-review-lite` 读取和校验历史产物。
 
 ### 工件状态乱了
 

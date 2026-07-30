@@ -41,7 +41,7 @@ workspace.{PROJECT_CODE_LOWER}.local/
 | 有新需求，或不确定该归入哪个专项 | 先执行 `/workflow-intake` 路由 |
 | 接受了评审决策（dXX），需更新边界或刷新 focus | 执行 `/workflow-scope` 同步 |
 | 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
-| 日常迭代、小改动确认、scope/focus 快速对齐 | 执行 `/workflow-review-lite` |
+| 日常迭代、小改动确认、scope/focus 快速对齐 | 默认模型原生自检 / 自然语言澄清；需持久审计时显式 `/workflow-review` |
 
 ## 决策记录约定
 
