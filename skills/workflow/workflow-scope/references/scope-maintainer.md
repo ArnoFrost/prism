@@ -39,6 +39,15 @@
 
 README 在场时可把 focus「下一步」镜像为 README next_action；新 topic 只维护 focus 聚焦区。
 
+## 3.1 热路径校准
+
+SKILL.md 主入口只保留 Context → Delta → Update → Verify 四步。维护者需要记住的边界：
+
+- scope 仍是 focus 与 task.index 的唯一上游；任何合同语义变化都必须先进入 scope
+- CLI / validator 可提供 topic 路由、结构信号、required references 与验证计划，但不能决定 G/V/OQ/约束内容
+- 2.x 兼容、README grandfather、struct-vacuum / fork-S3 等低频细节留在 reference / shared spec，不回填主入口
+- review 接受后的 scope 同步是串行施工动作；这不约束 workflow-review 内部是否并发探索
+
 ## 与其他 workflow skill 的关系
 
 | 技能 | 与 scope 的关系 |

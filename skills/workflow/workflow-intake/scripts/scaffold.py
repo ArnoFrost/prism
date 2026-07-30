@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""scaffold.py — 在 workspace 的 topics/ 下一键创建专项骨架（3.1 Lite，模板驱动）。
+"""scaffold.py — 在 workspace 的 topics/ 下一键创建专项骨架（3.1，模板驱动）。
 
 用法: uv run python scaffold.py <workspace_path> <number> <topic_name> [--title <标题>] [--tag <tag>] [--templates-dir <dir>] [--full-scaffold] [--dry-run]
 
-3.1 Lite 行为：
+3.1 行为：
   - 产 focus.md（不产 plan.md）；intake 落 references/intake.md（不占根级）
   - 默认 minimal scaffold：scope/focus/references-intake 起步，README 与 index 懒加载
   - --full-scaffold 保留 3.0 兼容骨架：README/decision.index/review.index 一并生成

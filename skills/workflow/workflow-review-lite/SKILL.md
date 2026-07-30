@@ -21,7 +21,7 @@ public_gate:
 ---
 
 > [!WARNING]
-> **3.1 Lite soft-deprecated**：本技能保留显式调用与旧 `type: review-lite` 产物兼容，但不再作为默认推荐治理入口。日常小改优先用模型原生自检；需要持久、多视角、可审计判断时使用 `workflow-review`。
+> **3.1 soft-deprecated**：本技能保留显式调用与旧 `type: review-lite` 产物兼容，但不再作为默认推荐治理入口。日常小改优先用模型原生自检；需要持久、多视角、可审计判断时使用 `workflow-review`。
 
 ## 职责边界
 

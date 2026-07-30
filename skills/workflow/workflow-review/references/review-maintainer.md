@@ -206,6 +206,17 @@ review 与 review-lite 共享 `reviews/rXX_*.md` 同一流水编号池，lite �
 - 完整字段、校验规则、raw 阈值全部以 `trace-artifacts-spec.md` 为准
 - fallback 白名单全文以 `parallel-execution.md` 为准；主入口只保留“真探测 + 禁伪并行 + 合法降级”
 
+### 4.10 3.1 热路径校准
+
+**改造目标**：SKILL.md 主入口只保留 Align → Explore → Merge → Gate 4 的执行骨架，把字段表、历史 Errata、格式细节、context-pack 细节移动到 shared/reference 面。
+
+**不变边界**：
+
+- mode=full 仍优先真实并发 / 多角色探索；3.1 施工串行不等于 review 串行
+- `task_probe` / `merge_artifact` / Gate 4 pending synthesis 仍是主入口可见硬锚点
+- 报告合成要先给 judgment / OQ / 分歧 / 行动项，再进入 Gate 4 决策；可吸收 grillme-like 追问体验，但不在 3.1 内置 grillme/clarify
+- CLI / validator 只提供 `hotpath_envelope` 的机械事实，不替代 Agent 的治理判断
+
 ## 5. 维护节奏
 
 - **本文件不是 agent 主流程 SSOT**：SKILL.md 是 SSOT，本文件是历史档案 + 维护者参考

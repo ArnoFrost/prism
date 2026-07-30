@@ -203,7 +203,7 @@ class TestStrictMissing:
         assert result["errors"] == []
 
     def test_pending_review_synthesis_does_not_require_decision_artifact(self, tmp_path: Path):
-        """3.1 Lite：rXX synthesis 可 pending 等待 Gate 4；decision_artifact 只约束 dXX。"""
+        """3.1：rXX synthesis 可 pending 等待 Gate 4；decision_artifact 只约束 dXX。"""
         topic = self._build_topic(tmp_path)
         (topic / "reviews" / "r04_pending.md").write_text(
             "---\n"
@@ -261,6 +261,79 @@ class TestStrictMissing:
             e["family"] != "intake_gate_out"
             for e in result["errors"]
         )
+
+    def test_intake_minimal_scaffold_trace_passes_without_lazy_indexes(self, tmp_path: Path):
+        """3.1：README / indexes 可 lazy-create，不再是 intake 硬门槛。"""
+        topic = self._build_topic(tmp_path)
+        (topic / "intake.md").write_text(
+            "# Intake\n\n"
+            "intake_gate_out:\n"
+            "  topic_dir: topics/056_minimal\n"
+            "  intake_md_lines: 18\n"
+            "  scope_md_present: true\n"
+            "  focus_md_present: true\n"
+            "  readme_md_present: false\n"
+            "  decision_index_present: false\n"
+            "  review_index_present: false\n"
+            "  intake_size_ok: true\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        assert result["ok"] is True
+        assert result["errors"] == []
+
+    def test_intake_plan_grandfather_trace_passes_without_focus(self, tmp_path: Path):
+        """2.x grandfather：plan_md_present 可替代 3.0 focus_md_present。"""
+        topic = self._build_topic(tmp_path)
+        (topic / "intake.md").write_text(
+            "# Intake\n\n"
+            "intake_gate_out:\n"
+            "  topic_dir: topics/039_legacy\n"
+            "  intake_md_lines: 52\n"
+            "  scope_md_present: true\n"
+            "  plan_md_present: true\n"
+            "  readme_md_present: true\n"
+            "  review_index_present: true\n"
+            "  intake_size_ok: true\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        assert result["ok"] is True
+        assert result["errors"] == []
+
+    def test_intake_requires_focus_or_plan_work_file(self, tmp_path: Path):
+        """scope 之外必须声明一个工作集入口：3.0 focus 或 2.x plan。"""
+        topic = self._build_topic(tmp_path)
+        (topic / "intake.md").write_text(
+            "# Intake\n\n"
+            "intake_gate_out:\n"
+            "  topic_dir: topics/056_missing_work_file\n"
+            "  intake_md_lines: 20\n"
+            "  scope_md_present: true\n"
+            "  intake_size_ok: true\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        rules = {e["rule"] for e in result["errors"]}
+        assert "work-file-presence-missing" in rules
+
+    def test_intake_size_false_warns_without_blocking_trace(self, tmp_path: Path):
+        """intake_size_ok=false 是强警示，不阻断 trace strict 通过。"""
+        topic = self._build_topic(tmp_path)
+        (topic / "intake.md").write_text(
+            "# Intake\n\n"
+            "intake_gate_out:\n"
+            "  topic_dir: topics/056_large_intake\n"
+            "  intake_md_lines: 180\n"
+            "  scope_md_present: true\n"
+            "  focus_md_present: true\n"
+            "  intake_size_ok: false\n",
+            encoding="utf-8",
+        )
+        result = vt.scan_topic(topic, strict=True)
+        assert result["ok"] is True
+        assert result["errors"] == []
+        assert any(w["rule"] == "intake-size-warning" for w in result["warnings"])
 
     def test_lenient_demotes_to_warnings(self, tmp_path: Path):
         """--lenient: missing → WARN，ok=true。"""
@@ -449,6 +522,15 @@ class TestFieldNamingSSOT:
         )
         assert vt.TRACE_FAMILIES["task_probe"]["required_fields"] == phase["required_fields"]
         assert vt.TRACE_FAMILIES["task_probe"]["schema_family"] == "workflow_trace"
+
+    def test_intake_gate_out_required_fields_match_3_1_lite_lazy_ssot(self):
+        """3.1：intake 只硬卡 scope + intake_size；工作集入口走二选一语义检查。"""
+        phase = next(
+            phase for phase in vt.WORKFLOW_TRACE_SCHEMA["phases"]
+            if phase["family"] == "intake_gate_out"
+        )
+        assert phase["required_fields"] == {"scope_md_present", "intake_size_ok"}
+        assert vt.TRACE_FAMILIES["intake_gate_out"]["required_fields"] == phase["required_fields"]
 
     def test_task_probe_passes_with_skill_ssot_fields(self, tmp_path: Path):
         """端到端：用 SKILL.md 字段写出的 task_probe 块必须通过 strict 校验。"""

@@ -7,7 +7,7 @@ description_zh: "在决策后更新 scope.md 并刷新 focus.md，确保合同�
 license: MIT
 metadata:
   author: ArnoFrost
-  version: 3.0.0
+  version: 3.1.0
 visibility: public
 stability: stable
 user_invocable: true
@@ -23,160 +23,111 @@ public_gate:
 
 | 维度 | 说明 |
 |------|------|
-| **是什么** | 专项合同维护器：Context → Delta → Update → Sync；scope 原地更新，focus rewrite |
-| **不是什么** | 不做 review、不记 findings、不建 scope-v2/focus-v2；review/lite 结论不得直改合同 |
-| **读什么** | context-pack light（scope/focus）；Phase 3 必读 `focus-derive-spec.md`、`scope-templates.md` |
-| **写什么** | `scope.md`（原地）、`focus.md`（rewrite）、`structures/task-N_slug/` + `task.index.md` 按需 |
-| **结束建议** | 验证通过后继续执行；仅在用户明确需要多视角判断时交 `workflow-review` |
-
----
+| **是什么** | 合同维护器：根据授权更新 `scope.md`，再 rewrite `focus.md` |
+| **不是什么** | 不做 review、不记 findings、不建 scope-v2/focus-v2、不按裸 review 结论落权 |
+| **读什么** | context-pack light / hotpath envelope；必要时读 focus-derive 与 scope templates |
+| **写什么** | `scope.md`、`focus.md`；按需 `structures/task-N_slug/` + `task.index.md` |
+| **结束建议** | 验证通过后继续执行；需要多视角判断才交 `workflow-review` |
 
 # 专项边界收敛与合同维护 (Workflow Scope)
 
-> 管线定位：`intake → scope ←→ review → archive`
-> 术语遵循 [vocabulary.md](references/vocabulary.md)，不在主入口复制定义。
+> 3.1 热路径：scope 是 focus 与 task.index 的唯一上游。CLI / validator 只提供机械 envelope、结构信号和校验计划，不替 Agent 或用户决定合同内容。Envelope 约定见 [hotpath-envelope-spec.md](../shared/hotpath-envelope-spec.md)。
 
 ## 1. 何时使用
 
 | 场景 | 做法 |
 |------|------|
-| 接受 review 决策（dXX），需同步合同 | `/workflow-scope` |
-| scope 与实际执行偏移，需重新收敛 | `/workflow-scope` |
-| intake 后从原始输入收敛正式边界 | `/workflow-scope` |
-| focus 需要更新 | **先更新 scope**，再按 focus-derive 刷新 focus |
+| accepted dXX 后需同步 G/V/约束/OQ | `workflow-scope` |
+| 执行结果与 scope 账面偏移 | `workflow-scope` |
+| intake 后收敛正式边界 | `workflow-scope` |
+| focus 需要更新 | 先更新 scope，再按 focus-derive 刷新 focus |
 
-## 2. References 加载策略
+禁止：review / review-lite findings 未落 dXX 时直改 scope/focus；“只改 focus / 只改 task.index”也必须拒绝。
 
-> 不要一次读取全部 `references/`；按阶段渐进加载。
-
-| 阶段 | 必读 | 按需 |
-|------|------|------|
-| Phase 1 Context | `context-pack-spec.md` light；struct-absent 时**必跑** `sniff_lib.struct_vacuum_signals()` 并在 Delta 前置摘要行 | `vocabulary.md` |
-| Phase 2 Delta | — | `require_fork_gate` 或 **FS-semantic-fork** 时必读 [scope-templates.md §task-fork gate](references/scope-templates.md) |
-| Phase 3 Update | `focus-derive-spec.md`, `scope-templates.md` | — |
-| Maintainer / README / 2.x | — | [scope-maintainer.md](references/scope-maintainer.md) |
-
-## 3. 触发源判定
-
-| 触发源 | 进入条件 |
-|--------|----------|
-| accepted dXX | 人类 Accept review 决策后显式调用 |
-| scope 偏移 | 执行与 scope 合同不一致，需补录 |
-| intake 后收敛 | intake 产出草稿 scope，需收敛正式合同 |
-| **禁止** | review/lite findings 未落 dXX 时不得直改 scope/focus |
-
-## 4. Happy Path
+## 2. Hot Path
 
 ```text
-Phase 1  Context — 读 scope/focus（context-pack light）；触发源 + 最近 dXX/review；struct-absent 时必跑 struct_vacuum_signals
-Phase 2  Delta   — 显式输出变更摘要（+ / ~ / ✓）；不可跳过；前置 struct-vacuum 摘要；require_fork_gate 或 FS-semantic-fork 时追加 task-fork gate 块
-Phase 3  Update  — 按 focus-derive 更新 scope + rewrite focus；升格 task 时写盘顺序 task-N/scope → task.index → focus
-Phase 4  Sync     — 刷新 focus 保留区双链；decision.index 按需追加
+Phase 1 Context — 读 scope/focus + 触发源；获取 envelope / struct signals
+Phase 2 Delta   — 先输出 + / ~ / ✓ 变更摘要；不可跳过
+Phase 3 Update  — scope 原地更新；需要 task 时先 task-scope 后 task.index；随后 rewrite focus
+Phase 4 Verify  — product / trace / conservation 校验；只报告，不自动选择 next
 ```
 
-### Phase 2 Delta（必填）
+最小输入：
 
-| 触发类型 | scope 变更 |
-|---------|-----------|
-| 接受 review 决策 | 新增/修改 V、G、约束 |
-| scope 偏移修正 | 补录已完成未勾 V |
-| 新增非目标 | 追加「不做 …」 |
-| 约束变更 | 追加关键约束 |
+- 授权来源：accepted dXX、用户显式 scope 偏移修正，或 intake 后边界收敛。
+- 当前合同：`scope.md` + `focus.md`（或 2.x 由 intake upgrade 处理）。
+- 机械 envelope：topic_dir、work file、structures 状态、allowed writes、validator plan。
 
-**struct-vacuum**：Phase 1 struct-absent 时**必跑** `struct_vacuum_signals()`；Delta 前置一行 `struct-vacuum: advisory={bool} require={bool} signals=[...]`。当 `require_fork_gate: true` **或**命中 **FS-semantic-fork** 时，Delta **必须**含 [scope-templates §task-fork gate](references/scope-templates.md) 三选一；省略 → FS-skip-delta-fail。选「膨胀 task」→ Phase 3 按 **task-N/scope → task.index → focus** 顺序完成 Task Spawn Checklist 四件套（wave 可占位，task-N/scope 不可省）。
+## 3. Delta 必填
 
-示例：
+每次写盘前先给 Delta：
 
-```
-触发：decisions/dXX_{action}_{ref}.md (accepted)
+```text
+触发：decisions/dXX_xxx.md 或 explicit workflow-scope
 变更：
-  + 验收口径：{V 描述}
-  ~ 非目标：{修订}
+  + 新增 G/V/约束/OQ/task
+  ~ 修改既有口径
+  ✓ 标记完成
+受影响文件：scope.md, focus.md, structures/...（如有）
 ```
 
-### Phase 3 Update
+Delta 发现需要新增 task / structures / 投影 V→task 时，按 [scope-templates.md §task-fork gate](references/scope-templates.md) 处理；禁止只写 `task.index.md` 而没有 `structures/task-N_slug/scope.md`。
 
-按 [focus-derive-spec.md](references/focus-derive-spec.md) 执行 scope 原地更新 + focus rewrite。格式见 [scope-templates.md](references/scope-templates.md)。
+## 4. Update Rules
 
-## 5. 合同守恒门
-
-| 规则 | 说明 |
+| 目标 | 规则 |
 |------|------|
-| review 不直改 | findings → dXX → scope → focus |
-| 禁分版文件 | 不得创建 scope-v2 / focus-v2 |
-| focus 上游 | focus / task.index 不脱离 scope 改写 |
-| lite ≠ 授权 | review-lite Accept 不等于 scope 写盘许可 |
+| `scope.md` | 原地更新；变更记录只追加 |
+| `focus.md` | 按 [focus-derive-spec.md](references/focus-derive-spec.md) rewrite 聚焦区；历史不进 focus |
+| `structures/task-N_slug/scope.md` | 升格 task 时先写 task-scope，承接 topic-V |
+| `structures/task.index.md` | task-scope 后更新导航行 |
+| `README.md` | 新 topic 不维护；存量 grandfather 细节见 maintainer |
 
-## 6. Safety Gates
+scope / focus 格式、可读性、struct-vacuum 阈值、task spawn checklist 见 [scope-templates.md](references/scope-templates.md)；README 和 2.x 兼容见 [scope-maintainer.md](references/scope-maintainer.md)。
 
-### FS-delta-required / FS-skip-delta-fail
+## 5. Safety Gates
 
-Phase 2 delta 摘要**不可跳过**；用户要求「直接更新」必须 fail。`require_fork_gate` 或 FS-semantic-fork 命中时省略 task-fork gate 块同等 fail。
+| Gate | 不可退化要求 |
+|------|--------------|
+| 授权 | scope 变更必须来自 accepted dXX、显式 scope 修正或 intake 收敛 |
+| Delta | 不可跳过；用户说“直接改”也要先列摘要 |
+| 上游 | focus / task.index 不脱离 scope 改写 |
+| 分版 | 禁 `scope-v2.md` / `focus-v2.md` |
+| 结构 | 新建 task 必须 task-scope → task.index → focus；禁止 orphan index |
+| 2.x | plan/migration 细则交 `workflow-intake --mode upgrade`，本入口不内联处理 |
 
-### FS-semantic-fork
+## 6. References
 
-当 Delta 变更、用户意图或 accepted dXX 含 **task 拆分 / 升格 structures / 新建 task-N / 投影 V→task** 等语义时（不依赖 SR 阈值），**强制**输出 task-fork gate 三选一；选「膨胀 task」→ Phase 3 禁止仅写 `task.index` 而无 `structures/task-N_{slug}/scope.md`。
-
-### FS-decision-to-scope
-
-Accept dXX 后：scope **原地更新** → focus **rewrite** → decision.index 按需；**不得**新建 scope-v2/focus-v2。
-
-### FS-scope-upstream
-
-「只改 focus / 只改 task.index」必须拒绝：先 scope，再 focus-derive 刷新。升格 task 时禁止孤儿 `task.index`（有 index 行无 task-N 目录）作为终态。
-
-### FS-review-no-direct-edit / FS-lite-no-direct
-
-review 或 review-lite 结论**不得**直接改 scope/focus；须 accepted dXX 或显式 `/workflow-scope`。
-
-### FS-focus-derive-boundary
-
-Phase 3 必读 focus-derive 时**只应用 3.0 刷新律**。遇 §2.x / plan 迁移内容不得按 scope 执行 → redirect `workflow-intake --mode upgrade`（2.x 兼容归 intake，见 [scope-maintainer.md](references/scope-maintainer.md)）。
-
-### FS-no-2x-inline
-
-主入口不展开 2.x 细则；本 skill 假设 **3.0 topic contract**。
+| 用途 | 文件 |
+|------|------|
+| scope→focus 派生 | [focus-derive-spec.md](references/focus-derive-spec.md) |
+| scope/focus 模板、Delta、task-fork gate | [scope-templates.md](references/scope-templates.md) |
+| 低频 maintainer / README / 2.x | [scope-maintainer.md](references/scope-maintainer.md) |
+| context-pack | [context-pack-spec.md](references/context-pack-spec.md) |
+| 受控词汇 | [vocabulary.md](references/vocabulary.md) |
 
 ## 7. 写盘口径
 
-| 文件 | 操作 | 说明 |
-|------|------|------|
-| `scope.md` | 原地修改 | 合同 SSOT；变更记录只追加 |
-| `focus.md` | rewrite | 主体≤30 行；保留区双链为 topic 入口 |
-| `structures/task-N_{slug}/scope.md` | 按需 | 升格 task 时**先于** task.index；1:1 投影 topic-V |
-| `structures/task.index.md` | 按需 | 升格 task 时**后于** task-N/scope；导航面，非 structure 容器 |
-| `decision.index.md` | 按需追加 | 本次触发新决策时 |
-| `README.md` | grandfather 兜底 | 存量最小同步；新 topic 不写 — 见 scope-maintainer |
+| 文件 | 操作 |
+|------|------|
+| `scope.md` | 原地修改 |
+| `focus.md` | rewrite |
+| `structures/task-N_slug/scope.md` | 按需新建/修改 |
+| `structures/task.index.md` | 按需更新 |
+| `decision.index.md` | 仅本次确实写新 dXX 时追加 |
+| `README.md` | grandfather 兜底；新 topic 不写 |
 
-## 8. Maintainer
+## 8. Few-shot
 
-README grandfather、2.x redirect、skill 关系表、目录结构见 [scope-maintainer.md](references/scope-maintainer.md)。
+- **正常**：accepted dXX 后同步 scope → 勾/增 V → rewrite focus → validate。
+- **边界**：intake 后收敛正式边界 → 只收敛当前 topic；全新需求回 intake。
+- **错误**：拿 review 裸结论改 scope/focus → 拒绝，要求先 dXX 或显式 scope 授权。
 
-## 9. 依赖声明
+## 9. 完工 Checklist
 
-本 skill 依赖 prism `skills/workflow/shared/`（外部依赖，不复制进 bundle）：
-
-| 依赖 | 来源 | 不可用时（bundle 缺 shared） |
-|------|------|------------------------------|
-| references 软链：`focus-derive-spec`、`context-pack-spec`、`plan-derive-spec`、`vocabulary` | `../../shared/` | Phase 3 必读缺失 → 无法执行 focus-derive，须提示补依赖 |
-| `sniff_lib.struct_vacuum_signals()` | `../../shared/sniff_lib.py`（经 `prism` CLI 调用） | struct-vacuum 检测降级为 advisory |
-
-- **可解析前提**：在 prism monorepo relink 后软链有效；scope 无独立 scripts，走 `prism` CLI 消费 shared。
-- **安装前提 / 版本**：需 prism SDK（仓库路径由本地 `prism.local.yaml` 配置解析，非硬编码；`bin/relink` 分发软链、`prism` CLI 装入 PATH）+ Python ≥3.11 + `uv`；CLI/shared 不可用时 struct-vacuum 检测降级为 advisory，focus-derive 提示补依赖。
-- **独立 bundle**：软链缺失时须附带 shared 只读依赖后再评估，不把依赖缺失误判为 skill 主路径缺陷。
-- **兄弟 skill 引用（可解析）**：`workflow-review`（用户明确需要多视角判断时）、`workflow-intake --mode upgrade`（2.x/plan redirect）为**运行时 handoff 目标**，按 skill 名/斜杠命令松耦合调用，非文件链接、非 bundle 依赖；评估场景视为可解析，不计入死链。
-
-## 10. few-shot 示例
-
-对应 evals 三类（`evals/cases.yaml`），示范合同维护边界：
-
-- **正常触发**：accepted dXX 落地后「同步 scope」→ 按决策更新 scope.md，并顺流刷新 focus.md（scope 是 focus 唯一上游）。
-- **边界（intake 交接）**：intake 后「从原始输入收敛正式边界」→ 走 scope 收敛；若属全新需求则回 `workflow-intake` 新建，不在 scope 里造 topic。
-- **错误（越权改合同）**：拿 review / review-lite 的裸结论直接改 scope/focus → 拒绝：合同变更须 accepted dXX 或显式 `/workflow-scope` 授权。
-
-## 11. 完工 checklist
-
-- [ ] scope 变更有明确授权来源（accepted dXX / 显式 `/workflow-scope`），未按 review 裸结论落权
-- [ ] focus.md 已随 scope 刷新（上游→下游一致）
-- [ ] 遇 §2.x / plan 迁移内容已 redirect `workflow-intake --mode upgrade`，未按 3.0 律硬套
-- [ ] structures/task.index 与 scope 的 V 投影仍一致（scope_conservation 未破）
+- [ ] 授权来源明确，未按裸 review/lite 结论落权
+- [ ] Delta 已列 + / ~ / ✓，无静默写盘
+- [ ] scope 已原地更新，focus 已按 scope rewrite
+- [ ] task/index 结构无孤儿，scope_conservation 通过
+- [ ] 2.x/plan 兼容未在本入口硬套，必要时 handoff intake upgrade

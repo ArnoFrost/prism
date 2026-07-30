@@ -81,7 +81,7 @@ def _check_skeleton(topic_dir: str) -> list[str]:
 
     入口面 = focus.md（3.0）/ plan.md（2.x grandfather）二选一，必需。
     README.md 已 deprecate（topic-format-spec §2，入口归 focus 保留区）→ **不作必需项**，
-    review.index.md / decision.index.md 3.1 Lite 起懒加载，缺失不算骨架缺陷。
+    review.index.md / decision.index.md 3.1 起懒加载，缺失不算骨架缺陷。
     """
     missing = []
     for f in ("scope.md",):

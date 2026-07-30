@@ -120,7 +120,7 @@ def test_filled_focus_switches_back(tmp_path):
     assert "NEWNEXT" in (packed["current_focus"] or "")
 
 
-# ── scaffold 产 focus 不产 plan；3.1 Lite 默认 minimal ────────
+# ── scaffold 产 focus 不产 plan；3.1 默认 minimal ────────
 
 def test_scaffold_produces_focus_not_plan(tmp_path):
     ws = str(tmp_path)
@@ -133,7 +133,7 @@ def test_scaffold_produces_focus_not_plan(tmp_path):
 
 
 def test_scaffold_minimal_skips_readme_and_indexes(tmp_path):
-    """3.1 Lite 默认懒加载导航和索引占位，降低新 topic 起步噪音。"""
+    """3.1 默认懒加载导航和索引占位，降低新 topic 起步噪音。"""
     ws = str(tmp_path)
     scaffold.scaffold(ws, 88, "minimal-probe", templates_dir=TEMPLATES_DIR, dry_run=False)
     topic = os.path.join(ws, "topics", "088_minimal-probe")

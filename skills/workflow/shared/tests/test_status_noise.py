@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""workflow-status 3.1 Lite 降噪回归。
+"""workflow-status 3.1 降噪回归。
 
 覆盖 task-4/wave-1：
   - 无 review 只是统计事实，不进入 health issues。
