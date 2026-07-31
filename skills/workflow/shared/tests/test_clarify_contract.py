@@ -7,6 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL_DIR = REPO_ROOT / "skills" / "workflow" / "workflow-clarify"
 SKILL = SKILL_DIR / "SKILL.md"
 HANDOFF = SKILL_DIR / "references" / "handoff-contract.md"
+EVALS = SKILL_DIR / "evals" / "cases.yaml"
 CATALOG = REPO_ROOT / "skills" / "schema" / "skills-catalog.yaml"
 DIST = REPO_ROOT / "skills" / "schema" / "dist-whitelist.yaml"
 AGENTS = REPO_ROOT / "AGENTS.md"
@@ -59,3 +60,18 @@ def test_clarify_is_not_projected_as_a_fixed_prerequisite():
     assert "Prism 3.0 experimental skills" not in catalog
     assert "3.1 Lite" not in agents
     assert "3.1 Lite" not in catalog
+
+
+def test_clarify_p0_dogfood_surfaces_are_named_in_evals():
+    text = EVALS.read_text(encoding="utf-8")
+    for case_id in (
+        "clarify-no-topic-01",
+        "clarify-topic-handoff-01",
+        "clarify-review-oq-handoff-01",
+        "clarify-skip-01",
+    ):
+        assert f"id: {case_id}" in text
+
+    assert "自动创建 topic" in text
+    assert "重开完整 Review" in text
+    assert "route: workflow-execute" in text
