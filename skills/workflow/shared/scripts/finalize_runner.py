@@ -15,7 +15,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from parse_utils import extract_frontmatter_field
+from parse_utils import extract_frontmatter_field, summarize_scope_checklist
 from skill_paths import scripts_dir as _skill_scripts_dir_for_root
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -47,6 +47,13 @@ def _subprocess_env() -> dict[str, str]:
 
 def _skill_scripts_dir(skill: str) -> str:
     return _skill_scripts_dir_for_root(WORKFLOW_DIR, skill)
+
+
+def _numbered_markdown_files(directory: Path, prefix: str) -> list[Path]:
+    if not directory.is_dir():
+        return []
+    pattern = re.compile(rf"^{re.escape(prefix)}\d{{2}}(?:_.*)?\.md$")
+    return sorted(path for path in directory.iterdir() if path.is_file() and pattern.match(path.name))
 
 
 def resolve_trace_strict(
@@ -188,9 +195,32 @@ def run_finalize(args: argparse.Namespace) -> int:
 
     shared_scripts = os.path.join(WORKFLOW_DIR, "shared", "scripts")
     validate_path = os.path.join(shared_scripts, "validate_product.py")
-    if os.path.isfile(validate_path):
+    reviews_dir = Path(topic_dir) / "reviews"
+    review_files = _numbered_markdown_files(reviews_dir, "r")
+    if not review_files:
+        review_files = _numbered_markdown_files(Path(topic_dir), "r")
+    decision_files = _numbered_markdown_files(Path(topic_dir) / "decisions", "d")
+
+    if not review_files and not decision_files:
+        steps.append({
+            "step": "validate",
+            "status": "skipped",
+            "reason": "pre-review topic：尚无 review/decision 产物",
+            "dry_run": dry_run,
+        })
+    elif not review_files:
+        steps.append({
+            "step": "validate",
+            "status": "error",
+            "reason": "已有 decision 但缺少 review 产物",
+            "errors": 1,
+            "dry_run": dry_run,
+        })
+        has_error = True
+    elif os.path.isfile(validate_path):
+        product_dir = str(review_files[0].parent)
         validate_cmd = [
-            sys.executable, validate_path, topic_dir, "--format", "ofm",
+            sys.executable, validate_path, product_dir, "--format", "ofm",
             "--since-date", DEFAULT_FORMAT_CUTOVER,
         ]
         if not dry_run:
@@ -416,9 +446,16 @@ def run_finalize(args: argparse.Namespace) -> int:
     if os.path.isfile(scope_path):
         with open(scope_path, "r", encoding="utf-8") as f:
             scope_content = f.read()
-        unchecked = len(re.findall(r"- \[ \]", scope_content))
-        checked = len(re.findall(r"- \[x\]", scope_content))
-        scope_hint["acceptance_progress"] = f"{checked}/{checked + unchecked}"
+        acceptance = summarize_scope_checklist(scope_content, "验收口径", "V")
+        open_questions = summarize_scope_checklist(scope_content, "未决问题", "OQ")
+        scope_hint["acceptance_progress"] = (
+            f"{acceptance['checked']}/{acceptance['total']}"
+        )
+        scope_hint["acceptance_unchecked"] = acceptance["unchecked_ids"]
+        scope_hint["open_question_progress"] = (
+            f"{open_questions['checked']}/{open_questions['total']}"
+        )
+        scope_hint["open_questions_unresolved"] = open_questions["unchecked_ids"]
 
     steps.append(scope_hint)
 

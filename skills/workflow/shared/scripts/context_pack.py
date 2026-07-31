@@ -17,7 +17,13 @@ import re
 import sys
 from datetime import date
 
-from parse_utils import read_file as _read, extract_field as _extract_field, extract_section as _extract_section, resolve_work_file
+from parse_utils import (
+    extract_field as _extract_field,
+    extract_section as _extract_section,
+    read_file as _read,
+    resolve_work_file,
+    summarize_scope_checklist,
+)
 
 
 def _count_acceptance(content: str) -> tuple[int, int, list[str]]:
@@ -26,26 +32,15 @@ def _count_acceptance(content: str) -> tuple[int, int, list[str]]:
     if not section:
         return 0, 0, []
 
+    summary = summarize_scope_checklist(content, "验收口径", "V")
+    if summary["total"]:
+        return summary["checked"], summary["total"], summary["unchecked_ids"]
+
     completed = 0
     total = 0
     unchecked: list[str] = []
-
     for line in section.splitlines():
         stripped = line.strip()
-
-        checklist = re.match(
-            r"^[-*]\s+\[(?P<mark>[ xX])\]\s+(?:\*\*)?(?P<vid>V\d+)(?:\*\*)?\b",
-            stripped,
-        )
-        if checklist:
-            vid = checklist.group("vid")
-            total += 1
-            if checklist.group("mark").lower() == "x":
-                completed += 1
-            else:
-                unchecked.append(vid)
-            continue
-
         table = re.match(r"^\|\s*(?:\*\*)?(?P<vid>V\d+)(?:\*\*)?\s*\|", stripped)
         if table:
             vid = table.group("vid")

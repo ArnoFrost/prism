@@ -77,6 +77,7 @@ def _task(
     task_status: str = "active",
     wave_status: str = "active",
     action_checked: bool = False,
+    with_wave: bool = True,
 ) -> None:
     structures = topic / "structures"
     task_dir = structures / f"task-{number}_demo"
@@ -93,10 +94,11 @@ type: scope
 | tV1 | V2 |
 """,
     )
-    mark = "x" if action_checked else " "
-    _write(
-        task_dir / "wave-1_demo.md",
-        f"""---
+    if with_wave:
+        mark = "x" if action_checked else " "
+        _write(
+            task_dir / "wave-1_demo.md",
+            f"""---
 status: {wave_status}
 type: wave
 ---
@@ -104,7 +106,7 @@ type: wave
 
 - [{mark}] action-1 do it
 """,
-    )
+        )
 
 
 def _task_index(topic: Path, rows: list[tuple[int, str]]) -> None:
@@ -257,6 +259,16 @@ def test_multi_active_without_exact_focus_asks_target(tmp_path):
     assert result["decision"] == "ask_target"
     assert result["reason_code"] == "FE-ambiguous-target"
     assert len(result["candidates"]) == 2
+
+
+def test_no_active_wave_is_inactive_not_ambiguous(tmp_path):
+    topic = _topic(tmp_path)
+    _task(topic, 1, task_status="pending", with_wave=False)
+    _task_index(topic, [(1, "pending")])
+    result = et.resolve_execute_target(str(topic))
+    assert result["decision"] == "blocked"
+    assert result["reason_code"] == "FE-target-inactive"
+    assert result["candidates"] == []
 
 
 def test_status_conflict_is_malformed_structure(tmp_path):

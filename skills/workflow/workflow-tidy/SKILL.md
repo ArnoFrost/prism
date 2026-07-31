@@ -95,6 +95,7 @@ prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
 | README `latest review` 指针（grandfather）| reviews/ 最新 | 是（无 README 跳过）|
 | README `latest decision` 指针（grandfather）| decisions/ 最新 | 是（无 README 跳过）|
 | review.index.md 缺失条目 | decisions/*.md 的 `review_ref` → reviews/ | 是 |
+| rXX `decision_status` / `decision_ref` | 最新精确 dXX `review_ref` → reviews/ | 是 |
 | frontmatter `updated` 日期 | scope/focus/plan mtime | 是 |
 | focus 已完成条目未移动 | focus.md 结构 | **仅报告** |
 | scope 未勾选提醒 | scope.md checkbox | **仅报告** |
@@ -112,6 +113,7 @@ prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
 ## 6. 写盘口径
 
 - **review.index.md**：缺失行可 `--fix` 补全
+- **rXX Decision 镜像**：仅在 dXX 精确 `review_ref` 后可 `--fix`；裸 review 不推断，断链只报告
 - **decision.index.md**：**仅 report** — 由 Gate 4 / dXX 追加，tidy 不得自动写入
 
 稀疏资格：Accept/Reject/Defer 都会写 dXX，其 `review_ref` 可赋予 review.index 资格；Other 不写 dXX，磁盘上单独存在 review 不构成资格。

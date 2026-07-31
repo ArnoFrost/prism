@@ -81,6 +81,52 @@ def extract_section(content: str, heading: str, level: int = 2) -> str | None:
     return content[start:end].strip()
 
 
+def summarize_scope_checklist(content: str, heading: str, item_kind: str) -> dict:
+    """统计 scope 指定段落中的 canonical V/OQ checkbox。
+
+    同时兼容 `V1` / `**V1**` 与 `OQ-1` / `**OQ-1**`，但只读取目标段落，
+    避免把变更记录或其它 checklist 混入合同进度。
+    """
+    if item_kind not in {"V", "OQ"}:
+        raise ValueError(f"unsupported scope checklist kind: {item_kind}")
+    section = extract_section(content, heading)
+    if not section:
+        return {
+            "checked": 0,
+            "unchecked": 0,
+            "total": 0,
+            "checked_ids": [],
+            "unchecked_ids": [],
+            "ids": [],
+        }
+
+    id_pattern = r"V\d+" if item_kind == "V" else r"OQ-?\d+"
+    pattern = re.compile(
+        rf"^[-*]\s+\[(?P<mark>[ xX])\]\s+"
+        rf"(?:\*\*)?(?P<item_id>{id_pattern})(?:\*\*)?(?=\s|[:：]|$)",
+    )
+    checked_ids: list[str] = []
+    unchecked_ids: list[str] = []
+    for line in section.splitlines():
+        match = pattern.match(line.strip())
+        if not match:
+            continue
+        item_id = match.group("item_id")
+        if match.group("mark").lower() == "x":
+            checked_ids.append(item_id)
+        else:
+            unchecked_ids.append(item_id)
+
+    return {
+        "checked": len(checked_ids),
+        "unchecked": len(unchecked_ids),
+        "total": len(checked_ids) + len(unchecked_ids),
+        "checked_ids": checked_ids,
+        "unchecked_ids": unchecked_ids,
+        "ids": checked_ids + unchecked_ids,
+    }
+
+
 def resolve_work_file(topic_dir: str) -> dict:
     """统一工作集解析（grandfather 单一 SSOT，算法见 focus-derive-spec §2.x）。
 

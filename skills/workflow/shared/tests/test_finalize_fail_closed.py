@@ -58,6 +58,9 @@ def test_tidy_nonzero_makes_finalize_fail(tmp_path: Path, monkeypatch, capsys):
 
 def test_validator_nonzero_with_empty_payload_still_fails(tmp_path: Path, monkeypatch, capsys):
     topic = _topic(tmp_path)
+    reviews = topic / "reviews"
+    reviews.mkdir()
+    (reviews / "r01_probe.md").write_text("# Review\n", encoding="utf-8")
     tidy_dir = tmp_path / "tidy"
     tidy_dir.mkdir()
     (tidy_dir / "tidy.py").write_text("# stub\n", encoding="utf-8")
@@ -77,6 +80,71 @@ def test_validator_nonzero_with_empty_payload_still_fails(tmp_path: Path, monkey
     assert payload["success"] is False
     assert validate_step["status"] == "error"
     assert validate_step["returncode"] == 9
+
+
+def test_pre_review_topic_skips_product_validation(tmp_path: Path, monkeypatch, capsys):
+    topic = _topic(tmp_path)
+    tidy_dir = tmp_path / "tidy"
+    tidy_dir.mkdir()
+    (tidy_dir / "tidy.py").write_text("# stub\n", encoding="utf-8")
+    monkeypatch.setattr(finalize, "_skill_scripts_dir", lambda _skill: str(tidy_dir))
+    monkeypatch.setattr(
+        finalize.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            [], 0, stdout='{"topics": []}', stderr="",
+        ),
+    )
+
+    rc = finalize.run_finalize(_args(topic))
+    payload = json.loads(capsys.readouterr().out)
+
+    validate_step = next(step for step in payload["steps"] if step["step"] == "validate")
+    assert rc == 0
+    assert validate_step["status"] == "skipped"
+    assert "pre-review" in validate_step["reason"]
+
+
+def test_scope_hint_counts_only_v_and_reports_oq(tmp_path: Path, monkeypatch, capsys):
+    topic = _topic(tmp_path)
+    (topic / "scope.md").write_text(
+        """# Scope
+
+## 验收口径（V）
+
+- [x] V1: done
+- [ ] **V2**: pending
+
+## 未决问题（OQ）
+
+- [x] OQ-1: closed
+- [ ] **OQ-2**: open
+""",
+        encoding="utf-8",
+    )
+    tidy_dir = tmp_path / "tidy"
+    tidy_dir.mkdir()
+    (tidy_dir / "tidy.py").write_text("# stub\n", encoding="utf-8")
+    monkeypatch.setattr(finalize, "_skill_scripts_dir", lambda _skill: str(tidy_dir))
+    monkeypatch.setattr(
+        finalize.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            [], 0, stdout='{"topics": []}', stderr="",
+        ),
+    )
+    args = _args(topic)
+    args.no_trace_validate = True
+
+    rc = finalize.run_finalize(args)
+    payload = json.loads(capsys.readouterr().out)
+
+    scope_hint = next(step for step in payload["steps"] if step["step"] == "scope_hint")
+    assert rc == 0
+    assert scope_hint["acceptance_progress"] == "1/2"
+    assert scope_hint["acceptance_unchecked"] == ["V2"]
+    assert scope_hint["open_question_progress"] == "1/2"
+    assert scope_hint["open_questions_unresolved"] == ["OQ-2"]
 
 
 def test_checker_exception_makes_finalize_fail(tmp_path: Path, monkeypatch, capsys):

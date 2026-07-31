@@ -465,12 +465,12 @@ INTEGRITY_FAMILY = "structures_integrity"
 def extract_topic_v_ids(scope_text: str) -> set[str]:
     """从 topic 根 scope.md 验收口径提取 topic-V id 集合（如 {"V0","V1",...}）。
 
-    锚定 `- [ ] **V1** ...` / `- [x] **V0** ...` 形态（验收口径行）。
+    canonical 解析由 parse_utils 统一承担，兼容加粗与未加粗 id。
     """
-    ids: set[str] = set()
-    for m in re.finditer(r"^\s*-\s*\[[ xX]\]\s*\*\*(V\d+)\*\*", scope_text, re.MULTILINE):
-        ids.add(m.group(1))
-    return ids
+    from parse_utils import summarize_scope_checklist
+
+    summary = summarize_scope_checklist(scope_text, "验收口径", "V")
+    return set(summary["ids"])
 
 
 def _split_md_row(line: str) -> list[str]:
@@ -621,6 +621,16 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
             topic_v_ids = extract_topic_v_ids(topic_scope.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError):
             topic_v_ids = set()
+    if not topic_scope.is_file():
+        issues.append(Issue(
+            level, str(topic_scope), CONSERVATION_FAMILY, "topic-scope-missing",
+            "structures 已存在但 topic 根缺 scope.md，无法验证 task-V 投影来源",
+        ))
+    elif not topic_v_ids:
+        issues.append(Issue(
+            level, str(topic_scope), CONSERVATION_FAMILY, "topic-v-empty",
+            "structures 已存在但 topic 根 scope 未解析到 canonical V，拒绝守恒假绿",
+        ))
 
     tasks_out: list[dict] = []
     resolved = resolve_active_task_entries(str(structures_dir))
@@ -671,15 +681,13 @@ def validate_scope_conservation(topic_dir: Path, strict: bool = True) -> dict:
                     "WARN", rel, CONSERVATION_FAMILY, "conservation-not-1to1",
                     f"task-V {tv} 引用多条 topic-V {refs}（应 1:1 单源收窄）",
                 ))
-            # 投影存在性（仅当 topic scope 解析出 V 集合时才校验，避免空集误报）
-            if topic_v_ids:
-                for ref in refs:
-                    if ref not in topic_v_ids:
-                        issues.append(Issue(
-                            level, rel, CONSERVATION_FAMILY, "conservation-ref-not-found",
-                            f"task-V {tv} 投影的 topic-{ref} 在 topic 根 scope 不存在"
-                            f"（现有: {sorted(topic_v_ids)}）",
-                        ))
+            for ref in refs:
+                if topic_v_ids and ref not in topic_v_ids:
+                    issues.append(Issue(
+                        level, rel, CONSERVATION_FAMILY, "conservation-ref-not-found",
+                        f"task-V {tv} 投影的 topic-{ref} 在 topic 根 scope 不存在"
+                        f"（现有: {sorted(topic_v_ids)}）",
+                    ))
 
     for skip in resolved["skipped"]:
         by = f" → {skip['superseded_by']}" if skip.get("superseded_by") else ""

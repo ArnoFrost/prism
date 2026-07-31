@@ -252,6 +252,8 @@ def _select_structured(
                 "wave": active[0]["wave"],
                 "step": None,
             }
+        elif not active:
+            return _route("structured", "blocked", "FE-target-inactive")
         else:
             return _route(
                 "structured",

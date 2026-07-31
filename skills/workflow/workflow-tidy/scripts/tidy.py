@@ -128,6 +128,29 @@ def _extract_frontmatter_scalar(content: str, field: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def _set_frontmatter_scalar(
+    content: str,
+    field: str,
+    value: str,
+    *,
+    quote: bool = False,
+) -> str:
+    """替换或插入单行 frontmatter 标量；无合法 frontmatter 时保持原文。"""
+    if not content.startswith("---\n"):
+        return content
+    end = content.find("\n---", 4)
+    if end < 0:
+        return content
+    rendered = f'"{value}"' if quote else value
+    frontmatter = content[4:end]
+    pattern = re.compile(rf"^{re.escape(field)}:\s*.*$", re.MULTILINE)
+    if pattern.search(frontmatter):
+        updated = pattern.sub(f"{field}: {rendered}", frontmatter, count=1)
+    else:
+        updated = frontmatter.rstrip("\n") + f"\n{field}: {rendered}\n"
+    return content[:4] + updated + content[end:]
+
+
 def _decision_review_refs(topic_dir: str) -> dict[str, list[dict]]:
     """返回 review id → 引用它的 dXX 列表。
 
@@ -154,6 +177,67 @@ def _decision_review_refs(topic_dir: str) -> dict[str, list[dict]]:
             "status": _extract_frontmatter_scalar(content, "status") or "—",
         })
     return refs
+
+
+def _scan_review_decision_mirrors(topic_dir: str) -> dict:
+    """比较最新 dXX.review_ref 与对应 rXX 的派生 Decision 镜像。"""
+    reviews_dir = os.path.join(topic_dir, "reviews")
+    reviews = {
+        review["id"]: review
+        for review in enumerate_reviews(reviews_dir)
+    }
+    result = {"updates": [], "dangling": [], "invalid": []}
+    for review_id, decisions in _decision_review_refs(topic_dir).items():
+        latest = decisions[-1]
+        review = reviews.get(review_id)
+        if review is None:
+            result["dangling"].append({
+                "review_id": review_id,
+                "decision": latest,
+            })
+            continue
+        if latest["status"] not in {"accepted", "rejected", "deferred"}:
+            result["invalid"].append({
+                "review_id": review_id,
+                "decision": latest,
+            })
+            continue
+
+        review_path = os.path.join(topic_dir, review["path"])
+        review_content = _read(review_path) or ""
+        if not review_content.startswith("---\n") or review_content.find("\n---", 4) < 0:
+            result["invalid"].append({
+                "review_id": review_id,
+                "decision": latest,
+                "reason": "review-frontmatter-invalid",
+            })
+            continue
+        decision_path = os.path.join(topic_dir, latest["path"])
+        expected_ref = os.path.relpath(
+            decision_path,
+            os.path.dirname(review_path),
+        ).replace(os.sep, "/")
+        current_status = _extract_frontmatter_scalar(
+            review_content, "decision_status",
+        )
+        current_ref = _extract_frontmatter_scalar(
+            review_content, "decision_ref",
+        )
+        if current_status != latest["status"] or current_ref != expected_ref:
+            result["updates"].append({
+                "review_id": review_id,
+                "file": review["path"],
+                "decision": latest,
+                "old": {
+                    "decision_status": current_status,
+                    "decision_ref": current_ref,
+                },
+                "new": {
+                    "decision_status": latest["status"],
+                    "decision_ref": expected_ref,
+                },
+            })
+    return result
 
 
 def _scan_reviews_for_index(topic_dir: str) -> dict:
@@ -455,7 +539,49 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "message": f"{len(index_scan['legacy'])} 个评审使用遗留子目录格式，建议迁移: prism migrate <topic_dir>（fallback: uv run python migrate_review.py <topic_dir>）",
         })
 
-    # 6. frontmatter updated 日期（scope.md, focus.md, plan.md grandfather）
+    # 6. rXX Decision 派生镜像
+    mirror_scan = _scan_review_decision_mirrors(topic_dir)
+    for mirror in mirror_scan["updates"]:
+        fixes.append({
+            "type": "review_decision_mirror",
+            "file": mirror["file"],
+            "old": mirror["old"],
+            "new": mirror["new"],
+            "decision": mirror["decision"]["id"],
+        })
+        if fix:
+            review_path = os.path.join(topic_dir, mirror["file"])
+            review_content = _read(review_path) or ""
+            review_content = _set_frontmatter_scalar(
+                review_content,
+                "decision_status",
+                mirror["new"]["decision_status"],
+            )
+            review_content = _set_frontmatter_scalar(
+                review_content,
+                "decision_ref",
+                mirror["new"]["decision_ref"],
+                quote=True,
+            )
+            _write(review_path, review_content)
+            changes_made.append(mirror["file"])
+
+    if mirror_scan["dangling"]:
+        reports.append({
+            "type": "review_decision_dangling",
+            "file": "decisions/",
+            "items": mirror_scan["dangling"],
+            "message": "Decision review_ref 指向不存在的 rXX；tidy 已停止该镜像写入",
+        })
+    if mirror_scan["invalid"]:
+        reports.append({
+            "type": "review_decision_invalid",
+            "file": "decisions/",
+            "items": mirror_scan["invalid"],
+            "message": "Decision status 或 Review frontmatter 不合法；tidy 已停止该镜像写入",
+        })
+
+    # 7. frontmatter updated 日期（scope.md, focus.md, plan.md grandfather）
     for fname in ("scope.md", "focus.md", "plan.md"):
         fpath = os.path.join(topic_dir, fname)
         content = _read(fpath)
@@ -486,7 +612,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
                     _write(fpath, content)
                     changes_made.append(fname)
 
-    # 7. wikilink 扫描（scope.md, focus.md, plan.md grandfather, intake.md + references/intake.md）
+    # 8. wikilink 扫描（scope.md, focus.md, plan.md grandfather, intake.md + references/intake.md）
     for fname in ("scope.md", "focus.md", "plan.md", "intake.md", "references/intake.md"):
         fpath = os.path.join(topic_dir, fname)
         content = _read(fpath)
@@ -502,7 +628,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
 
     # --- 仅报告项 ---
 
-    # 8. scope 未勾选提醒
+    # 9. scope 未勾选提醒
     scope_path = os.path.join(topic_dir, "scope.md")
     scope_content = _read(scope_path) or ""
     unchecked = re.findall(r"- \[ \] (.+)", scope_content)
@@ -516,7 +642,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "items": unchecked[:5],
         })
 
-    # 9. 当前焦点 vs 已完成（经 resolve_work_file 统一选定：focus 3.0 / plan 2.x grandfather）
+    # 10. 当前焦点 vs 已完成（经 resolve_work_file 统一选定：focus 3.0 / plan 2.x grandfather）
     _work_info = resolve_work_file(topic_dir)
     work_path = _work_info["path"]
     work_name = _work_info["label"] + ".md"
@@ -530,7 +656,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "items": focus_done[:5],
         })
 
-    # 10. structures 可读性 report-only（d11：路径稳定，语义展示层增强）
+    # 11. structures 可读性 report-only（d11：路径稳定，语义展示层增强）
     structure_issues = _scan_structures_readability(topic_dir)
     if structure_issues:
         reports.append({
@@ -633,6 +759,11 @@ def to_markdown(report: dict) -> str:
                     lines.append(f"- `{f['file']}` frontmatter date: {f['old']} → {f['new']}")
                 elif f["type"] == "review_index_missing":
                     lines.append(f"- `{f['file']}` 缺失条目：{', '.join(f['missing'])}")
+                elif f["type"] == "review_decision_mirror":
+                    lines.append(
+                        f"- `{f['file']}` Decision 镜像 → "
+                        f"{f['new']['decision_status']} / {f['decision']}"
+                    )
                 elif f["type"] == "wikilink":
                     lines.append(f"- `{f['file']}` 含 [[wikilink]] 残留：{', '.join(f['links'][:3])}")
             lines.append("")
@@ -649,6 +780,11 @@ def to_markdown(report: dict) -> str:
                     lines.append(f"- `review.index.md` 疑似过期条目：{', '.join(r['stale_ids'])}")
                 elif r["type"] == "review_legacy_subdir":
                     lines.append(f"- `reviews/` {r['message']}")
+                elif r["type"] in {
+                    "review_decision_dangling",
+                    "review_decision_invalid",
+                }:
+                    lines.append(f"- `{r['file']}` {r['message']}")
                 elif r["type"] == "structures_readability":
                     lines.append(f"- `structures/` {r['message']}")
                     for issue in r.get("issues", [])[:5]:
