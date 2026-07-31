@@ -151,7 +151,7 @@ class TestVersionSdkLinkage:
 # ============================================================
 
 class TestCliHelp:
-    @pytest.mark.parametrize("subcmd", ["sniff", "validate", "archive", "migrate", "sync", "finalize", "tidy", "status", "digest", "validate-trace", "manifest"])
+    @pytest.mark.parametrize("subcmd", ["sniff", "validate", "archive", "migrate", "sync", "decision", "finalize", "tidy", "status", "digest", "validate-trace", "manifest"])
     def test_subcmd_help(self, subcmd):
         result = subprocess.run(
             [sys.executable, CLI_PATH, subcmd, "--help"],

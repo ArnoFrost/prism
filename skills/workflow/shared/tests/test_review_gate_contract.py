@@ -7,6 +7,7 @@ LITE = SDK_ROOT / "skills" / "workflow" / "workflow-review-lite" / "SKILL.md"
 SCOPE = SDK_ROOT / "skills" / "workflow" / "workflow-scope" / "SKILL.md"
 TRACE = SDK_ROOT / "skills" / "workflow" / "shared" / "trace-artifacts-spec.md"
 GATE = SDK_ROOT / "skills" / "workflow" / "workflow-review" / "references" / "decision-gate.md"
+DECISION_RECORD = SDK_ROOT / "skills" / "workflow" / "shared" / "decision-record-spec.md"
 
 
 def _read(path: Path) -> str:
@@ -25,7 +26,18 @@ def test_gate_order_is_readonly_before_decision_and_finalize_after_indexes():
     gate = _read(GATE)
     assert "不得**在 Gate 4 前运行 write-mode finalize" in full
     assert "review 落盘为 pending synthesis" in gate
-    assert "Gate 4 → dXX + decision.index + eligible review.index + rXX decision_ref → write-mode finalize" in gate
+    assert "Gate 4 → `prism decision record` 原子写 dXX + decision.index + decision_artifact" in gate
+    assert "eligible review.index + rXX decision_ref → write-mode finalize" in gate
+
+
+def test_review_gate_delegates_mechanical_decision_write_to_cli():
+    full = _read(FULL)
+    gate = _read(GATE)
+    contract = _read(DECISION_RECORD)
+    assert "`prism decision record --source review`" in full
+    assert "`--review-ref rXX`" in gate
+    assert "用户明确授权" in contract
+    assert "可审计治理事件" in contract
 
 
 def test_full_review_two_stage_pending_before_decision():

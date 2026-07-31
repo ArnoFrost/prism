@@ -71,6 +71,8 @@ skills/workflow/
 | `scripts/normalize_skill_codebuddy.py` | CodeBuddy 技能列表：`description_zh` + 单行 `description` | `bin/relink` 后 `--from-relink` 批量规范化 |
 | `context-pack-spec.md` | topic 上下文装配规范（light/full 两档） | 全部 workflow skills |
 | `hotpath-envelope-spec.md` | 3.1 机械 envelope 规范：CLI/validator 提供路径、编号、references、validator plan 与写盘边界，不承担治理判断 | workflow-review, workflow-scope, workflow-intake |
+| `decision-record-spec.md` | Decision record 授权双门、事务、幂等与断链合同 | workflow-clarify, workflow-review, Prism CLI |
+| `decision_record.py` | `prism decision record` 主链事务实现 | `scripts/prism_cli.py` |
 | `scripts/parse_utils.py` | 共享 Markdown 解析工具（read_file / extract_section / extract_field / count_checkboxes） | context_pack.py, collect.py |
 | `scripts/context_pack.py` | context-pack 规范的脚本实现 | 支持 shell 的 IDE 可调用 |
 | `focus-derive-spec.md` | scope → focus 刷新规则 SSOT（3.0）| workflow-scope Phase 3 |

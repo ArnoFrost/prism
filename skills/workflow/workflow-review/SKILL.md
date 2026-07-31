@@ -99,9 +99,9 @@ Gate 3 后先落 pending rXX synthesis，并只读运行 product / trace / revie
 
 | 用户选择 | 后续动作 |
 |----------|----------|
-| Accept | 写 accepted dXX + decision.index + sparse review.index，更新 rXX decision_ref，随后 finalize；影响 scope 再交 `workflow-scope` |
-| Reject | 写 rejected dXX + 双索引，更新 rXX decision_ref，随后 finalize |
-| Defer | 写 deferred dXX + 双索引，更新 rXX decision_ref，随后 finalize；不改 scope/focus |
+| Accept | 调用 `prism decision record --source review` 写 accepted dXX + decision.index + decision_artifact；对齐 review 镜像后 finalize；影响 scope 再交 `workflow-scope` |
+| Reject | 调用 Decision record 写 rejected dXX 主链；对齐 review 镜像后 finalize |
+| Defer | 调用 Decision record 写 deferred dXX 主链；对齐 review 镜像后 finalize；不改 scope/focus |
 | Other | 不写 dXX；原样回收修订意图，继续讨论后重新 Gate 4 |
 
 完整 AskQuestion / text fallback 契约见 [decision-gate.md](references/decision-gate.md)。未收到明确选择前，rXX 保持 `decision_status: pending`，不得写 dXX / indexes / finalize / `decision_artifact`。
@@ -122,8 +122,8 @@ Gate 3 后先落 pending rXX synthesis，并只读运行 product / trace / revie
 |------|------|
 | `reviews/rXX_{title}.md` | 新建 pending synthesis |
 | `reviews/raw/rXX-role-*.md` | 条件新建 |
-| `decisions/dXX_*.md` | 仅 Accept/Reject/Defer 后新建 |
-| `review.index.md` / `decision.index.md` | 仅 dXX 后追加 |
+| `decisions/dXX_*.md` / `decision.index.md` | 仅 Accept/Reject/Defer 后由 `prism decision record` 原子写入 |
+| `review.index.md` / rXX decision_ref | dXX 后作为可修复 review 镜像对齐 |
 | `scope.md` / `focus.md` | 禁止直改 |
 
 Maintainer 历史、编号细节、format 误报、writable=false、README grandfather 和排障见 [review-maintainer.md](references/review-maintainer.md)。
@@ -133,5 +133,5 @@ Maintainer 历史、编号细节、format 误报、writable=false、README grand
 - [ ] route / rXX / format / validators 已由 envelope 或等价输入确认
 - [ ] full review 已真实并发调研，或按白名单诚实 quick fallback
 - [ ] synthesis 先解释判断、OQ、分歧、追问、建议，再进入 Gate 4
-- [ ] pending rXX 已通过只读校验；Gate 4 后才写 dXX/index/finalize
+- [ ] pending rXX 已通过只读校验；Gate 4 后才调用 Decision record、对齐 review 镜像并 finalize
 - [ ] 未越权改 scope/focus；需要合同变更已交 `workflow-scope`

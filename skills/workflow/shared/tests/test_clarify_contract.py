@@ -41,6 +41,8 @@ def test_handoff_is_candidate_only_and_requires_authorization():
     assert "requires_user_authorization: true" in text
     assert "writes: []" in text
     assert "Clarify 只交 candidate" in text
+    assert "command: prism decision record | null" in text
+    assert "用户明确授权且属于可审计治理事件" in text
 
 
 def test_legacy_dist_profiles_do_not_gain_experimental_clarify():

@@ -16,6 +16,7 @@ clarify_handoff:
     source: user_explicit
   handoff:
     skill: workflow-scope | workflow-review | workflow-intake | workflow-execute | null
+    command: prism decision record | null
     reason: "<为何该 skill 是唯一合适出口>"
     requires_user_authorization: true
     writes: []
@@ -36,7 +37,7 @@ clarify_handoff:
 | 需要多视角调查、反方发现或里程碑判断 | `review_question` | 用户授权后 `workflow-review` |
 | 新需求尚无 topic，且用户决定进入治理 | `intake_input` | 用户授权后 `workflow-intake` |
 | 执行目标已明确且已有授权 | `execution_target` | 用户授权后 `workflow-execute` |
-| 形成正式决策候选 | `decision_candidate` | 保留候选并停止；等待 Decision record 能力或既有正式决策入口 |
+| 形成正式决策候选 | `decision_candidate` | 用户明确授权且属于可审计治理事件后，`skill: null`、`command: prism decision record` |
 | 只是轻量对话结论 | 无 | `skill: null`，总结后停止 |
 
 ## 授权边界

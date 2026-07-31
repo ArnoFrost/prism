@@ -150,6 +150,13 @@ prism validate <topic_dir> [--fix]
 prism archive <workspace_path> <topic_dirname> [--dry-run]
 prism migrate <topic_dir> [--fix]
 prism sync [--sdk] [--skills] [--env] [--all] [--fetch]
+prism decision record <topic_dir> \
+  --title "<标题>" --summary "<摘要>" \
+  --decision accept|reject|defer \
+  --source clarify|review|explicit_user|execution_boundary \
+  --auditable-event contract_change|execution_authorization|cross_topic|hard_to_reverse|long_term_audit \
+  --authorized --authorization-text "<用户授权原文>" \
+  --idempotency-key "<稳定键>"
 prism finalize <topic_dir> [--dry-run] [--decision accept|reject|defer]
         [--trace-strict | --trace-lenient | --no-trace-validate]   # Step 2.5 痕迹守门
 prism tidy <project_dir> [--fix] [--topic <name>]
@@ -164,7 +171,7 @@ prism --json manifest                    # 机器可读命令面总览
 
 当前 `prism` 命令面可分为四类：
 
-- **核心 workflow verb**：`sniff / validate / archive / migrate / sync`
+- **核心 workflow verb**：`sniff / validate / archive / migrate / sync / decision`
 - **收尾串联 verb**：`finalize / tidy / status / digest`（v1.1.x 引入）
 - **痕迹治理 verb**：`validate-trace`（痕迹义务家族机器抽检；finalize Step 2.5 自动串联）
 - **元信息**：`manifest`

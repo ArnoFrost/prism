@@ -81,12 +81,14 @@ Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 
 
 | 选择 | 后续动作 |
 |------|---------|
-| `accept` | 写 accepted dXX + decision.index + sparse review.index，更新 rXX `decision_status/decision_ref`，随后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
-| `reject` | 写 rejected dXX + 双索引，更新 rXX `decision_status/decision_ref`，随后 `prism finalize`；按用户意图重启 review 或调 scope |
-| `defer` | 写 deferred dXX + 双索引，更新 rXX `decision_status/decision_ref`，随后 `prism finalize`；不修改 scope/focus |
+| `accept` | 调用 `prism decision record --source review --review-ref rXX` 写 accepted dXX 主链；对齐 review 镜像后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
+| `reject` | 调用 Decision record 写 rejected dXX 主链；对齐 review 镜像后 `prism finalize`；按用户意图重启 review 或调 scope |
+| `defer` | 调用 Decision record 写 deferred dXX 主链；对齐 review 镜像后 `prism finalize`；不修改 scope/focus |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向 / 回答 OQ / 调整 AP，之后重新 Gate 4。**禁止**把含糊文本解释为 Accept |
 
-> **事务顺序**：review 落盘为 pending synthesis → 决策前只读 validators → Gate 4 → dXX + decision.index + eligible review.index + rXX decision_ref → write-mode finalize。禁止 Gate 4 前 finalize。
+> **事务顺序**：review 落盘为 pending synthesis → 决策前只读 validators → Gate 4 → `prism decision record` 原子写 dXX + decision.index + decision_artifact → 对齐 eligible review.index + rXX decision_ref → write-mode finalize。禁止 Gate 4 前 finalize。
+
+Decision record 的授权双门、参数与幂等合同见 [decision-record-spec.md](../../shared/decision-record-spec.md)。Review 调用使用 `source=review`、`--review-ref rXX`，稳定幂等键建议为 `<topic>:<rXX>:gate4`；CLI 不替 Gate 4 判断用户是否已经接受。
 
 ## 决策痕迹义务
 
@@ -104,6 +106,6 @@ Gate 4 产生 Accept/Reject/Defer 并写 dXX 后，必须在 dXX 中输出 `deci
 - **禁止**静默选 Accept；模糊回复（"好" / "行" / "OK" / "嗯"）一律视为未确认，重展候选 + 再问
 - `PRISM_NO_INTERACTIVE=1` 路径下决策门**必须 fail**，调用方需用 `--decision=accept|reject|defer` 显式提供
 - 解析失败 / 超时 / 用户取消时**禁止写入** `decisions/dXX.md`
-- text_fallback 命中 Accept/Reject/Defer 后必须立即写 dXX + 双索引 + 输出 `decision_artifact`；Other 不写
+- text_fallback 命中 Accept/Reject/Defer 后必须立即调用 Decision record，再对齐 review 镜像；Other 不写
 
 ⛔ 决策门不可跳过。错选 + 串联 `prism finalize` 会固化错误共识，回溯成本高。

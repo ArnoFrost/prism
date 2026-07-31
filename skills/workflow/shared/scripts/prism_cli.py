@@ -10,6 +10,7 @@
   uv run python prism_cli.py reactivate <workspace_path> <topic_dirname> [--dry-run]
   uv run python prism_cli.py migrate <topic_dir> [--review rXX] [--fix]
   uv run python prism_cli.py sync [--sdk] [--skills] [--env] [--all] [--fetch]
+  uv run python prism_cli.py decision record <topic_dir> [options]
   uv run python prism_cli.py finalize <topic_dir> [--dry-run]
   uv run python prism_cli.py tidy <project_dir> [--fix] [--topic <主题>]
   uv run python prism_cli.py status <project_dir> [--format json|markdown]
@@ -150,6 +151,11 @@ VERB_REGISTRY = {
         "stability": "experimental",
         "schema_compliant": False,
         "description": "分发统一入口；经 SDK Python adapter 委托可选 legacy mini/full maintenance-only 实现",
+    },
+    "decision": {
+        "stability": "experimental",
+        "schema_compliant": True,
+        "description": "正式决策机械落盘（record：dXX + decision.index + decision_artifact）",
     },
     "finalize": {
         "stability": "experimental",
@@ -448,6 +454,50 @@ def cmd_validate_trace(args: argparse.Namespace) -> int:
     else:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["ok"] else 1
+
+
+def cmd_decision(args: argparse.Namespace) -> int:
+    """正式决策机械落盘；不判断价值，不自动接受，不修改 scope。"""
+    _add_to_path(SHARED_DIR)
+    from decision_record import DecisionRecordError, record_decision
+
+    json_mode = getattr(args, "json_mode", False)
+    try:
+        result = record_decision(
+            args.topic_dir,
+            title=args.title,
+            summary=args.summary,
+            decision=args.decision,
+            source=args.source,
+            auditable_event=args.auditable_event,
+            authorization_text=args.authorization_text,
+            idempotency_key=args.idempotency_key,
+            authorized=args.authorized,
+            review_ref=args.review_ref,
+            supersedes=args.supersedes,
+            derived_from=args.derived_from,
+            related=args.related,
+        )
+    except DecisionRecordError as error:
+        if json_mode:
+            _print_outer(_outer_envelope(
+                command="decision",
+                errors=[{
+                    "code": error.code,
+                    "message": error.message,
+                    "hint": "修正授权声明、治理事件或引用后，使用同一幂等键重试",
+                }],
+            ))
+        else:
+            print(f"错误 [{error.code}]: {error.message}", file=sys.stderr)
+        return 1
+
+    data = {"action": "record", **result.as_dict()}
+    if json_mode:
+        _print_outer(_outer_envelope(command="decision", data=data))
+    else:
+        print(json.dumps(data, ensure_ascii=False, indent=2))
+    return 0
 
 
 def cmd_archive(args: argparse.Namespace) -> int:
@@ -892,6 +942,89 @@ def main():
         help="只报告 adapter 与 legacy 实现可用性，不执行打包",
     )
 
+    # decision record（3.2 experimental）
+    p_decision = subparsers.add_parser(
+        "decision",
+        help="正式决策机械落盘（不做价值判断）",
+    )
+    decision_subparsers = p_decision.add_subparsers(
+        dest="decision_command",
+        required=True,
+        help="Decision 子命令",
+    )
+    p_decision_record = decision_subparsers.add_parser(
+        "record",
+        help="原子写入 dXX、decision.index 与 decision_artifact",
+    )
+    p_decision_record.add_argument("topic_dir", help="专项目录")
+    p_decision_record.add_argument("--title", required=True, help="决策标题")
+    p_decision_record.add_argument("--summary", required=True, help="决策摘要")
+    p_decision_record.add_argument(
+        "--decision",
+        required=True,
+        choices=["accept", "reject", "defer"],
+        help="用户明确裁决",
+    )
+    p_decision_record.add_argument(
+        "--source",
+        required=True,
+        choices=["clarify", "review", "explicit_user", "execution_boundary"],
+        help="治理事件来源",
+    )
+    p_decision_record.add_argument(
+        "--auditable-event",
+        required=True,
+        choices=[
+            "contract_change",
+            "execution_authorization",
+            "cross_topic",
+            "hard_to_reverse",
+            "long_term_audit",
+        ],
+        help="调用方确认的可审计治理事件类型",
+    )
+    p_decision_record.add_argument(
+        "--authorized",
+        action="store_true",
+        help="声明已获得用户明确授权；仍须同时提供 --authorization-text",
+    )
+    p_decision_record.add_argument(
+        "--authorization-text",
+        required=True,
+        help="用户明确授权原文",
+    )
+    p_decision_record.add_argument(
+        "--idempotency-key",
+        required=True,
+        help="调用方提供的稳定幂等键（1-128 位）",
+    )
+    p_decision_record.add_argument(
+        "--review-ref",
+        default=None,
+        help="source=review 时必填，如 r01",
+    )
+    p_decision_record.add_argument(
+        "--supersedes",
+        action="append",
+        default=[],
+        metavar="dXX",
+        help="被取代决策；可重复",
+    )
+    p_decision_record.add_argument(
+        "--derived-from",
+        action="append",
+        default=[],
+        metavar="dXX",
+        help="派生来源决策；可重复",
+    )
+    p_decision_record.add_argument(
+        "--related",
+        action="append",
+        default=[],
+        metavar="dXX",
+        help="普通关联决策；可重复",
+    )
+
     # finalize（v2.0 取代 pipeline；含 --decision flag + trace flags）
     p_finalize = subparsers.add_parser("finalize", help="Decision 后一键编排：tidy → validate → validate-trace → validate-review-call → scope 提示")
     p_finalize.add_argument("topic_dir", help="专项根目录")
@@ -974,6 +1107,7 @@ def main():
         "doctor": cmd_doctor,
         "update": cmd_update,
         "dist": cmd_dist,
+        "decision": cmd_decision,
         "finalize": cmd_finalize,
         "tidy": cmd_tidy,
         "status": cmd_status,

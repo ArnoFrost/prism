@@ -1,7 +1,7 @@
 # Trace Artifacts SSOT — 痕迹义务家族 4 族字段表与校验规则
 
 > Prism workflow 痕迹义务家族 4 族（永久封顶）的唯一 SSOT。
-> 被 `workflow-review/SKILL.md` / `workflow-review-lite/SKILL.md` / `workflow-intake/SKILL.md` 引用，三处 SKILL 不再字字复制契约本体。
+> 被 Decision record、`workflow-review`、`workflow-review-lite`、`workflow-intake` 引用，各入口不再字字复制契约本体。
 > 由 `validate_trace.py` 机器抽检字段存在性 + 必填完整性。
 
 ## 4 族总览
@@ -10,7 +10,7 @@
 |------|----------|---------|---------|
 | `task_probe` | review (mode=full) | reviews/rXX_*.md | mode=full Align 末尾必填 |
 | `merge_artifact` | review (mode=full) | reviews/rXX_*.md | mode=full Merge 6 步后必填 |
-| `decision_artifact` | review / review-lite (Gate 4) | decisions/dXX_*.md（accept/reject/defer）| Gate 4 写 dXX 后必填；pending rXX synthesis 不要求 |
+| `decision_artifact` | decision record / review / review-lite (Gate 4) | decisions/dXX_*.md（accept/reject/defer）| 任意正式 dXX 写入后必填；pending rXX synthesis 不要求 |
 | `intake_gate_out` | intake | references/intake.md（3.0；2.x grandfather 根级 intake.md）| intake Phase 3 完成后必填 |
 
 > 共同原则：**无痕迹 = 未执行**。痕迹缺失即视为对应门未关闭，禁止宣布完成。
@@ -73,17 +73,22 @@ merge_artifact:
 
 ## decision_artifact
 
-防 Gate 4 静默跳过。Gate 4 写入 dXX 后必填；仅落 `reviews/rXX` synthesis 且 `decision_status: pending` 时不要求：
+防正式决策静默跳过。`prism decision record` 或 Gate 4 写入 dXX 后必填；仅落 `reviews/rXX` synthesis 且 `decision_status: pending` 时不要求：
 
 ```yaml
 decision_artifact:
   decision: accept | reject | defer | other   # Gate 4 用户裁决结果
-  decision_source: askquestion | text_fallback   # 决策门入口
+  decision_source: askquestion | text_fallback | cli_record   # 决策门 / CLI 入口
+  governance_source: clarify | review | explicit_user | execution_boundary  # cli_record 时必填
+  auditable_event: contract_change | execution_authorization | cross_topic | hard_to_reverse | long_term_audit
+  authorization: explicit_user       # cli_record 时必填
+  authorization_text: <用户明确授权原文>  # cli_record 时必填
+  idempotency_key: <稳定幂等键>       # cli_record 时必填
   written: true | false                # decisions/dXX.md 是否已落盘
   path: <相对路径，未写时填 null>       # 如 decisions/d01_accept_xxx.md
   timestamp: <ISO 8601，未写时填 null>  # 落盘时间
   user_text: <仅 decision=other 时填，原样保留用户自由文本>
-  review_kind: review | review-lite    # 与产物 frontmatter `type` 一致
+  review_kind: review | review-lite    # review Gate 4 时使用；通用 record 可省略
 ```
 
 **校验规则**（任一违反 → Gate 4 未关闭）：
@@ -92,8 +97,10 @@ decision_artifact:
 - `written: true` 但 `path` 为 null / 不存在 → **违约**：路径必须可审计
 - dXX 缺失 `decision_artifact` 块本身 → Gate 4 未关闭，禁止"已完成"语义
 - pending rXX synthesis 不得伪造 `decision_artifact`；它只表示等待用户裁决
+- `decision_source == "cli_record"` 时，调用方必须同时声明用户明确授权与可审计治理事件；CLI 只校验声明和引用，不替人类做价值判断
+- 相同 `idempotency_key` 重试必须返回已有完整决策；若 dXX、index 或 artifact 任一断链则 fail-closed，不得补写第二份
 
-**同源约束**：`decision_artifact.review_kind` 必须与落盘报告 frontmatter `type` 一致。
+**同源约束**：Review Gate 4 产生的 `decision_artifact.review_kind` 必须与落盘报告 frontmatter `type` 一致；通用 CLI record 没有 review 产物时可省略该字段。
 validator 的 Callout 阈值分档以 frontmatter `type` 为机器 SSOT；
 `review_kind` 是决策痕迹侧的可审计镜像，二者不一致时应视为产物装配错误并优先修正 frontmatter。
 

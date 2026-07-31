@@ -161,6 +161,7 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 |------|---------|------|
 | CLI 命令面自描述 | `prism --json manifest` | 导出 verb registry（stability / schema_compliant / description），作为机器可见真源 |
 | Workflow 收尾串联 | `prism finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；旧 `pipeline` alias 自 v2.0 起已物理移除（v1.1.x deprecated 期已结束） |
+| 正式决策落盘 | `prism decision record` | 在用户明确授权与可审计治理事件双门后，原子写入 dXX / decision.index / decision_artifact；不判断价值、不改 scope、不选择 next |
 | 痕迹义务抽检 | `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；特定前缀 topic 默认 strict，其他默认 lenient（frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 可覆盖）|
 | 工件机械对齐 | `prism tidy` | 对齐 focus 入口、review.index / decision.index、frontmatter 等 topic 工件；README 仅存量兜底 |
 | 健康巡检 | `prism status` | 扫描活跃 topic 状态，输出 workspace 健康快照 |

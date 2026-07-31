@@ -9,7 +9,7 @@
 # 全局选项:
 #   --version, -V                显示版本后退出
 #   --json                       以 outer schema 输出 JSON（见 docs/cli-json-schema.json）
-#                                当前覆盖: sniff / validate / manifest
+#                                当前覆盖: sniff / validate / decision / manifest
 #
 # 可用子命令:
 #   sniff           嗅探项目环境（topic affinity / next_review_number）
@@ -23,6 +23,7 @@
 #   doctor          仓库/环境体检（委托 bin/doctor）
 #   update          pull SDK → doctor ci → relink --no-workspace（experimental）
 #   dist            分发统一入口；委托 SDK Python adapter（experimental）
+#   decision        正式决策机械落盘（record；experimental）
 #   finalize        Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示
 #   tidy            工件机械对齐（README/review.index/frontmatter）
 #   status          Workspace 活跃 topic 健康度扫描

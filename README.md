@@ -220,6 +220,7 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 | `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
 | `prism update`   | 拉取 SDK 并执行核心 doctor + 代码层 relink（experimental；Vault/Workspace 可选） |
 | `prism dist`     | 分发统一 facade（experimental）；mini/full 仅 legacy maintenance-only |
+| `prism decision record` | 正式决策机械落盘（experimental）；原子写 dXX + decision.index + decision_artifact |
 | `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |
 | `prism tidy`     | 工件机械对齐（focus 入口 / 索引 / frontmatter；README 仅存量兜底） |
 | `prism status`   | Workspace 活跃 topic 健康度扫描 |
@@ -244,7 +245,7 @@ prism --json manifest
 
 - **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
-- **experimental 标记**：标注为 experimental 的 verb（当前含 `prism dist` / `prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism validate-trace` / `prism manifest`）可能在下一个 minor 改名或改参数
+- **experimental 标记**：标注为 experimental 的 verb（当前含 `prism dist` / `prism decision` / `prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism validate-trace` / `prism manifest`）可能在下一个 minor 改名或改参数
 - **历史 breaking change**：`prism pipeline` 已物理移除；旧调用方请改用 `prism finalize`
 - **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 
