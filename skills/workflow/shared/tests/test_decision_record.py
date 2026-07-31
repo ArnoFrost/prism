@@ -80,6 +80,7 @@ def test_records_complete_decision_and_index(tmp_path):
     assert "source: explicit_user" in text
     assert "auditable_event: contract_change" in text
     assert 'idempotency_key: "test:d01"' in text
+    assert 'request_fingerprint: "sha256:' in text
     assert "decision_source: cli_record" in text
     assert f"path: {result.path}" in text
 
@@ -131,6 +132,46 @@ def test_same_idempotency_key_is_noop(tmp_path):
     assert (topic / "decision.index.md").read_text(encoding="utf-8").count("| d01 |") == 1
 
 
+def test_same_idempotency_key_with_different_payload_fails_closed(tmp_path):
+    topic = _topic(tmp_path)
+    first = _record(topic)
+    before_index = (topic / "decision.index.md").read_text(encoding="utf-8")
+
+    with pytest.raises(DecisionRecordError, match="已用于不同请求") as error:
+        _record(
+            topic,
+            decision="reject",
+            summary="拒绝本次合同变更授权。",
+        )
+
+    assert error.value.code == "IDEMPOTENCY_PAYLOAD_CONFLICT"
+    assert (topic / first.path).is_file()
+    assert len(list((topic / "decisions").glob("d*.md"))) == 1
+    assert (topic / "decision.index.md").read_text(encoding="utf-8") == before_index
+
+
+def test_same_idempotency_key_without_stored_fingerprint_fails_closed(tmp_path):
+    topic = _topic(tmp_path)
+    result = _record(topic)
+    decision_path = topic / result.path
+    text = decision_path.read_text(encoding="utf-8")
+    decision_path.write_text(
+        "\n".join(
+            line
+            for line in text.splitlines()
+            if "request_fingerprint:" not in line
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DecisionRecordError, match="缺少请求指纹") as error:
+        _record(topic)
+
+    assert error.value.code == "IDEMPOTENCY_UNVERIFIABLE"
+    assert len(list((topic / "decisions").glob("d*.md"))) == 1
+
+
 def test_broken_idempotency_chain_fails_closed(tmp_path):
     topic = _topic(tmp_path)
     result = _record(topic)
@@ -176,6 +217,81 @@ def test_review_source_requires_existing_unique_review(tmp_path):
     assert "review_ref: r01" in text
     assert "review_kind: review" in text
     assert "../reviews/r01_scope_review.md" in text
+
+
+def test_review_source_rejects_malformed_review_ref_with_stable_error(tmp_path):
+    topic = _topic(tmp_path)
+
+    with pytest.raises(DecisionRecordError) as error:
+        _record(topic, source="review", review_ref="review-one")
+
+    assert error.value.code == "INVALID_REVIEW_REF"
+    assert not (topic / "decisions").exists()
+
+
+def test_review_ref_does_not_prefix_match_later_review(tmp_path):
+    topic = _topic(tmp_path)
+    reviews = topic / "reviews"
+    reviews.mkdir()
+    (reviews / "r010_later.md").write_text(
+        "---\ntype: review\nstatus: active\n---\n\n# r010\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DecisionRecordError, match="引用 r01 不存在") as error:
+        _record(topic, source="review", review_ref="r01")
+
+    assert error.value.code == "BROKEN_REVIEW_REF"
+    assert not (topic / "decisions").exists()
+
+
+def test_review_ref_accepts_exact_plain_filename_among_later_reviews(tmp_path):
+    topic = _topic(tmp_path)
+    reviews = topic / "reviews"
+    reviews.mkdir()
+    (reviews / "r01.md").write_text(
+        "---\ntype: review\nstatus: active\n---\n\n# r01\n",
+        encoding="utf-8",
+    )
+    (reviews / "r010_later.md").write_text(
+        "---\ntype: review\nstatus: active\n---\n\n# r010\n",
+        encoding="utf-8",
+    )
+
+    result = _record(topic, source="review", review_ref="r01")
+
+    assert "../reviews/r01.md" in (topic / result.path).read_text(encoding="utf-8")
+
+
+def test_legacy_plain_decision_filename_participates_in_identity(tmp_path):
+    topic = _topic(tmp_path)
+    decisions = topic / "decisions"
+    decisions.mkdir()
+    (decisions / "d01.md").write_text(
+        "---\ntype: decision\nstatus: accepted\n---\n\n# d01\n",
+        encoding="utf-8",
+    )
+
+    result = _record(topic, related=["d01"])
+
+    assert result.decision_id == "d02"
+    assert (topic / "decisions" / "d01.md").is_file()
+
+
+def test_decision_ref_does_not_prefix_match_later_decision(tmp_path):
+    topic = _topic(tmp_path)
+    decisions = topic / "decisions"
+    decisions.mkdir()
+    (decisions / "d010_later.md").write_text(
+        "---\ntype: decision\nstatus: accepted\n---\n\n# d010\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(DecisionRecordError, match="引用 d01 不存在") as error:
+        _record(topic, related=["d01"])
+
+    assert error.value.code == "BROKEN_DECISION_REF"
+    assert len(list(decisions.glob("d*.md"))) == 1
 
 
 def test_second_promotion_failure_rolls_back_first_file(tmp_path):
@@ -254,6 +370,49 @@ def test_cli_record_returns_outer_schema_and_is_idempotent(tmp_path):
     assert first_payload["ok"] is True
     assert first_payload["data"]["status"] == "recorded"
     assert second_payload["data"]["status"] == "idempotent_noop"
+
+
+def test_cli_record_reports_idempotency_payload_conflict(tmp_path):
+    topic = _topic(tmp_path)
+    command = [
+        sys.executable,
+        str(CLI),
+        "--json",
+        "decision",
+        "record",
+        str(topic),
+        "--title",
+        "接受 CLI 合同",
+        "--summary",
+        "将正式决策机械落盘。",
+        "--decision",
+        "accept",
+        "--source",
+        "explicit_user",
+        "--auditable-event",
+        "contract_change",
+        "--authorized",
+        "--authorization-text",
+        "正式记录这个决定",
+        "--idempotency-key",
+        "cli:conflict",
+    ]
+    first = subprocess.run(command, capture_output=True, text=True, timeout=5)
+    conflict_command = command.copy()
+    conflict_command[conflict_command.index("accept")] = "reject"
+    second = subprocess.run(
+        conflict_command,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 1, second.stderr
+    payload = json.loads(second.stdout)
+    assert payload["ok"] is False
+    assert payload["errors"][0]["code"] == "IDEMPOTENCY_PAYLOAD_CONFLICT"
+    assert len(list((topic / "decisions").glob("d*.md"))) == 1
 
 
 def test_cli_record_rejects_missing_authorization_flag(tmp_path):

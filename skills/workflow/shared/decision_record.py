@@ -40,7 +40,8 @@ STATUS_BY_DECISION = {
     "defer": "deferred",
 }
 _IDEMPOTENCY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-_DECISION_FILE_RE = re.compile(r"^d(\d{1,3})[_\.].*\.md$")
+_DECISION_FILE_RE = re.compile(r"^d(\d{1,3})(?:_.*)?\.md$")
+_REVIEW_FILE_RE = re.compile(r"^r(\d{1,3})(?:_.*)?\.md$")
 _INDEX_HEADER = (
     "| dXX | 决策标题 | accepted_at | review_ref | supersedes | "
     "derived_from | related_dXX |"
@@ -124,6 +125,50 @@ def _normalize_refs(values: list[str] | None) -> list[str]:
     return result
 
 
+def _normalize_review_ref(review_ref: str) -> str:
+    normalized = review_ref.strip().lower()
+    if not re.fullmatch(r"r\d{1,3}", normalized):
+        raise DecisionRecordError(
+            "INVALID_REVIEW_REF",
+            f"review 引用必须使用 rXX 形式，实际为: {review_ref!r}",
+        )
+    return f"r{int(normalized[1:]):02d}"
+
+
+def _request_fingerprint(
+    *,
+    title: str,
+    summary: str,
+    decision: str,
+    source: str,
+    auditable_event: str,
+    authorization_text: str,
+    review_ref: str | None,
+    supersedes: list[str],
+    derived_from: list[str],
+    related: list[str],
+) -> str:
+    payload = {
+        "auditable_event": auditable_event,
+        "authorization_text": authorization_text.strip(),
+        "decision": decision,
+        "derived_from": sorted(derived_from),
+        "related": sorted(related),
+        "review_ref": review_ref,
+        "source": source,
+        "summary": summary.strip(),
+        "supersedes": sorted(supersedes),
+        "title": title.strip(),
+    }
+    canonical = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
+
+
 def _decision_files(decisions_dir: Path) -> list[Path]:
     if not decisions_dir.is_dir():
         return []
@@ -157,19 +202,17 @@ def _find_decision(decisions_dir: Path, decision_id: str) -> Path:
 
 
 def _find_review(topic: Path, review_ref: str) -> Path:
-    normalized = review_ref.strip().lower()
-    if not re.fullmatch(r"r\d{1,3}", normalized):
-        raise DecisionRecordError(
-            "INVALID_REVIEW_REF",
-            f"review 引用必须使用 rXX 形式，实际为: {review_ref!r}",
-        )
-    review_id = f"r{int(normalized[1:]):02d}"
+    review_id = _normalize_review_ref(review_ref)
     reviews_dir = topic / "reviews"
     matches = sorted(
         path
-        for path in reviews_dir.glob(f"{review_id}*.md")
-        if path.is_file()
-    )
+        for path in reviews_dir.iterdir()
+        if (
+            path.is_file()
+            and (match := _REVIEW_FILE_RE.match(path.name))
+            and f"r{int(match.group(1)):02d}" == review_id
+        )
+    ) if reviews_dir.is_dir() else []
     if not matches:
         raise DecisionRecordError(
             "BROKEN_REVIEW_REF",
@@ -221,6 +264,7 @@ def _existing_idempotent_result(
     topic: Path,
     index_text: str | None,
     idempotency_key: str,
+    request_fingerprint: str,
 ) -> DecisionRecordResult | None:
     matches: list[tuple[Path, str]] = []
     for path in _decision_files(topic / "decisions"):
@@ -236,6 +280,17 @@ def _existing_idempotent_result(
         )
 
     path, text = matches[0]
+    stored_fingerprint = _extract_scalar(text, "request_fingerprint")
+    if not stored_fingerprint:
+        raise DecisionRecordError(
+            "IDEMPOTENCY_UNVERIFIABLE",
+            f"幂等键 {idempotency_key!r} 对应的旧决策缺少请求指纹，无法证明请求相同",
+        )
+    if stored_fingerprint != request_fingerprint:
+        raise DecisionRecordError(
+            "IDEMPOTENCY_PAYLOAD_CONFLICT",
+            f"幂等键 {idempotency_key!r} 已用于不同请求，拒绝静默复用",
+        )
     decision_id = _decision_id(path)
     rel_path = f"decisions/{path.name}"
     artifact_path = _extract_scalar(text, "path")
@@ -364,6 +419,7 @@ def _render_decision(
     auditable_event: str,
     authorization_text: str,
     idempotency_key: str,
+    request_fingerprint: str,
     timestamp: str,
     filename: str,
     review_ref: str | None,
@@ -396,6 +452,7 @@ review_ref: {review_value}
 source: {source}
 auditable_event: {auditable_event}
 idempotency_key: {_yaml_scalar(idempotency_key)}
+request_fingerprint: {_yaml_scalar(request_fingerprint)}
 supersedes: {_yaml_list(supersedes)}
 derived_from: {_yaml_list(derived_from)}
 related_dXX: {_yaml_list(related)}
@@ -429,6 +486,7 @@ decision_artifact:
   authorization: explicit_user
   authorization_text: {_yaml_scalar(authorization_text.strip())}
   idempotency_key: {_yaml_scalar(idempotency_key)}
+  request_fingerprint: {_yaml_scalar(request_fingerprint)}
 {review_kind_line}\
   written: true
   path: decisions/{filename}
@@ -583,13 +641,35 @@ def record_decision(
             "UNEXPECTED_REVIEW_REF",
             "仅 source=review 可以提供 --review-ref",
         )
+    normalized_review_ref = (
+        _normalize_review_ref(review_ref)
+        if review_ref
+        else None
+    )
+    request_fingerprint = _request_fingerprint(
+        title=title,
+        summary=summary,
+        decision=decision,
+        source=source,
+        auditable_event=auditable_event,
+        authorization_text=authorization_text,
+        review_ref=normalized_review_ref,
+        supersedes=supersedes_refs,
+        derived_from=derived_refs,
+        related=related_refs,
+    )
 
     with _topic_lock(topic):
         topic_title = _topic_title(topic)
         decisions_dir = topic / "decisions"
         index_path = topic / "decision.index.md"
         index_text = index_path.read_text(encoding="utf-8") if index_path.is_file() else None
-        existing = _existing_idempotent_result(topic, index_text, idempotency_key)
+        existing = _existing_idempotent_result(
+            topic,
+            index_text,
+            idempotency_key,
+            request_fingerprint,
+        )
         if existing:
             return existing
 
@@ -609,9 +689,10 @@ def record_decision(
             auditable_event=auditable_event,
             authorization_text=authorization_text,
             idempotency_key=idempotency_key,
+            request_fingerprint=request_fingerprint,
             timestamp=timestamp,
             filename=filename,
-            review_ref=(f"r{int(review_ref[1:]):02d}" if review_ref else None),
+            review_ref=normalized_review_ref,
             review_path=review_path,
             supersedes=supersedes_refs,
             derived_from=derived_refs,
@@ -628,7 +709,7 @@ def record_decision(
             title=title.strip(),
             filename=filename,
             timestamp=timestamp,
-            review_ref=(f"r{int(review_ref[1:]):02d}" if review_ref else None),
+            review_ref=normalized_review_ref,
             review_path=review_path,
             supersedes=supersedes_refs,
             derived_from=derived_refs,

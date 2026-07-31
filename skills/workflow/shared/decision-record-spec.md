@@ -54,8 +54,12 @@ prism decision record <topic_dir> \
 ## 幂等与断链
 
 - 幂等键在 topic 内唯一，格式为 1–128 位字母数字及 `.`、`_`、`:`、`-`。
-- 相同键且 dXX、index、artifact 完整时返回 `idempotent_noop`。
+- CLI 对规范化后的有效请求计算 SHA-256 `request_fingerprint`；规范化覆盖标题、摘要、裁决、来源、治理事件、授权原文、review 引用和 dXX 关系。
+- 相同键、相同请求指纹且 dXX、index、artifact 完整时返回 `idempotent_noop`。
+- 相同键但请求指纹不同时返回 `IDEMPOTENCY_PAYLOAD_CONFLICT`，不静默沿用首次结果。
+- 相同键对应的 legacy 记录缺少请求指纹时返回 `IDEMPOTENCY_UNVERIFIABLE`，调用方必须换新键或先人工治理旧记录。
 - 相同键对应多个 dXX，或任一主链缺失时返回错误，不自动猜测或再写一份。
+- rXX/dXX 文件身份只接受精确的 `rXX.md` / `rXX_*.md` 与 `dXX.md` / `dXX_*.md`；`r01` 不得前缀匹配 `r010`，legacy `d01.md` 必须参与引用与后续编号。
 - 编号分配在 topic 锁内完成，并发调用不会复用同一 dXX。
 
 ## 输出
