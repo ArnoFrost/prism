@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from sniff_lib import parse_task_index_entries, resolve_active_task_entries  # noqa: E402
+from sniff_lib import parse_scope_frontmatter, parse_task_index_entries, resolve_active_task_entries  # noqa: E402
 
 
 # 内部统一 schema：workflow_trace → phase → 既有外部 family。
@@ -527,6 +527,7 @@ def extract_task_v_refs(task_scope_text: str) -> list[dict]:
 def validate_structures_integrity(topic_dir: Path, strict: bool = True) -> dict:
     """task.index 行 ↔ task-N 目录一致性（cite scope-templates §orphan-index；lenient=WARN，strict=ERROR）。"""
     orphan_level = "ERROR" if strict else "WARN"
+    drift_level = "ERROR" if strict else "WARN"
     issues: list[Issue] = []
     structures_dir = topic_dir / "structures"
     result_base = {
@@ -559,6 +560,19 @@ def validate_structures_integrity(topic_dir: Path, strict: bool = True) -> dict:
             issues.append(Issue(
                 "WARN", str(structures_dir / ent), INTEGRITY_FAMILY, "task-index-missing-row",
                 f"{ent}/ 存在但 task.index 无对应行",
+            ))
+            continue
+
+        scope_path = structures_dir / ent / "scope.md"
+        task_status = (parse_scope_frontmatter(str(scope_path)).get("status") or "").lower()
+        index_status = (index_by_entry[ent].get("status") or "").lower()
+        if task_status and index_status and task_status != index_status:
+            issues.append(Issue(
+                drift_level,
+                str(scope_path),
+                INTEGRITY_FAMILY,
+                "task-status-drift",
+                f"{ent}/scope.md status={task_status} 与 task.index status={index_status} 不一致",
             ))
 
     errors = [i.to_dict() for i in issues if i.level == "ERROR"]

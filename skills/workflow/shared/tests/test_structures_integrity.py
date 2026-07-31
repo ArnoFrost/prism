@@ -24,9 +24,32 @@ TASK_INDEX_ORPHAN = """\
 
 TASK_INDEX_OK = TASK_INDEX_ORPHAN  # same table shape
 
+TASK_INDEX_PENDING = """\
+# Task Index
+
+| task | 稳定 id | label | status | 问题切片 | 授权来源 |
+|------|:------:|-------|:------:|----------|---------|
+| [task-1_demo](./task-1_demo/scope.md) | t1 | demo | pending | slice | d01 |
+"""
+
 
 def _task_scope_minimal():
     return """\
+# Task scope
+
+| task-V | topic-V |
+|--------|---------|
+| tV1 | V1 |
+"""
+
+
+def _task_scope_with_status(status: str):
+    return f"""\
+---
+status: {status}
+type: scope
+---
+
 # Task scope
 
 | task-V | topic-V |
@@ -50,6 +73,16 @@ def proper_fork_topic(tmp_path):
     task.mkdir(parents=True)
     (struct / "task.index.md").write_text(TASK_INDEX_OK, encoding="utf-8")
     (task / "scope.md").write_text(_task_scope_minimal(), encoding="utf-8")
+    return tmp_path
+
+
+@pytest.fixture
+def status_drift_topic(tmp_path):
+    struct = tmp_path / "structures"
+    task = struct / "task-1_demo"
+    task.mkdir(parents=True)
+    (struct / "task.index.md").write_text(TASK_INDEX_PENDING, encoding="utf-8")
+    (task / "scope.md").write_text(_task_scope_with_status("active"), encoding="utf-8")
     return tmp_path
 
 
@@ -88,3 +121,14 @@ def test_validate_integrity_proper_fork_ok(proper_fork_topic):
     assert res["warnings"] == []
     assert "task-1_demo" in res["index_entries"]
     assert "task-1_demo" in res["active_tasks"]
+
+
+def test_validate_integrity_status_drift_strict_fails(status_drift_topic):
+    res = vt.validate_structures_integrity(status_drift_topic, strict=True)
+    assert any(e["rule"] == "task-status-drift" for e in res["errors"])
+
+
+def test_validate_integrity_status_drift_lenient_warns(status_drift_topic):
+    res = vt.validate_structures_integrity(status_drift_topic, strict=False)
+    assert res["errors"] == []
+    assert any(w["rule"] == "task-status-drift" for w in res["warnings"])
