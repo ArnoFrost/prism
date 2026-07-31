@@ -18,6 +18,7 @@ skills/
 │   ├── workflow-digest/
 │   ├── workflow-compact/          # dev experimental：preview-first；授权后 backup→apply
 │   ├── workflow-archive/          # dev experimental：topic 生命周期归档
+│   ├── workflow-clarify/          # Prism 3.2：单问澄清 + candidate handoff（dev experimental）
 │   ├── workflow-execute/          # Prism 3.0：单游标执行 + 工件闭环（dev experimental）
 │   ├── workflow-intake/
 │   ├── workflow-review/
@@ -44,6 +45,7 @@ skills/
 内置 workflow skills 组成完整的人机协作管线。人类文档导航见 [docs/README.md](../docs/README.md)。
 
 ```
+clarify（任意阶段按需 sidecar；不占固定阶段）→ intake · scope · review · execute
 init → intake → scope → execute ↔ review → decision → scope（更新）→ ...
   ├─ tidy（工件对齐）  ├─ digest（状态通报）  ├─ status（健康巡检 + next_actions handoff）
   ├─ review-lite（soft-deprecated 兼容入口）
@@ -55,6 +57,7 @@ init → intake → scope → execute ↔ review → decision → scope（更新
 | `workspace-init` | `/workspace-init` | 项目路径 + 用户信息 | workspace 骨架 + 注册 + 软链接 |
 | `workflow-intake` | `/workflow-intake` | 混沌需求描述 | topic 目录 + references/intake.md + scope 草稿 |
 | `workflow-scope` | `/workflow-scope` | 决策触发 | scope.md 原地更新 + focus.md 刷新 |
+| `workflow-clarify` | `/workflow-clarify` | 任意阶段的一个阻塞性人类取舍 | 纯文本单问 checkpoint；默认零写盘，按需 candidate handoff（experimental） |
 | `workflow-execute` | `/workflow-execute` | 唯一 task/wave 或合格 topic-focus 游标 | 授权变更 + 验证 + 证据/focus + 机械校验（experimental） |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
 | `workflow-review-lite` | `/workflow-review-lite` | 显式兼容调用 / 旧 topic | 轻量报告 + review.index（3.1 起 soft-deprecated） |

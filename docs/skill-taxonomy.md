@@ -10,6 +10,7 @@
 Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认知熵治理工作流，而不只是“工具列表”。在 v3.0 中，这些 skills 分别治理长期人机协作中的不同认知熵源：
 
 - 输入混沌
+- 阻塞歧义
 - 边界漂移
 - 判断隐性化
 - 决策重演
@@ -33,6 +34,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 |---|---|---|---|---|---|
 | `workspace-init` | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 | public / stable |
 | `workflow-intake` | 输入熵 | 原始需求、散落上下文 | `references/intake.md`、初始 scope/focus | 按需 | public / stable |
+| `workflow-clarify` | 阻塞歧义 | 任意阶段的当前对话、可查事实、按需 scope/focus | 单问 checkpoint；按需 candidate + handoff | 默认零写盘 | dev / experimental |
 | `workflow-scope` | 边界熵 / 注意力熵 | decision / review / scope | 更新 `scope.md`，刷新 `focus.md`，同步 task.index | 按需 | public / stable |
 | `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 structured task/wave 或合格 topic-focus + 项目代码 | 实现、验证、证据、派生 focus 与机械校验 | 按需 | dev / experimental |
 | `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色 findings、actions、rXX | 按需 | public / stable |
@@ -54,6 +56,10 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 ### 已经有决策，边界需要更新
 
 用 `workflow-scope`。scope 是 focus 和 structures/task.index 的唯一上游。
+
+### 下一阶段被一个关键取舍阻塞
+
+用 `workflow-clarify`。它是任意阶段按需 sidecar：先调查可查事实，再一次只问一个人类取舍；默认不写盘，只有用户明确要求时才把 candidate 交给既有 workflow。
 
 ### 方向变了，或需要多视角判断
 
@@ -88,6 +94,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 ## 边界
 
 - Skill taxonomy 不是 vocabulary，不新增受控术语。
+- `workflow-clarify` 是 3.2 dev / experimental 可选能力，不是 Intake、Review 或 Execute 的必经阶段。
 - `workflow-execute` 随 Prism 3.0 提供，但保持 dev / experimental；它不消费 `next_actions[]`、不选择 Next、不循环调度。
 - `compact` / `archive` 为 dev experimental，不列入 3.0 GA formal 能力面；`next_actions[]` 是 status 的 handoff 建议，不是自动编排器。
 - 跨对话 `handoff` 文档形态仍非默认流程。

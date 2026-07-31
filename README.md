@@ -126,6 +126,7 @@ Prism 内置 **workflow** 是一套可选的认知熵治理工作流——按熵
 | 你想… | 优先 skill / 入口 |
 |--------|-------------------|
 | 新需求不知归哪 | `/workflow-intake` |
+| 下一阶段被一个关键取舍阻塞 | `/workflow-clarify` |
 | 决策后更新边界 | `/workflow-scope` |
 | 继续当前 task / wave，并同步代码与工件 | `/workflow-execute` |
 | 方向变更 / 里程碑 | `/workflow-review` |

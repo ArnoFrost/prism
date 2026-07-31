@@ -222,11 +222,12 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Prism 内置技能
 
-SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。顺序按工作流时序：前置 → 入料 → 合同 → 执行 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实 → 生命周期归档（与 README §Skills 表保持一致）。
+SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。Clarify 可在任意阶段按需触发；主工作流顺序为：入料 → 合同 → 执行 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实 → 生命周期归档（与 README §Skills 表保持一致）。
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
 | workspace-init | `/workspace-init` | 项目初始化 / 工作区创建（含路径迁移） |
+| workflow-clarify | `/workflow-clarify` | 阻塞歧义澄清 — 纯文本单问 micro-loop；默认零写盘，按需 candidate handoff（3.2 dev experimental） |
 | workflow-intake | `/workflow-intake` | 入料 → 路由 → 专项初始化 |
 | workflow-scope | `/workflow-scope` | 合同收敛 → focus 刷新 |
 | workflow-execute | `/workflow-execute` | 单游标执行 — structured task/wave 或受限 topic-focus → 授权变更 → 验证 → 证据/focus 闭环（3.0 能力，dev experimental） |
@@ -238,7 +239,7 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不列入 3.0 GA formal 能力面） |
 | workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不列入 3.0 GA formal 能力面） |
 
-3.0 GA formal 能力面为 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status`、`workflow-digest`（catalog: public/stable）。3.1 Lite 起 `workflow-review-lite` 进入 soft-deprecated 兼容面：不再作为推荐入口，但显式调用与旧 `type: review-lite` 产物仍保持兼容。`workflow-execute` 随 3.0 提供但保持 dev/experimental；`workflow-compact` 与 `workflow-archive` 同样保持实验标记。
+3.0 GA formal 能力面为 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status`、`workflow-digest`（catalog: public/stable）。3.1 起 `workflow-review-lite` 进入 soft-deprecated 兼容面：不再作为推荐入口，但显式调用与旧 `type: review-lite` 产物仍保持兼容。`workflow-clarify` 从 3.2 以 dev/experimental 进入可选澄清面；`workflow-execute`、`workflow-compact` 与 `workflow-archive` 继续保持实验标记。
 
 ---
 

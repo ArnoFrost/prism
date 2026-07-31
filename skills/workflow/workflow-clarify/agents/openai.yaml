@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workflow Clarify"
+  short_description: "以单问单答澄清阻塞歧义，并生成可选的治理流程交接建议"
+  default_prompt: "使用 $workflow-clarify，以一个简洁问题澄清当前最阻塞下一阶段的歧义。"
