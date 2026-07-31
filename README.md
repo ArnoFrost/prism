@@ -103,7 +103,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 
 从 clone 到长期维护的**人类路径**（init 细节见 [SETUP_GITHUB.md](SETUP_GITHUB.md)）：
 
-![Prism 流转：init → 桥接 → workflow → 维护](docs/assets/v3/prism-flow.png)
+> **视觉占位（待重绘）**：未来图示应表达安装、桥接、按需治理与日常维护，不画成强制 workflow 管线。
 
 ```text
 ./setup.sh init → prism --version 验收 → workspace-init / 桥接
@@ -126,9 +126,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 
 Prism 内置 **workflow** 是一组可选的认知熵治理能力：按当前问题选择，不要求从 Intake 一路执行完整清单。3.2 当前叙事见 [docs/prism-3.2.md](docs/prism-3.2.md)，能力全景见 [docs/skill-taxonomy.md](docs/skill-taxonomy.md)。
 
-![认知熵治理地图：topic 工件与 workflow 技能如何协作](docs/assets/v3/cognitive-entropy-map.png)
-
-![认知熵走向：各阶段熵源与对应 skill](docs/assets/v3/cognitive-entropy-flow.png)
+> **视觉占位（待重绘）**：未来图示应将输入、歧义、边界、判断、决策、注意力和恢复成本映射到可选能力，Clarify 作为 sidecar，而非前置阶段。
 
 | 你想… | 优先 skill / 入口 |
 |--------|-------------------|

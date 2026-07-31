@@ -4,7 +4,7 @@
 
 ## 核心原则
 
-> **一个 topic 是持续推进的专项工作区；review 是 topic 内的一轮事件，不是顶层组织单位。**
+> **一个 topic 是持续推进的专项工作区；workflow 能力按当前认知熟源选择，不是固定管线。**
 
 ## 命名规范
 
@@ -19,36 +19,29 @@
 ├── README.md               # 本文件
 ├── topics/
 │   ├── {NNN}_{topic}/      # 专项工作区
-│   │   ├── README.md       # 主线导航（模板：topic-readme.md）
 │   │   ├── scope.md        # 合同收敛（目标/非目标/验收；persistent）
 │   │   ├── focus.md        # 当前工作集（模板：topic-focus.md；rewrite，主体≤30行）
-│   │   ├── decision.index.md # 决策链主索引
-│   │   ├── review.index.md # 评审辅助索引
 │   │   ├── references/     # 依据/来源（intake.md 归此）
-│   │   ├── reviews/        # 评审轮次（rXX.md）
-│   │   ├── decisions/      # 决策记录
-│   │   ├── structures/     # 结构分解（按需；task.index.md + task-N_slug/）
-│   │   ├── verify/         # 验证规格（按需）
-│   │   ├── artifacts/      # 产出工件
-│   │   └── snapshots/      # 历史快照（scope 旧版；focus 非沉淀不入此）
+│   │   ├── reviews/        # 按需：正式评审轮次
+│   │   ├── decisions/      # 按需：Decision Record 原子写入
+│   │   ├── structures/     # 按需：task.index.md + task-N_slug/
+│   │   └── verify/         # 按需：验证证据
 ├── docs/
 └── archive/                # 已完成归档（{NNN}_{topic}/ 或 legacy YYYY-MM/）
 ```
 
-### topic README 必需段落
+### minimal topic 默认骨架
 
-| 段落 | 必需 | 说明 |
-|------|------|------|
-| 属性表 | ✅ | 编号 / created / updated / status |
-| 控制台 | ✅ | scope / focus / latest review / latest decision / next action |
-| 当前状态 | ✅ | 主线任务一句话 + 当前进展 |
-| 恢复指引 | 可选 | topic 暂停或跨 session 恢复时的快速上下文 |
-| 参考资料 | 可选 | 相关文档链接 |
-| 关键决策 | ✅ | 决策摘要表 |
+| 工件 | 默认 | 说明 |
+|------|:----:|------|
+| `references/intake.md` | ✅ | 保留来源意图 |
+| `scope.md` | ✅ | 合同面 SSOT |
+| `focus.md` | ✅ | Topic 入口与当前工作集 |
+| `README.md` | 按需 | 仅 `--full-scaffold` 或存量 grandfather |
+| decision / review index | 按需 | 由正式工件和 tidy 懒加载 |
+| structures / verify | 按需 | 仅在分解或验证需求成立时出现 |
 
-> 详见模板 `workspace/templates/topic-readme.md`。
-
-### topic focus 必需段落（3.0）
+### topic focus 必需段落
 
 | 段落 | 必需 | 说明 |
 |------|------|------|
@@ -61,22 +54,19 @@
 > focus retention = rewrite（主体≤30行，不累积）；长期分解去 scope 的 V 或 `structures/task.index.md`。
 > 详见模板 `workspace/templates/topic-focus.md`，刷新规则详见 `shared/focus-derive-spec.md`。
 
-## 专项工作流
+## 按需治理能力
 
-```
-intake → scope → review → decision
-                   ↑          │
-                   │    scope(update)
-                   │          ↓
-                   └── focus(refresh)
-```
+| 当前认知熟源 | 优先入口 |
+|----------|----------|
+| 新输入不知归属 | `/workflow-intake` |
+| 对话被一个人类取舍阻塞 | `/workflow-clarify`；默认零写盘 |
+| 初始合同或已授权决策需同步 | `/workflow-scope` |
+| 已有唯一获权 focus / task / wave | `/workflow-execute` |
+| 方向变化或里程碑需多视角判断 | `/workflow-review` |
+| 评审结论已获明确授权且事件可审计 | `prism decision record` → `/workflow-scope` |
+| 查看健康度或恢复上下文 | `/workflow-status` / `/workflow-digest` |
 
-1. `/workflow-intake` — 接收输入，检测亲和，路由到专项或新建
-2. `/workflow-scope` — 收敛 scope（目标/非目标/验收口径）
-3. `/workflow-review` — 正式评审，产物落入 `reviews/rXX.md`
-4. 决策(dXX) → scope 更新 → focus 刷新
-5. 人类 accept/route → `decisions/dXX.md`
-6. 循环：决策触发 scope 更新，scope 驱动 focus 刷新，直到专项完成
+这些是可组合关系，不是必须从上到下跑完的流程。Review 不直改 Scope；Clarify candidate 不等于授权；Execute 完成一个批次后停止，不自动选择 Next。
 
 ## 桥接方式
 

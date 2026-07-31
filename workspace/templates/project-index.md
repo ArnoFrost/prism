@@ -1,6 +1,6 @@
 <prism-workspace project="{PROJECT_CODE}">
 项目: {PROJECT_CODE} | 规范: ./README.md
-自动行为: 创建专项 → 执行 → 更新 index.md → 归档
+自动行为: 只执行已获权的机械动作；Topic 路由、Next 与归档均保留人类门
 约束: 严格遵循 README.md 中的命名规范，标签/归档规则见 workspace.schema.yaml
 </prism-workspace>
 

@@ -20,11 +20,9 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 - 对外沟通成本
 - 上下文恢复成本
 
-这张图帮助你判断：**现在的问题是哪类熵，该调用 workflow 中的哪个 skill。**
+本页帮助你判断：**现在的问题是哪类熵，该调用 workflow 中的哪个 skill。**
 
-![认知熵治理地图：topic 工件与 workflow 技能全景](assets/v3/cognitive-entropy-map.png)
-
-![认知熵走向：协作各阶段的熵源与 skill 对应关系](assets/v3/cognitive-entropy-flow.png)
+> **视觉占位（待重绘）**：未来的 taxonomy 图应从认知熵源出发，连接可选 Skill 与工件；不使用时间轴暗示必经阶段。下表是当前可验证的文字真源。
 
 ---
 

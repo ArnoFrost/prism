@@ -27,8 +27,8 @@ related:
 |------|------|
 | **AI 规范入口** | [../../../AGENTS.md](../../../AGENTS.md) · [scope.md](./scope.md)（本 topic 合同） |
 | scope（合同） | [scope.md](./scope.md) |
-| decision.index（决策链 SSOT） | [decision.index.md](./decision.index.md) |
-| review.index（评审辅助索引） | [review.index.md](./review.index.md) |
+
+<!-- decision.index / review.index / structures 只在工件实际存在时加入导航；禁止为填表预建。 -->
 
 <!-- 保留区结束 -->
 

@@ -28,11 +28,11 @@ cd ~/prism
 
 ## 生命周期总览
 
-![Prism 流转：init → 桥接 → workflow → 维护](assets/v3/prism-flow.png)
+> **视觉占位（待重绘）**：未来安装图应表达 init、桥接、按需治理与维护的外层生命周期，不把 workflow Skills 画成必经管线。
 
 ```text
 setup.sh init → prism --version 验收 → workspace-init / 桥接
-             → 日常 workflow（可选）→ update / doctor / relink 维护
+             → 按熵源启用治理能力（可选）→ update / doctor / relink 维护
 ```
 
 | 阶段 | 人类常用 | 说明 |

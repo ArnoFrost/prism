@@ -10,7 +10,7 @@ tags:
 
 > [!warning] README 已 deprecate（focus 单入口）
 > 自 3.0 起 topic 入口为 [focus.md](./focus.md) 的**保留区**（见 `focus-derive-spec.md` §README-deprecate）。
-> 本文件为存量兜底，懒迁移、不强推；关键决策 SSOT = [decision.index.md](./decision.index.md)，参考资料归 `references/` 与 focus 保留区双链。
+> 本文件只用于 `--full-scaffold` 或存量 grandfather，不属于 minimal topic 默认骨架。参考资料归 `references/` 与 focus 保留区双链。
 
 | 属性 | 值 |
 |------|------|
@@ -39,12 +39,13 @@ next_action 取值规范：
     - "✅ 完成 — 待归档"（topic 收尾，等待归档）
     - "📦 已归档"（topic 已归档）
   - 联动规则：next_action = focus.md 顶部光标快读面「下一步」的一句话摘要
-    由 workflow-scope 在 Phase 4（同步）时自动更新
+    存量 grandfather topic 由 workflow-tidy 按需机械镜像
 
 索引地位说明：
   - decision.index.md = 决策链主索引（事件链 SSOT，含时序 + frontmatter 依赖字段）
   - review.index.md   = 评审辅助索引（仅列被 decision 引用的 review；稀疏关联）
-  - 历史 topic 可能仅有 review.index.md（向后兼容；新 topic 推荐建 decision.index.md）
+  - 历史 topic 可能仅有 review.index.md（向后兼容）
+  - minimal topic 不预建任何 index；首个正式工件出现时再懒加载
 -->
 
 ## 当前状态

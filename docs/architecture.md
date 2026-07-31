@@ -289,16 +289,16 @@ prism/
 
 ---
 
-## 图示索引（待 3.2 视觉校准）
+## 图示与文字占位
 
-现有图片来自早期 v3 叙事，只作为待替换资源，不承担 3.2 合同语义。当前职责边界以本文文字和 Mermaid 关系图为准。
+早期 v3 的流程与认知熵图已退场；当前职责边界以本文文字和 Mermaid 关系图为准。未来可按下列文字真源重绘：
 
-| 图 | 文件 | 说明 |
-|----|------|------|
-| Prism ↔ SDD | [prism-sdd-relation.png](assets/v3/prism-sdd-relation.png) | 与 OpenSpec / planning layer 关系 |
-| 流转 | [prism-flow.png](assets/v3/prism-flow.png) | 早期 init → 维护图，后续换图 |
-| 认知熵地图 | [cognitive-entropy-map.png](assets/v3/cognitive-entropy-map.png) | 早期 3.0 图，后续换图 |
-| 认知熵走向 | [cognitive-entropy-flow.png](assets/v3/cognitive-entropy-flow.png) | 早期 3.0 图，后续换图 |
+| 未来视觉 | 文字真源 |
+|----------|----------|
+| 安装与维护生命周期 | [onboarding.md](./onboarding.md) |
+| 认知熵源到可选能力 | [skill-taxonomy.md](./skill-taxonomy.md) |
+| Clarify / Review / Decision / Scope / Execute 回流 | 本文「Workflow 按需闭环」 |
+| Prism ↔ SDD / OpenSpec | [现有关系图](assets/v3/prism-sdd-relation.png) |
 
 ![Prism 与 SDD / OpenSpec 层关系](assets/v3/prism-sdd-relation.png)
 

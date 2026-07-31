@@ -7,7 +7,6 @@ tags:
   - {topic-tag}
 related:
   - "./scope.md"
-  - "./README.md"
 ---
 
 # 决策链主索引 — {topic-name}
@@ -33,6 +32,7 @@ related:
 
 ## 维护规范
 
-- 新增决策：写 dXX.md 后追加本表一行；填齐 7 列；frontmatter 依赖字段就位
+- 新增决策：仅在“用户明确授权 AND 可审计治理事件”双门成立时，由 `prism decision record` 原子写 dXX、本表与 `decision_artifact`
+- 禁止手写 dXX 或单独追加本表；任一环失败应无部分主链
 - 推翻决策：新决策 frontmatter `supersedes: [dXX]`；本表保留旧 dXX 行（不删）
 - 派生决策：新决策 frontmatter `derived_from: [dXX]`；本表表达派生链
