@@ -1,6 +1,6 @@
 # Prism 3.2：按需治理闭环
 
-> 本页描述 3.2 开发分支正在验证的当前叙事，不声明新的正式发行。发行身份以仓库根 [README](../README.md)、`VERSION` 与 [CHANGELOG](../CHANGELOG.md) 为准；结构客观面见 [architecture.md](./architecture.md)。
+> 本页描述 Prism 3.2 的按需治理闭环与能力边界。发行身份以仓库根 [README](../README.md)、`VERSION` 与 [CHANGELOG](../CHANGELOG.md) 为准；结构客观面见 [architecture.md](./architecture.md)。
 
 ## Prism 管什么
 
@@ -54,8 +54,8 @@ Prism 治理为什么做、做什么、边界、注意力和决策；[FrostAtlas
 
 ## 3.2 实验边界
 
-- Clarify、Decision Record 与 Execute 仍是需要 dogfood 的实验能力。
-- v3.1 boundary-stable 继续作为当前发行边界；本页不修改版本号、稳定性或发布承诺。
+- Clarify、Decision Record 与 Execute 随 3.2 提供，但仍是需要持续 dogfood 的实验能力。
+- 版本发行不等于能力转正；实验接口仍可在后续 minor 调整名称、参数或交互。
 - Review Lite 的兼容面继续保留，迁移说明见 [review-lite-compatibility.md](./review-lite-compatibility.md)。
 - 当前能力选择见 [skill-taxonomy.md](./skill-taxonomy.md)，Topic 阅读路径见 [topic-lifecycle.md](./topic-lifecycle.md)。
 - 3.0 的历史成立锚点保留在 [prism-3.0.md](./prism-3.0.md)，不改写成 3.2 叙事。

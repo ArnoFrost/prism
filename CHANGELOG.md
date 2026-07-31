@@ -1,5 +1,33 @@
 ## [Unreleased]
 
+## [v3.2.0] — 2026-07-31
+
+> **Prism 3.2 按需治理闭环** — 在 3.1 瘦身基线上补齐阻塞歧义澄清、可审计决策落盘与单游标执行闭环，同时保持 Workflow Skills 可选、串行且不自动扩权。
+
+### Added
+
+- **`workflow-clarify`** — 任意阶段按需触发的单问 micro-loop；先调查可查事实，默认零写盘，用户明确要求后只输出 candidate + handoff。
+- **`prism decision record`** — 仅在“用户明确授权 AND 可审计治理事件”双门成立时原子写入 decision、索引与 trace，具备幂等、断链和失败回滚保护。
+- **`workflow-execute` 工件闭环** — 支持唯一 structured task/wave 与严格准入的 topic-focus 批次，完成实现、验证、证据与 focus 对齐后停止。
+
+### Changed
+
+- **Review 交互** — 正式 Review 由用户意图触发，按风险组织多视角调查；报告先完整呈现结论、findings、风险、行动与 OQ，再进入人类 Gate。
+- **Review Lite 退役兼容** — 从 active/public/default/recommended surfaces 移除；保留显式调用、旧 Topic、旧 `type: review-lite` 产物与 validator 兼容。
+- **按需生命周期** — README、架构、Skill taxonomy、Topic lifecycle 与 Workspace 模板不再暗示固定管线；Focus 保持单一当前工作集，索引按需创建。
+- **文档表面** — 删除三张过时流程图，使用可验证的文字占位等待重绘，并新增 active-surface 回归检查。
+
+### Fixed
+
+- **Finalize 与 Decision 一致性** — 收紧 decision 身份、stage guard、失败关闭、review/decision 镜像与 trace 校验，避免半完成和错误成功状态。
+- **结构真值** — 提前拦截 task 状态漂移，增强结构守恒、target 解析与 focus 可读性校验。
+
+### Compatibility
+
+- Clarify、Decision Record 与 Execute 随 3.2 提供但保持 `dev / experimental`；版本发行不代表接口转正。
+- Review Lite 采用 retired-with-compat，不物理删除 Skill 或历史产物解析能力；迁移见 `docs/review-lite-compatibility.md`。
+- 不新增强制外部依赖；Prism core contract 仍为 SDK + `uv`，Workspace backend、外部 Skills 与 Vault 保持可选。
+
 ## [v3.1.0] — 2026-07-29
 
 > **Prism 3.1 boundary-stable line** — 在 v3.0 GA 基线上启动强模型时代的治理瘦身：降低默认 workflow 表面积与 skill 热路径复杂度，同时保留 `scope` / `focus` / `review` / `decision` 的跨会话状态、审计与迁移价值。

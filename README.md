@@ -5,7 +5,7 @@
 **轻量管理长期人机协作中的认知熵。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Stage](https://img.shields.io/badge/stage-v3.1-boundary--stable-blue)](CHANGELOG.md)
+[![Stage](https://img.shields.io/badge/stage-v3.2.0-release--candidate-blue)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
 [快速开始](#快速开始) · [生命周期](#生命周期总览) · [认知熵与 Skills](#认知熵与-workflow-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
@@ -16,9 +16,9 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 
 > 共享规则，本地状态，清晰边界。
 
-**当前发行**：v3.1 boundary-stable — `focus` 单入口、按需 `task` 递归分解与 README grandfather 兼容构成稳定边界。
+**当前发行**：v3.2.0 — 在 v3.1 瘦身主线上形成按需治理闭环：Clarify 作为 sidecar，Decision Record 负责显式授权后的可审计落盘，Execute 只推进唯一游标；这些能力不把 workflow 变成固定管线。
 
-**当前开发面**：3.2 正在验证 Clarify sidecar、Decision Record 与更轻的按需闭环；它们不改变 v3.1 的发行身份，也不把 workflow 变成固定管线。
+**稳定性边界**：Clarify、Decision Record 与 Execute 随 3.2 提供但保持 experimental；Review Lite 退出现役推荐面，仅保留显式调用与旧产物兼容。
 
 **发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）
 

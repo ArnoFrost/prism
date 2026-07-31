@@ -254,7 +254,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | 2026-05-16 | **v2.0.0-beta.1** | 版本口径从 v2.1.0 统一为 v2.0.0-beta.1（v2 尚未对外发布，重新梳理版本号）；`prism --version` 与 SDK `VERSION` 同步。|
 | 2026-07-13 | **v3.0.0-rc** | 新增 experimental `prism dist` 产品级 facade；外部入口统一到 Prism CLI，SDK Python adapter 委托可选 legacy mini/full maintenance-only 实现。 |
 | 2026-07-13 | **v3.0.0** | GA 发行元数据对齐；CLI verb 稳定性保持不变，`prism dist` 继续为 experimental。 |
-| 2026-07-31 | **v3.2.0-dev** | 新增 experimental `prism decision record`：要求用户明确授权与可审计治理事件声明，原子写入 dXX / decision.index / decision_artifact，并提供幂等与断链保护。 |
+| 2026-07-31 | **v3.2.0** | 新增 experimental `prism decision record`：要求用户明确授权与可审计治理事件声明，原子写入 dXX / decision.index / decision_artifact，并提供幂等与断链保护。 |
 
 [^variant-history]: 各版本变更的详细 review / decision 推导链路保留在 vault Workspace 内部历史档案中，不在本契约暴露；参与维护的人员可通过 SDK 内 `references/maintainer.md` 等维护者文档定位。
 

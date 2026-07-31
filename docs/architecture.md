@@ -181,11 +181,11 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 - `prism <verb>`：workspace/topic 级工作流入口
 - `manifest` / `doctor` / `sync`：系统自省与治理入口
 
-### 当前开发边界
+### 3.2 能力边界
 
-- v3.1 boundary-stable 是当前发行边界；3.2 正在 dogfood Clarify、Decision Record 与 Execute 的闭环体验。
-- Clarify、Decision Record、Execute、Compact 与 Archive 仍保持实验标记，不因文档叙事前置晋升稳定性。
-- Workspace template、topic lifecycle 与旧图表面会按独立批次继续校准；本文不把尚未完成的治理写成已发布事实。
+- 3.2 提供 Clarify、Decision Record 与 Execute 的按需治理闭环，并继续通过真实 Topic dogfood 交互体验。
+- Clarify、Decision Record、Execute、Compact 与 Archive 仍保持实验标记，不因版本发行晋升稳定性。
+- Workspace template、topic lifecycle 与现役文档表面已对齐按需治理叙事；旧图暂以文字占位等待重绘。
 - verify 与 trace 仍是结构化协作的可选增强，不成为 Prism core contract 的硬入口。
 
 ### 痕迹义务家族封顶政策（v2.0 起永久生效）
@@ -312,7 +312,7 @@ prism/
 
 | 面 | 入口 |
 |----|------|
-| 当前 3.2 开发叙事与实验边界 | [prism-3.2.md](./prism-3.2.md) |
+| 当前 3.2 治理叙事与实验边界 | [prism-3.2.md](./prism-3.2.md) |
 | v3.0 GA 历史成立锚点 | [prism-3.0.md](./prism-3.0.md) |
 | 文档分类与读序 | [docs/README.md](./README.md) |
 | 发行（`prism --version`） | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |
