@@ -47,6 +47,7 @@
 | [skill-taxonomy.md](./skill-taxonomy.md) | 按认知熵源选 workflow skill |
 | [topic-lifecycle.md](./topic-lifecycle.md) | topic 从 intake 到 archive |
 | [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
+| [review-lite-compatibility.md](./review-lite-compatibility.md) | review-lite 3.2 退役边界与旧产物迁移选择 |
 | [architecture.md](./architecture.md) | 四层模型、部署视图、workflow 管线、**v3 图示索引** |
 
 ---

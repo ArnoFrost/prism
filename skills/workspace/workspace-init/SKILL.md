@@ -240,7 +240,7 @@ prism.local.yaml
 | **init**（本技能）| 项目级初始化 / 工作区创建 | 产出 workspace 目录 + 模板文件 |
 | **intake** | 入料 → 路由 → 专项初始化 | init 创建 workspace 后，intake 在其中创建专项 |
 | **scope** | 合同收敛 → focus 刷新 | intake 产出初始 scope |
-| **review** / **review-lite** | 评审 → 行动计划 | 在 workspace 内工作 |
+| **review** / 历史 **review-lite** | 正式评审 / legacy 兼容 → 行动计划 | 在 workspace 内工作 |
 
 ## 降级策略
 

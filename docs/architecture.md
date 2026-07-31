@@ -127,7 +127,7 @@ archive ─ topic 终态归档 / reactivate（dev experimental）
 | `workflow-scope` | `/workflow-scope` | scope 合同维护 → focus 刷新 / task 同步 |
 | `workflow-execute` | `/workflow-execute` | 单一已授权游标的实现、验证与工件闭环；不选择 Next（dev experimental） |
 | `workflow-review` | `/workflow-review` | 正式评审（多角色总分总） |
-| `workflow-review-lite` | `/workflow-review-lite` | 轻量评审（3.1 起 soft-deprecated；显式调用与旧产物兼容） |
+| `workflow-review-lite` | `/workflow-review-lite` | retired-with-compat（不在现役推荐面；仅显式调用与旧产物兼容） |
 | `workflow-tidy` | `/workflow-tidy` | 工件机械对齐（review/decision 后状态同步） |
 | `workflow-digest` | `/workflow-digest` | 专项状态通报（面向协作者的快照摘要） |
 | `workflow-status` | `/workflow-status` | 健康度巡检（report-first + `next_actions[]` handoff） |

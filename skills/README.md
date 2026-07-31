@@ -22,7 +22,7 @@ skills/
 │   ├── workflow-execute/          # Prism 3.0：单游标执行 + 工件闭环（dev experimental）
 │   ├── workflow-intake/
 │   ├── workflow-review/
-│   ├── workflow-review-lite/
+│   ├── workflow-review-lite/      # retired-with-compat：显式 legacy 调用与旧产物
 │   ├── workflow-scope/
 │   ├── workflow-status/
 │   ├── workflow-tidy/
@@ -48,9 +48,10 @@ skills/
 clarify（任意阶段按需 sidecar；不占固定阶段）→ intake · scope · review · execute
 init → intake → scope → execute ↔ review → decision → scope（更新）→ ...
   ├─ tidy（工件对齐）  ├─ digest（状态通报）  ├─ status（健康巡检 + next_actions handoff）
-  ├─ review-lite（soft-deprecated 兼容入口）
   ├─ compact（低频压实，dev experimental）  └─ archive / reactivate（生命周期，dev experimental）
 ```
+
+Compatibility-only：`workflow-review-lite` 自 3.2 起不属于现役管线，只保留显式 legacy 调用与旧 `type: review-lite` 产物兼容。
 
 | Skill | 触发 | 输入 | 产出 |
 |-------|------|------|------|
@@ -60,12 +61,13 @@ init → intake → scope → execute ↔ review → decision → scope（更新
 | `workflow-clarify` | `/workflow-clarify` | 任意阶段的一个阻塞性人类取舍 | 纯文本单问 checkpoint；默认零写盘，按需 candidate handoff（experimental） |
 | `workflow-execute` | `/workflow-execute` | 唯一 task/wave 或合格 topic-focus 游标 | 授权变更 + 验证 + 证据/focus + 机械校验（experimental） |
 | `workflow-review` | `/workflow-review` | 评审主题 + 范围 | reviews/rXX.md + raw/ + review.index |
-| `workflow-review-lite` | `/workflow-review-lite` | 显式兼容调用 / 旧 topic | 轻量报告 + review.index（3.1 起 soft-deprecated） |
 | `workflow-tidy` | `/workflow-tidy` | 决策/评审后 | README 指针 + review.index + frontmatter 同步 |
 | `workflow-digest` | `/workflow-digest` | topic 上下文 | 面向协作者的状态通报 |
 | `workflow-status` | `/workflow-status` | 无 | 健康度报告 + `next_actions[]` handoff（不自动写盘） |
 | `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁（experimental） |
 | `workflow-archive` | `/workflow-archive` | workspace + topic | preview-first 生命周期归档（experimental） |
+
+兼容入口：`/workflow-review-lite` 仅用于显式 legacy 调用和旧 topic，迁移说明见 [review-lite compatibility](../docs/review-lite-compatibility.md)。
 
 共享依赖位于 `workflow/shared/`：`sniff_lib.py`、`obsidian-config.md`、`parallel-execution.md`、`scripts/archive.py`。
 

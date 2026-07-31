@@ -15,9 +15,9 @@ cases:
     kind: should_not_trigger
     input: "这个小改动帮我快速确认一下就行，不用大动干戈"
     expect:
-      route: workflow-review-lite
-      behavior: "单视角轻量评审；不启动多角色并行与 merge 仲裁"
-    notes: "日常小改 / 快速对齐属 lite 场景，不应升 full review"
+      route: native-self-check-or-clarify
+      behavior: "模型原生自检或按需 workflow-clarify；不创建持久评审"
+    notes: "日常小改 / 快速对齐不应升 full review，也不默认复活 retired review-lite"
   - id: boundary-01
     kind: boundary
     input: "改动只碰了 1 个文件几十行，但这是里程碑检查点"

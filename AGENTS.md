@@ -116,7 +116,7 @@ Workspace backend/
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
 - **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + `uv`；Workspace 是逻辑状态层，默认可落本地目录，Vault 仅为可选 backend。review / decision / `task_probe` 等只在结构化协作场景启用。
-- **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（裸 slash 调用永远 new，显式 `--append <topic>` 优先，不因 cohesion 静默 append）；`workflow-review` / `workflow-review-lite` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic；`workflow-compact` 是 explicit-topic-only 低频维护技能，不跟随 review cohesion。路由语义 SSOT 见 [`skills/workflow/workflow-intake/references/intake-routing-spec.md`](skills/workflow/workflow-intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) §0.1 — cite 不复制。
+- **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（裸 slash 调用永远 new，显式 `--append <topic>` 优先，不因 cohesion 静默 append）；`workflow-review` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic；显式 legacy `workflow-review-lite` 保留相同兼容行为；`workflow-compact` 是 explicit-topic-only 低频维护技能，不跟随 review cohesion。路由语义 SSOT 见 [`skills/workflow/workflow-intake/references/intake-routing-spec.md`](skills/workflow/workflow-intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) §0.1 — cite 不复制。
 
 ---
 
@@ -222,7 +222,7 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Prism 内置技能
 
-SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。Clarify 可在任意阶段按需触发；主工作流顺序为：入料 → 合同 → 执行 → 评审 → 评审 lite → 工件对齐 → 状态通报 → 健康巡检 → 低频压实 → 生命周期归档（与 README §Skills 表保持一致）。
+SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。Clarify 可在任意阶段按需触发；主工作流顺序为：入料 → 合同 → 执行 → 评审 → 工件对齐 → 状态通报 → 健康巡检 → 低频压实 → 生命周期归档（与 README §Skills 表保持一致）。
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
@@ -232,14 +232,13 @@ SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 I
 | workflow-scope | `/workflow-scope` | 合同收敛 → focus 刷新 |
 | workflow-execute | `/workflow-execute` | 单游标执行 — structured task/wave 或受限 topic-focus → 授权变更 → 验证 → 证据/focus 闭环（3.0 能力，dev experimental） |
 | workflow-review | `/workflow-review` | 正式评审 — 多角色协作（总分总结构） |
-| workflow-review-lite | `/workflow-review-lite` | 轻量评审 — 3.1 起软废弃；保留显式调用与旧产物兼容 |
 | workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
 | workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
 | workflow-status | `/workflow-status` | 健康度巡检 — report-first + `next_actions[]` handoff（不自动写盘） |
 | workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不列入 3.0 GA formal 能力面） |
 | workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不列入 3.0 GA formal 能力面） |
 
-3.0 GA formal 能力面为 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status`、`workflow-digest`（catalog: public/stable）。3.1 起 `workflow-review-lite` 进入 soft-deprecated 兼容面：不再作为推荐入口，但显式调用与旧 `type: review-lite` 产物仍保持兼容。`workflow-clarify` 从 3.2 以 dev/experimental 进入可选澄清面；`workflow-execute`、`workflow-compact` 与 `workflow-archive` 继续保持实验标记。
+3.0 GA formal 能力面曾包含 `workflow-review-lite`。3.2 起它进入 retired-with-compat：从现役 public/default/recommended surfaces 移除，但显式调用与旧 `type: review-lite` 产物仍保持兼容。迁移说明见 [`docs/review-lite-compatibility.md`](docs/review-lite-compatibility.md)。`workflow-clarify` 从 3.2 以 dev/experimental 进入可选澄清面；`workflow-execute`、`workflow-compact` 与 `workflow-archive` 继续保持实验标记。
 
 ---
 

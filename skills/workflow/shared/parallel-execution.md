@@ -90,8 +90,8 @@
 > - "派生新 topic 设计需要主 agent 统筹" → 统筹由 Merge 阶段完成，与 Explore 是否并行无关
 >
 > **D. 路径混淆类**
-> - "review-lite 更轻量" → review-lite 与 review 是不同入口，不构成 workflow-review/SKILL.md 内的 fallback 路径
-> - "用户主诉是梳理调整 / 快速对齐" → 这是 review-lite 的触发场景，不是 workflow-review/mode=full 内降级为串行的理由
+> - "review-lite 更轻量" → review-lite 已 retired-with-compat，不构成 workflow-review/SKILL.md 内的 fallback 路径
+> - "用户主诉是梳理调整 / 快速对齐" → 默认模型原生自检或按需 Clarify，不是 workflow-review/mode=full 内降级为串行的理由
 
 当合法触发后，在单次会话中顺序执行各工作单元：
 1. 依次处理每个单元，输出以编号章节分隔

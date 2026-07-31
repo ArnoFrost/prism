@@ -29,7 +29,6 @@ workspace.{PROJECT_CODE_LOWER}.local/
 | 入料/路由 | `/workflow-intake` |
 | 合同收敛 | `/workflow-scope` |
 | 评审（正式） | `/workflow-review` |
-| 评审（轻量） | `/workflow-review-lite` |
 | 查看任务 | `index.md` |
 
 ## Mandatory skill usage

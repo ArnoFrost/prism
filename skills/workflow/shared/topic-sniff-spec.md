@@ -27,18 +27,18 @@
 不同 skill 对**同一 `topic_affinity.suggestion`** 可有不同默认动作，由该 skill 的频率特征决定。这是有意为之的设计差异，不是待对齐的不一致：
 
 > [!note]
-> Protocol 层一句分流见仓库根 `AGENTS.md`「行为预期」：intake 属 Container Creation；review / review-lite 属 Container Evolution；compact 属 explicit-topic-only 维护动作。本文保留路由矩阵 SSOT，AGENTS 只做可发现入口。
+> Protocol 层一句分流见仓库根 `AGENTS.md`「行为预期」：intake 属 Container Creation；review 属 Container Evolution；显式 legacy review-lite 保留相同兼容路由；compact 属 explicit-topic-only 维护动作。本文保留路由矩阵 SSOT，AGENTS 只做可发现入口。
 
 | Skill | 频率 | 默认 cohesion 行为 | 默认 ask_user 行为 | 默认 new_topic 行为 |
 |---|---|---|---|---|
 | **intake** | 低频启动事件 | **不直接落盘**——候选只作为可选 append，默认仍新建 | 新 topic 默认项 + append 候选，必须 AskQuestion | 候选首项「全新专题（默认推荐）」 |
 | **review** | 高频持续事件 | 直接落盘到 matched_topic（轻确认） | 必须 AskQuestion | 沿 sniff 推荐 |
-| **review-lite** | 高频持续事件 | 同 review | 必须 AskQuestion | 沿 sniff 推荐 |
+| **review-lite** | 显式 legacy 事件 | 同 review | 必须 AskQuestion | 沿 sniff 推荐 |
 | **scope / status / digest** | 视触发场景 | 沿 review 默认（同一 topic 内累计动作） | 必须 AskQuestion | 通常不进入新建分支 |
 | **compact** | 低频维护事件 | **不消费 cohesion**；必须显式 topic_dir | 必须 AskQuestion / preview gate | 不适用 |
 
 > **设计立意**：
-> - **路由门**频率随 skill 而异：intake 低频启动（偏 Ask 保护）、review/review-lite 高频持续（偏 cohesion 顺滑）。**不能笼统按「路由门=高频」一档处理**——该误差是 r13 P0 finding F1。
+> - **路由门**频率随 skill 而异：intake 低频启动（偏 Ask 保护）、review 高频持续（偏 cohesion 顺滑）；显式 legacy review-lite 沿用 review 路由以保护旧 topic。**不能笼统按「路由门=高频」一档处理**——该误差是 r13 P0 finding F1。
 > - **intake 专属语义**：`/workflow-intake` 的默认意图是创建新 3.0 topic；已有 topic 追加需要显式 append/cohere 目标。详见 [intake-routing-spec.md](../workflow-intake/references/intake-routing-spec.md)。
 > - **决策门**（低频锚点，如 review Gate 4 / review-lite §4 Accept-Reject-Defer / intake migrate 聚合方案确认）所有 skill 统一改用 `AskQuestion` 三选一模板。
 > - **边界澄清门**（review/review-lite Align 阶段 sniff 失败 / mode 决策 / `next_review_source=none` 编号确认）也是低频锚点，与决策门同级严格度（错选会覆盖已有评审，不可逆）。

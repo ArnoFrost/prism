@@ -54,14 +54,6 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-07-13"
     rationale: "Topic-aware review evolution for task cohesion workflow. Replaces prism-review."
-  - id: workflow-review-lite
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Soft-deprecated compatibility entry since Prism 3.1: explicit calls and legacy type=review-lite artifacts remain supported, but it is no longer a recommended default governance path."
   - id: workflow-scope
     visibility: public
     stability: stable
@@ -94,6 +86,18 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-07-13"
     rationale: "Topic status digest — human-readable snapshot for stakeholder sync, not SSOT."
+
+# ─────────────────────────────────────────────
+# Retired compatibility skills — hidden from the active public surface
+# ─────────────────────────────────────────────
+  - id: workflow-review-lite
+    visibility: internal
+    stability: stable
+    source_repo: prism
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-07-31"
+    rationale: "Retired-with-compat since Prism 3.2: hidden from active/default/recommended surfaces while explicit calls and legacy type=review-lite artifacts remain supported."
 
 # ─────────────────────────────────────────────
 # Prism experimental skills — shipped but outside the GA formal surface

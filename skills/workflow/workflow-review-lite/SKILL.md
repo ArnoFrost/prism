@@ -1,33 +1,26 @@
 ---
 name: workflow-review-lite
 description: |
-  单视角轻量评审（3.1 起 soft-deprecated）：读取 scope（专项边界合同）与 focus（当前工作集/关注点）后，直接输出结论 + 行动项，不做多角色仲裁。保留给显式兼容调用与旧 topic；日常小改默认使用模型原生自检或自然语言澄清。
+  单视角轻量评审（3.2 retired-with-compat）：读取 scope（专项边界合同）与 focus（当前工作集/关注点）后，直接输出结论 + 行动项，不做多角色仲裁。仅保留给显式兼容调用与旧 topic；日常小改默认使用模型原生自检或 workflow-clarify。
   Use when: 显式兼容调用、旧 topic 轻量评审、review lite、review-lite、workflow-review-lite
-description_zh: "单视角轻量评审（3.1 起 soft-deprecated）：保留显式调用与旧产物兼容；日常小改默认使用模型原生自检或自然语言澄清。"
+description_zh: "单视角轻量评审（3.2 retired-with-compat）：仅保留显式调用与旧产物兼容。"
 license: MIT
 metadata:
   author: ArnoFrost
   version: 3.0.0
-visibility: public
+visibility: internal
 stability: stable
 user_invocable: true
-public_gate:
-  reviewed: true
-  reviewed_by: ArnoFrost
-  reviewed_at: "2026-07-13"
-  rationale: "Prism 3.0 单视角轻量评审入口，与正式 review 的决策边界和索引规则一致。"
-  rollback: "将 catalog 与 SKILL 镜像恢复为 dev/experimental；已生成 review-lite 保持有效。"
-  ssot_id: workflow-review-lite
 ---
 
 > [!WARNING]
-> **3.1 soft-deprecated**：本技能保留显式调用与旧 `type: review-lite` 产物兼容，但不再作为默认推荐治理入口。日常小改优先用模型原生自检；需要持久、多视角、可审计判断时使用 `workflow-review`。
+> **3.2 retired-with-compat**：本技能已退出 active/default/recommended surfaces，仅保留显式调用与旧 `type: review-lite` 产物兼容。迁移说明见 [review-lite compatibility](../../../docs/review-lite-compatibility.md)。
 
 ## 职责边界
 
 | 维度 | 说明 |
 |------|------|
-| **是什么** | 软废弃兼容入口：低摩擦、单视角轻量检查：Align → Scan → Write → Gate 4 |
+| **是什么** | 退役兼容入口：低摩擦、单视角轻量检查：Align → Scan → Write → Gate 4 |
 | **不是什么** | 不做多角色拆分、不产 raw/、不启动并行 subagent；**不得**直改 scope/focus |
 | **读什么** | Align 必读 `lite-templates`、`vocabulary`、`review-templates`；topic / scope-focus 场景装配 context-pack light |
 | **写什么** | `reviews/rXX_描述.md`（`type: review-lite`）+ 稀疏索引联动 |
@@ -37,7 +30,7 @@ public_gate:
 
 # 轻量评审 (Workflow Review Lite)
 
-> 管线定位：`intake → scope → review-lite → decision`；`{skill_dir}` 指 SKILL.md 所在目录。
+> 历史兼容路径：`intake → scope → review-lite → decision`；不属于 3.2 现役推荐管线。`{skill_dir}` 指 SKILL.md 所在目录。
 > 术语遵循 [vocabulary.md](references/vocabulary.md)，不在主入口复制定义。
 
 ## 1. 何时使用
