@@ -1,6 +1,6 @@
 # Prism — 架构详解
 
-> 本文档包含 Prism 的**结构客观面**（四层模型、部署、workflow 管线）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；v3.0 叙事见 [prism-3.0.md](./prism-3.0.md)；v2 历史见 [prism-2.0.md](./prism-2.0.md)。
+> 本文档包含 Prism 的**结构客观面**（四层模型、部署、按需 workflow 闭环）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；当前叙事见 [prism-3.2.md](./prism-3.2.md)；3.0 / 2.0 历史见 [prism-3.0.md](./prism-3.0.md) / [prism-2.0.md](./prism-2.0.md)。
 
 ---
 
@@ -33,7 +33,7 @@ Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和
 
 ---
 
-## 部署视图（v3.0）
+## 部署视图
 
 四层模型是逻辑架构，实际部署分为三个物理位置：
 
@@ -81,8 +81,9 @@ v3.0 在既有 workflow 基础上，把 Prism 的上层目标收敛为**长期�
 | 熵源 | 典型表现 | Prism 机制 |
 |------|----------|------------|
 | 输入熵 | 原始想法混沌、边界不清 | `intake` / `scope` |
+| 歧义熵 | 当前对话被一个人类取舍阻塞 | `clarify` 单问 micro-loop |
 | 分析熵 | 判断隐性化、发现不可追溯 | `review` / findings |
-| 决策熵 | 重复争论、结论漂移 | `decision` / `decision.index` |
+| 决策熵 | 重复争论、结论漂移 | Decision Record / `decision.index` |
 | 注意力熵 | 什么都重要、当前工作集膨胀 | `focus` |
 | 结构熵 | 长期问题切片失控、目录变杂物间 | `task` / `structures` |
 | 方向熵 | 不知道下一步该做什么 | `status` + `next_actions[]`（handoff-only） |
@@ -93,41 +94,44 @@ v3.0 在既有 workflow 基础上，把 Prism 的上层目标收敛为**长期�
 
 ---
 
-## Workflow 管线（v3.0）
+## Workflow 按需闭环
 
-Prism Workflow 是一套基于 AI Skill 的认知熵治理工作流。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮事件，不是顶层组织单位**。它是 Prism 框架内置的可选治理路径，不等同于 Prism 全部。
+Prism Workflow 是一组基于 AI Skill 的认知熵治理能力。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮判断事件，clarify 是任意阶段的对话 sidecar**。这些能力按熵源进入，不构成必须完整执行的固定管线。
 
-### 管线循环
+### 关系图
 
-```
-intake ──→ scope(v1) ──→ focus(当前工作集)
-                 │
-                 ├── review(rXX) ──→ 人类决策(dXX)
-                 │                         │
-                 │                    scope(v2) ← 决策驱动
-                 │                         │
-                 └── structures/task-N_slug ←─┘  # 仅当某个 V 深化到自带 scope + wave
-
-status ── 任意阶段可用，report-first 健康巡检 + next_actions handoff
-execute ─ 单一已授权 task/wave：实现 → 验证 → wave/verify/focus → 机械校验（dev experimental）
-tidy ──── 决策/评审后，工件机械对齐
-digest ── 需要沟通时，生成状态通报
-compact ─ 膨胀 topic 低频压实（preview-first；dev experimental）
-archive ─ topic 终态归档 / reactivate（dev experimental）
+```mermaid
+flowchart LR
+  I["Intake：容器与初始输入"] --> S["Scope：合同"]
+  S --> F["Focus：当前工作集"]
+  C["Clarify：单问澄清"] -. "candidate / handoff" .-> I
+  C -. "已有 Topic" .-> F
+  F --> E["Execute：单一获权游标"]
+  E -->|"验证、证据、当前态"| F
+  F --> R["Review：多视角判断"]
+  R --> D["Decision Record：授权事实"]
+  D --> S
+  M["Status / Digest / Compact / Archive"] -. "按需维护" .-> F
 ```
 
-关键约束：**scope 是 focus 与 task 结构分解的唯一上游 SSOT**。review 不直接改 focus 或 task，必须经决策 → scope → focus / structures 链条。
+图中的箭头表达允许的回流关系，不是默认阶段顺序。关键约束：
+
+- **Scope 是 Focus 与 task 结构分解的唯一上游 SSOT**。
+- Clarify 默认零写盘，只提供 checkpoint 或 candidate + handoff，不正式写 Scope / Decision。
+- intake 初始收敛可在用户明确授权后直接进入 Scope；review 驱动或长期审计合同变化必须经 Decision → Scope。
+- Review 负责多视角发现和仲裁；Decision Record 只机械记录明确授权，不判断价值或选择 Next。
+- Execute 只推进一个现存获权游标，完成后停止，不自动消费后续 task / wave。
 
 ### 内置 Workflow Skills
 
 | Skill | 触发 | 职责 |
 |-------|------|------|
 | `workspace-init` | `/workspace-init` | 项目级初始化（workspace 容器 + 路径迁移） |
+| `workflow-clarify` | `/workflow-clarify` | 任意阶段澄清一个阻塞性人类取舍；默认零写盘（dev experimental） |
 | `workflow-intake` | `/workflow-intake` | 入料 → 亲和路由 → topic 创建/内聚 |
 | `workflow-scope` | `/workflow-scope` | scope 合同维护 → focus 刷新 / task 同步 |
 | `workflow-execute` | `/workflow-execute` | 单一已授权游标的实现、验证与工件闭环；不选择 Next（dev experimental） |
 | `workflow-review` | `/workflow-review` | 正式评审（多角色总分总） |
-| `workflow-review-lite` | `/workflow-review-lite` | retired-with-compat（不在现役推荐面；仅显式调用与旧产物兼容） |
 | `workflow-tidy` | `/workflow-tidy` | 工件机械对齐（review/decision 后状态同步） |
 | `workflow-digest` | `/workflow-digest` | 专项状态通报（面向协作者的快照摘要） |
 | `workflow-status` | `/workflow-status` | 健康度巡检（report-first + `next_actions[]` handoff） |
@@ -135,6 +139,8 @@ archive ─ topic 终态归档 / reactivate（dev experimental）
 | `workflow-archive` | `/workflow-archive` | topic 生命周期归档 / 再激活（preview-first） |
 
 技能位于 `skills/workflow/workflow-*` 和 `skills/workspace/workspace-init`（目录名 = frontmatter `name` = IDE 软链名），环境预探测脚本按需分布在各 skill 的 `scripts/`，共享 `workflow/shared/sniff_lib.py`。
+
+兼容入口 `workflow-review-lite` 不属于上表的现役能力面；它自 3.2 起仅保留显式 legacy 调用、旧 topic 与旧 `type: review-lite` 产物兼容。
 
 ### Topic 工件
 
@@ -149,7 +155,7 @@ archive ─ topic 终态归档 / reactivate（dev experimental）
 | `structures/task-N_slug/scope.md` | 单个 task 的收窄合同，1:1 投影 topic 级 V；`tN` 仍是稳定 id | 按需创建 |
 | `structures/task-N_slug/wave-N_slug.md` | task 内时间推进批次；数字 N 表顺序，slug 只做人读 | 按需推进 |
 | `reviews/rXX.md` | 综合评审报告（P0/P1/P2 分级 + Actions） | 每轮新建 |
-| `decisions/dXX.md` | 人类裁决记录 | 每次决策新建 |
+| `decisions/dXX.md` | 人类裁决记录；由 Decision Record 在双门满足后原子写入 | 每次正式决策新建 |
 | `verify/vXX.md` | 验收细则（`[auto]`/`[human]` 标记） | 按需创建 |
 | `README.md` | 2.x topic 控制台；3.0 起 deprecated / grandfather | 存量保留，新 topic 不再作为入口 |
 
@@ -162,7 +168,7 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 | CLI 命令面自描述 | `prism --json manifest` | 导出 verb registry（stability / schema_compliant / description），作为机器可见真源 |
 | Workflow 收尾串联 | `prism finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；旧 `pipeline` alias 自 v2.0 起已物理移除（v1.1.x deprecated 期已结束） |
 | 正式决策落盘 | `prism decision record` | 在用户明确授权与可审计治理事件双门后，原子写入 dXX / decision.index / decision_artifact；不判断价值、不改 scope、不选择 next |
-| 痕迹义务抽检 | `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；特定前缀 topic 默认 strict，其他默认 lenient（frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` ENV / CLI flag 可覆盖）|
+| 痕迹义务抽检 | `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；默认 lenient，frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` / CLI flag 可显式启用 strict |
 | 工件机械对齐 | `prism tidy` | 对齐 focus 入口、review.index / decision.index、frontmatter 等 topic 工件；README 仅存量兜底 |
 | 健康巡检 | `prism status` | 扫描活跃 topic 状态，输出 workspace 健康快照 |
 | 摘要采集 | `prism digest` | 为协作者摘要 / 状态同步采集 topic 工件 |
@@ -175,12 +181,12 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 - `prism <verb>`：workspace/topic 级工作流入口
 - `manifest` / `doctor` / `sync`：系统自省与治理入口
 
-### 当前边界
+### 当前开发边界
 
-- 核心架构已经成立，当前主要缺口是**第二/第三个非 Prism 项目的持续验证**，而不是主干设计尚未闭合
-- 文档叙事正从 2.x plan / README 控制台口径迁到 3.0 focus / task 口径；schema、context pack 与归档脚本仍按渐进迁移处理
-- verify 机制已不是“0 实例”状态，但整体仍偏轻量，尚未成为所有 topic 的默认强约束
-- archive 仍以脚本触发为主（`shared/scripts/archive.py`），`status` 只做弱提醒而非强制生命周期门控
+- v3.1 boundary-stable 是当前发行边界；3.2 正在 dogfood Clarify、Decision Record 与 Execute 的闭环体验。
+- Clarify、Decision Record、Execute、Compact 与 Archive 仍保持实验标记，不因文档叙事前置晋升稳定性。
+- Workspace template、topic lifecycle 与旧图表面会按独立批次继续校准；本文不把尚未完成的治理写成已发布事实。
+- verify 与 trace 仍是结构化协作的可选增强，不成为 Prism core contract 的硬入口。
 
 ### 痕迹义务家族封顶政策（v2.0 起永久生效）
 
@@ -283,16 +289,16 @@ prism/
 
 ---
 
-## 图示索引（v3 叙事）
+## 图示索引（待 3.2 视觉校准）
 
-源图来自 043 播客 artifacts；仓内路径 `docs/assets/v3/`（GitHub raw 可外链）。
+现有图片来自早期 v3 叙事，只作为待替换资源，不承担 3.2 合同语义。当前职责边界以本文文字和 Mermaid 关系图为准。
 
 | 图 | 文件 | 说明 |
 |----|------|------|
 | Prism ↔ SDD | [prism-sdd-relation.png](assets/v3/prism-sdd-relation.png) | 与 OpenSpec / planning layer 关系 |
-| 流转 | [prism-flow.png](assets/v3/prism-flow.png) | init → 维护（详见 [onboarding.md](./onboarding.md)） |
-| 认知熵地图 | [cognitive-entropy-map.png](assets/v3/cognitive-entropy-map.png) | 见 [prism-3.0.md](./prism-3.0.md) |
-| 认知熵走向 | [cognitive-entropy-flow.png](assets/v3/cognitive-entropy-flow.png) | 见 [prism-3.0.md](./prism-3.0.md) |
+| 流转 | [prism-flow.png](assets/v3/prism-flow.png) | 早期 init → 维护图，后续换图 |
+| 认知熵地图 | [cognitive-entropy-map.png](assets/v3/cognitive-entropy-map.png) | 早期 3.0 图，后续换图 |
+| 认知熵走向 | [cognitive-entropy-flow.png](assets/v3/cognitive-entropy-flow.png) | 早期 3.0 图，后续换图 |
 
 ![Prism 与 SDD / OpenSpec 层关系](assets/v3/prism-sdd-relation.png)
 
@@ -306,6 +312,7 @@ prism/
 
 | 面 | 入口 |
 |----|------|
-| v3.0 GA 已落地锚点 + 后续观察 | [prism-3.0.md](./prism-3.0.md) |
+| 当前 3.2 开发叙事与实验边界 | [prism-3.2.md](./prism-3.2.md) |
+| v3.0 GA 历史成立锚点 | [prism-3.0.md](./prism-3.0.md) |
 | 文档分类与读序 | [docs/README.md](./README.md) |
 | 发行（`prism --version`） | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |

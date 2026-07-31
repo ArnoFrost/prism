@@ -15,7 +15,9 @@ import json
 import os
 import re
 import sys
+import tempfile
 from datetime import date, datetime
+from pathlib import Path
 
 # 依赖声明：本脚本依赖 workflow/shared（同目录 sniff_lib.py 软链 + shared/scripts/parse_utils.py）。
 # prism monorepo 内可解析；独立 bundle 缺 shared 时优雅降级（清晰报错 + exit 2），不抛裸栈。
@@ -23,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "shared",
 try:
     from sniff_lib import find_workspace, _find_topics_dir, enumerate_reviews
     from parse_utils import resolve_work_file
+    from validate_trace import extract_trace_block, validate_decision_file
 except ImportError as _dep_err:
     sys.stderr.write(
         f"workflow-tidy 依赖 workflow/shared 未就位: {_dep_err}\n"
@@ -42,6 +45,28 @@ def _read(path: str) -> str | None:
 def _write(path: str, content: str) -> None:
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
+
+
+def _write_atomic(path: str, content: str) -> None:
+    """同目录 staged write + atomic replace；失败时保留原文件。"""
+    directory = os.path.dirname(path)
+    descriptor, temp_name = tempfile.mkstemp(
+        prefix=f".{os.path.basename(path)}.",
+        suffix=".tmp",
+        dir=directory,
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, path)
+    except Exception:
+        try:
+            os.unlink(temp_name)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def _file_mtime_date(path: str) -> str | None:
@@ -179,6 +204,53 @@ def _decision_review_refs(topic_dir: str) -> dict[str, list[dict]]:
     return refs
 
 
+def _mirror_decision_integrity(
+    topic_dir: str,
+    decision: dict,
+    review_id: str,
+) -> list[str]:
+    """验证可驱动 rXX 镜像的 dXX；旧非 cli_record 产物保留 grandfather。"""
+    decision_path = os.path.join(topic_dir, decision["path"])
+    content = _read(decision_path) or ""
+    reasons: list[str] = []
+    if _extract_frontmatter_scalar(content, "type") != "decision":
+        reasons.append("decision-type-invalid")
+    if _extract_frontmatter_scalar(content, "review_ref") != review_id:
+        reasons.append("decision-review-ref-mismatch")
+
+    trace_issues = validate_decision_file(
+        Path(decision_path), content, strict=True,
+    )
+    reasons.extend(issue.rule for issue in trace_issues)
+    artifact = extract_trace_block(content, "decision_artifact") or {}
+    decision_source = artifact.get("decision_source")
+    frontmatter_source = _extract_frontmatter_scalar(content, "source")
+
+    # 3.2 cli_record 是完整主链；历史 text_fallback/askquestion 继续 grandfather。
+    if decision_source == "cli_record" or frontmatter_source is not None:
+        if frontmatter_source != "review":
+            reasons.append("decision-source-not-review")
+        if artifact.get("governance_source") != frontmatter_source:
+            reasons.append("decision-governance-source-mismatch")
+        if artifact.get("written", "").lower() != "true":
+            reasons.append("decision-artifact-not-written")
+        if artifact.get("path") != decision["path"]:
+            reasons.append("decision-artifact-path-mismatch")
+        if artifact.get("review_kind") not in {"review", "review-lite"}:
+            reasons.append("decision-review-kind-invalid")
+
+        index_content = _read(os.path.join(topic_dir, "decision.index.md")) or ""
+        row = re.search(
+            rf"^\|\s*{re.escape(decision['id'])}\s*\|.*$",
+            index_content,
+            re.MULTILINE,
+        )
+        if row is None or decision["filename"] not in row.group(0):
+            reasons.append("decision-index-link-missing")
+
+    return list(dict.fromkeys(reasons))
+
+
 def _scan_review_decision_mirrors(topic_dir: str) -> dict:
     """比较最新 dXX.review_ref 与对应 rXX 的派生 Decision 镜像。"""
     reviews_dir = os.path.join(topic_dir, "reviews")
@@ -189,6 +261,17 @@ def _scan_review_decision_mirrors(topic_dir: str) -> dict:
     result = {"updates": [], "dangling": [], "invalid": []}
     for review_id, decisions in _decision_review_refs(topic_dir).items():
         latest = decisions[-1]
+        integrity_reasons = _mirror_decision_integrity(
+            topic_dir, latest, review_id,
+        )
+        if integrity_reasons:
+            result["invalid"].append({
+                "review_id": review_id,
+                "decision": latest,
+                "reason": "decision-main-chain-invalid",
+                "reasons": integrity_reasons,
+            })
+            continue
         review = reviews.get(review_id)
         if review is None:
             result["dangling"].append({
@@ -563,7 +646,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
                 mirror["new"]["decision_ref"],
                 quote=True,
             )
-            _write(review_path, review_content)
+            _write_atomic(review_path, review_content)
             changes_made.append(mirror["file"])
 
     if mirror_scan["dangling"]:
@@ -571,6 +654,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "type": "review_decision_dangling",
             "file": "decisions/",
             "items": mirror_scan["dangling"],
+            "blocking": True,
             "message": "Decision review_ref 指向不存在的 rXX；tidy 已停止该镜像写入",
         })
     if mirror_scan["invalid"]:
@@ -578,7 +662,8 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             "type": "review_decision_invalid",
             "file": "decisions/",
             "items": mirror_scan["invalid"],
-            "message": "Decision status 或 Review frontmatter 不合法；tidy 已停止该镜像写入",
+            "blocking": True,
+            "message": "Decision 主链、status 或 Review frontmatter 不合法；tidy 已停止该镜像写入",
         })
 
     # 7. frontmatter updated 日期（scope.md, focus.md, plan.md grandfather）
@@ -674,6 +759,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
         "changes_made": changes_made,
         "fix_count": len(fixes),
         "report_count": len(reports),
+        "blocking": any(report.get("blocking") for report in reports),
     }
 
 
@@ -701,6 +787,7 @@ def tidy_workspace(project_dir: str, fix: bool = False,
     total_fixes = sum(r["fix_count"] for r in results)
     total_reports = sum(r["report_count"] for r in results)
     total_changes = sum(len(r["changes_made"]) for r in results)
+    blocking_topics = [r["topic"] for r in results if r.get("blocking")]
 
     return {
         "workspace": workspace["path"],
@@ -712,6 +799,7 @@ def tidy_workspace(project_dir: str, fix: bool = False,
             "fixable_items": total_fixes,
             "report_only_items": total_reports,
             "files_changed": total_changes,
+            "blocking_topics": blocking_topics,
         },
     }
 

@@ -190,6 +190,16 @@ class TestTopicVExtraction:
             {"task_v": "tV2", "refs": ["V9"]},
         ]
 
+    def test_conservation_tv_prefix_valid(self, topic_with_tasks):
+        """tV* 前缀 + 投影存在的 topic-V → 无 error（守恒 lint 不再误报 empty）。"""
+        _write_task_scope(
+            topic_with_tasks / "structures" / "task-1",
+            "| tV1 | topic-V1 | 收窄 |\n| tV2 | topic-V2 | 收窄 |\n",
+        )
+        res = vt.validate_scope_conservation(topic_with_tasks, strict=True)
+        assert res["checked"] is True
+        assert res["errors"] == []
+
 
 def test_empty_topic_v_set_is_not_false_green(topic_with_tasks):
     (topic_with_tasks / "scope.md").write_text(
@@ -202,16 +212,6 @@ def test_empty_topic_v_set_is_not_false_green(topic_with_tasks):
     )
     result = vt.validate_scope_conservation(topic_with_tasks, strict=True)
     assert any(issue["rule"] == "topic-v-empty" for issue in result["errors"])
-
-    def test_conservation_tv_prefix_valid(self, topic_with_tasks):
-        """tV* 前缀 + 投影存在的 topic-V → 无 error（守恒 lint 不再误报 empty）。"""
-        _write_task_scope(
-            topic_with_tasks / "structures" / "task-1",
-            "| tV1 | topic-V1 | 收窄 |\n| tV2 | topic-V2 | 收窄 |\n",
-        )
-        res = vt.validate_scope_conservation(topic_with_tasks, strict=True)
-        assert res["checked"] is True
-        assert res["errors"] == []
 
 
 # ============================================================

@@ -16,9 +16,13 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 
 > 共享规则，本地状态，清晰边界。
 
-**当前阶段**：v3.1 boundary-stable — 在 v3.0 GA 基线上推进强模型时代的治理瘦身；`focus` 单入口、按需 `task` 递归分解与 README grandfather 兼容仍是稳定基础。
-**发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）  
-**快速判断 Prism 是否成立** → [docs/prism-3.0.md](docs/prism-3.0.md) · **3.1 路线** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **v2.0 历史** → [docs/prism-2.0.md](docs/prism-2.0.md)
+**当前发行**：v3.1 boundary-stable — `focus` 单入口、按需 `task` 递归分解与 README grandfather 兼容构成稳定边界。
+
+**当前开发面**：3.2 正在验证 Clarify sidecar、Decision Record 与更轻的按需闭环；它们不改变 v3.1 的发行身份，也不把 workflow 变成固定管线。
+
+**发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）
+
+**当前治理叙事** → [docs/prism-3.2.md](docs/prism-3.2.md) · **发行历史** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **3.0 / 2.0 历史** → [docs/prism-3.0.md](docs/prism-3.0.md) / [docs/prism-2.0.md](docs/prism-2.0.md)
 
 ---
 
@@ -37,19 +41,22 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 ```mermaid
 flowchart TB
   subgraph governance ["认知治理层 · Prism"]
-    I[intake] --> S[scope]
-    S --> F[focus]
-    F --> R[review / decision]
+    I["intake：接住输入"] --> S["scope：稳定边界"]
+    S --> F["focus：暴露当前工作集"]
+    C["clarify：按需澄清"] -. "candidate / handoff" .-> I
+    R["review：多视角判断"] --> DR["decision：授权事实"]
+    DR --> S
+    E["execute：单游标执行"] --> F
   end
   subgraph harness ["执行控制层 · FrostAtlas"]
-    O[observe] --> D[decide] --> A[act]
+    O[observe] --> HD[decide] --> A[act]
     A --> V[verify] --> G[gate]
   end
   governance -->|"定义做什么、验收什么"| harness
   harness -->|"证据与关口回流"| governance
 ```
 
-**怎么组合用**：在 Prism 里把目标、边界和决策链治理清楚；当任务需要 Agent 长程自动执行时，用 FrostAtlas 包裹执行循环，用合同 + 证据 + 关口约束“真的完成”。二者互补，不互相替代。
+**怎么组合用**：在 Prism 里治理为什么做、做什么、边界和决策；当任务需要 Agent 长程自动执行时，用 FrostAtlas 管理执行循环、证据和关口。二者通过合同与证据交换，不互相扩权。
 
 | 你想… | 优先看 |
 |--------|--------|
@@ -100,7 +107,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 
 ```text
 ./setup.sh init → prism --version 验收 → workspace-init / 桥接
-              → 日常 workflow（可选）→ update / doctor / relink 维护
+              → 按熵源启用治理能力（可选）→ update / doctor / relink 维护
 ```
 
 | 阶段 | 命令 | 做什么 |
@@ -117,7 +124,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 
 ## 认知熵与 Workflow Skills
 
-Prism 内置 **workflow** 是一套可选的认知熵治理工作流——按熵源选用 skill，而非「工具清单」。全景表 → [docs/skill-taxonomy.md](docs/skill-taxonomy.md)；叙事 → [docs/prism-3.0.md](docs/prism-3.0.md)。
+Prism 内置 **workflow** 是一组可选的认知熵治理能力：按当前问题选择，不要求从 Intake 一路执行完整清单。3.2 当前叙事见 [docs/prism-3.2.md](docs/prism-3.2.md)，能力全景见 [docs/skill-taxonomy.md](docs/skill-taxonomy.md)。
 
 ![认知熵治理地图：topic 工件与 workflow 技能如何协作](docs/assets/v3/cognitive-entropy-map.png)
 
@@ -126,13 +133,15 @@ Prism 内置 **workflow** 是一套可选的认知熵治理工作流——按熵
 | 你想… | 优先 skill / 入口 |
 |--------|-------------------|
 | 新需求不知归哪 | `/workflow-intake` |
-| 下一阶段被一个关键取舍阻塞 | `/workflow-clarify` |
+| 当前对话被一个人类取舍阻塞 | `/workflow-clarify`；默认零写盘，只给 candidate / handoff |
 | 决策后更新边界 | `/workflow-scope` |
 | 继续当前 task / wave，并同步代码与工件 | `/workflow-execute` |
-| 方向变更 / 里程碑 | `/workflow-review` |
+| 方向变更 / 里程碑需要多视角判断 | `/workflow-review`；结论先完整呈现，再进入人类 Gate |
 | 日常小改动确认 | 模型原生自检；需要持久评审时显式用 `/workflow-review` |
 | 看进度 / 下一步 | `/workflow-status` |
 | 升级 SDK | `prism update` · `./setup.sh update` |
+
+正式合同变化只有两条入口：intake 初始收敛可在用户明确授权后直接进入 Scope；review 驱动或需要长期审计的变化必须先形成 Decision Record，再由 Scope 更新合同。Clarify 不替代这两个授权入口。
 
 ---
 
@@ -161,7 +170,8 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 | **init 后日常 / 生命周期** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
 | **认知熵 / skill 怎么选** | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) · 上文 [认知熵与 Workflow Skills](#认知熵与-workflow-skills) |
 | 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
-| Prism 3.0 为什么是轻量认知熵管理框架 | [docs/prism-3.0.md](docs/prism-3.0.md) |
+| Prism 当前如何形成按需治理闭环 | [docs/prism-3.2.md](docs/prism-3.2.md) |
+| Prism 3.0 的历史成立锚点 | [docs/prism-3.0.md](docs/prism-3.0.md) |
 | 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
 | topic 从 intake 到 archive 怎么走 | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |
 | 完整架构与部署视图 | [docs/architecture.md](docs/architecture.md) |

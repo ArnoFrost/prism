@@ -33,6 +33,7 @@ def _add_to_path(directory: str) -> None:
 
 _add_to_path(SCRIPT_DIR)
 from validate_product import DEFAULT_FORMAT_CUTOVER
+from validate_trace import extract_trace_block, validate_decision_file
 
 
 def _subprocess_env() -> dict[str, str]:
@@ -54,6 +55,119 @@ def _numbered_markdown_files(directory: Path, prefix: str) -> list[Path]:
         return []
     pattern = re.compile(rf"^{re.escape(prefix)}\d{{2}}(?:_.*)?\.md$")
     return sorted(path for path in directory.iterdir() if path.is_file() and pattern.match(path.name))
+
+
+def _is_nullish(value: str | None) -> bool:
+    return value is None or value.strip().lower() in {"", "null", "none", "~", "—"}
+
+
+def _validate_write_stage(
+    topic_dir: str,
+    decision_files: list[Path],
+    review_files: list[Path],
+    decision_hint: str | None,
+) -> dict:
+    """在任何 write-mode tidy 前验证最新 Decision 主链。"""
+    errors: list[str] = []
+    if not decision_files:
+        return {
+            "status": "error",
+            "errors": ["write-mode finalize 需要已落盘的合法 Decision；pre-review 仅允许 --dry-run"],
+            "decision": None,
+            "source": None,
+        }
+
+    decision_path = decision_files[-1]
+    decision_id = decision_path.name[:3]
+    try:
+        content = decision_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return {
+            "status": "error",
+            "errors": [f"无法读取 {decision_path.name}: {type(exc).__name__}"],
+            "decision": decision_id,
+            "source": None,
+        }
+
+    decision_type = extract_frontmatter_field(content, "type")
+    decision_status = extract_frontmatter_field(content, "status")
+    decision_source = extract_frontmatter_field(content, "source")
+    review_ref = extract_frontmatter_field(content, "review_ref")
+    valid_statuses = {"accepted", "rejected", "deferred"}
+    valid_sources = {"clarify", "review", "explicit_user", "execution_boundary"}
+
+    if decision_type != "decision":
+        errors.append("最新 dXX frontmatter type 必须为 decision")
+    if decision_status not in valid_statuses:
+        errors.append(f"最新 dXX status 非法: {decision_status or 'missing'}")
+    if decision_source not in valid_sources:
+        errors.append(f"最新 dXX source 非法: {decision_source or 'missing'}")
+
+    hint_status = {
+        "accept": "accepted",
+        "reject": "rejected",
+        "defer": "deferred",
+    }.get(decision_hint or "")
+    if hint_status and decision_status != hint_status:
+        errors.append(
+            f"--decision={decision_hint} 与最新 dXX status={decision_status or 'missing'} 不一致"
+        )
+
+    trace_issues = validate_decision_file(decision_path, content, strict=True)
+    errors.extend(f"{issue.rule}: {issue.message}" for issue in trace_issues)
+    artifact = extract_trace_block(content, "decision_artifact") or {}
+    expected_decision = {
+        "accepted": "accept",
+        "rejected": "reject",
+        "deferred": "defer",
+    }.get(decision_status or "")
+    if artifact:
+        if artifact.get("decision") != expected_decision:
+            errors.append("decision_artifact.decision 与 frontmatter status 不一致")
+        if artifact.get("decision_source") != "cli_record":
+            errors.append("decision_artifact.decision_source 必须为 cli_record")
+        if artifact.get("governance_source") != decision_source:
+            errors.append("decision_artifact.governance_source 与 frontmatter source 不一致")
+        if artifact.get("written", "").lower() != "true":
+            errors.append("decision_artifact.written 必须为 true")
+        if artifact.get("path") != f"decisions/{decision_path.name}":
+            errors.append("decision_artifact.path 与最新 dXX 路径不一致")
+
+    index_path = Path(topic_dir) / "decision.index.md"
+    try:
+        index_content = index_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        errors.append("decision.index.md 缺失或不可读")
+    else:
+        row = re.search(
+            rf"^\|\s*{re.escape(decision_id)}\s*\|.*$",
+            index_content,
+            re.MULTILINE,
+        )
+        if row is None or decision_path.name not in row.group(0):
+            errors.append(f"decision.index.md 缺少 {decision_id} 的精确路径条目")
+
+    if decision_source == "review":
+        if not review_ref or not re.fullmatch(r"r\d{2}", review_ref):
+            errors.append("source=review 必须提供精确 review_ref=rXX")
+        else:
+            matches = [
+                path for path in review_files
+                if re.fullmatch(rf"{re.escape(review_ref)}(?:_.*)?\.md", path.name)
+            ]
+            if len(matches) != 1:
+                errors.append(f"review_ref={review_ref} 必须唯一命中一个 rXX")
+        if artifact.get("review_kind") not in {"review", "review-lite"}:
+            errors.append("source=review 的 decision_artifact 缺合法 review_kind")
+    elif not _is_nullish(review_ref):
+        errors.append(f"source={decision_source or 'missing'} 不应携带 review_ref")
+
+    return {
+        "status": "error" if errors else "ok",
+        "errors": errors,
+        "decision": decision_id,
+        "source": decision_source,
+    }
 
 
 def resolve_trace_strict(
@@ -148,6 +262,51 @@ def run_finalize(args: argparse.Namespace) -> int:
     steps: list[dict] = []
     has_error = False
 
+    reviews_dir = Path(topic_dir) / "reviews"
+    review_files = _numbered_markdown_files(reviews_dir, "r")
+    if not review_files:
+        review_files = _numbered_markdown_files(Path(topic_dir), "r")
+    decision_files = _numbered_markdown_files(Path(topic_dir) / "decisions", "d")
+    latest_decision_source = None
+    if decision_files:
+        try:
+            latest_content = decision_files[-1].read_text(encoding="utf-8")
+            latest_decision_source = extract_frontmatter_field(latest_content, "source")
+        except (OSError, UnicodeDecodeError):
+            latest_decision_source = None
+
+    if dry_run:
+        steps.append({
+            "step": "stage-guard",
+            "status": "skipped",
+            "reason": "dry-run 允许在 Decision 前执行，且不写盘",
+            "dry_run": True,
+        })
+    else:
+        stage_guard = _validate_write_stage(
+            topic_dir, decision_files, review_files, decision_hint,
+        )
+        steps.append({
+            "step": "stage-guard",
+            "status": stage_guard["status"],
+            "decision": stage_guard["decision"],
+            "source": stage_guard["source"],
+            "errors": stage_guard["errors"],
+            "dry_run": False,
+        })
+        if stage_guard["status"] == "error":
+            output = {
+                "topic": os.path.basename(topic_dir),
+                "mode": "fix",
+                "steps": steps,
+                "success": False,
+                "next_action": "先通过 prism decision record 写入完整 Decision 主链",
+                "decision_hint": decision_hint,
+                "interactive_mode": not no_interactive,
+            }
+            print(json.dumps(output, ensure_ascii=False, indent=2))
+            return 1
+
     tidy_scripts = _skill_scripts_dir("tidy")
     _add_to_path(tidy_scripts)
     _add_to_path(SHARED_DIR)
@@ -174,17 +333,24 @@ def run_finalize(args: argparse.Namespace) -> int:
             tidy_result = {"raw_output": result.stdout, "stderr": result.stderr}
 
         fix_count = 0
+        blocking_reports: list[dict] = []
         if "topics" in tidy_result:
             for t in tidy_result["topics"]:
                 fix_count += t.get("fix_count", 0)
+                blocking_reports.extend(
+                    report for report in t.get("reports", [])
+                    if report.get("blocking")
+                )
 
-        tidy_failed = result.returncode != 0
+        tidy_failed = result.returncode != 0 or bool(blocking_reports)
         steps.append({
             "step": "tidy",
             "status": "error" if tidy_failed else "ok",
             "fixes_applied": fix_count,
+            "blocking_reports": len(blocking_reports),
             "dry_run": dry_run,
             "returncode": result.returncode,
+            **({"details": blocking_reports[:10]} if blocking_reports else {}),
             **({"stderr": result.stderr.strip()[:1000]} if tidy_failed and result.stderr.strip() else {}),
         })
         if tidy_failed:
@@ -195,11 +361,6 @@ def run_finalize(args: argparse.Namespace) -> int:
 
     shared_scripts = os.path.join(WORKFLOW_DIR, "shared", "scripts")
     validate_path = os.path.join(shared_scripts, "validate_product.py")
-    reviews_dir = Path(topic_dir) / "reviews"
-    review_files = _numbered_markdown_files(reviews_dir, "r")
-    if not review_files:
-        review_files = _numbered_markdown_files(Path(topic_dir), "r")
-    decision_files = _numbered_markdown_files(Path(topic_dir) / "decisions", "d")
 
     if not review_files and not decision_files:
         steps.append({
@@ -208,15 +369,22 @@ def run_finalize(args: argparse.Namespace) -> int:
             "reason": "pre-review topic：尚无 review/decision 产物",
             "dry_run": dry_run,
         })
-    elif not review_files:
+    elif not review_files and latest_decision_source == "review":
         steps.append({
             "step": "validate",
             "status": "error",
-            "reason": "已有 decision 但缺少 review 产物",
+            "reason": "source=review 的 Decision 缺少 review 产物",
             "errors": 1,
             "dry_run": dry_run,
         })
         has_error = True
+    elif not review_files:
+        steps.append({
+            "step": "validate",
+            "status": "skipped",
+            "reason": f"source={latest_decision_source or 'unknown'} 的合法 Decision 无需 review 产物",
+            "dry_run": dry_run,
+        })
     elif os.path.isfile(validate_path):
         product_dir = str(review_files[0].parent)
         validate_cmd = [

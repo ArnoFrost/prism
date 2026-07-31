@@ -52,6 +52,11 @@ def _decision(
     status: str,
 ) -> Path:
     path = topic / "decisions" / f"{did}_test.md"
+    decision = {
+        "accepted": "accept",
+        "rejected": "reject",
+        "deferred": "defer",
+    }[status]
     _write(
         path,
         (
@@ -60,10 +65,26 @@ def _decision(
             f"status: {status}\n"
             "type: decision\n"
             f"review_ref: {rid}\n"
+            "source: review\n"
             "tags: [decision, test]\n"
             "---\n"
-            f"# {did}\n"
+            f"# {did}\n\n"
+            "```yaml\n"
+            "decision_artifact:\n"
+            f"  decision: {decision}\n"
+            "  decision_source: cli_record\n"
+            "  governance_source: review\n"
+            "  written: true\n"
+            f"  path: decisions/{path.name}\n"
+            "  review_kind: review\n"
+            "```\n"
         ),
+    )
+    index = topic / "decision.index.md"
+    current = index.read_text(encoding="utf-8") if index.exists() else "# Decision Index\n\n"
+    _write(
+        index,
+        current + f"| {did} | [test](./decisions/{path.name}) |\n",
     )
     return path
 
@@ -158,3 +179,43 @@ def test_review_without_frontmatter_is_report_only(tmp_path: Path) -> None:
     )
     assert report["items"][0]["reason"] == "review-frontmatter-invalid"
     assert result["changes_made"] == []
+
+
+def test_cli_record_without_index_is_blocking_and_does_not_write(
+    tmp_path: Path,
+) -> None:
+    topic = tmp_path / "057_missing_index"
+    review = _review(topic, "r01")
+    _decision(topic, "d01", "r01", "accepted")
+    (topic / "decision.index.md").unlink()
+    before = review.read_text(encoding="utf-8")
+
+    result = tidy.tidy_topic(str(topic), fix=True)
+
+    assert review.read_text(encoding="utf-8") == before
+    assert result["blocking"] is True
+    report = next(
+        item for item in result["reports"]
+        if item["type"] == "review_decision_invalid"
+    )
+    assert "decision-index-link-missing" in report["items"][0]["reasons"]
+
+
+def test_atomic_replace_failure_keeps_original_review(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    topic = tmp_path / "057_atomic"
+    review = _review(topic, "r01")
+    _decision(topic, "d01", "r01", "accepted")
+    before = review.read_bytes()
+
+    def fail_replace(_source: str, _target: str) -> None:
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(tidy.os, "replace", fail_replace)
+    with pytest.raises(OSError, match="replace failed"):
+        tidy.tidy_topic(str(topic), fix=True)
+
+    assert review.read_bytes() == before
+    assert not list(review.parent.glob(f".{review.name}.*.tmp"))
