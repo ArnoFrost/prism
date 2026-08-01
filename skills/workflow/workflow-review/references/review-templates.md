@@ -105,7 +105,8 @@ topics/{NNN}_{topic}/
 
 | 字段 | 适用 | 说明 |
 |------|------|------|
-| `accepted_at` | decision | 决策被 accept 的时刻 ISO 8601（如 `2026-05-13T12:30:00+08:00`），与 `decision_artifact.timestamp` 对应 |
+| `decided_at` | decision | 决策被明确裁决的时刻 ISO 8601（如 `2026-05-13T12:30:00+08:00`），与 `decision_artifact.timestamp` 对应 |
+| `accepted_at` | decision | legacy 兼容字段；旧 dXX 可读，新 dXX 不再写入 |
 | `merged_at` | review | mode=full Merge 阶段落盘完成时刻，与 `merge_artifact.raw_landed=true` 对应 |
 | `superseded_at` | review/decision | 被新一轮取代的时刻；同时填 `superseded_by: rXX` / `dXX` 等指针 |
 | `archived_at` | topic-readme | topic 进入 `archive/` 的时刻 |
@@ -114,7 +115,8 @@ topics/{NNN}_{topic}/
 
 - `date` 字段不变（仍是创建日）— 不破坏现有产物
 - 新增字段都是**可选**，未来可被 `prism status` / `prism digest` 消费做时间线视图
-- `accepted_at` / `merged_at` 与 `decision_artifact` / `merge_artifact` 的 `timestamp` 字段是双源镜像（一个是 frontmatter 给 OFM 索引用，一个是正文块给 strict 校验用）
+- `decided_at` / `merged_at` 与 `decision_artifact` / `merge_artifact` 的 `timestamp` 字段是双源镜像（一个是 frontmatter 给 OFM 索引用，一个是正文块给 strict 校验用）
+- legacy `accepted_at` 仅作读取回退；若与 `decided_at` 同时存在且值冲突，validator / finalize 应 fail-closed
 - 状态切换（`status: draft → accepted`）建议同时填对应时间戳，未来可加 frontmatter validation 守门
 
 ## Review 语义链
@@ -153,6 +155,6 @@ git_range: 1efa09e..d4b2e6b
 commit: cccf1b8
 independent_finding_rate: 92.9
 merged_at: 2026-05-12T22:15:00+08:00     # mode=full Merge 完成时
-# Gate 4 后再补 decision_ref / accepted_at 等字段
+# Gate 4 后再补 decision_ref / decided_at 等字段
 ---
 ```

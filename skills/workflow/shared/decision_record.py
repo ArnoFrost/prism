@@ -42,14 +42,24 @@ STATUS_BY_DECISION = {
 _IDEMPOTENCY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _DECISION_FILE_RE = re.compile(r"^d(\d{1,3})(?:_.*)?\.md$")
 _REVIEW_FILE_RE = re.compile(r"^r(\d{1,3})(?:_.*)?\.md$")
-_INDEX_HEADER = (
+_LEGACY_INDEX_HEADER = (
     "| dXX | 决策标题 | accepted_at | review_ref | supersedes | "
     "derived_from | related_dXX |"
 )
-_INDEX_SEPARATOR = (
+_LEGACY_INDEX_SEPARATOR = (
     "|:---:|---------|:-----------:|:----------:|:----------:|"
     ":-----------:|:-----------:|"
 )
+_LEGACY_INDEX_PLACEHOLDER = "| — | _(暂无决策)_ | — | — | — | — | — |"
+_INDEX_HEADER = (
+    "| dXX | 决策标题 | outcome | decided_at | review_ref | supersedes | "
+    "derived_from | related_dXX |"
+)
+_INDEX_SEPARATOR = (
+    "|:---:|---------|:-------:|:----------:|:----------:|:----------:|"
+    ":-----------:|:-----------:|"
+)
+_INDEX_PLACEHOLDER = "| — | _(暂无决策)_ | — | — | — | — | — | — |"
 _PROCESS_LOCKS: dict[str, threading.Lock] = {}
 _PROCESS_LOCKS_GUARD = threading.Lock()
 
@@ -260,6 +270,44 @@ def _extract_scalar(text: str, key: str) -> str | None:
     return value.strip("'")
 
 
+def _frontmatter_text(text: str) -> str:
+    if not text.startswith("---\n"):
+        return ""
+    parts = text.split("---", 2)
+    return parts[1] if len(parts) >= 3 else ""
+
+
+def _extract_frontmatter_scalar(text: str, key: str) -> str | None:
+    return _extract_scalar(_frontmatter_text(text), key)
+
+
+def _decision_status_from_text(text: str, path: Path) -> str:
+    value = _extract_frontmatter_scalar(text, "status")
+    if value not in {"accepted", "rejected", "deferred"}:
+        raise DecisionRecordError(
+            "INVALID_DECISION_STATUS",
+            f"{path.name} frontmatter status 非法或缺失: {value or 'missing'}",
+        )
+    return value
+
+
+def _decision_effective_time_from_text(text: str, path: Path) -> str:
+    decided_at = _extract_frontmatter_scalar(text, "decided_at")
+    accepted_at = _extract_frontmatter_scalar(text, "accepted_at")
+    if decided_at and accepted_at and decided_at != accepted_at:
+        raise DecisionRecordError(
+            "DECISION_TIME_CONFLICT",
+            f"{path.name} 同时包含 decided_at 与 accepted_at 且值冲突，拒绝猜测",
+        )
+    value = decided_at or accepted_at
+    if not value:
+        raise DecisionRecordError(
+            "DECISION_TIME_MISSING",
+            f"{path.name} 缺少 decided_at，且无 legacy accepted_at 可回退",
+        )
+    return value
+
+
 def _existing_idempotent_result(
     topic: Path,
     index_text: str | None,
@@ -356,7 +404,7 @@ related:
 
 {_INDEX_HEADER}
 {_INDEX_SEPARATOR}
-| — | _(暂无决策)_ | — | — | — | — | — |
+{_INDEX_PLACEHOLDER}
 """
 
 
@@ -364,12 +412,98 @@ def _index_cell(refs: list[str]) -> str:
     return ", ".join(refs) if refs else "—"
 
 
+def _split_table_row(line: str) -> list[str]:
+    cells: list[str] = []
+    current: list[str] = []
+    escaped = False
+    for char in line.strip():
+        if char == "|" and not escaped:
+            cells.append("".join(current).strip())
+            current = []
+            escaped = False
+            continue
+        current.append(char)
+        if char == "\\" and not escaped:
+            escaped = True
+        else:
+            escaped = False
+    cells.append("".join(current).strip())
+    if cells and cells[0] == "":
+        cells = cells[1:]
+    if cells and cells[-1] == "":
+        cells = cells[:-1]
+    return cells
+
+
+def _is_decision_index_row(line: str) -> bool:
+    return bool(re.match(r"^\|\s*d\d{1,3}\s*\|", line))
+
+
+def _migrate_legacy_index(text: str, topic: Path) -> str:
+    if _INDEX_HEADER in text and _INDEX_SEPARATOR in text:
+        return text
+    if _LEGACY_INDEX_HEADER not in text or _LEGACY_INDEX_SEPARATOR not in text:
+        raise DecisionRecordError(
+            "INVALID_DECISION_INDEX",
+            "decision.index.md 缺少规范时序表，拒绝猜测写入位置",
+        )
+
+    lines = text.splitlines()
+    migrated: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped == _LEGACY_INDEX_HEADER:
+            migrated.append(_INDEX_HEADER)
+            continue
+        if stripped == _LEGACY_INDEX_SEPARATOR:
+            migrated.append(_INDEX_SEPARATOR)
+            continue
+        if stripped == _LEGACY_INDEX_PLACEHOLDER:
+            migrated.append(_INDEX_PLACEHOLDER)
+            continue
+        if not _is_decision_index_row(line):
+            migrated.append(line)
+            continue
+
+        cells = _split_table_row(line)
+        if len(cells) != 7:
+            raise DecisionRecordError(
+                "INVALID_DECISION_INDEX",
+                f"legacy decision.index.md 行列数异常，拒绝迁移: {line}",
+            )
+        decision_id = f"d{int(cells[0][1:]):02d}"
+        decision_path = _find_decision(topic / "decisions", decision_id)
+        decision_text = decision_path.read_text(encoding="utf-8")
+        outcome = _decision_status_from_text(decision_text, decision_path)
+        decided_at = _decision_effective_time_from_text(decision_text, decision_path)
+        migrated.append(
+            "| "
+            + " | ".join(
+                [
+                    decision_id,
+                    cells[1],
+                    outcome,
+                    decided_at,
+                    cells[3],
+                    cells[4],
+                    cells[5],
+                    cells[6],
+                ]
+            )
+            + " |"
+        )
+
+    return "\n".join(migrated).rstrip() + "\n"
+
+
 def _append_index_row(
     text: str,
     *,
+    topic: Path,
     decision_id: str,
     title: str,
     filename: str,
+    status: str,
     timestamp: str,
     review_ref: str | None,
     review_path: Path | None,
@@ -377,6 +511,7 @@ def _append_index_row(
     derived_from: list[str],
     related: list[str],
 ) -> str:
+    text = _migrate_legacy_index(text, topic)
     if _INDEX_HEADER not in text or _INDEX_SEPARATOR not in text:
         raise DecisionRecordError(
             "INVALID_DECISION_INDEX",
@@ -392,14 +527,13 @@ def _append_index_row(
     if review_ref and review_path:
         review_cell = f"[{review_ref}](./reviews/{review_path.name})"
     row = (
-        f"| {decision_id} | [{_markdown_label(title)}](./decisions/{filename}) | {timestamp} | "
-        f"{review_cell} | {_index_cell(supersedes)} | {_index_cell(derived_from)} | "
-        f"{_index_cell(related)} |"
+        f"| {decision_id} | [{_markdown_label(title)}](./decisions/{filename}) | "
+        f"{status} | {timestamp} | {review_cell} | {_index_cell(supersedes)} | "
+        f"{_index_cell(derived_from)} | {_index_cell(related)} |"
     )
     lines = text.splitlines()
-    placeholder = "| — | _(暂无决策)_ | — | — | — | — | — |"
-    if placeholder in lines:
-        lines[lines.index(placeholder)] = row
+    if _INDEX_PLACEHOLDER in lines:
+        lines[lines.index(_INDEX_PLACEHOLDER)] = row
     else:
         separator_index = lines.index(_INDEX_SEPARATOR)
         insert_at = separator_index + 1
@@ -447,7 +581,7 @@ def _render_decision(
 date: {timestamp[:10]}
 status: {status}
 type: decision
-accepted_at: {timestamp}
+decided_at: {timestamp}
 review_ref: {review_value}
 source: {source}
 auditable_event: {auditable_event}
@@ -705,9 +839,11 @@ def record_decision(
         )
         index_updated = _append_index_row(
             base_index,
+            topic=topic,
             decision_id=decision_id,
             title=title.strip(),
             filename=filename,
+            status=STATUS_BY_DECISION[decision],
             timestamp=timestamp,
             review_ref=normalized_review_ref,
             review_path=review_path,

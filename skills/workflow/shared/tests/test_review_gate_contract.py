@@ -40,6 +40,25 @@ def test_review_gate_delegates_mechanical_decision_write_to_cli():
     assert "可审计治理事件" in contract
 
 
+def test_accept_only_authorizes_explicit_decision_scope():
+    full = _read(FULL)
+    gate = _read(GATE)
+    fallback = _read(SDK_ROOT / "skills" / "workflow" / "shared" / "references" / "askquestion-fallback.md")
+    assert "仅将 dXX 明确接受范围转为 action / scope 变更 / 执行目标" in full
+    assert "仅将本次 Decision 明确接受范围转为 action / scope 变更 / 执行目标" in gate
+    assert "将本次 Decision 明确接受范围转为 action、scope 变更或执行目标" in fallback
+
+
+def test_decision_record_contract_uses_decided_at_and_outcome_projection():
+    contract = _read(DECISION_RECORD)
+    template = _read(SDK_ROOT / "workspace" / "templates" / "topic-decision-index.md")
+    schema = _read(SDK_ROOT / "workspace" / "schema" / "workspace.schema.yaml")
+    assert "新 dXX frontmatter 写 `decided_at`" in contract
+    assert "不写 `accepted_at` 或 `outcome`" in contract
+    assert "| dXX | 决策标题 | outcome | decided_at | review_ref | supersedes | derived_from | related_dXX |" in template
+    assert "outcome 由 dXX status 投影" in schema
+
+
 def test_full_review_two_stage_pending_before_decision():
     full = _read(FULL)
     gate = _read(GATE)

@@ -23,6 +23,7 @@ from validate_trace import validate_decision_file  # noqa: E402
 
 
 NOW = datetime(2026, 7, 31, 12, 30, tzinfo=timezone.utc)
+EXPECTED_NOW = "2026-07-31T20:30:00+08:00"
 
 
 def _topic(tmp_path: Path, *, with_index: bool = True) -> Path:
@@ -77,6 +78,9 @@ def test_records_complete_decision_and_index(tmp_path):
     decision = topic / result.path
     text = decision.read_text(encoding="utf-8")
     assert "status: accepted" in text
+    assert f"decided_at: {EXPECTED_NOW}" in text
+    assert "accepted_at:" not in text
+    assert "outcome:" not in text
     assert "source: explicit_user" in text
     assert "auditable_event: contract_change" in text
     assert 'idempotency_key: "test:d01"' in text
@@ -85,7 +89,10 @@ def test_records_complete_decision_and_index(tmp_path):
     assert f"path: {result.path}" in text
 
     index = (topic / "decision.index.md").read_text(encoding="utf-8")
+    assert "| dXX | 决策标题 | outcome | decided_at | review_ref | supersedes | derived_from | related_dXX |" in index
+    assert "accepted_at" not in index
     assert "| d01 | [接受最小记录合同]" in index
+    assert f"| d01 | [接受最小记录合同](./decisions/d01_接受最小记录合同.md) | accepted | {EXPECTED_NOW} |" in index
     assert "_(暂无决策)_" not in index
 
 
@@ -96,7 +103,114 @@ def test_lazy_creates_decision_index(tmp_path):
     assert result.status == "recorded"
     index = (topic / "decision.index.md").read_text(encoding="utf-8")
     assert "# 决策链主索引 — Test topic" in index
+    assert "| dXX | 决策标题 | outcome | decided_at | review_ref | supersedes | derived_from | related_dXX |" in index
     assert f"(./{result.path})" in index
+
+
+@pytest.mark.parametrize(
+    ("decision", "status"),
+    [("accept", "accepted"), ("reject", "rejected"), ("defer", "deferred")],
+)
+def test_new_decisions_project_status_to_index_outcome(tmp_path, decision, status):
+    topic = _topic(tmp_path, with_index=False)
+    result = _record(topic, decision=decision, key=f"test:{decision}")
+    text = (topic / result.path).read_text(encoding="utf-8")
+    index = (topic / "decision.index.md").read_text(encoding="utf-8")
+
+    assert f"status: {status}" in text
+    assert f"decided_at: {EXPECTED_NOW}" in text
+    assert "accepted_at:" not in text
+    assert "outcome:" not in text
+    assert f"| d01 | [接受最小记录合同](./{result.path}) | {status} | {EXPECTED_NOW} |" in index
+
+
+def test_appending_to_legacy_index_migrates_schema_atomically(tmp_path):
+    topic = _topic(tmp_path)
+    decisions = topic / "decisions"
+    decisions.mkdir()
+    (decisions / "d01_legacy.md").write_text(
+        "---\n"
+        "date: 2026-07-30\n"
+        "status: accepted\n"
+        "type: decision\n"
+        "accepted_at: 2026-07-30T10:00:00+00:00\n"
+        "---\n\n"
+        "# d01\n",
+        encoding="utf-8",
+    )
+    (topic / "decision.index.md").write_text(
+        """---
+date: 2026-07-30
+status: active
+type: decision-index
+kind: state
+tags: [decision]
+---
+
+# 决策链主索引 — Test topic
+
+## 决策时序表
+
+| dXX | 决策标题 | accepted_at | review_ref | supersedes | derived_from | related_dXX |
+|:---:|---------|:-----------:|:----------:|:----------:|:-----------:|:-----------:|
+| d01 | [旧决策](./decisions/d01_legacy.md) | 2026-07-30T10:00:00+00:00 | — | — | — | — |
+""",
+        encoding="utf-8",
+    )
+
+    result = _record(topic, decision="reject", key="test:d02")
+
+    assert result.decision_id == "d02"
+    index = (topic / "decision.index.md").read_text(encoding="utf-8")
+    assert "accepted_at" not in index
+    assert "| dXX | 决策标题 | outcome | decided_at | review_ref | supersedes | derived_from | related_dXX |" in index
+    assert "| d01 | [旧决策](./decisions/d01_legacy.md) | accepted | 2026-07-30T10:00:00+00:00 | — | — | — | — |" in index
+    assert f"| d02 | [接受最小记录合同](./{result.path}) | rejected | {EXPECTED_NOW} |" in index
+
+
+def test_legacy_index_missing_decision_fails_without_partial_write(tmp_path):
+    topic = _topic(tmp_path)
+    before = (topic / "decision.index.md").read_text(encoding="utf-8").replace(
+        "| — | _(暂无决策)_ | — | — | — | — | — |",
+        "| d01 | [旧决策](./decisions/d01_missing.md) | 2026-07-30T10:00:00+00:00 | — | — | — | — |",
+    )
+    (topic / "decision.index.md").write_text(before, encoding="utf-8")
+
+    with pytest.raises(DecisionRecordError) as error:
+        _record(topic)
+
+    assert error.value.code == "BROKEN_DECISION_REF"
+    assert not (topic / "decisions").exists()
+    assert (topic / "decision.index.md").read_text(encoding="utf-8") == before
+
+
+def test_legacy_index_time_conflict_fails_without_partial_write(tmp_path):
+    topic = _topic(tmp_path)
+    decisions = topic / "decisions"
+    decisions.mkdir()
+    (decisions / "d01_legacy.md").write_text(
+        "---\n"
+        "date: 2026-07-30\n"
+        "status: accepted\n"
+        "type: decision\n"
+        "decided_at: 2026-07-30T10:00:00+00:00\n"
+        "accepted_at: 2026-07-30T11:00:00+00:00\n"
+        "---\n\n"
+        "# d01\n",
+        encoding="utf-8",
+    )
+    before = (topic / "decision.index.md").read_text(encoding="utf-8").replace(
+        "| — | _(暂无决策)_ | — | — | — | — | — |",
+        "| d01 | [旧决策](./decisions/d01_legacy.md) | 2026-07-30T10:00:00+00:00 | — | — | — | — |",
+    )
+    (topic / "decision.index.md").write_text(before, encoding="utf-8")
+
+    with pytest.raises(DecisionRecordError) as error:
+        _record(topic)
+
+    assert error.value.code == "DECISION_TIME_CONFLICT"
+    assert not (decisions / "d02_接受最小记录合同.md").exists()
+    assert (topic / "decision.index.md").read_text(encoding="utf-8") == before
 
 
 def test_generated_decision_passes_existing_product_and_trace_contracts(tmp_path):

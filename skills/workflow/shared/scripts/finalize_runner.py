@@ -93,6 +93,9 @@ def _validate_write_stage(
     decision_status = extract_frontmatter_field(content, "status")
     decision_source = extract_frontmatter_field(content, "source")
     review_ref = extract_frontmatter_field(content, "review_ref")
+    outcome = extract_frontmatter_field(content, "outcome")
+    decided_at = extract_frontmatter_field(content, "decided_at")
+    accepted_at = extract_frontmatter_field(content, "accepted_at")
     valid_statuses = {"accepted", "rejected", "deferred"}
     valid_sources = {"clarify", "review", "explicit_user", "execution_boundary"}
 
@@ -102,6 +105,10 @@ def _validate_write_stage(
         errors.append(f"最新 dXX status 非法: {decision_status or 'missing'}")
     if decision_source not in valid_sources:
         errors.append(f"最新 dXX source 非法: {decision_source or 'missing'}")
+    if outcome is not None:
+        errors.append("最新 dXX frontmatter 不得包含 outcome；outcome 仅为 decision.index status 投影")
+    if decided_at and accepted_at and decided_at != accepted_at:
+        errors.append("最新 dXX decided_at 与 legacy accepted_at 值冲突")
 
     hint_status = {
         "accept": "accepted",

@@ -101,7 +101,7 @@ Gate 3 后先落 pending rXX synthesis，并只读运行 product / trace / revie
 
 | 用户选择 | 后续动作 |
 |----------|----------|
-| Accept | 调用 `prism decision record --source review` 写 accepted dXX + decision.index + decision_artifact；对齐 rXX decision 镜像与既有 review.index 后 finalize；影响 scope 再交 `workflow-scope` |
+| Accept | 调用 `prism decision record --source review` 写 accepted dXX + decision.index + decision_artifact；仅将 dXX 明确接受范围转为 action / scope 变更 / 执行目标；对齐 rXX decision 镜像与既有 review.index 后 finalize；影响 scope 再交 `workflow-scope` |
 | Reject | 调用 Decision record 写 rejected dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 finalize |
 | Defer | 调用 Decision record 写 deferred dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 finalize；不改 scope/focus |
 | Other | 不写 dXX；原样回收修订意图，继续讨论后重新 Gate 4 |

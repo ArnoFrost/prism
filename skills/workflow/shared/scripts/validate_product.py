@@ -467,8 +467,11 @@ def check_decision_semantics(lines: list[str], relpath: str) -> list[Issue]:
     - 必须带 frontmatter（决策的可审计性 — 无 frontmatter → 失去 SSOT 元数据）
     - type 必须 == "decision"
     - status 必须 ∈ {accepted, rejected, deferred}
+    - outcome 不得写入 dXX frontmatter（仅为 decision.index.md 展示列 / status 投影）
+    - decided_at 与 legacy accepted_at 同时存在时，值必须一致
 
     放宽（不强制）：
+    - legacy dXX 仅含 accepted_at 可读兼容
     - tags 字段必填由通用 check_frontmatter 兜底（仅 OFM 路径触发）
 
     来源：v1.1.5 收口 — 补 dXX frontmatter 语义校验空白
@@ -533,6 +536,26 @@ def check_decision_semantics(lines: list[str], relpath: str) -> list[Issue]:
             f"dXX frontmatter 缺少 status 字段（应 ∈ {sorted(valid_statuses)}）",
             False,
         ))
+
+    outcome = re.search(r"^\s*outcome\s*:\s*(\S+)", fm_text, re.MULTILINE)
+    if outcome:
+        issues.append(Issue(
+            "ERROR", relpath, 1, "decision-outcome-forbidden",
+            "dXX frontmatter 不得包含 outcome；outcome 仅为 decision.index.md 展示列 / status 投影",
+            False,
+        ))
+
+    decided_at = re.search(r"^\s*decided_at\s*:\s*(\S+)", fm_text, re.MULTILINE)
+    accepted_at = re.search(r"^\s*accepted_at\s*:\s*(\S+)", fm_text, re.MULTILINE)
+    if decided_at and accepted_at:
+        decided_value = decided_at.group(1).strip().strip("'\"")
+        accepted_value = accepted_at.group(1).strip().strip("'\"")
+        if decided_value != accepted_value:
+            issues.append(Issue(
+                "ERROR", relpath, 1, "decision-time-conflict",
+                "dXX frontmatter 同时包含 decided_at 与 accepted_at 且值冲突，拒绝静默择一",
+                False,
+            ))
 
     return issues
 

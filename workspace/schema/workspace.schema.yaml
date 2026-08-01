@@ -169,7 +169,7 @@ topic_artifacts:
     producer: "手动 / workflow-scope(派生)"
   decision_index:
     filename: "decision.index.md"
-    description: "决策链主索引（SSOT）— 含时序表（dXX | title | accepted_at | review_ref）+ frontmatter 依赖字段（supersedes / derived_from / related_dXX）；topic 内决策史的事件链入口"
+    description: "决策链主索引（SSOT）— 含时序表（dXX | title | outcome | decided_at | review_ref）+ frontmatter 依赖字段（supersedes / derived_from / related_dXX）；outcome 由 dXX status 投影，legacy accepted_at 表头由 writer append 时迁移；topic 内决策史的事件链入口"
     producer: "workflow-review / workflow-scope 在决策 accept 时追加 / 手动"
     status: "primary"
     frontmatter_dependency_fields:

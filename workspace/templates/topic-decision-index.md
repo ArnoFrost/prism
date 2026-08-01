@@ -16,9 +16,9 @@ related:
 
 ## 决策时序表
 
-| dXX | 决策标题 | accepted_at | review_ref | supersedes | derived_from | related_dXX |
-|:---:|---------|:-----------:|:----------:|:----------:|:-----------:|:-----------:|
-| — | _(暂无决策)_ | — | — | — | — | — |
+| dXX | 决策标题 | outcome | decided_at | review_ref | supersedes | derived_from | related_dXX |
+|:---:|---------|:-------:|:----------:|:----------:|:----------:|:-----------:|:-----------:|
+| — | _(暂无决策)_ | — | — | — | — | — | — |
 
 ## frontmatter 依赖字段说明
 
@@ -33,6 +33,7 @@ related:
 ## 维护规范
 
 - 新增决策：仅在“用户明确授权 AND 可审计治理事件”双门成立时，由 `prism decision record` 原子写 dXX、本表与 `decision_artifact`
+- `outcome` 由 dXX frontmatter `status` 投影；dXX 不写 `outcome` 字段。旧 `accepted_at` 表头由 writer append 时原子迁移为 `outcome + decided_at`
 - 禁止手写 dXX 或单独追加本表；任一环失败应无部分主链
 - 推翻决策：新决策 frontmatter `supersedes: [dXX]`；本表保留旧 dXX 行（不删）
 - 派生决策：新决策 frontmatter `derived_from: [dXX]`；本表表达派生链

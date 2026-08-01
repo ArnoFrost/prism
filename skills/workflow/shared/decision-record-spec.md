@@ -47,7 +47,9 @@ prism decision record <topic_dir> \
 2. 写入 `decisions/dXX_<title>.md` 和同族 `decision_artifact`。
 3. lazy-create 或追加 `decision.index.md`。
 
-实现使用 topic 级跨进程锁、同目录临时文件、`fsync`、原子替换和异常回滚。任一引用缺失、索引形态未知或替换失败时 fail-closed，不留下新的半成品 dXX/index。
+新 dXX frontmatter 写 `decided_at`，不写 `accepted_at` 或 `outcome`。`decision.index.md` 使用 `outcome + decided_at`：`outcome` 由 dXX `status` 投影，`decided_at` 优先读 dXX `decided_at`，旧 dXX 可回退 `accepted_at`。
+
+实现使用 topic 级跨进程锁、同目录临时文件、`fsync`、原子替换和异常回滚。任一引用缺失、索引形态未知或替换失败时 fail-closed，不留下新的半成品 dXX/index。append 到 legacy `accepted_at` 表头索引时，writer 必须在同一事务内迁移为 `outcome + decided_at` 后再追加；旧索引行无法唯一关联对应 dXX，或对应 dXX 时间字段冲突时 fail-closed。
 
 `review.index`、rXX frontmatter、scope/focus 不属于 record 主事务：`review.index` 是可选导航索引，缺失合法；rXX frontmatter 的 `decision_ref` / `decision_status` 是可由 tidy/finalize 重建的辅助镜像；scope/focus 必须由 `workflow-scope` 根据已记录决策更新。
 

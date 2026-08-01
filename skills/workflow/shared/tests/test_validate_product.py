@@ -365,6 +365,81 @@ class TestOfmDualStateContract:
                 f"status={status} 应通过校验，实际错误: {decision_errors}"
             )
 
+    def test_decision_legacy_accepted_at_only_is_compatible(self, tmp_path):
+        md = tmp_path / "d06_legacy.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: accepted\n"
+            "type: decision\n"
+            "accepted_at: 2026-05-12T12:00:00+08:00\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# d06\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-time-conflict" not in rules
+
+    def test_decision_matching_decided_at_and_accepted_at_is_compatible(self, tmp_path):
+        md = tmp_path / "d07_same.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: accepted\n"
+            "type: decision\n"
+            "decided_at: 2026-05-12T12:00:00+08:00\n"
+            "accepted_at: 2026-05-12T12:00:00+08:00\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# d07\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-time-conflict" not in rules
+
+    def test_decision_conflicting_time_fields_error(self, tmp_path):
+        md = tmp_path / "d08_conflict.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: accepted\n"
+            "type: decision\n"
+            "decided_at: 2026-05-12T12:00:00+08:00\n"
+            "accepted_at: 2026-05-12T13:00:00+08:00\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# d08\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-time-conflict" in rules
+
+    def test_decision_outcome_frontmatter_is_forbidden(self, tmp_path):
+        md = tmp_path / "d09_outcome.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: accepted\n"
+            "type: decision\n"
+            "decided_at: 2026-05-12T12:00:00+08:00\n"
+            "outcome: accepted\n"
+            "tags:\n"
+            "  - test\n"
+            "---\n\n"
+            "# d09\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "ofm")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "decision-outcome-forbidden" in rules
+
     def test_non_decision_files_skip_semantics(self, tmp_path):
         """非 dXX 文件不跑 decision_semantics（review/scope/plan 等）。"""
         md = tmp_path / "r01_test.md"

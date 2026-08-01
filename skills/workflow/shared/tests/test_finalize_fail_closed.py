@@ -38,6 +38,7 @@ def _decision(
     *,
     source: str = "explicit_user",
     review_ref: str | None = None,
+    extra_frontmatter: str = "",
 ) -> Path:
     path = topic / "decisions" / "d01_test.md"
     path.parent.mkdir()
@@ -51,6 +52,7 @@ def _decision(
             "type: decision\n"
             f"review_ref: {review_line}\n"
             f"source: {source}\n"
+            f"{extra_frontmatter}"
             "---\n"
             "# d01\n\n"
             "```yaml\n"
@@ -159,6 +161,34 @@ def test_review_decision_requires_exact_review_ref(tmp_path: Path):
     )
     assert mismatched["status"] == "error"
     assert any("review_ref=r01" in error for error in mismatched["errors"])
+
+
+def test_write_stage_rejects_outcome_frontmatter(tmp_path: Path):
+    topic = _topic(tmp_path)
+    _decision(topic, extra_frontmatter="outcome: accepted\n")
+    decisions = finalize._numbered_markdown_files(topic / "decisions", "d")
+
+    result = finalize._validate_write_stage(str(topic), decisions, [], None)
+
+    assert result["status"] == "error"
+    assert any("不得包含 outcome" in error for error in result["errors"])
+
+
+def test_write_stage_rejects_conflicting_decision_time_fields(tmp_path: Path):
+    topic = _topic(tmp_path)
+    _decision(
+        topic,
+        extra_frontmatter=(
+            "decided_at: 2026-07-31T10:00:00+00:00\n"
+            "accepted_at: 2026-07-31T11:00:00+00:00\n"
+        ),
+    )
+    decisions = finalize._numbered_markdown_files(topic / "decisions", "d")
+
+    result = finalize._validate_write_stage(str(topic), decisions, [], None)
+
+    assert result["status"] == "error"
+    assert any("decided_at 与 legacy accepted_at 值冲突" in error for error in result["errors"])
 
 
 def test_tidy_blocking_report_makes_finalize_fail(

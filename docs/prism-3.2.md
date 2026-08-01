@@ -48,6 +48,8 @@ Clarify 可以自然结束，也可以在用户明确要求后形成候选交接
 
 Review 是一次有边界的判断事件，不是长期治理状态。Finding 只是基于证据形成的局部观察或问题判断；未被采纳时保留在 rXX 历史现场即可。只有用户 Accept / Reject / Defer 后进入 Decision chain，或用户另行显式授权后，建议才能转化为 scope 变更、action、执行目标或后续正式治理事件。
 
+Decision 主链使用 `decided_at` 表示明确裁决时刻；`decision.index.md` 的 `outcome` 由 dXX `status` 投影，dXX frontmatter 不新增 `outcome` 字段。旧 `accepted_at` 仅作兼容读取，append 旧索引时由 writer 原子迁移为 `outcome + decided_at`。
+
 `workflow-review-lite` 自 3.2 起是 retired-with-compat：不出现在 active/default/recommended 路径，只保留显式 legacy 调用、旧 Topic 和旧 `type: review-lite` 产物兼容。日常轻量判断使用模型原生自检，阻塞歧义使用 Clarify，需要持久多视角判断使用 Review。
 
 ## 与 FrostAtlas 的分工

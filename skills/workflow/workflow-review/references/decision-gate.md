@@ -32,7 +32,7 @@ question:
     请确认下一步：
   options:
     - id: accept
-      label: "Accept — 记录 decisions/d{NN}.md，将建议转为 action、scope 变更或执行目标，并 finalize 收尾"
+      label: "Accept — 记录 decisions/d{NN}.md，将本次 Decision 明确接受范围转为 action、scope 变更或执行目标，并 finalize 收尾"
     - id: reject
       label: "Reject — 记录 rejected d{NN} + decision.index + finalize，再重新 review 或调整 scope"
     - id: defer
@@ -81,7 +81,7 @@ Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 
 
 | 选择 | 后续动作 |
 |------|---------|
-| `accept` | 调用 `prism decision record --source review --review-ref rXX` 写 accepted dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
+| `accept` | 调用 `prism decision record --source review --review-ref rXX` 写 accepted dXX 主链；仅将本次 Decision 明确接受范围转为 action / scope 变更 / 执行目标；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
 | `reject` | 调用 Decision record 写 rejected dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；按用户意图重启 review 或调 scope |
 | `defer` | 调用 Decision record 写 deferred dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；不修改 scope/focus |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向 / 回答 OQ / 调整建议，之后重新 Gate 4。**禁止**把含糊文本解释为 Accept |
