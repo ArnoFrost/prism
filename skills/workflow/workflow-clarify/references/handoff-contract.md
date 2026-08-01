@@ -1,6 +1,6 @@
-# Clarify Candidate + Handoff Contract
+# Clarify 候选交接合同
 
-> 仅在用户明确要求将澄清结果交给 Prism workflow 时加载。该 envelope 是会话交接，不是持久工件或新 trace family。
+> 仅在用户明确要求将澄清结果交给 Prism workflow 时加载。下面的 envelope 是会话交接格式，不是持久工件或新 trace family。
 
 ## Envelope
 
@@ -25,13 +25,14 @@ clarify_handoff:
 规则：
 
 - `confirmed` 只记录用户已经明确确认的内容，不推断接受。
-- `remaining_blocker` 非空时，不得 handoff Execute。
+- `remaining_blocker` 非空时，不得交接 Execute。
 - `writes` 在 Clarify 阶段永远是空列表。
-- envelope 只在需要交接时输出；普通 micro-loop 使用自然语言 checkpoint。
+- envelope 只在需要交接时输出；普通澄清轮次使用自然语言短确认。
+- review finding / OQ / 建议可作为 Clarify 输入材料，但仍只是证据、判断或建议；Clarify 得出的变化仍是候选，不等于接受 review 或授权写盘。
 
 ## 路由映射
 
-| 澄清结果 | candidate.kind | handoff |
+| 澄清结果 | `candidate.kind` | 交接 |
 |----------|----------------|---------|
 | 已有 topic 的 G/V/非目标/约束需要调整 | `scope_delta` | 用户授权后 `workflow-scope` |
 | 需要多视角调查、反方发现或里程碑判断 | `review_question` | 用户授权后 `workflow-review` |
@@ -42,7 +43,7 @@ clarify_handoff:
 
 ## 授权边界
 
-“要不要落盘？”只在本轮产生可沉淀 delta 时询问一次。以下表达才算授权：
+“要不要落盘？”只在本轮产生可沉淀变化时询问一次。以下表达才算授权：
 
 - “把它同步到 scope”
 - “进入 workflow-scope”
@@ -52,4 +53,6 @@ clarify_handoff:
 
 “嗯”“可以吧”“先看看”等含糊回复不构成写盘授权；继续用一个最小问题确认。
 
-Clarify 只交 candidate。目标 skill 必须重新执行自己的授权、结构与验证门，不能把 handoff 当作已完成写盘。
+Clarify 只交候选内容。目标 skill 必须重新执行自己的授权、结构与验证门，不能把交接当作已完成写盘。
+
+若候选内容来自 review finding / OQ / 建议，目标 workflow 还必须确认已有合法 topic 与对应授权来源；无 topic 的正式治理需求先交 `workflow-intake`，不得从 Clarify 直达 `prism decision record`。

@@ -30,7 +30,7 @@ topics/{NNN}_{topic}/
 ├── references/
 │   └── intake.md         # 来源意图留档
 ├── decision.index.md     # 决策链主索引
-├── review.index.md       # 被 decision 引用的 review 辅助索引
+├── review.index.md       # 可选派生评审导航索引（兼容旧 topic）
 ├── reviews/
 ├── decisions/
 └── structures/           # 按需出现
@@ -141,7 +141,7 @@ structures/task-N_slug/
   ↓
 补 focus.md
   ↓
-必要时补 references/intake.md 与双索引
+必要时补 references/intake.md 与 decision.index；review.index 仅作旧 topic 可选导航
   ↓
 观察恢复成本 / 误路由 / 重复解释
   ↓

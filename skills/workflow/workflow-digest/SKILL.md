@@ -142,7 +142,7 @@ workflow/workflow-digest/
 |------|------|--------|
 | **digest**（本技能）| topic 状态 → 面向协作者的摘要 | 消费 scope/focus/reviews/decisions |
 | **status** | 健康度指标 → 面向 Agent 的报告 | status 给机器，digest 给人 |
-| **review** | 深度评审 → 仲裁 → 行动计划 | review 是决策工具，digest 是通报工具 |
+| **review** | 深度评审 → 仲裁 → 建议 | review 是决策工具，digest 是通报工具 |
 | **tidy** | 工件机械对齐 | tidy 对齐元数据，digest 生成叙事 |
 
 ## 与个人 digest 技能的区分

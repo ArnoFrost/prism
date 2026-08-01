@@ -73,7 +73,7 @@ focus.md 不是独立编写的文档，而是 scope.md 当前状态的**当前�
 每次执行 scope 更新时，必须先输出变更摘要：
 
 ```
-## Scope Delta
+## Scope 变更
 
 触发：{决策编号或触发源}
 变更：
@@ -132,7 +132,7 @@ focus.md 不是独立编写的文档，而是 scope.md 当前状态的**当前�
 
 ### task-fork gate 模板块（require_fork_gate 时必填）
 
-Scope Delta 在常规 `变更：` 之后追加（不可跳过，守 FS-skip-delta-fail）：
+Scope 变更在常规 `变更：` 之后追加（不可跳过，守 FS-skip-delta-fail）：
 
 ```markdown
 ## task-fork gate（structures 升格门 · cite fork-S3）

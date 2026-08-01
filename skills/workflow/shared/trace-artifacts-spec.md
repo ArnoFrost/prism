@@ -140,14 +140,14 @@ intake_gate_out:
 - `scope_md_present` 缺失或为 `false` → **违约**：intake 完成前必须至少有合同入口。
 - `focus_md_present=true`（3.0）或 `plan_md_present=true`（2.x grandfather）必须至少满足一个；两者均缺失或均非 `true` → **违约**。
 - `intake_size_ok` 缺失 → **违约**；`intake_size_ok: false`（intake.md > 100 行）→ **强警示**：intake 正在吞噬合同面内容，应当把 scope 边界 / focus 当前轮 / 验收门槛拆出到对应文件。
-- `README.md` / `decision.index.md` / `review.index.md` 3.1 起为 lazy-create：字段可记录实际存在性，但 `false` 不构成 trace 硬违约；`--full-scaffold` 路径可自检三者为 true。
+- `README.md` / `decision.index.md` / `review.index.md` 字段可记录实际存在性，但 `false` 不构成 trace 硬违约。`decision.index.md` 可由首次 decision lazy-create；`review.index.md` 缺失合法，不因 review 自动生成。
 
 **SSOT 分工**（intake_size_ok 设计意图）：
 - `intake.md` — 入料事件 + 路由判定 + 派生背景（**轻量**）
 - `scope.md` — 边界 / 合同 / 验收 / 非目标（合同面 SSOT）
 - `focus.md` — 当前工作集 / 注意力光标（执行面，rewrite）
 - `README.md` — 存量 grandfather 指针面；新 topic 不作为硬入口
-- `decision.index.md` / `review.index.md` — 首次 decision / review 后 lazy-create 或由 Gate/finalize 维护
+- `decision.index.md` — 首次 decision 后由 Decision Record lazy-create；`review.index.md` 是可选导航索引，缺失合法，旧 topic 已存在时可由 tidy/finalize 修复镜像
 - `decisions/dXX.md` — 路由 / 边界 / 方向决策（决策面 SSOT）
 
 ---

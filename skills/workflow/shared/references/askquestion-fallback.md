@@ -89,10 +89,10 @@ sniff 检测到本次 intake 与已有 topic 有亲和：
 > 调用方在展示决策门前**必须**在 prompt 中实写以下 5 要素 — 禁止用"独立发现率 / 落盘统计已在合并报告中输出"这种空洞占位文字（agent 已多次在 Cursor / 文本流 fallback 下输出空洞 prompt 让用户盲选）：
 >
 > 1. **产物路径**：含 rXX_xxx.md 实际文件名（不是 rXX_描述.md 占位符）
-> 2. **量化摘要**：独立发现率 `X%` ｜ Findings `P0×n0 / P1×n1 / P2×n2` ｜ 行动项 `M` 条
+> 2. **量化摘要**：独立发现率 `X%` ｜ Findings `P0×n0 / P1×n1 / P2×n2` ｜建议 `M` 条
 > 3. **核心方案**：≤ 30 字，是评审 TL;DR 的浓缩，不是评审标题
 > 4. **Open Questions 列表**：让用户知道选 defer 时具体悬而未决的是什么（OQ-1 / OQ-2 / ...）
-> 5. **各选项副标题**：accept/reject/defer 的**具体**后续动作（含 dXX 编号、具体 AP-X~AP-Y 范围、具体 OQ-X），不是泛化描述
+> 5. **各选项副标题**：accept/reject/defer 的**具体**后续动作（含 dXX 编号、action、scope 变更、执行目标或具体 OQ-X），不是泛化描述
 
 **4-选项文本 fallback 模板**（含决策摘要 5 要素 + Type something 兜底）：
 
@@ -100,21 +100,21 @@ sniff 检测到本次 intake 与已有 topic 有亲和：
 评审已完成 — 决策摘要：
 
 📌 产物：reviews/r12_漏斗短路观测上报方案评审.md
-📊 量化：独立发现率 100% ｜ P0×5 / P1×5 / P2×3 ｜ 10 条行动项
+📊 量化：独立发现率 100% ｜ P0×5 / P1×5 / P2×3 ｜ 10 条建议
 🎯 核心方案：type="0" 标识短路事件 + action 10~13 编码 4 种原因，配合每日去重频控
 ❓ 未决：OQ-1 数据平台 QPS 容量 / OQ-2 enable=false 覆盖范围 / OQ-3 去重颗粒度
 
 请确认下一步：
-  [1] Accept — 记录 decisions/d12.md + 双索引 + finalize；可后续逐条推进 AP-1 ~ AP-10
-  [2] Reject — 记录 rejected d12 + 双索引 + finalize，再调整方案或重新评审
-  [3] Defer — 记录 deferred d12 + 双索引 + finalize，先确认 OQ-1 / OQ-2 后再定
+  [1] Accept — 记录 decisions/d12.md + decision.index + finalize；将建议转为 action、scope 变更或执行目标
+  [2] Reject — 记录 rejected d12 + decision.index + finalize，再调整方案或重新评审
+  [3] Defer — 记录 deferred d12 + decision.index + finalize，先确认 OQ-1 / OQ-2 后再定
   [4] Other — 自由说明 / 修订方案后再决（直接打字描述你的想法）
 
-请回复编号或选项名（如 "1" / "Accept" / "我想先改 AP-7 频控策略再 accept"）：
+请回复编号或选项名（如 "1" / "Accept" / "我想先改第 7 条建议再 accept"）：
 ```
 
 > [!info]
-> **第 4 项 "Other" 的作用**：用户经常**既不完全 accept 也不 reject**，而是想"先改某个 AP 再 accept"或"先回答 OQ-X 再决定"。强制 3 选 1 把用户逼成"假 Defer"。Other 是**结构化决策门里的自由口子**——用户键入自由文本后，agent 解析为"修订方案"或"扩展讨论"，不立即写 dXX.md。
+> **第 4 项 "Other" 的作用**：用户经常**既不完全 accept 也不 reject**，而是想"先改某条建议再 accept"或"先回答 OQ-X 再决定"。强制 3 选 1 把用户逼成"假 Defer"。Other 是**结构化决策门里的自由口子**——用户键入自由文本后，agent 解析为"修订方案"或"扩展讨论"，不立即写 dXX.md。
 
 > [!IMPORTANT]
 > **决策门防静默 Accept 硬契约**（d11 P0 A2）：
@@ -195,7 +195,7 @@ Fallback 模式下的用户回复**总是自由文本**。SKILL 应实现宽松�
 | `1` / `第 1 个` / `选项 1` | 选第 1 个选项 |
 | `Accept` / `accept` / `accept it` | 决策门匹配 Accept |
 | `4` / `Other` / `其他` / `type something` | 决策门匹配 Other（自由文本兜底） |
-| `我想先改 AP-7 再 accept` / `把 OQ-2 解决了再决` | 决策门自由文本，按 `[4] Other` 解释，原样回传，**不**误识别为 Accept |
+| `我想先改第 7 条建议再 accept` / `把 OQ-2 解决了再决` | 决策门自由文本，按 `[4] Other` 解释，原样回传，**不**误识别为 Accept |
 | `append 到 027` / `聚合到 027` / `cohere 027` | 路由门中 intake append → 027（须可审计目标） |
 | `新建` / `new` / `n` | 路由门中 new_topic |
 | `打断 / cancel / 算了` | 取消当前流程，不落盘任何工件 |

@@ -165,7 +165,7 @@ VERB_REGISTRY = {
     "tidy": {
         "stability": "experimental",
         "schema_compliant": False,
-        "description": "工件机械对齐（README 指针 / review.index / frontmatter）",
+        "description": "工件机械对齐（README 指针 / rXX decision 镜像 / 既有 review.index / frontmatter）",
     },
     "status": {
         "stability": "experimental",
@@ -1046,7 +1046,7 @@ def main():
         help="完全跳过 Step 2.5 痕迹校验（CI 渐进接入用）")
 
     # tidy（024 T2）
-    p_tidy = subparsers.add_parser("tidy", help="工件机械对齐（README 指针 / review.index / frontmatter）")
+    p_tidy = subparsers.add_parser("tidy", help="工件机械对齐（README 指针 / rXX decision 镜像 / 既有 review.index / frontmatter）")
     p_tidy.add_argument("project_dir", help="项目根目录")
     p_tidy.add_argument("--fix", action="store_true", help="执行自动修复（默认只预览）")
     p_tidy.add_argument("--topic", default=None, help="只扫描指定 topic")

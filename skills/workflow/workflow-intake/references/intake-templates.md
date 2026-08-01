@@ -39,7 +39,7 @@ topics/{NNN}_{topic-name}/
 ```
 ├── README.md              # 主线导航 / grandfather 兜底
 ├── decision.index.md      # 决策链主索引（占位 — 事件链 SSOT）
-└── review.index.md        # 评审辅助索引（占位 — 稀疏关联律）
+└── review.index.md        # 可选派生评审导航索引（兼容占位）
 ```
 
 ## 模板 SSOT 映射（workspace/templates/）
@@ -53,7 +53,7 @@ scaffold.py 从下列模板渲染产物（占位符替换 `{NNN}` / `{topic-name
 | `references/intake.md` | [topic-intake.md](../../../../workspace/templates/topic-intake.md) |
 | `README.md` | [topic-readme.md](../../../../workspace/templates/topic-readme.md) | `--full-scaffold` 或 grandfather 兜底 |
 | `decision.index.md` | [topic-decision-index.md](../../../../workspace/templates/topic-decision-index.md) | `--full-scaffold` 或首次 decision 需求 |
-| `review.index.md` | [topic-review-index.md](../../../../workspace/templates/topic-review-index.md) | `--full-scaffold` 或首次 review 需求 |
+| `review.index.md` | [topic-review-index.md](../../../../workspace/templates/topic-review-index.md) | `--full-scaffold` 兼容；新 review 默认不主动创建 |
 | `structures/task.index.md`（按需）| [task-index.md](../../../../workspace/templates/task-index.md) | `workflow-scope` |
 | `structures/task-N_slug/scope.md`（按需）| [task-scope.md](../../../../workspace/templates/task-scope.md) | `workflow-scope` |
 | `structures/task-N_slug/wave-N_slug.md`（按需）| [task-wave.md](../../../../workspace/templates/task-wave.md) | `workflow-scope` |

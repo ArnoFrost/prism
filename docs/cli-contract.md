@@ -225,7 +225,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 | `prism dist` | experimental | ⬜ | 分发统一入口；经 SDK Python adapter 委托可选 legacy mini/full maintenance-only 实现 |
 | `prism decision` | experimental | ✅ | 正式决策机械落盘（`record`：dXX + decision.index + decision_artifact） |
 | `prism finalize` | experimental | ⬜ | Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示 |
-| `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / review.index / frontmatter） |
+| `prism tidy` | experimental | ⬜ | 工件机械对齐（README 指针 / rXX decision 镜像 / 既有 review.index / frontmatter） |
 | `prism status` | experimental | ⬜ | Workspace 活跃 topic 健康度扫描 |
 | `prism digest` | experimental | ⬜ | Topic 工件采集（供 Agent 生成摘要） |
 | ~~`prism pipeline`~~ | **removed (v2.0)** | — | v1.1.x 已为 deprecated alias；v2.0 物理移除。v1.x 调用方请改用 `prism finalize`；调用 `prism pipeline` 现 hard fail（exit 2）|

@@ -104,7 +104,7 @@ Prism Workflow 是一组基于 AI Skill 的认知熵治理能力。核心思想�
 flowchart LR
   I["Intake：容器与初始输入"] --> S["Scope：合同"]
   S --> F["Focus：当前工作集"]
-  C["Clarify：单问澄清"] -. "candidate / handoff" .-> I
+  C["Clarify：单问澄清"] -. "候选交接" .-> I
   C -. "已有 Topic" .-> F
   F --> E["Execute：单一获权游标"]
   E -->|"验证、证据、当前态"| F
@@ -117,7 +117,7 @@ flowchart LR
 图中的箭头表达允许的回流关系，不是默认阶段顺序。关键约束：
 
 - **Scope 是 Focus 与 task 结构分解的唯一上游 SSOT**。
-- Clarify 默认零写盘，只提供 checkpoint 或 candidate + handoff，不正式写 Scope / Decision。
+- Clarify 默认零写盘，只提供短确认或候选交接，不正式写 Scope / Decision。
 - intake 初始收敛可在用户明确授权后直接进入 Scope；review 驱动或长期审计合同变化必须经 Decision → Scope。
 - Review 负责多视角发现和仲裁；Decision Record 只机械记录明确授权，不判断价值或选择 Next。
 - Execute 只推进一个现存获权游标，完成后停止，不自动消费后续 task / wave。
@@ -154,7 +154,7 @@ flowchart LR
 | `structures/task.index.md` | 长期结构分解导航，仅当出现 task 时存在 | 按需更新 |
 | `structures/task-N_slug/scope.md` | 单个 task 的收窄合同，1:1 投影 topic 级 V；`tN` 仍是稳定 id | 按需创建 |
 | `structures/task-N_slug/wave-N_slug.md` | task 内时间推进批次；数字 N 表顺序，slug 只做人读 | 按需推进 |
-| `reviews/rXX.md` | 综合评审报告（P0/P1/P2 分级 + Actions） | 每轮新建 |
+| `reviews/rXX.md` | 综合评审报告（P0/P1/P2 评审发现 + 结论 + 建议） | 每轮新建 |
 | `decisions/dXX.md` | 人类裁决记录；由 Decision Record 在双门满足后原子写入 | 每次正式决策新建 |
 | `verify/vXX.md` | 验收细则（`[auto]`/`[human]` 标记） | 按需创建 |
 | `README.md` | 2.x topic 控制台；3.0 起 deprecated / grandfather | 存量保留，新 topic 不再作为入口 |
@@ -169,7 +169,7 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 | Workflow 收尾串联 | `prism finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；旧 `pipeline` alias 自 v2.0 起已物理移除（v1.1.x deprecated 期已结束） |
 | 正式决策落盘 | `prism decision record` | 在用户明确授权与可审计治理事件双门后，原子写入 dXX / decision.index / decision_artifact；不判断价值、不改 scope、不选择 next |
 | 痕迹义务抽检 | `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；默认 lenient，frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` / CLI flag 可显式启用 strict |
-| 工件机械对齐 | `prism tidy` | 对齐 focus 入口、review.index / decision.index、frontmatter 等 topic 工件；README 仅存量兜底 |
+| 工件机械对齐 | `prism tidy` | 对齐 focus 入口、rXX decision 镜像、既有 review.index、frontmatter 等 topic 工件；README 仅存量兜底 |
 | 健康巡检 | `prism status` | 扫描活跃 topic 状态，输出 workspace 健康快照 |
 | 摘要采集 | `prism digest` | 为协作者摘要 / 状态同步采集 topic 工件 |
 | 发布/体检治理 | `bin/doctor` | `--scope cli/release`、`--rollback`、`--output` 让 CLI 寻址和 release health 可检查、可回滚、可落盘 |

@@ -14,7 +14,7 @@ ReviewSpec 描述一次评审事件的完整配置契约。workflow-review 和 w
 | 2 | **topology** | 评审执行拓扑：`parallel`（多角色独立→合并）或 `serial`（单视角顺序） | 默认 `parallel`。review-lite 强制 `serial` |
 | 3 | **roles** | 参与评审的角色列表，每个角色含 Identity / Scope / Anti-patterns / Output-Format | 默认 3 角色（结构一致性 / 可执行性 / 风险边界）。review-lite 默认 1 角色（综合视角） |
 | 4 | **input_pack** | 评审输入的装配方式，引用 context-pack-spec 的 mode（`light` / `full`） | 默认由 mode 动态决策（full→full, quick→light）。显式指定时覆盖默认 |
-| 5 | **output_schema** | 评审产物的必需字段集合（TL;DR / Findings / Risks / Actions 等） | 默认 review 输出契约。review-lite 裁剪为 Summary / Findings / Actions |
+| 5 | **output_schema** | 评审产物的必需字段集合（TL;DR / Findings / Risks / 建议等） | 默认 review 输出契约。review-lite 裁剪为 Summary / Findings / 建议 |
 | 6 | **reduction_rule** | 多角色输出的合并规则（去重策略、冲突仲裁、独立发现率计算） | topology=parallel 时必需。topology=serial 时忽略 |
 | 7 | **decision_handoff_rule** | 评审完成后向人类移交决策的规则（Accept / Reject / Defer 触发条件） | 默认始终触发决策移交。不允许静默跳过 |
 
@@ -45,7 +45,7 @@ intent ─────→ topology ─────→ roles
 | topology | mode=full → parallel; mode=quick → serial | 始终 serial |
 | roles | 3 角色（A/B/C），用户可增减至上限 5 | 1 角色（综合视角） |
 | input_pack | context-pack full 档 | 评审对象文件（未标准化） |
-| output_schema | TL;DR + Findings + Risks + Actions + Prior Unclosed | Summary + Findings + Actions |
+| output_schema | TL;DR + Findings + Risks + 建议 + Prior Unclosed | Summary + Findings + 建议 |
 | reduction_rule | 合并规则段（去重/仲裁/独立发现率） | 不适用 |
 | decision_handoff_rule | Gate 4 → Accept/Reject/Defer | 落盘后触发 |
 

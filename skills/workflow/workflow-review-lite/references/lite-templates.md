@@ -18,13 +18,13 @@ related:
 ---
 ```
 
-## review.index.md 追加格式（仅 Gate 4 写 dXX 后）
+## review.index.md 镜像格式（仅旧 topic 已存在该文件时）
 
 ```markdown
 | rXX | [rXX_{title}](./reviews/rXX_{title}.md) | {status} | [dXX](./decisions/dXX_{title}.md) | lite · {简要说明} |
 ```
 
-`lite` 标注让索引一眼区分轻重。Accept/Reject/Defer 均写 dXX 并赋予索引资格；Other 不追加。
+`lite` 标注让索引一眼区分轻重。`review.index.md` 是可选导航镜像，缺失合法。新 review 不主动追加；旧 topic 已有该文件时，tidy 可按 dXX.review_ref 修复镜像。Other 不追加。
 
 ## format=ofm（GFM 基线 + Obsidian 增量）
 
@@ -52,9 +52,9 @@ related:
 > [!NOTE]
 > **P2** {发现描述}
 
-## Actions
+## 建议 / 候选行动
 
-| # | 行动 | Owner | 优先级 |
+| # | 建议 | Owner | 优先级 |
 |---|------|-------|--------|
 | 1 | ... | ... | P1 |
 
@@ -89,8 +89,8 @@ related:
 > [!NOTE]
 > **P2** {发现描述}
 
-## Actions
-| # | 行动 | Owner | 优先级 |
+## 建议 / 候选行动
+| # | 建议 | Owner | 优先级 |
 |---|------|-------|--------|
 | 1 | ... | ... | P1 |
 

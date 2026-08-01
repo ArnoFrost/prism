@@ -324,23 +324,24 @@ def _scan_review_decision_mirrors(topic_dir: str) -> dict:
 
 
 def _scan_reviews_for_index(topic_dir: str) -> dict:
-    """按 decision.review_ref 资格扫描 reviews/ 与 review.index.md。
+    """按 decision.review_ref 资格扫描既有 reviews/ 与 review.index.md。
 
     返回 dict:
-      missing  - 已被 dXX 引用但 index 未登记的评审
-      stale    - index 中提到但磁盘无对应文件的 rXX 编号
+      missing  - 已被 dXX 引用但既有 index 未登记的评审
+      stale    - 既有 index 中提到但磁盘无对应文件的 rXX 编号
       legacy   - 使用子目录格式的评审（建议迁移）
     """
     reviews_dir = os.path.join(topic_dir, "reviews")
     index_path = os.path.join(topic_dir, "review.index.md")
 
-    result = {"missing": [], "stale": [], "legacy": []}
+    index_present = os.path.isfile(index_path)
+    result = {"missing": [], "stale": [], "legacy": [], "index_present": index_present}
 
     if not os.path.isdir(reviews_dir):
         return result
 
     all_reviews = enumerate_reviews(reviews_dir)
-    index_content = _read(index_path) or ""
+    index_content = (_read(index_path) or "") if index_present else ""
     decision_refs = _decision_review_refs(topic_dir)
 
     disk_ids = set()
@@ -348,7 +349,7 @@ def _scan_reviews_for_index(topic_dir: str) -> dict:
         disk_ids.add(rev["id"])
         name_stem = os.path.splitext(rev["filename"])[0]
         eligible = rev["id"] in decision_refs
-        if eligible and name_stem not in index_content and rev["filename"] not in index_content:
+        if index_present and eligible and name_stem not in index_content and rev["filename"] not in index_content:
             review_content = _read(os.path.join(topic_dir, rev["path"])) or ""
             latest_decision = decision_refs[rev["id"]][-1]
             result["missing"].append({
@@ -361,9 +362,10 @@ def _scan_reviews_for_index(topic_dir: str) -> dict:
         if rev["format"] == "subdir":
             result["legacy"].append(rev["id"])
 
-    index_ids = set(re.findall(r"\b(r\d{2})\b", index_content))
-    for iid in sorted(index_ids - disk_ids):
-        result["stale"].append(iid)
+    if index_present:
+        index_ids = set(re.findall(r"\b(r\d{2})\b", index_content))
+        for iid in sorted(index_ids - disk_ids):
+            result["stale"].append(iid)
 
     return result
 
@@ -583,7 +585,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
             _write(readme_path, readme)
             changes_made.append("README.md")
 
-    # 5. review.index.md 双向对账
+    # 5. review.index.md 双向对账（可选导航索引，缺失合法）
     index_scan = _scan_reviews_for_index(topic_dir)
     if index_scan["missing"]:
         index_path = os.path.join(topic_dir, "review.index.md")
@@ -594,7 +596,7 @@ def tidy_topic(topic_dir: str, fix: bool = False) -> dict:
         })
         if fix:
             index_content = _read(index_path)
-            if index_content:
+            if index_content is not None:
                 for m in index_scan["missing"]:
                     decision = m["decision"]
                     new_row = (

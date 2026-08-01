@@ -43,8 +43,8 @@ Align 协议段建议输出：`base: gfm` + `extensions: obsidian|none`（sniff 
 | P0 阻塞 | `> [!IMPORTANT]` | `> [!danger]`、`> [!CAUTION]` | 必须修复的严重问题 |
 | P1 重要 | `> [!WARNING]` | `> [!warn]` | 功能缺陷 / 设计不一致 |
 | P2 改善 | `> [!NOTE]` | `> [!note]`（勿用 `[!note]-`） | 非阻塞优化建议 |
-| 行动计划（阻塞） | `> [!WARNING]` 含表格 | — | P0/P1 行动项 |
-| 行动计划（建议） | `> [!TIP]` 含表格 | — | P2 行动项 |
+| 建议（阻塞） | `> [!WARNING]` 含表格 | — | P0/P1 候选建议 |
+| 建议 | `> [!TIP]` 含表格 | — | P2 候选建议 |
 | 最终结论 | `> [!TIP]` | `> [!success]` | 一句话 Accept / Reject / 建议 |
 | 未决问题 | `- [ ]` 任务列表 | `> [!question]` | checkbox 优先（跨端最稳） |
 

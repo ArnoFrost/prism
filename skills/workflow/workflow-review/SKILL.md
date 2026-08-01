@@ -1,7 +1,7 @@
 ---
 name: workflow-review
-description: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。四阶段 Align-Explore-Merge-Gate4，输出分级 findings + 行动计划到 reviews/rXX.md。 Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review"
-description_zh: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。四阶段 Align-Explore-Merge-Gate4，输出分级 findings + 行动计划到 reviews/rXX.md。"
+description: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。四阶段 Align-Explore-Merge-Gate4，输出分级评审发现、结论与建议到 reviews/rXX.md。 Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review"
+description_zh: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。四阶段 Align-Explore-Merge-Gate4，输出分级评审发现、结论与建议到 reviews/rXX.md。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -24,7 +24,7 @@ public_gate:
 | **是什么** | topic 内正式多视角评审：Align → Explore → Merge → Gate 4 |
 | **不是什么** | 不直接改 scope/focus、不隐式生成 decision、不替代人类裁决、不是日常小改默认入口 |
 | **读什么** | `prism sniff` / hotpath envelope；`review-templates.md`；full 时按需读 parallel / merge / trace / decision gate |
-| **写什么** | `reviews/rXX_描述.md`；条件 `reviews/raw/`；Accept/Reject/Defer 后写 dXX + indexes |
+| **写什么** | `reviews/rXX_描述.md`；条件 `reviews/raw/`；Accept/Reject/Defer 后写 dXX + decision.index |
 | **结束建议** | 先输出 pending synthesis；用户明确 Accept / Reject / Defer 后再决策落盘 |
 
 # 多角色协作评审 (Workflow Review)
@@ -37,7 +37,7 @@ public_gate:
 |------|------|
 | 方向变更、范围调整、里程碑检查点 | `workflow-review` |
 | 需要多视角独立发现盲区 / 风险 / 分歧 | `workflow-review` |
-| 上次已接受 review 的 Actions 需要复验 | `workflow-review --incremental` |
+| 上次已接受 review 的 action 需要复验 | `workflow-review --incremental` |
 | 日常小改、普通自检、快速确认 | 模型原生自检；需要持久审计时再显式 review |
 | 沿上一轮结果继续讨论 | 直接追问；不重启 review |
 
@@ -48,8 +48,8 @@ public_gate:
 ```text
 Phase 1 Align   — prism sniff / envelope → route, rXX, format, references, validators
 Phase 2 Explore — full: 弹性并发 agent / 多角色独立调研；quick: 合法串行 fallback
-Phase 3 Merge   — 去重仲裁、分歧解释、行动计划、reviews/rXX pending synthesis
-Phase 4 Gate 4  — 先解释判断/OQ/追问/建议；用户裁决后才写 dXX + indexes + finalize
+Phase 3 Merge   — 去重仲裁、分歧解释、结论、建议、reviews/rXX pending synthesis
+Phase 4 Gate 4  — 先解释判断/OQ/追问/建议；用户裁决后才写 dXX + decision.index + finalize
 ```
 
 Align 最小动作：
@@ -78,16 +78,18 @@ review synthesis 先帮助用户理解，再问是否决策。主报告与对话
 |------|------|
 | TL;DR | ≤3 句，先给结论 |
 | 核心判断 | 说明是否继续、收口、追加范围或停止 |
-| Findings | P0/P1/P2，保留证据与仲裁理由 |
+| 评审发现（Findings） | P0/P1/P2，保留证据与仲裁理由 |
 | OQ / 追问 | 列出真正影响决策的问题；可带 grillme-like 压力测试感 |
-| Actions | Owner / priority / acceptance |
+| 建议 / 候选行动 | Gate 前只表示候选建议；包含 owner / priority / 验收提示 |
 | Risks | 说明不接受建议的代价 |
 
 3.1 可吸收 grillme-like 的追问体验，为后续 clarify 语义预留；但本轮不内置 grillme/clarify，也不新增替代 skill。
 
+Review 是一次有边界的判断事件，不是长期治理状态。Finding 是 review 内基于证据形成的局部观察或问题判断；Finding 本身不具有授权效力，不自动成为 Scope、Decision 或执行任务。Merge 后形成结论与建议；用户 Accept / Reject / Defer 前，建议不得写成已确认 action。
+
 ## 5. Merge 与 Trace
 
-- Merge 必须解释去重、冲突仲裁、独立发现率与行动计划；细则见 [review-merge-spec.md](references/review-merge-spec.md)。
+- Merge 必须解释去重、冲突仲裁、独立发现率、结论与建议；细则见 [review-merge-spec.md](references/review-merge-spec.md)。
 - `reviews/rXX_{title}.md` frontmatter 默认 `decision_status: pending`，命名和字段见 [review-templates.md](references/review-templates.md)。
 - full rXX synthesis 必含 `task_probe` / `merge_artifact`；pending rXX 不要求 `decision_artifact`。
 - `decision_artifact` 只随 Accept/Reject/Defer 后的 dXX 写入；字段和校验见 [trace-artifacts-spec.md](references/trace-artifacts-spec.md)。
@@ -99,9 +101,9 @@ Gate 3 后先落 pending rXX synthesis，并只读运行 product / trace / revie
 
 | 用户选择 | 后续动作 |
 |----------|----------|
-| Accept | 调用 `prism decision record --source review` 写 accepted dXX + decision.index + decision_artifact；对齐 review 镜像后 finalize；影响 scope 再交 `workflow-scope` |
-| Reject | 调用 Decision record 写 rejected dXX 主链；对齐 review 镜像后 finalize |
-| Defer | 调用 Decision record 写 deferred dXX 主链；对齐 review 镜像后 finalize；不改 scope/focus |
+| Accept | 调用 `prism decision record --source review` 写 accepted dXX + decision.index + decision_artifact；对齐 rXX decision 镜像与既有 review.index 后 finalize；影响 scope 再交 `workflow-scope` |
+| Reject | 调用 Decision record 写 rejected dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 finalize |
+| Defer | 调用 Decision record 写 deferred dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 finalize；不改 scope/focus |
 | Other | 不写 dXX；原样回收修订意图，继续讨论后重新 Gate 4 |
 
 完整 AskQuestion / text fallback 契约见 [decision-gate.md](references/decision-gate.md)。未收到明确选择前，rXX 保持 `decision_status: pending`，不得写 dXX / indexes / finalize / `decision_artifact`。
@@ -112,9 +114,10 @@ Gate 3 后先落 pending rXX synthesis，并只读运行 product / trace / revie
 |------|--------------|
 | Parallel | full review 必须真实并发探测；不得把同一响应内角色切换伪装成并行 |
 | Context | 缺 scope/focus/相关 decisions/目标材料时，不输出全局判断 |
-| Merge | 不只摘要；必须给仲裁理由、分歧和行动计划 |
+| Merge | 不只摘要；必须给仲裁理由、分歧、结论与建议 |
 | Gate 4 | 不静默 Accept；Other 不写 dXX；`PRISM_NO_INTERACTIVE=1` 必须显式传决策 |
-| Scope | review 不直改 scope/focus；合同变更走 accepted dXX → `workflow-scope` |
+| Authorization | 建议未经用户 Accept / Reject / Defer 或显式授权，不得称为已确认 action |
+| Scope | review 不直改 scope/focus；合同变更走 accepted dXX 或显式授权 → `workflow-scope` |
 
 ## 8. 写盘口径
 
@@ -123,7 +126,7 @@ Gate 3 后先落 pending rXX synthesis，并只读运行 product / trace / revie
 | `reviews/rXX_{title}.md` | 新建 pending synthesis |
 | `reviews/raw/rXX-role-*.md` | 条件新建 |
 | `decisions/dXX_*.md` / `decision.index.md` | 仅 Accept/Reject/Defer 后由 `prism decision record` 原子写入 |
-| `review.index.md` / rXX decision_ref | dXX 后作为可修复 review 镜像对齐 |
+| `review.index.md` / rXX decision_ref | rXX decision_ref 总是保留审计镜像；`review.index.md` 仅在文件已存在时作为可修复导航镜像 |
 | `scope.md` / `focus.md` | 禁止直改 |
 
 Maintainer 历史、编号细节、format 误报、writable=false、README grandfather 和排障见 [review-maintainer.md](references/review-maintainer.md)。
@@ -132,6 +135,6 @@ Maintainer 历史、编号细节、format 误报、writable=false、README grand
 
 - [ ] route / rXX / format / validators 已由 envelope 或等价输入确认
 - [ ] full review 已真实并发调研，或按白名单诚实 quick fallback
-- [ ] synthesis 先解释判断、OQ、分歧、追问、建议，再进入 Gate 4
+- [ ] synthesis 先解释评审发现、结论、OQ、分歧、追问、建议，再进入 Gate 4
 - [ ] pending rXX 已通过只读校验；Gate 4 后才调用 Decision record、对齐 review 镜像并 finalize
 - [ ] 未越权改 scope/focus；需要合同变更已交 `workflow-scope`

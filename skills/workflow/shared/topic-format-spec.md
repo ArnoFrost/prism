@@ -11,7 +11,7 @@
 | `scope.md` | scope | governance | persistent | 合同 SSOT（focus/task 唯一上游）| topic 根 |
 | `focus.md` | focus | state | **rewrite** | **唯一入口 + 注意力光标**（双区）| topic 根 |
 | `decision.index.md` | decision-index | state | mutable | 决策链**主索引** SSOT（事件链）| topic 根 |
-| `review.index.md` | review-index | state | mutable | 评审**辅助索引**（稀疏关联律）| topic 根 |
+| `review.index.md` | review-index | derived | mutable | 可选评审导航索引（缺失合法）| topic 根 |
 | `decisions/dXX.md` | decision | governance | persistent | 决策事件（append-only）| decisions/ |
 | `reviews/rXX.md` | review | governance | persistent | 评审事件（append-only）| reviews/ |
 | `references/intake.md` | intake | state | persistent | 来源意图留档 | references/ |
@@ -22,8 +22,8 @@
 
 ## 2 入口模型（README deprecate → focus 双区）
 
-- topic **唯一入口 = focus 保留区**（AI 规范入口 + scope/decision.index/review.index 双链）。
-- README **deprecate**：存量兜底、懒迁移（grandfather，同 plan→focus）；关键决策 SSOT = `decision.index`，参考资料 = `references/` + focus 保留区双链。
+- topic **唯一入口 = focus 保留区**（AI 规范入口 + scope；decision.index / review.index / structures 仅在实际存在时链接）。
+- README **deprecate**：存量兜底、懒迁移（grandfather，同 plan→focus）；关键决策 SSOT = `decision.index`，参考资料 = `references/` + focus 保留区导航。
 - 详见 [focus-derive-spec.md](./focus-derive-spec.md) §README-deprecate + §双区契约。
 
 ## 3 递归结构（scope 的自相似）
@@ -44,6 +44,7 @@ flowchart TD
   reviews["reviews/rXX"] -.-> decisions["decisions/dXX"]
   decisions -.driven by.-> scope
   decisions --> dindex["decision.index (主索引)"]
+  reviews -. "optional derived navigation" .-> rindex["review.index (可选导航)"]
 ```
 
 ## 4 各工件 canonical form & 可读性
@@ -55,7 +56,7 @@ flowchart TD
 | `task.index` | task 导航表：task 路径 / 稳定 id / 可选 label / status / 问题切片 / 授权来源；只在出现 task 时存在 | task id 稳定、授权来源可追溯；slug/label 只做展示，不替代 `tN` |
 | `task-scope` | task 内 `scope.md`，1:1 投影 topic 级 V；只收窄不新增承诺；task 内不开独立 reviews/decisions | task-V 每行引用一个存在的 topic-V |
 | `wave` | task 内推进批次；文件名可含 slug，标题写清本批目标，并记录推进记录 / 批次出口；无 task 时不落独立 wave 文件 | status 与 task.index 一致；编号 M 表示顺序，slug 只做展示 |
-| `decision` / `review` | append-only 事件，frontmatter 依赖字段（`supersedes`/`derived_from`/`related_dXX`）| — |
+| `decision` / `review` | append-only 事件；`dXX.review_ref` 与 `rXX.decision_ref` / `rXX.decision_status` 保留双向审计引用 | — |
 | `*.index` | mutable 导航面，原地更新 | — |
 
 ## 5 对标关系（详规 SSOT 索引）

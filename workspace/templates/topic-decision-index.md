@@ -12,7 +12,7 @@ related:
 # 决策链主索引 — {topic-name}
 
 > **事件链 SSOT** — topic 内所有决策事件的时序索引；含时序表 + frontmatter 依赖字段。
-> 主索引地位由本文件承担；`review.index.md` 是辅助索引（仅列被 decision 引用的 review；稀疏关联律）。
+> 主索引地位由本文件承担；`review.index.md` 是可选导航索引，缺失合法。
 
 ## 决策时序表
 

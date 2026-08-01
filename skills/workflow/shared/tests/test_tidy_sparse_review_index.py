@@ -43,13 +43,14 @@ def _decision(topic: Path, did: str, rid: str, status: str, decision: str) -> No
     )
 
 
-def _topic(tmp_path: Path) -> Path:
+def _topic(tmp_path: Path, *, with_review_index: bool = True) -> Path:
     topic = tmp_path / "053_sparse"
     topic.mkdir()
-    _write(
-        topic / "review.index.md",
-        "# Review Index\n\n| 轮次 | 文件 | 状态 | 决策 | 说明 |\n|---|---|---|---|---|\n",
-    )
+    if with_review_index:
+        _write(
+            topic / "review.index.md",
+            "# Review Index\n\n| 轮次 | 文件 | 状态 | 决策 | 说明 |\n|---|---|---|---|---|\n",
+        )
     return topic
 
 
@@ -94,3 +95,17 @@ def test_fix_adds_only_eligible_rows_with_decision_links(tmp_path: Path):
     assert "[d01](./decisions/d01_test.md)" in index
     assert "review_ref" in index
     assert "| r02 |" not in index
+
+
+def test_missing_review_index_is_valid_and_not_created(tmp_path: Path):
+    topic = _topic(tmp_path, with_review_index=False)
+    _review(topic, "r01", status="accepted")
+    _decision(topic, "d01", "r01", "accepted", "accept")
+
+    scan = tidy._scan_reviews_for_index(str(topic))
+    result = tidy.tidy_topic(str(topic), fix=True)
+
+    assert scan["index_present"] is False
+    assert scan["missing"] == []
+    assert not (topic / "review.index.md").exists()
+    assert not any(item["type"] == "review_index_missing" for item in result["fixes"])

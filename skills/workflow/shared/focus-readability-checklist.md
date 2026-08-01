@@ -15,7 +15,7 @@ audience: maintainer
 | **M1 聚焦区主体行数** | focus 去 frontmatter / 保留区 / 注释后的非空行数 | ≤ 30 | 主体臃肿 |
 | **M2 字段合规率** | 出现且仅出现模板 4 字段名（`goal`/`input`/`output`/`non-goal`） | 4/4 | 字段名漂移 |
 | **M3 单行密度** | 聚焦区最长行字符数 | ≤ 120 | 一行塞满、难扫读 |
-| **M4 双链完整** | 保留区导航链（scope / decision.index / review.index）全部存在且可达 | 全可达 | 入口断链 |
+| **M4 核心导航完整** | 保留区 `scope.md` 链接存在；decision.index / review.index 仅在文件实际存在时导航 | scope 可达 | 入口断链 |
 
 **测量法**：`focus.md` 去 frontmatter 取 body；保留区 = `╔═══ 保留区` 到 `保留区结束 ═══╝` 之间（无标记则按「## 当前聚焦」分界，之前算保留区）；其余为聚焦区主体。M1/M3 只数聚焦区，与分叉判据 S1 同源（见 `focus-derive-spec.md`）。
 
@@ -33,6 +33,6 @@ audience: maintainer
 
 ## 用法
 
-- **收口门槛**：目标 topic 的 focus 须 M1≤30 ∧ M2=4/4 ∧ M3≤120 ∧ M4 全可达。
+- **收口门槛**：目标 topic 的 focus 须 M1≤30 ∧ M2=4/4 ∧ M3≤120 ∧ M4 核心导航可达。
 - **回归**：focus 链改动后重跑 `focus_readability.py`。
 - **人工软指标**（不入阈值）：光标快读面是否一眼读出「现在/下一步」、保留区是否真豁免 rewrite。

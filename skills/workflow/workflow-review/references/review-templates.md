@@ -58,7 +58,7 @@ topics/{NNN}_{topic}/
 ├── decisions/
 │   └── dXX_{简短描述}.md      # 决策记录（accept/reject/defer）
 ├── decision.index.md          # 决策链主索引（Accept/Reject/Defer 写 dXX 后追加）
-├── review.index.md            # 评审辅助索引（仅当本 review 被新 dXX 引用时追加）
+├── review.index.md            # 可选评审导航索引（已有时可由 tidy 修复镜像）
 ├── scope.md                   # 必要时更新
 └── focus.md                   # 从 review 收敛后刷新
 ```
@@ -69,9 +69,9 @@ topics/{NNN}_{topic}/
 
 - `reviews/rXX_简短描述.md` — Merge 综合报告（**必须**）
 - `reviews/raw/rXX-role-{A|B|C}.md` — 独立角色报告（**条件落盘**：角色报告含合并时被裁剪的独立产物 / 独立发现率 ≥ 60% / 用户要求时写入）
-- **索引联动**（稀疏关联律）：
+- **索引联动**：
   - `decision.index.md`（主索引）：Gate 4 的 Accept/Reject/Defer 写 dXX 后追加（**不在 review 阶段自动追加**）
-  - `review.index.md`（辅助索引）：仅当本 review 被新 dXX 引用时才追加；Other/未决探索不上索引
+  - `review.index.md`（可选导航）：缺失合法；新 review 不主动追加；若旧 topic 已有该文件，tidy 可按 dXX.review_ref 修复镜像行
 
 ## mode=quick 产物
 
@@ -116,6 +116,24 @@ topics/{NNN}_{topic}/
 - 新增字段都是**可选**，未来可被 `prism status` / `prism digest` 消费做时间线视图
 - `accepted_at` / `merged_at` 与 `decision_artifact` / `merge_artifact` 的 `timestamp` 字段是双源镜像（一个是 frontmatter 给 OFM 索引用，一个是正文块给 strict 校验用）
 - 状态切换（`status: draft → accepted`）建议同时填对应时间戳，未来可加 frontmatter validation 守门
+
+## Review 语义链
+
+```text
+证据
+→ 评审发现（finding）
+→ 结论
+→ 建议 / 待裁决选项
+→ 显式授权
+→ 决策（decision）
+→ scope 变更 / action / 执行目标
+```
+
+- Review 是一次有边界的判断事件，不是长期治理状态。
+- Finding 是 Review 内基于证据形成的局部观察或问题判断；Finding 本身不具有授权效力，不自动成为 Scope、Decision 或执行任务。
+- Review Merge 后形成结论与建议；用户授权前不得把建议称为已确认 action。
+- 用户 Accept / Reject / Defer 后，正式治理结果进入 `decision.index.md` 主链；未被采纳的 Finding 保留在 rXX 历史现场，不形成独立链条。
+- 只有 Decision 或显式授权才能将建议转化为 scope 变更、action、执行目标或后续正式治理事件。
 
 ### 示例
 

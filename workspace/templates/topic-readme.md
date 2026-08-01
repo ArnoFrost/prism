@@ -10,7 +10,7 @@ tags:
 
 > [!warning] README 已 deprecate（focus 单入口）
 > 自 3.0 起 topic 入口为 [focus.md](./focus.md) 的**保留区**（见 `focus-derive-spec.md` §README-deprecate）。
-> 本文件只用于 `--full-scaffold` 或存量 grandfather，不属于 minimal topic 默认骨架。参考资料归 `references/` 与 focus 保留区双链。
+> 本文件只用于 `--full-scaffold` 或存量 grandfather，不属于 minimal topic 默认骨架。参考资料归 `references/` 与 focus 保留区导航。
 
 | 属性 | 值 |
 |------|------|
@@ -43,7 +43,7 @@ next_action 取值规范：
 
 索引地位说明：
   - decision.index.md = 决策链主索引（事件链 SSOT，含时序 + frontmatter 依赖字段）
-  - review.index.md   = 评审辅助索引（仅列被 decision 引用的 review；稀疏关联）
+  - review.index.md   = 可选评审导航索引（缺失合法）
   - 历史 topic 可能仅有 review.index.md（向后兼容）
   - minimal topic 不预建任何 index；首个正式工件出现时再懒加载
 -->

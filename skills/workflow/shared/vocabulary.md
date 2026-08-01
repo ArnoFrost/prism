@@ -1,6 +1,6 @@
 # Prism Workflow Vocabulary — 术语词典 SSOT
 
-> Prism workflow 受控词汇唯一 SSOT：**12 活跃术语 + 3 废弃兼容**（plan→focus / AP→action / decision-chain→decision-index）；**永久平铺一张表**，按 3.0 分层语义认知地图排序（废弃挪尾）。
+> Prism workflow 受控词汇唯一 SSOT：**14 活跃术语 + 3 废弃兼容**（plan→focus / AP→action / decision-chain→decision-index）；**永久平铺一张表**，按 3.0 分层语义认知地图排序（废弃挪尾）。
 > 另含两根正交轴说明：§kind 五元（governance/execution/state/derived/structure）/ §retention 律（Artifact 生命周期）。
 > 被各 SKILL / 文档 / topic 产物 cite，**不字字复制本体**。
 > 初版落地 2026-05-15；Prism 3.0 第二批扩展 + 认知地图重排 2026-05-29（详见 §变更记录）。
@@ -13,7 +13,7 @@
 
 ---
 
-## 术语表（12 活跃 + 3 废弃）
+## 术语表（14 活跃 + 3 废弃）
 
 > 行顺序 = **3.0 分层语义认知地图**（入口→深入）：合同边界 → 注意力 → 结构三轴 → 执行 → 治理事件 → 废弃尾。这只是**排序视角**，**非分类体系、不入表结构**（守平铺律）。
 
@@ -28,9 +28,11 @@
 | **wave** | lowercase_word | 批次 | Wave | **时间推进批次单元**（3.0 重定义，向前兼容）。抽象 = task / topic 的时间空间推进。两种物化语境：**2.x** = topic/plan 级跨 phase release 批次（`Wave 1~N`，grandfather 保留）；**3.0** = `structures/task-N_slug/wave-N_slug.md`，无 task 时不落独立文件、只体现在 focus 当前轮。详见 disambiguation §wave-2.x vs wave-3.0 |
 | **structure** | lowercase_word | 结构（容器 kind）| Structure | **承载关系的容器**：不直接承诺 / 执行 / 记录状态。kind 五元第五元；实体 = topic / task / dir；容器非产物，不直接被自动化。进 `structures/` 的准入判据：只有回答"如何组织"的对象才能进 |
 | **phase** / **P** | lowercase_word + letter_id | 阶段 | Phase | plan/focus 中的执行单位；推荐用 `P-VN` 表示（与验收项 VN 1:1 派生强溯源）；也可指生命周期段（启动 / 收敛 / 执行 / 归档） |
-| **action** | lowercase_word | 行动项 | Action | review / decision 中识别的具体待办，用 `action-N` **全局递增**编号；可带 `-L`(LOCAL) / `-Z`(ZERO-COST) / `-meta`(跨 topic) 子族前缀。**旧称 `AP`（deprecated，见废弃尾）**，老 topic `AP-N` grandfather |
+| **review** / **r** | lowercase_word + letter_id | 评审 | Review | 一次有边界的判断事件，记录在 `reviews/rXX_*.md`；产出 finding、结论与建议，但不直接授权 scope、decision 或执行 |
+| **finding** | lowercase_word | 评审发现 | Finding | review 内基于证据形成的局部观察或问题判断；未被采纳时留在 rXX 历史现场，不形成独立生命周期 |
+| **action** | lowercase_word | 行动项 | Action | 经 decision 或显式授权确认的具体待办，用 `action-N` **全局递增**编号；review Gate 前只能写建议/候选行动，不得称为已确认 action。可带 `-L`(LOCAL) / `-Z`(ZERO-COST) / `-meta`(跨 topic) 子族前缀。**旧称 `AP`（deprecated，见废弃尾）**，老 topic `AP-N` grandfather |
 | **decision** / **d** | lowercase_word + letter_id | 决策 | Decision (event) | 人类对评审 / intake / 跨 topic 派生输入做出的正式裁决事件，记录在 `decisions/dXX_*.md`；按时序编号 d01 → d02 → …；被 `decision.index.md` 时序表收录为事件链节点 |
-| **decision-index** | lowercase_word | 决策索引 | Decision index | topic 内决策链**主索引**文件（事件链 SSOT，**吸收 decision-chain 链语义**）；含时序表 + frontmatter 依赖字段（`supersedes` / `derived_from` / `related_dXX` 表达依赖图）；`review.index` 是辅助索引（仅列被 decision 引用的 review；稀疏关联律）|
+| **decision-index** | lowercase_word | 决策索引 | Decision index | topic 内决策链**主索引**文件（事件链 SSOT，**吸收 decision-chain 链语义**）；含时序表 + frontmatter 依赖字段（`supersedes` / `derived_from` / `related_dXX` 表达依赖图）；`review.index` 是可选导航索引，缺失合法 |
 | ⚠️ **plan** | lowercase_word | 执行计划 | Plan | **deprecated → focus**（3.0 起）：旧称，scope 派生的执行面 SSOT（三段 schema）。旧 topic 保留 `plan.md` 兼容；新 topic 默认 `focus.md` |
 | ⚠️ **AP** | abbreviation | 行动项（旧）| Action Point | **deprecated → action**：行动项旧缩写。老 topic `AP-N` / `AP-L-N` / `AP-Z-N` grandfather 不 retrofit；新产物用 `action-N` |
 | ⚠️ **decision-chain** | lowercase_word | 决策链 | Decision chain | **deprecated → decision-index**：链语义已并入 decision-index（index/chain 不再分立）。frontmatter 依赖字段表达的依赖图由 decision-index 承载 |
@@ -51,7 +53,7 @@
 |--------|--------|------|---------|----------|
 | **OQ-N** | scope 阶段提出的 topic 级开放问题 | 全 topic 范围未决议题，由 dXX 裁决或 review 触发 | `scope.md` §未决问题 | `OQ-N: {topic 级 open question 描述}` |
 | **OQ-rXX-N** | review 阶段发现的 review 局部开放问题 | 仅本轮 review 范围内未决，由对应 dXX 裁决 | `reviews/rXX_*.md` §Open Questions | `OQ-rXX-N: {review 衍生 open question 描述}` |
-| **action-N** | review/scope/decision 派生的通用 LOCAL/PROTOCOL 行动 | 当前 topic 内执行类工作 | `reviews/rXX_*.md` / `decisions/dXX_*.md` §Actions | `action-N: {具体行动描述}` |
+| **action-N** | decision 或显式授权派生的通用 LOCAL/PROTOCOL 行动 | 当前 topic 内执行类工作 | `decisions/dXX_*.md` §已接受行动；review Gate 后的授权结果 | `action-N: {具体行动描述}` |
 | **action-L-N** | 跨多个 SKILL 的 LIBRARY 类行动（影响 shared/ 或 templates/） | 跨 SKILL 影响面 | 同上 | `action-L-N: {跨 SKILL 行动描述}` |
 | **action-Z-N** | ZERO-COST 类行动（无代码改动，仅文档或元数据维护） | 文档维护、配置补齐 | 同上 | `action-Z-N: {ZERO-COST 维护任务描述}` |
 | **action-meta-N** | META 跨 topic 转移类行动 | 把本 topic 的 finding 转给另一 topic | 跨 topic 联动声明 | `action-meta-N: {跨 topic 转移描述}` |
@@ -130,6 +132,7 @@ focus 不归档 / 不版本化 / 不保留历史
 | 2026-05-16 | r01 收尾瘦身 | §易混淆对比 109 行 + §使用约定 33 行拆到 `vocabulary-disambiguation.md`；§设计原则 6→3 条合并；删除已过期接口预留注释；vocabulary.md 267→~100 行 |
 | 2026-05-29 | Prism 3.0 第二批扩展 | + §术语表 +3 行（task / focus / structure，11→14）；~ wave 重定义（时间推进批次单元 + 2.x/3.0 双物化语境，向前兼容）；~ plan 标 deprecated→focus；+ §kind 五元（含纯度律）+ §retention 律（含 Focus 非沉淀律 + 禁 focus-v2/history 反模式）；+ 编号规约补 `.S`/`.tN` 限定符。**注**：本批次（3.0 结构语义血缘）与 §候选术语 区的 `review/finding/archive/index`（词典自身演进血缘）同名"第二批"但不同物，后者仍待各自 dXX |
 | 2026-05-29 | 形态规范 + 认知地图重排 | ~ **整表按 3.0 分层语义认知地图重排**（合同边界→注意力→结构三轴→执行→治理事件→废弃尾，仍平铺一张表）；~ task 双形态 `task/t`（弃大写方案）；~ **AP → action**（lowercase_word，编号 `action-N`，子族 `-L/-Z/-meta`，老 `AP-N` grandfather）；~ decision-chain 标 deprecated→decision-index（链语义并入）；~ plan/AP/decision-chain 挪废弃尾；~ §设计原则形态三类 + Prefix dispatch + §kind execution 行同步。形态规范变更走 dXX（不需 review）|
+| 2026-08-01 | d03 术语收敛克制 | + §术语表纳入 review / finding（14 活跃）；~ action 明确仅指授权后的行动；~ recommendation、候选行动、结论、scope 变更、执行目标不升核心术语，作为技能章节措辞或普通描述 |
 
 ---
 
@@ -141,10 +144,10 @@ focus 不归档 / 不版本化 / 不保留历史
 | `plan-derive-spec.md` | 引用本词典中的 scope / plan / V / phase 术语（deprecated，2.x grandfather）|
 | `trace-artifacts-spec.md` | 引用本词典中的 OQ / decision / decision_artifact 等术语 |
 | `topic-sniff-spec.md` | 引用本词典中的 scope / intake / topic 等术语 |
-| `review-spec-skeleton.md` | 引用本词典中的 review / finding / action 等术语（review / finding 待候选批纳入；`AP`→`action` 已正名）|
+| `review-spec-skeleton.md` | 引用本词典中的 review / finding / action 等术语（`AP`→`action` 已正名）|
 | `workspace.schema.yaml` | 引用本词典中的 decision / decision-index / scope / plan 等术语（decision-chain 已 deprecated 并入 decision-index）|
 
-> 本词典现含 **12 活跃 + 3 废弃**（plan/AP/decision-chain）；review / finding / archive / index 等术语仍未纳入（详见下方 §候选术语，待各自 dXX 决策门启动时纳入）。
+> 本词典现含 **14 活跃 + 3 废弃**（plan/AP/decision-chain）；archive / index 等术语仍未纳入（详见下方 §候选术语，待各自 dXX 决策门启动时纳入）。
 
 ---
 
@@ -159,8 +162,6 @@ focus 不归档 / 不版本化 / 不保留历史
 
 | 候选术语 | 性质 | 等待治理 wave | 触发条件 |
 |---------|------|--------------|----------|
-| `review` | 评审 | 词典第二批 | 第二批 dXX 启动 |
-| `finding` | 评审发现 | 词典第二批 | 第二批 dXX 启动 |
 | `archive` | 归档（topic / SKILL）| 词典第二批 | 第二批 dXX 启动 |
 | `index` | 索引（中性概念）| 词典第二批 | 第二批 dXX 启动（decision-chain 治理已落定 `decision-index` 形态） |
 

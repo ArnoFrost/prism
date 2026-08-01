@@ -1,7 +1,7 @@
 ---
 name: workflow-review-lite
 description: |
-  单视角轻量评审（3.2 retired-with-compat）：读取 scope（专项边界合同）与 focus（当前工作集/关注点）后，直接输出结论 + 行动项，不做多角色仲裁。仅保留给显式兼容调用与旧 topic；日常小改默认使用模型原生自检或 workflow-clarify。
+  单视角轻量评审（3.2 retired-with-compat）：读取 scope 与 focus 后，直接输出结论、评审发现和建议，不做多角色仲裁。仅保留给显式兼容调用与旧 topic；日常小改默认使用模型原生自检或 workflow-clarify。
   Use when: 显式兼容调用、旧 topic 轻量评审、review lite、review-lite、workflow-review-lite
 description_zh: "单视角轻量评审（3.2 retired-with-compat）：仅保留显式调用与旧产物兼容。"
 license: MIT
@@ -23,7 +23,7 @@ user_invocable: true
 | **是什么** | 退役兼容入口：低摩擦、单视角轻量检查：Align → Scan → Write → Gate 4 |
 | **不是什么** | 不做多角色拆分、不产 raw/、不启动并行 subagent；**不得**直改 scope/focus |
 | **读什么** | Align 必读 `lite-templates`、`vocabulary`、`review-templates`；topic / scope-focus 场景装配 context-pack light |
-| **写什么** | `reviews/rXX_描述.md`（`type: review-lite`）+ 稀疏索引联动 |
+| **写什么** | `reviews/rXX_描述.md`（`type: review-lite`）；Accept/Reject/Defer 后由 Decision Record 写 dXX + decision.index |
 | **结束建议** | → Accept / Reject / Defer / Other（Gate 4）|
 
 ---
@@ -68,9 +68,9 @@ Align 显式输出：`base: gfm` + `extensions: obsidian|none`。
 
 ```text
 Phase 1  Align  — sniff / format / 路由 / 编号 / 已加载 references
-Phase 2  Scan   — 单视角 findings + actions
+Phase 2  Scan   — 单视角评审发现 + 建议
 Phase 3  Write  — reviews/rXX + 决策前只读 validators（不写 index）
-Phase 4  Gate 4 — AskQuestion → dXX/index（Accept/Reject/Defer）→ finalize / decision_artifact
+Phase 4  Gate 4 — AskQuestion → dXX + decision.index（Accept/Reject/Defer）→ finalize / decision_artifact
 ```
 
 ### Phase 1 Align
@@ -91,8 +91,8 @@ Phase 4  Gate 4 — AskQuestion → dXX/index（Accept/Reject/Defer）→ finali
 | 字段 | 必需 |
 |------|:----:|
 | Summary / TL;DR | 是 |
-| Findings（P0/P1/P2） | 是 |
-| Actions | 有发现时 |
+| 评审发现（Findings） | 是 |
+| 建议 / 候选行动 | 有发现时；Gate 前不得称为已确认 action |
 | Open Questions | 按需 |
 
 `format=ofm` 时 Callout 映射见 `review-ofm.md`，不复制。
@@ -100,7 +100,7 @@ Phase 4  Gate 4 — AskQuestion → dXX/index（Accept/Reject/Defer）→ finali
 ### Phase 3 Write
 
 - `reviews/rXX_{title}.md`（frontmatter `type: review-lite`）
-- Phase 3 不写 index；Accept/Reject/Defer 写 dXX 后追加 decision.index + sparse review.index（标 `lite`）
+- Phase 3 不写 index；Accept/Reject/Defer 只通过 Decision Record 写 dXX + decision.index；既有 review.index 可由 tidy 修复导航镜像
 - 正文模板见 [lite-templates.md](references/lite-templates.md)
 
 ### Phase 4 Gate 4
@@ -111,19 +111,19 @@ Phase 4  Gate 4 — AskQuestion → dXX/index（Accept/Reject/Defer）→ finali
 
 ```text
 1. 📌 产物路径（含 rXX 实际文件名）
-2. 📊 量化摘要（P0/P1/P2 × n ｜ 行动项 M 条）
+2. 📊 量化摘要（P0/P1/P2 × n ｜建议 M 条）
 3. 🎯 核心结论（≤30 字）
 4. ❓ Open Questions 列表
-5. 各 option label 写具体后续动作（含 dXX / AP / OQ）
+5. 各 option label 写具体后续动作（含 dXX / action、scope 变更或 OQ）
 ```
 
 完整 yaml 示例 → [askquestion-fallback.md §4.2](references/askquestion-fallback.md)。
 
 | 选择 | 后续动作 |
 |------|----------|
-| `accept` | 写 dXX + 双索引 → `prism finalize`；影响 scope 再调 `/workflow-scope` |
-| `reject` | 写 rejected dXX + 双索引 → `prism finalize`；重启评审或调 scope |
-| `defer` | 写 deferred dXX + 双索引 → `prism finalize`；不改 scope/focus |
+| `accept` | 写 dXX + decision.index → `prism finalize`；影响 scope 再调 `/workflow-scope` |
+| `reject` | 写 rejected dXX + decision.index → `prism finalize`；重启评审或调 scope |
+| `defer` | 写 deferred dXX + decision.index → `prism finalize`；不改 scope/focus |
 | `type_something` | **不写 dXX**；回收修订意图；**禁止**把含糊文本当 Accept |
 
 `decision_artifact` yaml 必填（`review_kind: review-lite`）— 字段表见 [trace-artifacts-spec.md §decision_artifact](references/trace-artifacts-spec.md)。
@@ -137,7 +137,7 @@ Fallback：**模糊回复 = 未确认**；`PRISM_NO_INTERACTIVE=1` 必须 fail�
 | 文件 | 操作 | 说明 |
 |------|------|------|
 | `reviews/rXX_{title}.md` | 新建 | 单文件；`type: review-lite` |
-| `review.index.md` | 稀疏追加 | Accept/Reject/Defer 的 dXX 引用后追加；Other 不追加 |
+| `review.index.md` | 可选导航镜像 | 缺失合法；若旧 topic 已有该文件，tidy 可按 dXX.review_ref 修复；Other 不追加 |
 | `decision.index.md` | 由 dXX 追加 | review-lite 不直写主索引 |
 | `scope.md` / `focus.md` | **禁止直改** | 须 accepted dXX 或 `/workflow-scope` |
 
@@ -189,14 +189,14 @@ sniff fallback、format 速查、2.x redirect、完整 Gate4 yaml、目录结构
 
 对应 evals 三类（`evals/cases.yaml`），示范触发边界与产物：
 
-- **正常触发**：用户「这个小改动帮我快速对齐下 scope」→ 进入单视角 lite，直接输出「结论 + 行动项」，不做多角色仲裁、不写 review.index。
+- **正常触发**：用户显式要求 legacy lite → 进入单视角 lite，直接输出「结论 + 评审发现 + 建议」，不做多角色仲裁、不写 review.index。
 - **边界（升格 full）**：改动涉及方向变更 / 里程碑 / 多角色分歧 → lite 不硬扛，输出「建议升 `workflow-review` full」并说明触发条件，不越权给 Gate4 结论。
 - **错误（越权）**：用户「用 lite 直接把 scope 改了」→ 拒绝：lite 只产结论建议，scope 变更须经 accepted dXX 或 `workflow-scope`；`PRISM_NO_INTERACTIVE=1` 下澄清门必须 fail 而非默认建目录。
 
 ## 10. 完工 checklist
 
-- [ ] 单视角结论 + 行动项已输出，未擅自触发多角色；Gate 4 已完成或明确等待用户
+- [ ] 单视角结论、评审发现与建议已输出，未擅自触发多角色；Gate 4 已完成或明确等待用户
 - [ ] 触及方向/里程碑/分歧时已给出升 full 建议，未硬扛
-- [ ] Gate 4 前未写 index；Accept/Reject/Defer 后已写 dXX + 双索引并 finalize，Other 未写
+- [ ] Gate 4 前未写 index；Accept/Reject/Defer 后已写 dXX + decision.index 并 finalize，Other 未写
 - [ ] 未直接改 scope/focus（lite 只建议不落权）
 - [ ] 澄清门场景（null output_dir / AskQuestion 不可用 / NO_INTERACTIVE）已按 SSOT fallback，未误建目录

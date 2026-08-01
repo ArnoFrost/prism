@@ -29,7 +29,7 @@
 
 ## README.md（grandfather 兜底）
 
-> topic 唯一入口 = **focus 保留区**（双链 scope / decision.index / review.index）。
+> topic 唯一入口 = **focus 保留区**（核心链 scope；decision.index / review.index 仅在实际存在时导航）。
 
 | 情形 | 规则 |
 |------|------|

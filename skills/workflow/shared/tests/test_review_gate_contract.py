@@ -27,7 +27,7 @@ def test_gate_order_is_readonly_before_decision_and_finalize_after_indexes():
     assert "不得**在 Gate 4 前运行 write-mode finalize" in full
     assert "review 落盘为 pending synthesis" in gate
     assert "Gate 4 → `prism decision record` 原子写 dXX + decision.index + decision_artifact" in gate
-    assert "eligible review.index + rXX decision_ref → write-mode finalize" in gate
+    assert "rXX decision_ref 与既有 review.index 镜像 → write-mode finalize" in gate
 
 
 def test_review_gate_delegates_mechanical_decision_write_to_cli():
@@ -75,7 +75,7 @@ def test_defer_persists_but_other_does_not():
     lite = _read(LITE)
     assert "{accept, reject, defer}" in trace
     assert "Other 未写" in lite
-    assert "deferred dXX + 双索引" in lite
+    assert "deferred dXX + decision.index" in lite
 
 
 def test_lite_checklist_does_not_forbid_gate4():

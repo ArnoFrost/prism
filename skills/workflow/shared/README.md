@@ -81,4 +81,4 @@ skills/workflow/
 | `review-merge-spec.md` | 多角色评审结果合并规范 | workflow-review Merge 阶段 |
 | `topic-sniff-spec.md` | topic 前门路由统一规范 | 全部 workflow skills sniff 阶段 |
 | `skill-governance-contract.md` | workflow skill 压缩与语义边界治理契约；Evidence 留 topic，shared 只保留可复用规则 | workflow skill dogfood / governance |
-| `vocabulary.md` | 受控词汇 SSOT — 12 活跃术语（scope / goal / V / OQ / focus / task / wave / structure / phase / action / decision / decision-index）+ 3 废弃（plan / AP / decision-chain）+ kind 五元 + retention 律 | 全部 workflow skills + 各 topic 产物（cite，不复制定义） |
+| `vocabulary.md` | 受控词汇 SSOT — 14 活跃术语（scope / goal / V / OQ / focus / task / wave / structure / phase / review / finding / action / decision / decision-index）+ 3 废弃（plan / AP / decision-chain）+ kind 五元 + retention 律 | 全部 workflow skills + 各 topic 产物（cite，不复制定义） |

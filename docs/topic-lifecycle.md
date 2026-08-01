@@ -12,13 +12,13 @@ topic 是一个长期推进的专项工作区。它的目标不是记录更多�
 
 ## 生命周期总览
 
-Topic 有稳定工件关系，但没有必须完整执行的固定阶段。一个轻量问题可以在对话中自然结束；需要长期恢复和审计时才建立 Topic，再按当前认知熟源选择能力。
+Topic 有稳定工件关系，但没有必须完整执行的固定阶段。一个轻量问题可以在对话中自然结束；需要长期恢复和审计时才建立 Topic，再按当前认知熵源选择能力。
 
 ```mermaid
 flowchart LR
   I["Intake：建立容器"] --> S["Scope：稳定合同"]
   S --> F["Focus：当前工作集"]
-  C["Clarify：单问澄清"] -. "candidate / handoff" .-> I
+  C["Clarify：单问澄清"] -. "候选交接" .-> I
   C -. "任意阶段" .-> F
   F --> E["Execute：单一获权游标"]
   E -->|"验证、证据、当前态"| F
@@ -37,11 +37,11 @@ flowchart LR
 
 | 阶段 | 主要工件 | 作用 | 生命周期 |
 |------|----------|------|----------|
-| 澄清 | 对话 checkpoint；按需 candidate + handoff | 先查事实，逐个澄清阻塞性人类取舍 | 默认零写盘 |
+| 澄清 | 对话短确认；按需候选交接 | 先查事实，逐个澄清阻塞性人类取舍 | 默认零写盘 |
 | 入料 | `references/intake.md` | 保留来源意图，避免以后忘记为什么建 topic | persistent |
 | 合同 | `scope.md` | 定义目标、非目标、验收口径、约束、未决问题 | persistent |
 | 聚焦 | `focus.md` | 声明当前只看什么，作为 topic 入口 | rewrite |
-| 评审 | `reviews/rXX_*.md` | 暴露问题、风险、行动项 | append-only |
+| 评审 | `reviews/rXX_*.md` | 暴露评审发现、风险、结论与建议 | append-only |
 | 决策 | `decisions/dXX_*.md` / `decision.index.md` | Decision Record 原子固化明确授权，避免重复争论 | append-only / mutable index |
 | 结构 | `structures/task-N_slug/` | 当某个 scope-V 深化到自带 scope + wave 时出现 | 按需 |
 | 执行 | 当前 task wave、`verify/`、派生 focus | 推进一个已授权游标并闭合实现、验证与工件状态 | 单批次 |
@@ -51,12 +51,12 @@ flowchart LR
 
 ## 澄清与决策链
 
-Clarify 只提供 checkpoint 或 candidate，不把推荐当作授权，也不正式写 Scope / Decision。无 Topic 时，需要治理的 candidate 交 Intake；已有 Topic 时交回现有 workflow。
+Clarify 只提供短确认或候选内容，不把推荐当作授权，也不正式写 Scope / Decision。无 Topic 时，需要治理的候选内容交 Intake；已有 Topic 时交回现有 workflow。
 
 intake 初始收敛可在用户明确授权后直接进入 Scope。Review 驱动或达到长期审计门槛的合同变化必须经过：
 
 ```text
-review findings
+评审发现（finding）
   ↓
 human Accept / Reject / Defer
   ↓
@@ -168,7 +168,7 @@ index_style: narrative          # 或 anchored / manual
 - 为一次性小修创建 task。
 - 把 focus 当进度日志。
 - 把 README 继续当新 topic 的当前工作集。
-- 把 Clarify candidate 直接当作正式合同或决策。
+- 把 Clarify 候选内容直接当作正式合同或决策。
 - review 后直接改 scope，而不经 Decision Record。
 - 手写 dXX 和 index，绕过明确授权与可审计事件双门。
 - task 内另开 reviews/decisions，导致决策链分叉。

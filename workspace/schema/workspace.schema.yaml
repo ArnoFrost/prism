@@ -46,7 +46,7 @@ topic:
     optional:
       - references/         # 依据/来源（3.0 起 intake = 来源留档归此；含 vocabulary 软链等）
       - "references/intake.md"  # 来源意图留档（kind=state，retention=persistent）
-      - review.index.md     # 评审辅助索引（仅列被 decision 引用的 review，主索引由 decision.index 承担）
+      - review.index.md     # 可选派生评审导航索引（absence-is-valid，主索引由 decision.index 承担）
       - reviews/            # 评审轮次产物（rXX.S / rXX.tN_short-desc.md）
       - "reviews/raw/"      # 原始角色报告（可选保留）
       - decisions/          # 决策记录（dXX.S / dXX.tN_short-desc.md）

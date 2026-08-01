@@ -17,7 +17,7 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 
 完整定义请直接查看 SSOT：
 
-- **协议级 SSOT**：[`skills/workflow/shared/vocabulary.md`](../skills/workflow/shared/vocabulary.md)（12 活跃 + 3 废弃，按 3.0 分层语义认知地图排序 + 中英对照 + 易混淆对比 + §kind 五元 / §retention 两根正交轴）
+- **协议级 SSOT**：[`skills/workflow/shared/vocabulary.md`](../skills/workflow/shared/vocabulary.md)（14 活跃 + 3 废弃，按 3.0 分层语义认知地图排序 + 中英对照 + 易混淆对比 + §kind 五元 / §retention 两根正交轴）
 
 术语速查表（顺序 = 3.0 认知地图；「排序视角」仅为阅读分组，**非分类体系**；详细定义见 SSOT）：
 
@@ -32,6 +32,8 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 | **wave** | 批次（时间推进单元，3.0 重定义）| Wave | 结构三轴 |
 | **structure** | 结构（容器 kind）| Structure | 结构三轴 |
 | **phase / P** | 阶段 | Phase | 执行 |
+| **review / r** | 评审 | Review | 治理事件 |
+| **finding** | 评审发现 | Finding | 治理事件 |
 | **action** | 行动项（旧称 AP）| Action | 执行 |
 | **decision / d** | 决策 | Decision (event) | 治理事件 |
 | **decision-index** | 决策索引（含链语义）| Decision index | 治理事件 |

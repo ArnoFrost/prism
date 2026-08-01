@@ -24,7 +24,7 @@
 | Catalog public surface | 退出 | 改为 `internal / stable` compatibility entry |
 | AGENTS 现役技能表 | 退出 | 仅保留兼容说明，不作为常规入口 |
 | Workspace 默认模板 | 退出 | 新项目不再展示“轻量评审”动作 |
-| Review recommendation | 退出 | 小改路由到模型原生自检或 Clarify |
+| Review 建议入口 | 退出 | 小改路由到模型原生自检或 Clarify |
 | Skill 显式调用 | 保留 | `user_invocable: true` |
 | Legacy dist 携带 | 保留 | 兼容旧安装和显式调用，不代表推荐 |
 | `type: review-lite` 解析 | 保留 | product / trace validator 继续分档 |

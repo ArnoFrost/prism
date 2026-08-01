@@ -35,12 +35,12 @@ focus 是 topic 入口与当前光标，模板分两区（见 `templates/topic-f
 
 | 区 | 内容 | retention | rewrite 行为 |
 |----|------|-----------|-------------|
-| **保留区** | 入口导航：AI 规范入口 + scope/decision.index/review.index 双链 | rewrite 豁免 | 只随结构变化更新，每轮 rewrite **不动** |
+| **保留区** | 入口导航：AI 规范入口 + scope；decision.index / review.index / structures 仅在实际存在时加入 | rewrite 豁免 | 只随结构变化更新，每轮 rewrite **不动** |
 | **聚焦区** | 光标快读面（当前态/下一步）+ 4 字段（goal/input/output/non-goal） | rewrite | 每轮整体重写；**「主体 ≤30 行」只数本区** |
 
 - 「主体 ≤30 行」与分叉判据 **S1（连续 2 次 rewrite 仍超行）只数聚焦区**，保留区不计入。
-- 累积性内容**不进 focus 任何区**：关键决策归 `decision.index`，参考资料归 `references/` 或保留区双链。
-- 可读性机器度量（行数 / 字段合规 / 单行密度 / 双链完整）见 [focus-readability-checklist.md](./focus-readability-checklist.md)。
+- 累积性内容**不进 focus 任何区**：关键决策归 `decision.index`，参考资料归 `references/` 或保留区导航。
+- 可读性机器度量（行数 / 字段合规 / 单行密度 / 核心导航完整）见 [focus-readability-checklist.md](./focus-readability-checklist.md)。
 
 ## 长期工作分解去向（取代 plan「总计划」段）
 

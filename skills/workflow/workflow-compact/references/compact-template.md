@@ -28,7 +28,7 @@
 | summarize | `reviews/r01_*.md` | 长评审，可保留 TL;DR 指针 | 生成摘要，不改原文 |
 | delete-candidate | `temp/foo.md` | 临时重复文件 | 仅列出，不删除 |
 
-## Proposed Writes
+## 拟写入内容
 
 | 文件 | 动作 | 风险 |
 |------|------|------|

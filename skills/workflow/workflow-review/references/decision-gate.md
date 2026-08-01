@@ -25,18 +25,18 @@ question:
     评审已完成 — 决策摘要：
 
     📌 产物：reviews/{实际文件名}.md
-    📊 量化：独立发现率 {pct}% ｜ P0×{n0} / P1×{n1} / P2×{n2} ｜ {M} 条行动项
+    📊 量化：独立发现率 {pct}% ｜ P0×{n0} / P1×{n1} / P2×{n2} ｜ {M} 条建议
     🎯 核心方案：{≤ 30 字浓缩}
     ❓ 未决：OQ-1 {...} / OQ-2 {...}（无悬而未决项时显式声明）
 
     请确认下一步：
   options:
     - id: accept
-      label: "Accept — 记录 decisions/d{NN}.md，方案落地（AP-X ~ AP-Y）+ prism finalize 收尾"
+      label: "Accept — 记录 decisions/d{NN}.md，将建议转为 action、scope 变更或执行目标，并 finalize 收尾"
     - id: reject
-      label: "Reject — 记录 rejected d{NN} + 双索引 + finalize，再重新 review 或调整 scope"
+      label: "Reject — 记录 rejected d{NN} + decision.index + finalize，再重新 review 或调整 scope"
     - id: defer
-      label: "Defer — 记录 deferred d{NN} + 双索引 + finalize，先确认 OQ-X（不更新 scope/focus）"
+      label: "Defer — 记录 deferred d{NN} + decision.index + finalize，先确认 OQ-X（不更新 scope/focus）"
     - id: type_something
       label: "Other — 自由说明 / 修订方案后再决"
 ```
@@ -49,10 +49,10 @@ question:
 `prompt` 字段**禁止**死字符串占位（如"评审已完成 + 产物路径"），必须实写：
 
 1. **📌 产物路径** — 含 rXX_xxx.md 实际文件名
-2. **📊 量化** — 独立发现率 `X%` ｜ `P0×n0 / P1×n1 / P2×n2` ｜ 行动项 `M` 条（lite 省略独立发现率）
+2. **📊 量化** — 独立发现率 `X%` ｜ `P0×n0 / P1×n1 / P2×n2` ｜建议 `M` 条（lite 省略独立发现率）
 3. **🎯 核心方案** — ≤ 30 字 TL;DR
 4. **❓ Open Questions** — 列表（无 OQ 时显式声明"无悬而未决项"）
-5. 各 option 的 `label` 写**具体动作**（含 dXX 编号 / AP-X~AP-Y / OQ-X），不泛化
+5. 各 option 的 `label` 写**具体后续**（含 dXX 编号 / action、scope 变更、执行目标或 OQ-X），不泛化
 
 完整示例 + 反例见 SSOT [askquestion-fallback.md §4.2](../../shared/references/askquestion-fallback.md)。
 
@@ -63,7 +63,7 @@ question:
 - agent 把自由文本**原样回收当作"方案修订意图"**
 - **不**立即写 `decisions/dXX.md`
 - **不**强行解释为 Accept / Reject / Defer
-- 让用户继续描述修订方向 / 回答 OQ / 调整 AP，之后再回到 Gate 4 重新决策
+- 让用户继续描述修订方向 / 回答 OQ / 调整建议，之后再回到 Gate 4 重新决策
 
 > 设计动机：强结构化曾把"先改 X 再决"逼成假 Defer，反劣化共识。Other 选项 = 拒绝把含糊文本解释为既定决策的口袋兜底。
 
@@ -81,12 +81,14 @@ Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 
 
 | 选择 | 后续动作 |
 |------|---------|
-| `accept` | 调用 `prism decision record --source review --review-ref rXX` 写 accepted dXX 主链；对齐 review 镜像后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
-| `reject` | 调用 Decision record 写 rejected dXX 主链；对齐 review 镜像后 `prism finalize`；按用户意图重启 review 或调 scope |
-| `defer` | 调用 Decision record 写 deferred dXX 主链；对齐 review 镜像后 `prism finalize`；不修改 scope/focus |
-| `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向 / 回答 OQ / 调整 AP，之后重新 Gate 4。**禁止**把含糊文本解释为 Accept |
+| `accept` | 调用 `prism decision record --source review --review-ref rXX` 写 accepted dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
+| `reject` | 调用 Decision record 写 rejected dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；按用户意图重启 review 或调 scope |
+| `defer` | 调用 Decision record 写 deferred dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；不修改 scope/focus |
+| `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向 / 回答 OQ / 调整建议，之后重新 Gate 4。**禁止**把含糊文本解释为 Accept |
 
-> **事务顺序**：review 落盘为 pending synthesis → 决策前只读 validators → Gate 4 → `prism decision record` 原子写 dXX + decision.index + decision_artifact → 对齐 eligible review.index + rXX decision_ref → write-mode finalize。禁止 Gate 4 前 finalize。
+> **事务顺序**：review 落盘为 pending synthesis → 决策前只读 validators → Gate 4 → `prism decision record` 原子写 dXX + decision.index + decision_artifact → 对齐 rXX decision_ref 与既有 review.index 镜像 → write-mode finalize。禁止 Gate 4 前 finalize。
+
+Review Gate 前只使用“评审发现 / 建议 / 候选行动 / 待裁决选项”；用户授权后才使用“Decision / action / scope 变更 / 执行目标”。未被采纳的 Finding 留在 rXX 历史现场，不形成独立链条。
 
 Decision record 的授权双门、参数与幂等合同见 [decision-record-spec.md](../../shared/decision-record-spec.md)。Review 调用使用 `source=review`、`--review-ref rXX`，稳定幂等键建议为 `<topic>:<rXX>:gate4`；CLI 不替 Gate 4 判断用户是否已经接受。
 
@@ -106,6 +108,6 @@ Gate 4 产生 Accept/Reject/Defer 并写 dXX 后，必须在 dXX 中输出 `deci
 - **禁止**静默选 Accept；模糊回复（"好" / "行" / "OK" / "嗯"）一律视为未确认，重展候选 + 再问
 - `PRISM_NO_INTERACTIVE=1` 路径下决策门**必须 fail**，调用方需用 `--decision=accept|reject|defer` 显式提供
 - 解析失败 / 超时 / 用户取消时**禁止写入** `decisions/dXX.md`
-- text_fallback 命中 Accept/Reject/Defer 后必须立即调用 Decision record，再对齐 review 镜像；Other 不写
+- text_fallback 命中 Accept/Reject/Defer 后必须立即调用 Decision record，再对齐 rXX decision 镜像与既有 review.index；Other 不写
 
 ⛔ 决策门不可跳过。错选 + 串联 `prism finalize` 会固化错误共识，回溯成本高。

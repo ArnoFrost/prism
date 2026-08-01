@@ -32,11 +32,11 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 |---|---|---|---|---|---|
 | `workspace-init` | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 | public / stable |
 | `workflow-intake` | 输入熵 | 原始需求、散落上下文 | `references/intake.md`、初始 scope/focus | 按需 | public / stable |
-| `workflow-clarify` | 阻塞歧义 | 任意阶段的当前对话、可查事实、按需 scope/focus | 单问 checkpoint；按需 candidate + handoff | 默认零写盘 | dev / experimental |
+| `workflow-clarify` | 阻塞歧义 | 任意阶段的当前对话、可查事实、按需 scope/focus | 单问短确认；按需候选交接 | 默认零写盘 | dev / experimental |
 | `workflow-scope` | 边界熵 / 注意力熵 | decision / review / scope | 更新 `scope.md`，刷新 `focus.md`，同步 task.index | 按需 | public / stable |
 | `workflow-execute` | 执行漂移 / 工件脱节 | 唯一 structured task/wave 或合格 topic-focus + 项目代码 | 实现、验证、证据、派生 focus 与机械校验 | 按需 | dev / experimental |
-| `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色 findings、actions、rXX | 按需 | public / stable |
-| `workflow-review-lite` | 历史轻量分析熵 | 旧 topic / 显式兼容调用 | 单视角 findings、actions | retired-with-compat | internal / stable |
+| `workflow-review` | 分析熵 | 方案、diff、topic 状态 | 多角色评审发现、结论、建议、rXX | 按需 | public / stable |
+| `workflow-review-lite` | 历史轻量分析熵 | 旧 topic / 显式兼容调用 | 单视角评审发现与建议 | retired-with-compat | internal / stable |
 | `workflow-tidy` | 工件熵 | topic 工件、索引、frontmatter | 机械对齐后的索引/元数据 | 辅助 | public / stable |
 | `workflow-status` | 方向熵 / 健康熵 | workspace / topic | report-first 健康报告 + `next_actions[]` handoff | 辅助 | public / stable |
 | `workflow-digest` | 沟通熵 | topic 工件 | 面向协作者的状态快照 | 辅助 | public / stable |
@@ -57,7 +57,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 ### 下一阶段被一个关键取舍阻塞
 
-用 `workflow-clarify`。它是任意阶段按需 sidecar：先调查可查事实，再一次只问一个人类取舍；默认不写盘，只有用户明确要求时才把 candidate 交给既有 workflow。
+用 `workflow-clarify`。它是任意阶段按需 sidecar：先调查可查事实，再一次只问一个人类取舍；默认不写盘，只有用户明确要求时才把候选内容交给既有 workflow。
 
 ### 方向变了，或需要多视角判断
 

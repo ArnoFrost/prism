@@ -5,7 +5,7 @@
   M1 聚焦区主体行数 ≤ 30
   M2 4 字段合规（goal/input/output/non-goal 各且仅一次）
   M3 聚焦区单行密度 ≤ 120 字符
-  M4 保留区双链完整（scope / decision.index / review.index 链接齐）
+  M4 保留区核心导航完整（scope 链接存在；decision/review 索引为存在时导航）
 
 只度量 migration_state == focus_active 的 topic（plan/none 跳过）。
 零外部依赖，纯 stdlib。复用 parse_utils.resolve_work_file 选定工作集文件。
@@ -26,7 +26,7 @@ from parse_utils import resolve_work_file, read_file
 M1_MAX_LINES = 30
 M3_MAX_LINE_LEN = 120
 FIELDS = ("goal", "input", "output", "non-goal")
-NAV_LINKS = ("scope.md", "decision.index.md", "review.index.md")
+REQUIRED_NAV_LINKS = ("scope.md",)
 
 
 def _strip_frontmatter(text: str) -> str:
@@ -75,13 +75,13 @@ def measure(topic_dir: str) -> dict:
     m1 = len(flines)
     m2 = sum(1 for f in FIELDS if re.search(rf"^\s*{re.escape(f)}\s*:", focus, re.MULTILINE))
     m3 = max((len(ln) for ln in flines), default=0)
-    m4_missing = [l for l in NAV_LINKS if l not in nav_source]
+    m4_missing = [l for l in REQUIRED_NAV_LINKS if l not in nav_source]
 
     checks = {
         "M1_body_lines": {"value": m1, "pass": m1 <= M1_MAX_LINES, "limit": M1_MAX_LINES},
         "M2_fields": {"value": f"{m2}/4", "pass": m2 == 4},
         "M3_max_line": {"value": m3, "pass": m3 <= M3_MAX_LINE_LEN, "limit": M3_MAX_LINE_LEN},
-        "M4_nav_links": {"value": f"{len(NAV_LINKS) - len(m4_missing)}/{len(NAV_LINKS)}",
+        "M4_nav_links": {"value": f"{len(REQUIRED_NAV_LINKS) - len(m4_missing)}/{len(REQUIRED_NAV_LINKS)}",
                           "pass": not m4_missing, "missing": m4_missing},
     }
     return {"topic": code, "skipped": False,
@@ -111,7 +111,7 @@ def main(argv=None) -> int:
     if args.json:
         print(json.dumps(results, ensure_ascii=False, indent=2))
     else:
-        print("focus 可读性度量（M1≤30 / M2=4 / M3≤120 / M4 双链齐）:")
+        print("focus 可读性度量（M1≤30 / M2=4 / M3≤120 / M4 核心导航齐）:")
         for r in results:
             print(_fmt(r))
 

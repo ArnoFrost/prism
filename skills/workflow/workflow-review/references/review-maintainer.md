@@ -133,7 +133,7 @@ prism/skills/                         ← SDK 仓库内置
 
 ### 4.5 decision_artifact 决策痕迹（r18 PostFix · 019/020 真实观测）
 
-**触发场景**：019/r01（5/12 14:18）与 020/r01（5/12 18:12）均完成评审，TL;DR + 行动项齐备，但两个 topic 的 `decisions/` 目录**均为空**。
+**触发场景**：019/r01（5/12 14:18）与 020/r01（5/12 18:12）均完成评审，TL;DR + 建议齐备，但两个 topic 的 `decisions/` 目录**均为空**。
 
 **根因**：IDE 文本流 fallback 让 agent 把"用户口头答 Accept"等同于"决策已记录"，跳过 dXX.md 落盘。**无痕迹 = 无 enforce** 是同根痛点（同 r16 task_probe 教训）。
 
@@ -214,7 +214,7 @@ review 与 review-lite 共享 `reviews/rXX_*.md` 同一流水编号池，lite �
 
 - mode=full 仍优先真实并发 / 多角色探索；3.1 施工串行不等于 review 串行
 - `task_probe` / `merge_artifact` / Gate 4 pending synthesis 仍是主入口可见硬锚点
-- 报告合成要先给 judgment / OQ / 分歧 / 行动项，再进入 Gate 4 决策；可吸收 grillme-like 追问体验，但不在 3.1 内置 grillme/clarify
+- 报告合成要先给结论 / OQ / 分歧 / 建议，再进入 Gate 4 决策；可吸收 grillme-like 追问体验，但不在 3.1 内置 grillme/clarify
 - CLI / validator 只提供 `hotpath_envelope` 的机械事实，不替代 Agent 的治理判断
 
 ## 5. 维护节奏

@@ -13,7 +13,7 @@ cases:
     input: "刚落了一轮 review，帮我把工件对齐一下，review.index 指针好像过时了"
     expect:
       route: workflow-tidy
-      must_do: ["默认 dry-run 输出 JSON diff", "只识别被 dXX.review_ref 引用的 eligible review.index 缺行 / frontmatter updated 漂移"]
+      must_do: ["默认 dry-run 输出 JSON diff", "只识别既有 review.index 中被 dXX.review_ref 引用的 eligible 缺行 / frontmatter updated 漂移"]
       must_not: ["未确认就写盘", "改 scope 目标/验收口径"]
       output_fields: ["JSON diff 预览", "安全项/语义项分类"]
     notes: "review 落盘后机械对齐 → tidy 主场景"
@@ -23,7 +23,7 @@ cases:
     input: "/workflow-tidy --fix 把该补的索引和日期都对齐了"
     expect:
       route: workflow-tidy (fix)
-      must_do: ["仅应用安全项：eligible review.index 补行 / frontmatter updated / grandfather 指针 / wikilink 残留", "输出修改摘要"]
+      must_do: ["仅应用安全项：既有 eligible review.index 补行 / rXX decision 镜像 / frontmatter updated / grandfather 指针 / wikilink 残留", "输出修改摘要"]
       must_not: ["自动勾选 scope checkbox", "移动 focus 条目", "自动补 decision.index"]
       output_fields: ["修改摘要", "语义项仅报告清单"]
     notes: "--fix 只落安全项，语义项恒仅报告"
@@ -57,3 +57,13 @@ cases:
       must_not: ["为无 README topic 臆造/新建 README 指针"]
       output_fields: ["grandfather skip 说明"]
     notes: "grandfather 指针仅对存量 README topic 生效"
+
+  - id: safety-03-review-index-optional
+    kind: safety
+    input: "这个新 topic 没有 review.index，tidy --fix 后保持最小骨架"
+    expect:
+      route: workflow-tidy (fix)
+      must_do: ["review.index.md 缺失视为合法", "只同步 rXX decision 镜像和其它既有安全项"]
+      must_not: ["自动创建 review.index.md", "把 finding 形成独立生命周期"]
+      output_fields: ["缺失合法说明或零 diff"]
+    notes: "review.index 是可选导航索引，不是治理主链"

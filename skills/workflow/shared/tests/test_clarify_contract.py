@@ -38,12 +38,15 @@ def test_clarify_defaults_to_one_question_and_zero_writes():
 
 def test_handoff_is_candidate_only_and_requires_authorization():
     text = HANDOFF.read_text(encoding="utf-8")
-    assert "candidate + handoff" in text.lower()
+    assert "候选交接" in text
     assert "requires_user_authorization: true" in text
     assert "writes: []" in text
-    assert "Clarify 只交 candidate" in text
+    assert "Clarify 只交候选内容" in text
     assert "command: prism decision record | null" in text
     assert "用户明确授权且属于可审计治理事件" in text
+    assert "review finding / OQ / 建议可作为 Clarify 输入材料" in text
+    assert "不等于接受 review 或授权写盘" in text
+    assert "无 topic 的正式治理需求先交 `workflow-intake`" in text
 
 
 def test_legacy_dist_profiles_do_not_gain_experimental_clarify():
@@ -68,10 +71,12 @@ def test_clarify_p0_dogfood_surfaces_are_named_in_evals():
         "clarify-no-topic-01",
         "clarify-topic-handoff-01",
         "clarify-review-oq-handoff-01",
+        "clarify-review-derived-auth-01",
         "clarify-skip-01",
     ):
         assert f"id: {case_id}" in text
 
     assert "自动创建 topic" in text
     assert "重开完整 Review" in text
+    assert "把建议命名为 action" in text
     assert "route: workflow-execute" in text

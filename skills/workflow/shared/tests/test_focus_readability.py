@@ -19,7 +19,7 @@ def _write(path, content):
         f.write(content)
 
 
-def _focus(reserved_links=("scope.md", "decision.index.md", "review.index.md"),
+def _focus(reserved_links=("scope.md",),
            fields=("goal", "input", "output", "non-goal"),
            extra_focus_lines=0, long_line=False):
     nav = "\n".join(f"| x | [{l}](./{l}) |" for l in reserved_links)
@@ -72,10 +72,18 @@ def test_m3_fail_dense_line(tmp_path):
 
 def test_m4_fail_missing_nav_link(tmp_path):
     t = str(tmp_path)
-    _write(os.path.join(t, "focus.md"), _focus(reserved_links=("scope.md", "decision.index.md")))
+    _write(os.path.join(t, "focus.md"), _focus(reserved_links=("decision.index.md", "review.index.md")))
     r = fr.measure(t)
     assert r["checks"]["M4_nav_links"]["pass"] is False
-    assert "review.index.md" in r["checks"]["M4_nav_links"]["missing"]
+    assert "scope.md" in r["checks"]["M4_nav_links"]["missing"]
+
+
+def test_m4_review_index_is_optional(tmp_path):
+    t = str(tmp_path)
+    _write(os.path.join(t, "focus.md"), _focus(reserved_links=("scope.md", "decision.index.md")))
+    r = fr.measure(t)
+    assert r["checks"]["M4_nav_links"]["pass"] is True
+    assert "review.index.md" not in r["checks"]["M4_nav_links"]["missing"]
 
 
 def test_plan_legacy_skipped(tmp_path):

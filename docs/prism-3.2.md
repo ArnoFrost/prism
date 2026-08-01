@@ -17,7 +17,7 @@ flowchart LR
   X["混沌输入"] --> I["Intake"]
   I --> S["Scope"]
   S --> F["Focus"]
-  C["Clarify"] -. "任意阶段按需；candidate" .-> I
+  C["Clarify"] -. "任意阶段按需；候选交接" .-> I
   F --> E["Execute"]
   E -->|"证据与当前态"| F
   F --> R["Review"]
@@ -33,16 +33,18 @@ flowchart LR
 | 能力 | 负责 | 不负责 |
 |------|------|--------|
 | **Clarify** | 先调查事实，再用单问 micro-loop 澄清阻塞性人类取舍 | 不替用户决策；默认不写 Scope、Decision 或新 Topic |
-| **Review** | 按风险组织多视角调查，合并 findings、结论、风险和行动 | 不以硬阈值决定用户“配不配”做正式评审；不替用户接受结论 |
+| **Review** | 按风险组织多视角调查，合并评审发现、结论、风险和建议 | 不以硬阈值决定用户“配不配”做正式评审；不替用户接受结论，不把建议冒充为授权行动 |
 | **Decision Record** | 在明确授权与可审计治理事件同时成立后，原子记录裁决、索引和痕迹 | 不做价值判断；不自动改 Scope；不选择下一步 |
-| **Scope** | 维护目标、边界、验收与约束，并派生 Focus / task 结构 | 不从裸 review 或 clarify candidate 静默落权 |
+| **Scope** | 维护目标、边界、验收与约束，并派生 Focus / task 结构 | 不从裸 review 或 Clarify 候选静默落权 |
 | **Execute** | 推进一个现存且获权的 task / wave，完成实现、验证、证据与 Focus 对齐 | 不规划队列；不自动消费下一个游标；不改治理合同 |
 
-Clarify 的 checkpoint 可以自然结束，也可以在用户明确要求后形成 candidate + handoff。无 Topic 时，治理需求先交 Intake；已有 Topic 时交回既有 workflow。只有 intake 初始收敛且用户明确授权时可直接进入 Scope；review 驱动或达到长期审计门槛的合同变化走 Decision → Scope。
+Clarify 可以自然结束，也可以在用户明确要求后形成候选交接。无 Topic 时，治理需求先交 Intake；已有 Topic 时交回既有 workflow。只有 intake 初始收敛且用户明确授权时可直接进入 Scope；review 驱动或达到长期审计门槛的合同变化走 Decision → Scope。
 
 ## 评审与兼容
 
-正式 Review 由用户意图触发。需要多视角时就执行多视角调查，角色数量按风险和信息面调整；报告先完整展示结论、findings、风险、行动和未决问题，再进入 Accept / Reject / Defer Gate。
+正式 Review 由用户意图触发。需要多视角时就执行多视角调查，角色数量按风险和信息面调整；报告先完整展示评审发现、结论、建议、风险和未决问题，再进入 Accept / Reject / Defer Gate。
+
+Review 是一次有边界的判断事件，不是长期治理状态。Finding 只是基于证据形成的局部观察或问题判断；未被采纳时保留在 rXX 历史现场即可。只有用户 Accept / Reject / Defer 后进入 Decision chain，或用户另行显式授权后，建议才能转化为 scope 变更、action、执行目标或后续正式治理事件。
 
 `workflow-review-lite` 自 3.2 起是 retired-with-compat：不出现在 active/default/recommended 路径，只保留显式 legacy 调用、旧 Topic 和旧 `type: review-lite` 产物兼容。日常轻量判断使用模型原生自检，阻塞歧义使用 Clarify，需要持久多视角判断使用 Review。
 

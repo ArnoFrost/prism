@@ -683,9 +683,8 @@ def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
                             "topic 已有 decisions/dXX_*.md 但缺 decision.index.md（决策链主索引）；"
                             "schema recommended — 新 topic 应建索引承载事件链 SSOT", False))
 
-    # review.index.md — 评审辅助索引（schema optional，仅在已存在时校验内容一致性）
-    # 历史 topic 可能仅有 review.index.md（主索引地位由 decision.index 承担前的旧形态）；
-    # 这里保留对已存在 review.index.md 的轮次记录校验，不强制新 topic 创建。
+    # review.index.md — 可选导航索引（仅在已存在时校验内容一致性）。
+    # 缺失合法；这里保留对旧 topic 已存在 review.index.md 的轮次记录校验。
     review_index = topic_dir / "review.index.md"
     if review_index.is_file():
         try:

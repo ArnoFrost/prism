@@ -188,7 +188,7 @@ workflow/workflow-status/
 |------|------|--------|
 | **status**（本技能）| 健康度巡检 → 报告 → 建议 | 可在任意阶段调用，不改变工件 |
 | **intake** | 入料 → 路由 → 初始化 | status 可检测 intake 产出的骨架完整性；用户新需求归属不明时由 Agent 建议，不由 CLI status 猜测 |
-| **review** | 评审 → 仲裁 → 行动计划 | status 统计评审轮次 |
+| **review** | 评审 → 仲裁 → 建议 | status 统计评审轮次 |
 | **scope** | 边界收敛与合同维护 | status 统计验收进度 |
 | **archive** | 归档已验收专项 | status 仅建议 preview；移动必须由 archive Gate + 用户接受 |
 | **digest** | 对外状态通报 | 用户有通报意图时由 Agent 建议，不由 CLI status 猜测 |

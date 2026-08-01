@@ -10,23 +10,23 @@ eval_notes: >
   （见 topic 002 scope：评估分非唯一 KPI，不为刷分堆声明）。
 cases:
   - id: trigger-01
-    kind: should_trigger
-    input: "这个小改动帮我快速对齐一下 scope/focus，给个结论和行动项"
+    kind: should_not_trigger
+    input: "这个小改动帮我快速对齐一下 scope/focus，给个结论和建议"
     expect:
-      route: workflow-review-lite
-      must_do: ["单视角 Scan 输出 findings + actions", "落盘后只读校验再触发 Gate4", "Accept/Reject/Defer 写 dXX + 双索引后 finalize"]
-      must_not: ["多角色并行", "merge 仲裁", "产 raw/"]
-      output_fields: ["Summary/TL;DR", "Findings", "Actions"]
-    notes: "日常迭代 / 快速对齐 → lite 主场景"
+      route: model-native self-check or workflow-clarify
+      must_do: ["不调用 retired-with-compat lite", "需要持久审计时再显式 workflow-review"]
+      must_not: ["workflow-review-lite", "写 rXX", "写 review.index"]
+      output_fields: ["自然语言结论或澄清问题"]
+    notes: "日常迭代 / 快速对齐 → 3.2 默认模型原生或 Clarify，不再触发 lite"
 
   - id: trigger-02
     kind: should_trigger
     input: "刚改完这版，帮我 review lite 一下有没有明显问题"
     expect:
       route: workflow-review-lite
-      must_do: ["单视角 findings 分级 P0/P1/P2"]
+      must_do: ["单视角 finding 分级 P0/P1/P2", "Gate 前输出建议/候选行动"]
       must_not: ["升 full 除非触发方向/里程碑/分歧条件"]
-      output_fields: ["Findings", "Actions"]
+      output_fields: ["Findings", "建议"]
     notes: "触发短语『review lite』直呼 → lite"
 
   - id: negative-01

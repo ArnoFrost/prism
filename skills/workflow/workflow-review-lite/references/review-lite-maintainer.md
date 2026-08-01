@@ -50,10 +50,10 @@
 
 ```text
 1. 📌 产物路径（含 rXX 实际文件名）
-2. 📊 量化摘要（P0/P1/P2 × n ｜ 行动项 M 条）
+2. 📊 量化摘要（P0/P1/P2 × n ｜建议 M 条）
 3. 🎯 核心结论（≤30 字）
 4. ❓ Open Questions 列表
-5. 各 option label 写具体后续动作（含 dXX / AP / OQ）
+5. 各 option label 写具体后续动作（含 dXX / action、scope 变更或 OQ）
 ```
 
 ## 目录结构
