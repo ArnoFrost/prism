@@ -43,3 +43,23 @@ def test_active_templates_keep_the_lightweight_governance_contract() -> None:
     assert "intake → scope → review → decision" not in project
     assert "[decision.index.md]" not in focus
     assert "[review.index.md]" not in focus
+
+
+def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() -> None:
+    surfaces = [
+        ROOT / "README.md",
+        ROOT / "AGENTS.md",
+        ROOT / "docs" / "prism-3.2.md",
+        ROOT / "docs" / "skill-taxonomy.md",
+    ]
+    forbidden = [
+        "主工作流顺序",
+        "完整的人机协作管线",
+        "candidate / handoff",
+        "正式合同变化只有两条入口",
+    ]
+
+    for path in surfaces:
+        text = path.read_text(encoding="utf-8")
+        for phrase in forbidden:
+            assert phrase not in text, f"{phrase!r} leaked into {path}"

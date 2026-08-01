@@ -28,7 +28,8 @@ def test_release_version_is_consistent() -> None:
     assert prism_package["version"] == package_version
     assert changelog.count(f"## [{release}]") == 1
     assert current_release in readme
-    assert f"stage-{release}-release--candidate" in readme
+    assert f"stage-{release}-release" in readme
+    assert f"stage-{release}-release--candidate" not in readme
 
 
 def test_v32_release_narrative_preserves_experimental_boundaries() -> None:

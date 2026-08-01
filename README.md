@@ -5,7 +5,7 @@
 **轻量管理长期人机协作中的认知熵。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Stage](https://img.shields.io/badge/stage-v3.2.0-release--candidate-blue)](CHANGELOG.md)
+[![Stage](https://img.shields.io/badge/stage-v3.2.0-release-blue)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
 [快速开始](#快速开始) · [生命周期](#生命周期总览) · [认知熵与 Skills](#认知熵与-workflow-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
@@ -43,7 +43,7 @@ flowchart TB
   subgraph governance ["认知治理层 · Prism"]
     I["intake：接住输入"] --> S["scope：稳定边界"]
     S --> F["focus：暴露当前工作集"]
-    C["clarify：按需澄清"] -. "candidate / handoff" .-> I
+    C["clarify：按需澄清"] -. "候选交接" .-> I
     R["review：多视角判断"] --> DR["decision：授权事实"]
     DR --> S
     E["execute：单游标执行"] --> F
@@ -131,7 +131,7 @@ Prism 内置 **workflow** 是一组可选的认知熵治理能力：按当前问
 | 你想… | 优先 skill / 入口 |
 |--------|-------------------|
 | 新需求不知归哪 | `/workflow-intake` |
-| 当前对话被一个人类取舍阻塞 | `/workflow-clarify`；默认零写盘，只给 candidate / handoff |
+| 当前对话被一个人类取舍阻塞 | `/workflow-clarify`；默认零写盘，只给候选交接 |
 | 决策后更新边界 | `/workflow-scope` |
 | 继续当前 task / wave，并同步代码与工件 | `/workflow-execute` |
 | 方向变更 / 里程碑需要多视角判断 | `/workflow-review`；结论先完整呈现，再进入人类 Gate |
@@ -139,7 +139,7 @@ Prism 内置 **workflow** 是一组可选的认知熵治理能力：按当前问
 | 看进度 / 下一步 | `/workflow-status` |
 | 升级 SDK | `prism update` · `./setup.sh update` |
 
-正式合同变化只有两条入口：intake 初始收敛可在用户明确授权后直接进入 Scope；review 驱动或需要长期审计的变化必须先形成 Decision Record，再由 Scope 更新合同。Clarify 不替代这两个授权入口。
+合同变化按授权强度分级：intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆的 scope 修正可由显式授权进入 Scope；review 驱动或需要长期审计的变化先形成 Decision Record，再由 Scope 更新合同；尚无合法 Topic 时先走 Intake。Clarify 只交候选内容，不替代授权入口。
 
 ---
 

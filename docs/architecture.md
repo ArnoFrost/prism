@@ -118,7 +118,7 @@ flowchart LR
 
 - **Scope 是 Focus 与 task 结构分解的唯一上游 SSOT**。
 - Clarify 默认零写盘，只提供短确认或候选交接，不正式写 Scope / Decision。
-- intake 初始收敛可在用户明确授权后直接进入 Scope；review 驱动或长期审计合同变化必须经 Decision → Scope。
+- intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆的 scope 修正可由显式授权进入 Scope；review 驱动或长期审计合同变化必须经 Decision → Scope。
 - Review 负责多视角发现和仲裁；Decision Record 只机械记录明确授权，不判断价值或选择 Next。
 - Execute 只推进一个现存获权游标，完成后停止，不自动消费后续 task / wave。
 

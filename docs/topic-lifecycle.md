@@ -53,7 +53,7 @@ flowchart LR
 
 Clarify 只提供短确认或候选内容，不把推荐当作授权，也不正式写 Scope / Decision。无 Topic 时，需要治理的候选内容交 Intake；已有 Topic 时交回现有 workflow。
 
-intake 初始收敛可在用户明确授权后直接进入 Scope。Review 驱动或达到长期审计门槛的合同变化必须经过：
+合同变化按授权强度分级：intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆的 scope 修正可由显式授权进入 Scope。Review 驱动或达到长期审计门槛的合同变化必须经过：
 
 ```text
 评审发现（finding）

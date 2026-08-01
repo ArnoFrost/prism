@@ -38,7 +38,9 @@ flowchart LR
 | **Scope** | 维护目标、边界、验收与约束，并派生 Focus / task 结构 | 不从裸 review 或 Clarify 候选静默落权 |
 | **Execute** | 推进一个现存且获权的 task / wave，完成实现、验证、证据与 Focus 对齐 | 不规划队列；不自动消费下一个游标；不改治理合同 |
 
-Clarify 可以自然结束，也可以在用户明确要求后形成候选交接。无 Topic 时，治理需求先交 Intake；已有 Topic 时交回既有 workflow。只有 intake 初始收敛且用户明确授权时可直接进入 Scope；review 驱动或达到长期审计门槛的合同变化走 Decision → Scope。
+Clarify 可以自然结束，也可以在用户明确要求后形成候选交接。无 Topic 时，治理需求先交 Intake；已有 Topic 时交回既有 workflow。
+
+合同变化按授权强度分级：intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆的 scope 修正可由显式授权进入 Scope；review 驱动或达到长期审计门槛的合同变化走 Decision → Scope。
 
 ## 评审与兼容
 
