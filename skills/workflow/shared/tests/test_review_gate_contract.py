@@ -94,10 +94,33 @@ def test_defer_persists_but_other_does_not():
     lite = _read(LITE)
     assert "{accept, reject, defer}" in trace
     assert "Other 未写" in lite
-    assert "deferred dXX + decision.index" in lite
+    assert "调用 `prism decision record --source review` 写 deferred dXX 主链" in lite
 
 
 def test_lite_checklist_does_not_forbid_gate4():
     text = _read(LITE)
     assert "未擅自触发多角色/Gate4" not in text
     assert "Gate 4 已完成或明确等待用户" in text
+
+
+def test_review_lite_no_size_threshold_routing():
+    lite = _read(LITE)
+    cases = _read(SDK_ROOT / "skills" / "workflow" / "workflow-review-lite" / "evals" / "cases.yaml")
+    maintainer = _read(SDK_ROOT / "skills" / "workflow" / "workflow-review" / "references" / "review-maintainer.md")
+    assert ">200 行 / 3+ 文件" not in cases
+    assert "不要用文件数 / 行数阈值替用户决定" in cases
+    assert "按固定规模阈值自动路由" in cases
+    assert "行数/文件数能枚举" not in maintainer
+
+
+def test_gate_contract_requires_decision_record_not_manual_dxx_index_append():
+    full = _read(FULL)
+    lite = _read(LITE)
+    gate = _read(GATE)
+    fallback = _read(SDK_ROOT / "skills" / "workflow" / "shared" / "references" / "askquestion-fallback.md")
+    assert "调用 `prism decision record` 写 dXX 主链" in full
+    assert "Accept/Reject/Defer 后调用 `prism decision record` 写 dXX 主链" in lite
+    assert "`prism decision record` 原子写 dXX + decision.index + decision_artifact" in gate
+    assert "调用 prism decision record 记录 accepted d12 主链" in fallback
+    assert "Accept/Reject/Defer 后写 dXX + decision.index" not in lite
+    assert "用户裁决后才写 dXX + decision.index" not in full

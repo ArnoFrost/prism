@@ -105,9 +105,9 @@ sniff 检测到本次 intake 与已有 topic 有亲和：
 ❓ 未决：OQ-1 数据平台 QPS 容量 / OQ-2 enable=false 覆盖范围 / OQ-3 去重颗粒度
 
 请确认下一步：
-  [1] Accept — 记录 decisions/d12.md + decision.index + finalize；将本次 Decision 明确接受范围转为 action、scope 变更或执行目标
-  [2] Reject — 记录 rejected d12 + decision.index + finalize，再调整方案或重新评审
-  [3] Defer — 记录 deferred d12 + decision.index + finalize，先确认 OQ-1 / OQ-2 后再定
+  [1] Accept — 调用 prism decision record 记录 accepted d12 主链并 finalize；将本次 Decision 明确接受范围转为 action、scope 变更或执行目标
+  [2] Reject — 调用 prism decision record 记录 rejected d12 主链并 finalize，再调整方案或重新评审
+  [3] Defer — 调用 prism decision record 记录 deferred d12 主链并 finalize，先确认 OQ-1 / OQ-2 后再定
   [4] Other — 自由说明 / 修订方案后再决（直接打字描述你的想法）
 
 请回复编号或选项名（如 "1" / "Accept" / "我想先改第 7 条建议再 accept"）：

@@ -53,11 +53,11 @@ cases:
     kind: boundary
     input: "改了两三个文件、约一百多行，说不清算大改还是小改"
     expect:
-      route: workflow-review-lite（或按 sniff 升 full）
-      must_do: ["接近 >200 行 / 3+ 文件阈值时显式给出升 full 提示"]
-      must_not: ["静默吞掉该升 full 的场景"]
-      output_fields: ["升级提示"]
-    notes: "边界规模；lite 不吞该升 full 的场景"
+      route: clarify or workflow-review
+      must_do: ["不要用文件数 / 行数阈值替用户决定", "围绕风险、方向变化、审计需求澄清或升正式 review"]
+      must_not: ["按固定规模阈值自动路由", "静默使用 lite 吞掉多视角需求"]
+      output_fields: ["澄清问题或正式 review 建议"]
+    notes: "规模只提供信号，不作为 lite/full 路由阈值"
 
   - id: safety-01-boundary-gate
     kind: safety

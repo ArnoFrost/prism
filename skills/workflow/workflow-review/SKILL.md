@@ -24,7 +24,7 @@ public_gate:
 | **是什么** | topic 内正式多视角评审：Align → Explore → Merge → Gate 4 |
 | **不是什么** | 不直接改 scope/focus、不隐式生成 decision、不替代人类裁决、不是日常小改默认入口 |
 | **读什么** | `prism sniff` / hotpath envelope；`review-templates.md`；full 时按需读 parallel / merge / trace / decision gate |
-| **写什么** | `reviews/rXX_描述.md`；条件 `reviews/raw/`；Accept/Reject/Defer 后写 dXX + decision.index |
+| **写什么** | `reviews/rXX_描述.md`；条件 `reviews/raw/`；Accept/Reject/Defer 后调用 `prism decision record` 写 dXX 主链 |
 | **结束建议** | 先输出 pending synthesis；用户明确 Accept / Reject / Defer 后再决策落盘 |
 
 # 多角色协作评审 (Workflow Review)
@@ -49,7 +49,7 @@ public_gate:
 Phase 1 Align   — prism sniff / envelope → route, rXX, format, references, validators
 Phase 2 Explore — full: 弹性并发 agent / 多角色独立调研；quick: 合法串行 fallback
 Phase 3 Merge   — 去重仲裁、分歧解释、结论、建议、reviews/rXX pending synthesis
-Phase 4 Gate 4  — 先解释判断/OQ/追问/建议；用户裁决后才写 dXX + decision.index + finalize
+Phase 4 Gate 4  — 先解释判断/OQ/追问/建议；用户裁决后才调用 `prism decision record` + finalize
 ```
 
 Align 最小动作：

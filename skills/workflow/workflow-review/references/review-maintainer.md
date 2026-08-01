@@ -142,7 +142,7 @@ prism/skills/                         ← SDK 仓库内置
 - `decision in {accept, reject, defer}` 且 `written: false` → 违约
 - `decision == "other"` 时禁止 `written=true`，必须填 `user_text`
 - `written: true` 但 `path` 为 null / 不存在 → 违约
-- text_fallback 路径下解析成功后必须立即写 dXX.md + 输出 `decision_artifact` 块（`decision_source: text_fallback`）
+- text_fallback 路径下解析成功后必须立即调用 `prism decision record`，再输出完整 `decision_artifact` 块（`decision_source: cli_record`）
 
 ### 4.6 Gate 4 第 4 项 Other 设计动因（r12 实测痛点）
 
@@ -152,12 +152,12 @@ prism/skills/                         ← SDK 仓库内置
 
 ### 4.7 mode 自动判定不可信（d11 B1 · r13 PostFix 收紧）
 
-**正常路径**（用户给出评审主题 + 材料路径可达 + 行数/文件数能枚举）一律走 §1 自动判定，**不强制 Ask** — 这是高频路径，对应 OQ3 not_overturn 原则。
+**正常路径**（用户给出评审主题 + 材料范围可枚举）一律走 §1 自动判定，**不强制 Ask** — 这是高频路径，对应 OQ3 not_overturn 原则。
 
 **仅当以下三个指标全部无法获得**时（**且**）才升格为 SSOT [askquestion-fallback.md §4.3.3](../../shared/references/askquestion-fallback.md) 边界澄清门：
 
 1. 评审材料路径不可达 / 完全空目录 / 内容无法读取
-2. 文件数无法枚举（如 glob 报错）
+2. 材料范围无法枚举（如 glob 报错）
 3. 当前 Agent 客户端的并行能力探测失败超过 1 次（不是"我没看到平台标识就保守"，要真探测）
 
 **伪触发反模式**（一律不算"不可信"，必须直接走 §1 自动判定）：
