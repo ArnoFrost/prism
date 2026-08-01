@@ -55,7 +55,7 @@ Phase 4 Verify  — product / trace / conservation 校验；只报告，不自�
 
 最小输入：
 
-- 授权来源：accepted dXX、用户显式 scope 偏移修正，或 intake 后边界收敛。
+- 授权来源：accepted dXX、用户显式 scope 偏移修正，或 intake 后边界收敛。Review-derived 合同变化必须经 accepted dXX；显式 scope 修正只覆盖独立、低风险、可逆的非 review-derived 偏移。
 - 当前合同：`scope.md` + `focus.md`（或 2.x 由 intake upgrade 处理）。
 - 机械 envelope：topic_dir、work file、structures 状态、allowed writes、validator plan。
 
@@ -90,7 +90,7 @@ scope / focus 格式、可读性、struct-vacuum 阈值、task spawn checklist �
 
 | Gate | 不可退化要求 |
 |------|--------------|
-| 授权 | scope 变更必须来自 accepted dXX、显式 scope 修正或 intake 收敛 |
+| 授权 | scope 变更必须来自 accepted dXX、显式 scope 修正或 intake 收敛；review-derived 合同变化不得绕过 accepted dXX |
 | Delta | 不可跳过；用户说“直接改”也要先列摘要 |
 | 上游 | focus / task.index 不脱离 scope 改写 |
 | 分版 | 禁 `scope-v2.md` / `focus-v2.md` |
@@ -122,7 +122,7 @@ scope / focus 格式、可读性、struct-vacuum 阈值、task spawn checklist �
 
 - **正常**：accepted dXX 后同步 scope → 勾/增 V → rewrite focus → validate。
 - **边界**：intake 后收敛正式边界 → 只收敛当前 topic；全新需求回 intake。
-- **错误**：拿 review 裸结论改 scope/focus → 拒绝，要求先 dXX 或显式 scope 授权。
+- **错误**：拿 review 裸结论改 scope/focus → 拒绝，要求先有 accepted dXX；只有非 review-derived 的低风险偏移才可显式 scope 授权。
 
 ## 9. 完工 Checklist
 

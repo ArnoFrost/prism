@@ -8,6 +8,8 @@ SCOPE = SDK_ROOT / "skills" / "workflow" / "workflow-scope" / "SKILL.md"
 TRACE = SDK_ROOT / "skills" / "workflow" / "shared" / "trace-artifacts-spec.md"
 GATE = SDK_ROOT / "skills" / "workflow" / "workflow-review" / "references" / "decision-gate.md"
 DECISION_RECORD = SDK_ROOT / "skills" / "workflow" / "shared" / "decision-record-spec.md"
+VOCAB = SDK_ROOT / "skills" / "workflow" / "shared" / "vocabulary.md"
+PRISM32 = SDK_ROOT / "docs" / "prism-3.2.md"
 
 
 def _read(path: Path) -> str:
@@ -124,3 +126,28 @@ def test_gate_contract_requires_decision_record_not_manual_dxx_index_append():
     assert "调用 prism decision record 记录 accepted d12 主链" in fallback
     assert "Accept/Reject/Defer 后写 dXX + decision.index" not in lite
     assert "用户裁决后才写 dXX + decision.index" not in full
+
+
+def test_review_derived_scope_changes_require_accepted_decision():
+    full = _read(FULL)
+    scope = _read(SCOPE)
+    clarify = _read(SDK_ROOT / "skills" / "workflow" / "workflow-clarify" / "SKILL.md")
+    prism32 = _read(PRISM32)
+    assert "Review 来源的合同变化必须经 accepted dXX" in full
+    assert "review-derived 合同变化不得绕过 accepted dXX" in scope
+    assert "review-derived 合同变化必须补 accepted dXX 后再改" in _read(
+        SDK_ROOT / "skills" / "workflow" / "workflow-scope" / "evals" / "cases.yaml"
+    )
+    assert "Review 建议只有在用户 Accept / Reject / Defer 后进入 Decision chain" in prism32
+    assert "非 review-derived 的 scope 修正可由显式授权进入 Scope" in prism32
+    assert "Clarify 产出的变化仍只是候选，不等于接受 review 或授权写盘" in clarify
+
+
+def test_review_metadata_and_vocabulary_do_not_create_second_chain():
+    vocab = _read(VOCAB)
+    templates = _read(SDK_ROOT / "skills" / "workflow" / "workflow-review" / "references" / "review-templates.md")
+    assert "review 可触发候选输入" in vocab
+    assert "review-derived 关闭需 accepted dXX" in vocab
+    assert "review→accepted decision 或显式 scope 授权" in vocab
+    assert "decision_status` / `decision_ref` 是 rXX 辅助镜像" in templates
+    assert "治理事件主链仍是 dXX + `decision.index.md`" in templates

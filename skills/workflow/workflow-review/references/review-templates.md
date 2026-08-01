@@ -98,8 +98,8 @@ topics/{NNN}_{topic}/
 | `git_range` | review | mode=full 评审对象的 commit 范围（如 `1efa09e..d4b2e6b`） |
 | `independent_finding_rate` | review | mode=full 角色独立发现率（百分比，如 `92.9`），与 `merge_artifact.actual_independence` 对应 |
 | `trace_strict` | topic-readme | `true` / `false`，是否在 finalize Step 2.5 强制 strict |
-| `decision_status` | review | `pending` / `accepted` / `rejected` / `deferred` / `other`；rXX synthesis 默认 `pending` |
-| `decision_ref` | review | Gate 4 后关联的 `decisions/dXX_*.md`；pending / other 时可为 `null` |
+| `decision_status` | review | `pending` / `accepted` / `rejected` / `deferred` / `other`；rXX synthesis 默认 `pending`；仅为打开 rXX 时理解后续裁决的辅助镜像 |
+| `decision_ref` | review | Gate 4 后关联的 `decisions/dXX_*.md`；pending / other 时可为 `null`；不构成第二条治理主链 |
 
 ### 时间戳字段（状态切换可观察化）
 
@@ -116,6 +116,7 @@ topics/{NNN}_{topic}/
 - `date` 字段不变（仍是创建日）— 不破坏现有产物
 - 新增字段都是**可选**，未来可被 `prism status` / `prism digest` 消费做时间线视图
 - `decided_at` / `merged_at` 与 `decision_artifact` / `merge_artifact` 的 `timestamp` 字段是双源镜像（一个是 frontmatter 给 OFM 索引用，一个是正文块给 strict 校验用）
+- `decision_status` / `decision_ref` 是 rXX 辅助镜像；治理事件主链仍是 dXX + `decision.index.md`
 - legacy `accepted_at` 仅作读取回退；若与 `decided_at` 同时存在且值冲突，validator / finalize 应 fail-closed
 - 状态切换（`status: draft → accepted`）建议同时填对应时间戳，未来可加 frontmatter validation 守门
 

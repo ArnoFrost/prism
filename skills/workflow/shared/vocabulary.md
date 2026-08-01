@@ -22,9 +22,9 @@
 | **scope** | lowercase_word | 合同 / 合同收敛 | Scope (contract) | 专项的合同面 SSOT；含 G / V / 非目标 / 关键约束 / 未决问题 / 变更记录 六段；review 不直接改，通过 dXX 间接驱动 |
 | **goal** / **G** | lowercase_word + letter_id | 目标 | Goal | scope 中明确要达成的结果，正式编号为 `G1`、`G2`...；与「非目标」（anti-goals）互补 |
 | **V** | letter_id | 验收口径 | Verification Criterion | scope 中 goal 的可勾选判定项（`[ ]` / `[x]`）；scope 合同面最核心段落，回答「什么条件成立算完」 |
-| **OQ** | abbreviation | 开放问题 | Open Question | scope 阶段记录、需后续 review/decision 裁决的待定议题；`[ ]` 未决 / `[x]` + 决策编号 已解决 |
+| **OQ** | abbreviation | 开放问题 | Open Question | scope 阶段记录的 topic 级待定议题；可由 review 发现输入，但 review-derived 关闭或 scope 变化需 accepted decision；非 review-derived 可显式 scope 授权；`[ ]` 未决 / `[x]` + 授权编号 已解决 |
 | **focus** | lowercase_word | 注意力光标 / 当前工作集 | Focus (attention cursor) | topic 级**唯一**注意力光标；kind=state，retention=**rewrite（非沉淀）**。声明"现在只看什么"，主体 ≤30 行（顶部光标快读面 + 4 字段 goal/input/output/non-goal，不含 frontmatter 与导航）；完成即重写不累积，历史进 reviews/decisions。3.0 正式取代 plan |
-| **task** / **t** | lowercase_word + letter_id | 任务 / 问题切片 | Task | **被授权的问题切片**（Problem Slice）；kind=structure，只做"切分问题"——不决策 / 不执行 / 不记录状态。从 topic 级 review→decision 领授权，落 `structures/task-N_slug/`；稳定 id `tN`（缩写 `t`，只取数字 N）跨 reviews/decisions/structures/focus 全局一致（slug 改名不破链）；推进中的新发现冒泡回 topic 根 `reviews/`（单一决策链）|
+| **task** / **t** | lowercase_word + letter_id | 任务 / 问题切片 | Task | **被授权的问题切片**（Problem Slice）；kind=structure，只做"切分问题"——不决策 / 不执行 / 不记录状态。从 topic 级 review→accepted decision 或显式 scope 授权领权，落 `structures/task-N_slug/`；稳定 id `tN`（缩写 `t`，只取数字 N）跨 reviews/decisions/structures/focus 全局一致（slug 改名不破链）；推进中的新发现冒泡回 topic 根 `reviews/`（单一决策链）|
 | **wave** | lowercase_word | 批次 | Wave | **时间推进批次单元**（3.0 重定义，向前兼容）。抽象 = task / topic 的时间空间推进。两种物化语境：**2.x** = topic/plan 级跨 phase release 批次（`Wave 1~N`，grandfather 保留）；**3.0** = `structures/task-N_slug/wave-N_slug.md`，无 task 时不落独立文件、只体现在 focus 当前轮。详见 disambiguation §wave-2.x vs wave-3.0 |
 | **structure** | lowercase_word | 结构（容器 kind）| Structure | **承载关系的容器**：不直接承诺 / 执行 / 记录状态。kind 五元第五元；实体 = topic / task / dir；容器非产物，不直接被自动化。进 `structures/` 的准入判据：只有回答"如何组织"的对象才能进 |
 | **phase** / **P** | lowercase_word + letter_id | 阶段 | Phase | plan/focus 中的执行单位；推荐用 `P-VN` 表示（与验收项 VN 1:1 派生强溯源）；也可指生命周期段（启动 / 收敛 / 执行 / 归档） |
@@ -51,8 +51,8 @@
 
 | Prefix | 上下文 | 含义 | 典型落点 | 示例形态 |
 |--------|--------|------|---------|----------|
-| **OQ-N** | scope 阶段提出的 topic 级开放问题 | 全 topic 范围未决议题，由 dXX 裁决或 review 触发 | `scope.md` §未决问题 | `OQ-N: {topic 级 open question 描述}` |
-| **OQ-rXX-N** | review 阶段发现的 review 局部开放问题 | 仅本轮 review 范围内未决，由对应 dXX 裁决 | `reviews/rXX_*.md` §Open Questions | `OQ-rXX-N: {review 衍生 open question 描述}` |
+| **OQ-N** | scope 阶段提出的 topic 级开放问题 | 全 topic 范围未决议题；review 可触发候选输入，review-derived 关闭需 accepted dXX；非 review-derived 可显式 scope 授权 | `scope.md` §未决问题 | `OQ-N: {topic 级 open question 描述}` |
+| **OQ-rXX-N** | review 阶段发现的 review 局部开放问题 | 仅本轮 review 范围内未决；进入 scope 前仍需 accepted dXX 或显式 scope 授权 | `reviews/rXX_*.md` §Open Questions | `OQ-rXX-N: {review 衍生 open question 描述}` |
 | **action-N** | decision 或显式授权派生的通用 LOCAL/PROTOCOL 行动 | 当前 topic 内执行类工作 | `decisions/dXX_*.md` §已接受行动；review Gate 后的授权结果 | `action-N: {具体行动描述}` |
 | **action-L-N** | 跨多个 SKILL 的 LIBRARY 类行动（影响 shared/ 或 templates/） | 跨 SKILL 影响面 | 同上 | `action-L-N: {跨 SKILL 行动描述}` |
 | **action-Z-N** | ZERO-COST 类行动（无代码改动，仅文档或元数据维护） | 文档维护、配置补齐 | 同上 | `action-Z-N: {ZERO-COST 维护任务描述}` |
@@ -133,6 +133,7 @@ focus 不归档 / 不版本化 / 不保留历史
 | 2026-05-29 | Prism 3.0 第二批扩展 | + §术语表 +3 行（task / focus / structure，11→14）；~ wave 重定义（时间推进批次单元 + 2.x/3.0 双物化语境，向前兼容）；~ plan 标 deprecated→focus；+ §kind 五元（含纯度律）+ §retention 律（含 Focus 非沉淀律 + 禁 focus-v2/history 反模式）；+ 编号规约补 `.S`/`.tN` 限定符。**注**：本批次（3.0 结构语义血缘）与 §候选术语 区的 `review/finding/archive/index`（词典自身演进血缘）同名"第二批"但不同物，后者仍待各自 dXX |
 | 2026-05-29 | 形态规范 + 认知地图重排 | ~ **整表按 3.0 分层语义认知地图重排**（合同边界→注意力→结构三轴→执行→治理事件→废弃尾，仍平铺一张表）；~ task 双形态 `task/t`（弃大写方案）；~ **AP → action**（lowercase_word，编号 `action-N`，子族 `-L/-Z/-meta`，老 `AP-N` grandfather）；~ decision-chain 标 deprecated→decision-index（链语义并入）；~ plan/AP/decision-chain 挪废弃尾；~ §设计原则形态三类 + Prefix dispatch + §kind execution 行同步。形态规范变更走 dXX（不需 review）|
 | 2026-08-01 | d03 术语收敛克制 | + §术语表纳入 review / finding（14 活跃）；~ action 明确仅指授权后的行动；~ recommendation、候选行动、结论、scope 变更、执行目标不升核心术语，作为技能章节措辞或普通描述 |
+| 2026-08-01 | d01 / 058 V5 | ~ OQ / task 来源说明：review 可触发候选输入，但 review-derived scope 变化和 task 授权不得绕过 accepted dXX；显式 scope 授权仅覆盖独立低风险修正 |
 
 ---
 

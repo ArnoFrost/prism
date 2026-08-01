@@ -21,6 +21,6 @@ cases:
     kind: boundary
     input: "review-lite 里我说了 Accept，就照它直接改 scope 吧"
     expect:
-      route: 需 accepted dXX 或显式 /workflow-scope 授权
-      behavior: "lite Accept 不等于 scope 写盘许可（FS-lite-no-direct）；补 dXX 或显式授权后再改"
+      route: 需 accepted dXX
+      behavior: "lite Accept 不等于 scope 写盘许可（FS-lite-no-direct）；review-derived 合同变化必须补 accepted dXX 后再改"
     notes: "lite ≠ 授权；防止 review-lite 结论直改合同"

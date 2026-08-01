@@ -85,7 +85,7 @@ review synthesis 先帮助用户理解，再问是否决策。主报告与对话
 
 3.1 可吸收 grillme-like 的追问体验，为后续 clarify 语义预留；但本轮不内置 grillme/clarify，也不新增替代 skill。
 
-Review 是一次有边界的判断事件，不是长期治理状态。Finding 是 review 内基于证据形成的局部观察或问题判断；Finding 本身不具有授权效力，不自动成为 Scope、Decision 或执行任务。Merge 后形成结论与建议；用户 Accept / Reject / Defer 前，建议不得写成已确认 action。
+Review 是一次有边界的判断事件，不是长期治理状态。Finding 是 review 内基于证据形成的局部观察或问题判断；Finding 本身不具有授权效力，不自动成为 Scope、Decision 或执行任务。Merge 后形成结论与建议；用户 Accept / Reject / Defer 前，建议不得写成已确认 action。Review 来源的合同变化必须经 accepted dXX；独立低风险 scope 修正才可由显式授权直达 `workflow-scope`。
 
 ## 5. Merge 与 Trace
 
@@ -117,7 +117,7 @@ Gate 3 后先落 pending rXX synthesis，并只读运行 product / trace / revie
 | Merge | 不只摘要；必须给仲裁理由、分歧、结论与建议 |
 | Gate 4 | 不静默 Accept；Other 不写 dXX；`PRISM_NO_INTERACTIVE=1` 必须显式传决策 |
 | Authorization | 建议未经用户 Accept / Reject / Defer 或显式授权，不得称为已确认 action |
-| Scope | review 不直改 scope/focus；合同变更走 accepted dXX 或显式授权 → `workflow-scope` |
+| Scope | review 不直改 scope/focus；review-derived 合同变更走 accepted dXX；独立低风险 scope 修正才可显式授权 → `workflow-scope` |
 
 ## 8. 写盘口径
 

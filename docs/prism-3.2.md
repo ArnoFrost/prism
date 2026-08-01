@@ -40,13 +40,13 @@ flowchart LR
 
 Clarify 可以自然结束，也可以在用户明确要求后形成候选交接。无 Topic 时，治理需求先交 Intake；已有 Topic 时交回既有 workflow。
 
-合同变化按授权强度分级：intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆的 scope 修正可由显式授权进入 Scope；review 驱动或达到长期审计门槛的合同变化走 Decision → Scope。
+合同变化按授权强度分级：intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆且非 review-derived 的 scope 修正可由显式授权进入 Scope；review 驱动或达到长期审计门槛的合同变化走 Decision → Scope。
 
 ## 评审与兼容
 
 正式 Review 由用户意图触发。需要多视角时就执行多视角调查，角色数量按风险和信息面调整；报告先完整展示评审发现、结论、建议、风险和未决问题，再进入 Accept / Reject / Defer Gate。
 
-Review 是一次有边界的判断事件，不是长期治理状态。Finding 只是基于证据形成的局部观察或问题判断；未被采纳时保留在 rXX 历史现场即可。只有用户 Accept / Reject / Defer 后进入 Decision chain，或用户另行显式授权后，建议才能转化为 scope 变更、action、执行目标或后续正式治理事件。
+Review 是一次有边界的判断事件，不是长期治理状态。Finding 只是基于证据形成的局部观察或问题判断；未被采纳时保留在 rXX 历史现场即可。Review 建议只有在用户 Accept / Reject / Defer 后进入 Decision chain，才能转化为 scope 变更、action、执行目标或后续正式治理事件；非 review-derived 的低风险修正才可由用户显式授权直达 Scope。
 
 Decision 主链使用 `decided_at` 表示明确裁决时刻；`decision.index.md` 的 `outcome` 由 dXX `status` 投影，dXX frontmatter 不新增 `outcome` 字段。旧 `accepted_at` 仅作兼容读取，append 旧索引时由 writer 原子迁移为 `outcome + decided_at`。
 
