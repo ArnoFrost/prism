@@ -14,8 +14,8 @@ import subprocess
 import sys
 
 WORKFLOW_DIRS = {"reviews", "decisions"}
-REVIEW_PATTERN = re.compile(r"reviews/r\d{2}.*\.md$")
-DECISION_PATTERN = re.compile(r"decisions/d\d{2}.*\.md$")
+REVIEW_PATTERN = re.compile(r"reviews/r(?:0[1-9]|[1-9]\d)(?:[_\.].*)?\.md$")
+DECISION_PATTERN = re.compile(r"decisions/d(?:0[1-9]|[1-9]\d)(?:[_\.].*)?\.md$")
 
 
 def _find_topic_root(file_path: str) -> str | None:

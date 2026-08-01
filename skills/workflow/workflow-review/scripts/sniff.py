@@ -100,7 +100,8 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
     output_dir, reviews_dir = resolve_review_output_dir(
         project_dir, workspace, topic_affinity, topic_hint=topic
     )
-    boundary_clarification_required = next_review_source == "none"
+    review_number_exhausted = next_review_number is None
+    boundary_clarification_required = next_review_source == "none" or review_number_exhausted
     writable = bool(output_dir and check_writable(output_dir))
     fmt = "ofm" if obsidian["detected"] else "standard"
     route = "deep" if workspace and writable else "short"
@@ -120,6 +121,7 @@ def sniff(project_dir: str, topic: str | None = None) -> dict:
         "topic_affinity": topic_affinity,
         "next_review_number": next_review_number,
         "next_review_source": next_review_source,  # "affinity" | "topic_hint" | "project_dir" | "none"
+        "review_number_exhausted": review_number_exhausted,
         "review_density_warning": review_density_warning,
         "empty_reason": empty_reason,
         "structures": structures,  # V4：3.0 结构层（structures/ + task 层 + .tN）

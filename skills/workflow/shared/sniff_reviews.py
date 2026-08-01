@@ -6,6 +6,9 @@ from datetime import datetime
 
 from sniff_workspace import _find_topics_dir
 
+_REVIEW_ID_RE = re.compile(r"^(r(0[1-9]|[1-9]\d))(?:[_\.]|$)")
+
+
 def resolve_review_output_dir(
     project_dir: str,
     workspace: dict | None,
@@ -46,7 +49,7 @@ def enumerate_reviews(reviews_dir: str) -> list[dict]:
         full = os.path.join(reviews_dir, entry)
         if not (os.path.isfile(full) and entry.endswith(".md")):
             continue
-        m = re.match(r"^(r\d{2})", entry)
+        m = _REVIEW_ID_RE.match(entry)
         if m and not entry.startswith("raw"):
             rid = m.group(1)
             seen_ids[rid] = {
@@ -61,7 +64,7 @@ def enumerate_reviews(reviews_dir: str) -> list[dict]:
         full = os.path.join(reviews_dir, entry)
         if not (os.path.isdir(full) and not entry.startswith("raw")):
             continue
-        m = re.match(r"^(r\d{2})", entry)
+        m = _REVIEW_ID_RE.match(entry)
         if not m:
             continue
         rid = m.group(1)
@@ -155,14 +158,14 @@ def next_review_number_for_topic(
     workspace: dict | None,
     topic_affinity: dict | None,
     topic_hint: str | None = None,
-) -> tuple[str, str]:
+) -> tuple[str | None, str]:
     """共享：计算下一个 review 编号（rXX 格式），供 review 与 review-lite 调用。
 
     两者共享同一个 reviews/ 编号池（lite 产物命名 rXX_xxx.md + frontmatter
     type: review-lite，主 review 同样用 rXX_xxx.md）。
 
     返回 (next_review_id, source)：
-      next_review_id: "r04" 格式字符串
+      next_review_id: "r04" 格式字符串；编号已达 r99 时为 None
       source: resolve_topic_reviews_dir 返回的 source（便于 Agent 在 UI 上报）
     """
     reviews_dir, source = resolve_topic_reviews_dir(
@@ -178,6 +181,8 @@ def next_review_number_for_topic(
         return "r01", source
 
     last_num = max(int(r["id"][1:]) for r in existing)
+    if last_num >= 99:
+        return None, source
     return f"r{last_num + 1:02d}", source
 
 

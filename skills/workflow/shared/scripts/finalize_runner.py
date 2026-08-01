@@ -53,7 +53,7 @@ def _skill_scripts_dir(skill: str) -> str:
 def _numbered_markdown_files(directory: Path, prefix: str) -> list[Path]:
     if not directory.is_dir():
         return []
-    pattern = re.compile(rf"^{re.escape(prefix)}\d{{2}}(?:_.*)?\.md$")
+    pattern = re.compile(rf"^{re.escape(prefix)}(?:0[1-9]|[1-9]\d)(?:_.*)?\.md$")
     return sorted(path for path in directory.iterdir() if path.is_file() and pattern.match(path.name))
 
 
@@ -155,15 +155,15 @@ def _validate_write_stage(
             errors.append(f"decision.index.md 缺少 {decision_id} 的精确路径条目")
 
     if decision_source == "review":
-        if not review_ref or not re.fullmatch(r"r\d{2}", review_ref):
-            errors.append("source=review 必须提供精确 review_ref=rXX")
+        if not review_ref or not re.fullmatch(r"r(?:0[1-9]|[1-9]\d)", review_ref):
+            errors.append("source=review 必须提供精确 review_ref=r01–r99")
         else:
             matches = [
                 path for path in review_files
                 if re.fullmatch(rf"{re.escape(review_ref)}(?:_.*)?\.md", path.name)
             ]
             if len(matches) != 1:
-                errors.append(f"review_ref={review_ref} 必须唯一命中一个 rXX")
+                errors.append(f"review_ref={review_ref} 必须唯一命中一个 r01–r99")
         if artifact.get("review_kind") not in {"review", "review-lite"}:
             errors.append("source=review 的 decision_artifact 缺合法 review_kind")
     elif not _is_nullish(review_ref):

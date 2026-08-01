@@ -194,7 +194,7 @@ def _pack_reviews(topic_dir: str, limit: int = 2) -> list[dict]:
         [
             f
             for f in os.listdir(reviews_dir)
-            if re.match(r"^r\d{2}", f) and f.endswith(".md")
+            if re.match(r"^r(?:0[1-9]|[1-9]\d)(?:[_\.])", f) and f.endswith(".md")
         ],
         reverse=True,
     )[:limit]

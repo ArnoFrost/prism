@@ -310,6 +310,35 @@ def test_missing_decision_reference_leaves_no_partial_write(tmp_path):
     assert (topic / "decision.index.md").read_text(encoding="utf-8") == before
 
 
+def test_decision_number_exhausted_at_d99_fails_closed(tmp_path):
+    topic = _topic(tmp_path)
+    decisions = topic / "decisions"
+    decisions.mkdir()
+    (decisions / "d99_last.md").write_text(
+        "---\ntype: decision\nstatus: accepted\n---\n\n# d99\n",
+        encoding="utf-8",
+    )
+    before = (topic / "decision.index.md").read_text(encoding="utf-8")
+
+    with pytest.raises(DecisionRecordError) as error:
+        _record(topic)
+
+    assert error.value.code == "DECISION_NUMBER_EXHAUSTED"
+    assert len(list(decisions.glob("d*.md"))) == 1
+    assert (topic / "decision.index.md").read_text(encoding="utf-8") == before
+
+
+@pytest.mark.parametrize("ref_arg", ["supersedes", "derived_from", "related"])
+def test_decision_refs_reject_d100(ref_arg, tmp_path):
+    topic = _topic(tmp_path)
+
+    with pytest.raises(DecisionRecordError) as error:
+        _record(topic, **{ref_arg: ["d100"]})
+
+    assert error.value.code == "INVALID_DECISION_REF"
+    assert not (topic / "decisions").exists()
+
+
 def test_review_source_requires_existing_unique_review(tmp_path):
     topic = _topic(tmp_path)
     with pytest.raises(DecisionRecordError) as missing_arg:
@@ -336,11 +365,12 @@ def test_review_source_requires_existing_unique_review(tmp_path):
 def test_review_source_rejects_malformed_review_ref_with_stable_error(tmp_path):
     topic = _topic(tmp_path)
 
-    with pytest.raises(DecisionRecordError) as error:
-        _record(topic, source="review", review_ref="review-one")
+    for review_ref in ("review-one", "r100", "r00"):
+        with pytest.raises(DecisionRecordError) as error:
+            _record(topic, source="review", review_ref=review_ref)
 
-    assert error.value.code == "INVALID_REVIEW_REF"
-    assert not (topic / "decisions").exists()
+        assert error.value.code == "INVALID_REVIEW_REF"
+        assert not (topic / "decisions").exists()
 
 
 def test_review_ref_does_not_prefix_match_later_review(tmp_path):

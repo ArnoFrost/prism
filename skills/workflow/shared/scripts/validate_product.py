@@ -291,11 +291,30 @@ def _is_review_main_report(relpath: str) -> bool:
     豁免：raw/ 角色报告 (rXX-role-*.md) 与 review.index.md / decision.index.md 等索引。
     """
     name = os.path.basename(relpath)
-    if not re.match(r"^r\d{1,3}[_\.]", name):
+    if not re.match(r"^r(?:0[1-9]|[1-9]\d)[_\.]", name):
         return False
     if "-role-" in name:
         return False
     return True
+
+
+def check_numbered_artifact_identity(relpath: str) -> list[Issue]:
+    """d/r 主产物编号只接受 01–99，避免 d100/r100 被不同入口宽松解释。"""
+    name = os.path.basename(relpath)
+    m = re.match(r"^([dr])(\d+)(?:[_\.])", name)
+    if not m:
+        return []
+
+    prefix, digits = m.groups()
+    if re.fullmatch(r"(?:0[1-9]|[1-9]\d)", digits):
+        return []
+
+    label = "Decision" if prefix == "d" else "Review"
+    return [Issue(
+        "ERROR", relpath, 1, f"{prefix}-number-invalid",
+        f"{label} 主产物编号仅支持 {prefix}01–{prefix}99；当前文件名越界或格式非法",
+        False,
+    )]
 
 
 _CALLOUT_HEAD_RE = re.compile(r"^>\s*\[!([\w-]+)\]", re.IGNORECASE)
@@ -457,7 +476,7 @@ def _is_decision_artifact(relpath: str) -> bool:
     无机械抽检）。本函数为 dXX 专属语义校验提供识别入口。
     """
     name = os.path.basename(relpath)
-    return bool(re.match(r"^d\d{1,3}[_\.]", name))
+    return bool(re.match(r"^d(?:0[1-9]|[1-9]\d)[_\.]", name))
 
 
 def check_decision_semantics(lines: list[str], relpath: str) -> list[Issue]:
@@ -476,6 +495,8 @@ def check_decision_semantics(lines: list[str], relpath: str) -> list[Issue]:
 
     来源：v1.1.5 收口 — 补 dXX frontmatter 语义校验空白
     """
+    if check_numbered_artifact_identity(relpath):
+        return []
     if not _is_decision_artifact(relpath):
         return []
 
@@ -661,9 +682,9 @@ def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
     issues: list[Issue] = []
     output_path = Path(output_dir)
 
-    review_files = sorted(output_path.glob("r*_*.md"))
+    review_files = sorted(f for f in output_path.glob("r*_*.md") if _is_review_main_report(f.name))
     if not review_files:
-        review_files = sorted(output_path.glob("r*.md"))
+        review_files = sorted(f for f in output_path.glob("r*.md") if _is_review_main_report(f.name))
 
     if not review_files:
         issues.append(Issue("ERROR", str(output_path), 0, "missing-review",
@@ -672,7 +693,7 @@ def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
 
     subdir_reviews = sorted(
         d for d in output_path.iterdir()
-        if d.is_dir() and re.match(r"^r\d{2}", d.name) and d.name != "raw"
+        if d.is_dir() and re.match(r"^r(?:0[1-9]|[1-9]\d)(?:[_\.]|$)", d.name) and d.name != "raw"
     )
     for sd in subdir_reviews:
         issues.append(Issue("WARN", sd.name, 0, "legacy-subdir-format",
@@ -698,7 +719,7 @@ def check_review_structure(output_dir: str, fmt: str) -> list[Issue]:
     decision_index = topic_dir / "decision.index.md"
     decisions_dir = topic_dir / "decisions"
     has_any_decision = decisions_dir.is_dir() and any(
-        f.is_file() and re.match(r"^d\d{1,3}[_\.]", f.name)
+        f.is_file() and re.match(r"^d(?:0[1-9]|[1-9]\d)[_\.]", f.name)
         for f in decisions_dir.iterdir()
     )
     if not decision_index.is_file() and has_any_decision:
@@ -817,6 +838,7 @@ def validate_file(filepath: str, fmt: str) -> list[Issue]:
     issues.extend(check_mermaid_edge_label_space(lines, relpath))
     issues.extend(check_mermaid_slash_prefix(lines, relpath))
     issues.extend(check_mermaid_list_prefix(lines, relpath))
+    issues.extend(check_numbered_artifact_identity(relpath))
     issues.extend(check_decision_semantics(lines, relpath))
 
     # ── review 主报告 GFM 基线（standard + ofm） ──

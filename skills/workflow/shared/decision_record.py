@@ -40,8 +40,8 @@ STATUS_BY_DECISION = {
     "defer": "deferred",
 }
 _IDEMPOTENCY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-_DECISION_FILE_RE = re.compile(r"^d(\d{1,3})(?:_.*)?\.md$")
-_REVIEW_FILE_RE = re.compile(r"^r(\d{1,3})(?:_.*)?\.md$")
+_DECISION_FILE_RE = re.compile(r"^d(0[1-9]|[1-9]\d)(?:_.*)?\.md$")
+_REVIEW_FILE_RE = re.compile(r"^r(0[1-9]|[1-9]\d)(?:_.*)?\.md$")
 _LEGACY_INDEX_HEADER = (
     "| dXX | 决策标题 | accepted_at | review_ref | supersedes | "
     "derived_from | related_dXX |"
@@ -124,10 +124,10 @@ def _normalize_refs(values: list[str] | None) -> list[str]:
     result: list[str] = []
     for raw in values or []:
         value = raw.strip().lower()
-        if not re.fullmatch(r"d\d{1,3}", value):
+        if not re.fullmatch(r"d(?:0[1-9]|[1-9]\d)", value):
             raise DecisionRecordError(
                 "INVALID_DECISION_REF",
-                f"决策引用必须使用 dXX 形式，实际为: {raw!r}",
+                f"决策引用必须使用 d01–d99 形式，实际为: {raw!r}",
             )
         normalized = f"d{int(value[1:]):02d}"
         if normalized not in result:
@@ -137,10 +137,10 @@ def _normalize_refs(values: list[str] | None) -> list[str]:
 
 def _normalize_review_ref(review_ref: str) -> str:
     normalized = review_ref.strip().lower()
-    if not re.fullmatch(r"r\d{1,3}", normalized):
+    if not re.fullmatch(r"r(?:0[1-9]|[1-9]\d)", normalized):
         raise DecisionRecordError(
             "INVALID_REVIEW_REF",
-            f"review 引用必须使用 rXX 形式，实际为: {review_ref!r}",
+            f"review 引用必须使用 r01–r99 形式，实际为: {review_ref!r}",
         )
     return f"r{int(normalized[1:]):02d}"
 
@@ -369,7 +369,13 @@ def _existing_idempotent_result(
 
 def _next_decision_id(decisions_dir: Path) -> str:
     numbers = [int(_DECISION_FILE_RE.match(path.name).group(1)) for path in _decision_files(decisions_dir)]
-    return f"d{(max(numbers, default=0) + 1):02d}"
+    next_number = max(numbers, default=0) + 1
+    if next_number > 99:
+        raise DecisionRecordError(
+            "DECISION_NUMBER_EXHAUSTED",
+            "dXX 编号已达 d99；3.2 仅支持 d01–d99，拒绝生成 d100",
+        )
+    return f"d{next_number:02d}"
 
 
 def _topic_title(topic: Path) -> str:
@@ -436,7 +442,7 @@ def _split_table_row(line: str) -> list[str]:
 
 
 def _is_decision_index_row(line: str) -> bool:
-    return bool(re.match(r"^\|\s*d\d{1,3}\s*\|", line))
+    return bool(re.match(r"^\|\s*d(?:0[1-9]|[1-9]\d)\s*\|", line))
 
 
 def _migrate_legacy_index(text: str, topic: Path) -> str:

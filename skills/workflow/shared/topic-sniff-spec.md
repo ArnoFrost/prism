@@ -118,7 +118,7 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 | Skill | 路由后行为 | 特有字段 |
 |-------|----------|---------|
 | **intake** | 默认创建新专项目录；显式 append 时才追加到已有 topic | `next_topic_number` |
-| **review** | 在已有 topic 的 reviews/ 下追加评审 | `next_review_number`, `review_density_warning` |
+| **review** | 在已有 topic 的 reviews/ 下追加评审 | `next_review_number`, `next_review_source`, `review_number_exhausted`, `review_density_warning` |
 | **review-lite** | 同 review | 同 review |
 | **scope** | 读写已有 topic 的 scope.md + focus.md | 无额外字段 |
 | **status** | 扫描已有 topic 的健康度 | 无额外字段 |
@@ -135,13 +135,13 @@ topic-sniff 是 workflow skills 的通用前门路由层。它回答一个核心
 | `prism` | object \| null | Prism SDK 上下文 |
 | `output_dir` | string \| null | review/review-lite：已解析的 **3.0 topic 根**；未定位时为 null（须边界澄清门）。intake：遗留日期目录提示（实际建 topic 用 `next_topic_number` + scaffold） |
 | `reviews_dir` | string \| null | review/review-lite 专有：已解析的 `reviews/`；未定位时为 null |
-| `boundary_clarification_required` | boolean | review/review-lite：`next_review_source=none` 时为 true |
+| `boundary_clarification_required` | boolean | review/review-lite：`next_review_source=none` 或 `review_number_exhausted=true` 时为 true |
 | `writable` | boolean | output_dir 是否可写 |
 | `format` | string | `ofm` \| `standard` |
 | `topic` | string \| null | 用户提供的主题 |
 | `topic_affinity` | object \| null | 亲和检测结果，含 `matched_topic` / `candidates` / `topic_readme` / `suggestion` / `affinity_strength`（详见 §topic_affinity 评分规则） |
 
-skill 可在此基础上扩展特有字段（如 review 的 `next_review_number`）。
+skill 可在此基础上扩展特有字段。review 编号仅支持 `r01`–`r99`；到达 `r99` 后 `next_review_number=null`、`review_number_exhausted=true`，调用方必须进入边界澄清门，不得落 `r100`。
 
 ## follow_up 判定规则
 

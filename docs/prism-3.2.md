@@ -50,6 +50,8 @@ Review 是一次有边界的判断事件，不是长期治理状态。Finding �
 
 Decision 主链使用 `decided_at` 表示明确裁决时刻；`decision.index.md` 的 `outcome` 由 dXX `status` 投影，dXX frontmatter 不新增 `outcome` 字段。旧 `accepted_at` 仅作兼容读取，append 旧索引时由 writer 原子迁移为 `outcome + decided_at`。
 
+3.2 的 Review / Decision 主产物编号空间保持克制：仅支持 `r01`–`r99` 与 `d01`–`d99`。达到上限时 fail-closed 或进入边界澄清，不自动生成 `r100` / `d100`。
+
 `workflow-review-lite` 自 3.2 起是 retired-with-compat：不出现在 active/default/recommended 路径，只保留显式 legacy 调用、旧 Topic 和旧 `type: review-lite` 产物兼容。日常轻量判断使用模型原生自检，阻塞歧义使用 Clarify，需要持久多视角判断使用 Review。
 
 ## 与 FrostAtlas 的分工

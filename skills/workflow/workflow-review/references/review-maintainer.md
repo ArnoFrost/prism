@@ -177,7 +177,7 @@ prism/skills/                         ← SDK 仓库内置
 | `project_dir` | project_dir 本身就是 topic 目录 | 可信 |
 | `none` | 未定位到 topic reviews/，编号 r01 为占位默认值 | **触发边界澄清门**（SSOT §4.3.2）：必须先与用户确认 topic 后再使用，否则会覆盖已有 r01；env 不得绕过此门 |
 
-review 与 review-lite 共享 `reviews/rXX_*.md` 同一流水编号池，lite 在 frontmatter 标注 `type: review-lite` 区分；review.index.md 栏内标 `lite`。
+review 与 review-lite 共享 `reviews/rXX_*.md` 同一流水编号池，编号仅支持 `r01`–`r99`；到达 `r99` 后 `next_review_number=null` 且触发边界澄清门，不得落 `r100`。lite 在 frontmatter 标注 `type: review-lite` 区分；review.index.md 栏内标 `lite`。
 
 ### 4.9 主入口压缩后的 MOVE 面
 

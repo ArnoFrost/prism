@@ -349,8 +349,8 @@ class TestOfmDualStateContract:
 
     def test_decision_artifact_three_valid_statuses(self, tmp_path):
         """accepted / rejected / deferred 三种合法 status 全通过。"""
-        for status in ("accepted", "rejected", "deferred"):
-            md = tmp_path / f"d_{status}.md"
+        for idx, status in enumerate(("accepted", "rejected", "deferred"), start=10):
+            md = tmp_path / f"d{idx}_{status}.md"
             md.write_text(
                 f"---\ndate: 2026-05-12\nstatus: {status}\n"
                 f"type: decision\ntags:\n  - test\n---\n\n# Test\n",
@@ -439,6 +439,30 @@ class TestOfmDualStateContract:
         issues = vp.validate_file(str(md), "ofm")
         rules = {i.rule for i in issues if i.level == "ERROR"}
         assert "decision-outcome-forbidden" in rules
+
+    def test_decision_number_overflow_is_invalid(self, tmp_path):
+        """d100 不属于 3.2 主链编号空间，validator 必须显式报错。"""
+        md = tmp_path / "d100_overflow.md"
+        md.write_text(
+            "---\n"
+            "date: 2026-05-12\n"
+            "status: accepted\n"
+            "type: decision\n"
+            "---\n\n"
+            "# d100\n",
+            encoding="utf-8",
+        )
+        issues = vp.validate_file(str(md), "standard")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "d-number-invalid" in rules
+
+    def test_review_number_overflow_is_invalid(self, tmp_path):
+        """r100 不属于 3.2 review 编号空间，validator 必须显式报错。"""
+        md = tmp_path / "r100_overflow.md"
+        md.write_text("# r100\n", encoding="utf-8")
+        issues = vp.validate_file(str(md), "standard")
+        rules = {i.rule for i in issues if i.level == "ERROR"}
+        assert "r-number-invalid" in rules
 
     def test_non_decision_files_skip_semantics(self, tmp_path):
         """非 dXX 文件不跑 decision_semantics（review/scope/plan 等）。"""

@@ -747,3 +747,37 @@ class TestNextReviewNumberForTopic:
         )
         assert nxt == "r04", "必须以 topic affinity 下的 r03 为基准 + 1"
         assert source == "affinity", "干扰的 project_dir/reviews 不应被使用"
+
+    def test_review_number_exhausted_at_r99_returns_none(self, tmp_path):
+        """3.2 hard limit：r99 后不得返回可写 r100。"""
+        workspace, _ = self._make_workspace(
+            tmp_path,
+            "099_full",
+            ["r99_last.md"],
+        )
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "099_full"}
+
+        nxt, source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, affinity
+        )
+
+        assert nxt is None
+        assert source == "affinity"
+
+    def test_r100_is_not_misread_as_r10(self, tmp_path):
+        """r100 不属于 3.2 编号空间，不能被 enumerate_reviews 前缀误读为 r10。"""
+        workspace, topic = self._make_workspace(
+            tmp_path,
+            "099_full",
+            ["r09_prev.md", "r100_overflow.md"],
+        )
+        reviews = sniff_lib.enumerate_reviews(str(topic / "reviews"))
+        workspace_info = {"path": str(workspace)}
+        affinity = {"matched_topic": "099_full"}
+        nxt, _source = sniff_lib.next_review_number_for_topic(
+            str(tmp_path), workspace_info, affinity
+        )
+
+        assert [review["id"] for review in reviews] == ["r09"]
+        assert nxt == "r10"

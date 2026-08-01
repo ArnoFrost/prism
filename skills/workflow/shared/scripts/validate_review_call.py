@@ -97,12 +97,15 @@ def find_review_files(topic_dir: Path) -> list[Path]:
     reviews_dir = topic_dir / "reviews"
     if not reviews_dir.is_dir():
         return []
+    review_file_re = re.compile(r"^r(?:0[1-9]|[1-9]\d)_.*\.md$")
     files: list[Path] = []
     for f in reviews_dir.glob("r*_*.md"):
         if f.name == "review.index.md":
             continue
         # 仅取顶层 reviews/，不含 raw/ 或 r01-extras/ 子目录
         if f.parent != reviews_dir:
+            continue
+        if not review_file_re.fullmatch(f.name):
             continue
         files.append(f)
     return sorted(files)

@@ -130,11 +130,11 @@ class Issue:
 
 def _is_review_main(name: str) -> bool:
     """rXX_*.md（非 role-* / 非 raw/ 下）。"""
-    return bool(re.match(r"^r\d{1,3}[_\.]", name)) and "-role-" not in name
+    return bool(re.match(r"^r(?:0[1-9]|[1-9]\d)[_\.]", name)) and "-role-" not in name
 
 
 def _is_decision_file(name: str) -> bool:
-    return bool(re.match(r"^d\d{1,3}[_\.]", name))
+    return bool(re.match(r"^d(?:0[1-9]|[1-9]\d)[_\.]", name))
 
 
 def _is_intake_file(name: str) -> bool:

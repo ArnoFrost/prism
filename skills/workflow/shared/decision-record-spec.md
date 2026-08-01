@@ -32,12 +32,12 @@ prism decision record <topic_dir> \
 
 可选关系参数：
 
-- `--review-ref rXX`：仅 `source=review` 可用，且引用必须唯一存在。
+- `--review-ref rXX`：仅 `source=review` 可用，且引用必须唯一存在；编号仅支持 `r01`–`r99`。
 - `--supersedes dXX`
 - `--derived-from dXX`
 - `--related dXX`
 
-三类 dXX 关系参数可重复，但同一个 dXX 不得同时出现在多种关系中。
+三类 dXX 关系参数可重复，编号仅支持 `d01`–`d99`；同一个 dXX 不得同时出现在多种关系中。
 
 ## 事务边界
 
@@ -61,8 +61,8 @@ prism decision record <topic_dir> \
 - 相同键但请求指纹不同时返回 `IDEMPOTENCY_PAYLOAD_CONFLICT`，不静默沿用首次结果。
 - 相同键对应的 legacy 记录缺少请求指纹时返回 `IDEMPOTENCY_UNVERIFIABLE`，调用方必须换新键或先人工治理旧记录。
 - 相同键对应多个 dXX，或任一主链缺失时返回错误，不自动猜测或再写一份。
-- rXX/dXX 文件身份只接受精确的 `rXX.md` / `rXX_*.md` 与 `dXX.md` / `dXX_*.md`；`r01` 不得前缀匹配 `r010`，legacy `d01.md` 必须参与引用与后续编号。
-- 编号分配在 topic 锁内完成，并发调用不会复用同一 dXX。
+- rXX/dXX 文件身份只接受精确的 `r01`–`r99` / `d01`–`d99`：`rXX.md` / `rXX_*.md` 与 `dXX.md` / `dXX_*.md`；`r01` 不得前缀匹配 `r010` 或 `r100`，legacy `d01.md` 必须参与引用与后续编号。
+- 编号分配在 topic 锁内完成，并发调用不会复用同一 dXX；到达 `d99` 后返回 `DECISION_NUMBER_EXHAUSTED`，不得生成 `d100`。
 
 ## 输出
 

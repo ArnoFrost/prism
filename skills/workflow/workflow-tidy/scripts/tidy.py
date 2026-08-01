@@ -188,12 +188,12 @@ def _decision_review_refs(topic_dir: str) -> dict[str, list[dict]]:
         return refs
 
     for filename in sorted(os.listdir(decisions_dir)):
-        if not re.fullmatch(r"d\d{2}(?:_[^/]+)?\.md", filename):
+        if not re.fullmatch(r"d(?:0[1-9]|[1-9]\d)(?:_[^/]+)?\.md", filename):
             continue
         path = os.path.join(decisions_dir, filename)
         content = _read(path) or ""
         review_ref = _extract_frontmatter_scalar(content, "review_ref")
-        if not review_ref or not re.fullmatch(r"r\d{2}", review_ref):
+        if not review_ref or not re.fullmatch(r"r(?:0[1-9]|[1-9]\d)", review_ref):
             continue
         refs.setdefault(review_ref, []).append({
             "id": filename[:3],
@@ -363,7 +363,7 @@ def _scan_reviews_for_index(topic_dir: str) -> dict:
             result["legacy"].append(rev["id"])
 
     if index_present:
-        index_ids = set(re.findall(r"\b(r\d{2})\b", index_content))
+        index_ids = set(re.findall(r"\b(r(?:0[1-9]|[1-9]\d))\b", index_content))
         for iid in sorted(index_ids - disk_ids):
             result["stale"].append(iid)
 
