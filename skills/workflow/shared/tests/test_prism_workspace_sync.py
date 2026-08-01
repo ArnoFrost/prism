@@ -119,7 +119,7 @@ def _run_sync(
 
 
 class TestDirtyAheadGate:
-    def test_clean_no_ahead_still_pulls_for_remote_updates(self, tmp_path):
+    def test_clean_no_ahead_skips_without_fetch(self, tmp_path):
         vault = tmp_path / "vault"
         vault.mkdir()
         _init_git_repo(vault, tmp_path)
@@ -127,8 +127,8 @@ class TestDirtyAheadGate:
         proc = _run_sync(tmp_path, vault, cfg)
         assert proc.returncode == 0
         combined = proc.stdout + proc.stderr
-        assert "no local changes; proceeding to pull for remote updates" in combined
-        assert "skipped: clean workspace, no ahead commits" not in combined
+        assert "skipped: clean workspace, no ahead commits" in combined
+        assert "proceeding to pull for remote updates" not in combined
 
     def test_dirty_triggers_sync_path(self, tmp_path):
         vault = tmp_path / "vault"

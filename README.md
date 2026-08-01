@@ -22,7 +22,7 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 
 **发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）
 
-**当前治理叙事** → [docs/prism-3.2.md](docs/prism-3.2.md) · **发行历史** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **3.0 / 2.0 历史** → [docs/prism-3.0.md](docs/prism-3.0.md) / [docs/prism-2.0.md](docs/prism-2.0.md)
+**当前治理叙事** → [docs/prism-3.2.md](docs/prism-3.2.md) · **3.2 controlled pilot** → [docs/3.2-pilot.md](docs/3.2-pilot.md) · **发行历史** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **3.0 / 2.0 历史** → [docs/prism-3.0.md](docs/prism-3.0.md) / [docs/prism-2.0.md](docs/prism-2.0.md)
 
 ---
 
@@ -169,6 +169,7 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 | **认知熵 / skill 怎么选** | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) · 上文 [认知熵与 Workflow Skills](#认知熵与-workflow-skills) |
 | 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
 | Prism 当前如何形成按需治理闭环 | [docs/prism-3.2.md](docs/prism-3.2.md) |
+| Prism 3.2 controlled pilot 怎么试 | [docs/3.2-pilot.md](docs/3.2-pilot.md) |
 | Prism 3.0 的历史成立锚点 | [docs/prism-3.0.md](docs/prism-3.0.md) |
 | 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
 | topic 从 intake 到 archive 怎么走 | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |

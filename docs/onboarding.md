@@ -105,7 +105,7 @@ prism validate <topic_dir>
 prism finalize <topic_dir>
 ```
 
-Agent slash：`/workflow-status` · `/workflow-intake` · `/workflow-scope` · `/workflow-execute` · `/workflow-review` · `/workflow-tidy`。
+Agent slash：`/workflow-status` · `/workflow-intake` · `/workflow-clarify` · `/workflow-scope` · `/workflow-execute` · `/workflow-review` · `/workflow-tidy`。
 
 ### 升级 SDK
 

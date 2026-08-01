@@ -28,7 +28,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 ## Workflow Skills 全景
 
-| Skill | 治理的熵源 | 读取 | 输出 | 默认行为 | 3.0 成熟度 |
+| Skill | 治理的熵源 | 读取 | 输出 | 默认行为 | 当前状态 |
 |---|---|---|---|---|---|
 | `workspace-init` | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 | public / stable |
 | `workflow-intake` | 输入熵 | 原始需求、散落上下文 | `references/intake.md`、初始 scope/focus | 按需 | public / stable |

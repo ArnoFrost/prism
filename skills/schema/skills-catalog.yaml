@@ -28,7 +28,7 @@ versioning:
 # ─────────────────────────────────────────────
 entries:
 # ─────────────────────────────────────────────
-# Prism 3.0 GA formal skills — audited public/stable surface
+# Prism current public/stable skills — audited active surface
 # ─────────────────────────────────────────────
   - id: workspace-init
     visibility: public
@@ -45,7 +45,7 @@ entries:
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-07-13"
-    rationale: "Topic intake, routing, and migration. Entry point of the workflow pipeline."
+    rationale: "Topic intake and routing: create or append a bounded topic container without implying a fixed workflow sequence."
   - id: workflow-review
     visibility: public
     stability: stable
@@ -61,7 +61,7 @@ entries:
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-07-13"
-    rationale: "Scope SSOT maintenance — delta-based scope update + plan derivation."
+    rationale: "Scope SSOT maintenance — delta-based scope update plus focus and task-structure derivation."
   - id: workflow-status
     visibility: public
     stability: stable
@@ -77,7 +77,7 @@ entries:
     inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-07-13"
-    rationale: "Mechanical artifact alignment — sync README pointers, review.index, frontmatter after review/decision."
+    rationale: "Mechanical artifact alignment — sync rXX decision mirrors, optional review navigation mirrors, and frontmatter after review/decision."
   - id: workflow-digest
     visibility: public
     stability: stable

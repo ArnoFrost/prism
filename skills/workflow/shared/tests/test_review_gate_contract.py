@@ -32,6 +32,17 @@ def test_gate_order_is_readonly_before_decision_and_finalize_after_indexes():
     assert "rXX decision_ref 与既有 review.index 镜像 → write-mode finalize" in gate
 
 
+def test_review_gate_summary_is_actionable_before_accept():
+    full = _read(FULL)
+    gate = _read(GATE)
+    assert "不得只说“报告已落盘，请查看文件”" in full
+    assert "rXX 路径、建议 Accept / Reject / Defer 的单句判断" in full
+    assert "若 Accept 将授权的明确范围" in full
+    assert "Gate 4 前的对话输出必须先给用户一个可直接裁决的短摘要" in gate
+    assert "摘要不得只引用 rXX 文件" in gate
+    assert "Finding 本身不会自动转成 action" in gate
+
+
 def test_review_gate_delegates_mechanical_decision_write_to_cli():
     full = _read(FULL)
     gate = _read(GATE)
@@ -138,7 +149,7 @@ def test_review_derived_scope_changes_require_accepted_decision():
     assert "review-derived 合同变化必须补 accepted dXX 后再改" in _read(
         SDK_ROOT / "skills" / "workflow" / "workflow-scope" / "evals" / "cases.yaml"
     )
-    assert "Review 建议只有在用户 Accept / Reject / Defer 后进入 Decision chain" in prism32
+    assert "Review 建议只有在用户 Accept / Reject / Defer 后经 Decision Record 进入 `decision.index` 主链" in prism32
     assert "非 review-derived 的 scope 修正可由显式授权进入 Scope" in prism32
     assert "Clarify 产出的变化仍只是候选，不等于接受 review 或授权写盘" in clarify
 

@@ -83,6 +83,8 @@ review synthesis 先帮助用户理解，再问是否决策。主报告与对话
 | 建议 / 候选行动 | Gate 前只表示候选建议；包含 owner / priority / 验收提示 |
 | Risks | 说明不接受建议的代价 |
 
+Gate 前对话摘要必须足以让用户直接判断是否裁决，不得只说“报告已落盘，请查看文件”。最小摘要包含：rXX 路径、建议 Accept / Reject / Defer 的单句判断、2-4 条核心理由、若 Accept 将授权的明确范围、仍阻塞的 OQ / 风险，以及“更完整细节在 rXX”。
+
 3.1 可吸收 grillme-like 的追问体验，为后续 clarify 语义预留；但本轮不内置 grillme/clarify，也不新增替代 skill。
 
 Review 是一次有边界的判断事件，不是长期治理状态。Finding 是 review 内基于证据形成的局部观察或问题判断；Finding 本身不具有授权效力，不自动成为 Scope、Decision 或执行任务。Merge 后形成结论与建议；用户 Accept / Reject / Defer 前，建议不得写成已确认 action。Review 来源的合同变化必须经 accepted dXX；独立低风险 scope 修正才可由显式授权直达 `workflow-scope`。
@@ -135,6 +137,6 @@ Maintainer 历史、编号细节、format 误报、writable=false、README grand
 
 - [ ] route / rXX / format / validators 已由 envelope 或等价输入确认
 - [ ] full review 已真实并发调研，或按白名单诚实 quick fallback
-- [ ] synthesis 先解释评审发现、结论、OQ、分歧、追问、建议，再进入 Gate 4
+- [ ] synthesis 与对话摘要先解释评审发现、结论、OQ、分歧、追问、建议，再进入 Gate 4
 - [ ] pending rXX 已通过只读校验；Gate 4 后才调用 Decision record、对齐 review 镜像并 finalize
 - [ ] 未越权改 scope/focus；需要合同变更已交 `workflow-scope`

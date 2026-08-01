@@ -54,6 +54,16 @@ question:
 4. **❓ Open Questions** — 列表（无 OQ 时显式声明"无悬而未决项"）
 5. 各 option 的 `label` 写**具体后续**（含 dXX 编号 / action、scope 变更、执行目标或 OQ-X），不泛化
 
+### 对话摘要最低线
+
+Gate 4 前的对话输出必须先给用户一个可直接裁决的短摘要，再展示 Accept / Reject / Defer / Other。摘要不得只引用 rXX 文件；必须包含：
+
+- 产物路径和一句话核心判断；
+- 推荐裁决（如建议 Accept）及 2-4 条理由；
+- 若 Accept，明确哪些 recommendations / decision options 会获得授权；
+- 尚未解决的 OQ 与主要风险；无 OQ 时显式说明；
+- 更完整细节在 rXX，且 Finding 本身不会自动转成 action。
+
 完整示例 + 反例见 SSOT [askquestion-fallback.md §4.2](../../shared/references/askquestion-fallback.md)。
 
 ## Other 选项硬契约
