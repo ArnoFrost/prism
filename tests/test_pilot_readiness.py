@@ -1,5 +1,6 @@
 """Controlled pilot readiness guards for Prism 3.2."""
 
+import re
 from pathlib import Path
 
 
@@ -24,13 +25,17 @@ def _catalog_entry(skill_id: str) -> str:
 def test_pilot_doc_names_baseline_and_exit_path() -> None:
     text = _read(PILOT)
     assert "Controlled Pilot" in text
-    assert "d6b84c2bacec0853d0e2ae1d8a280f1690cf60da" in text
+    assert "`v3.2.0-pilot.1`" in text
+    assert "git clone --branch v3.2.0-pilot.1" in text
+    assert "本文档不预写 commit SHA" in text
     assert "`v3.2-clarify`" in text
     assert "`v3.2.0`" in text
     assert "反馈模板" in text
     assert "退出与回滚" in text
     assert "NOT VERIFIED" in text
     assert "production-ready" in text
+    assert "baseline commit" not in text
+    assert not re.search(r"\b[0-9a-f]{40}\b", text)
 
 
 def test_pilot_entry_is_discoverable_from_public_docs() -> None:
