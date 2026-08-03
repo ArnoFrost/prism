@@ -18,13 +18,19 @@ user_invocable: true
 |------|------|
 | **是什么** | 轻量澄清原语：Inspect → Ask One → Checkpoint → Continue / Stop / Handoff |
 | **不是什么** | 不是 Intake、Review Lite 2.0、决策记录器、Scope writer 或 Execute 前置必经门 |
-| **读什么** | 当前对话；可查明事实；已有 topic 时按需读 `scope.md` / `focus.md` |
+| **读什么** | 必读 `references/governance-boundaries.md`；当前对话；可查明事实；已有 topic 时按需读 `scope.md` / `focus.md` |
 | **写什么** | 默认 `writes=0`；只在会话中输出问题、短确认和候选交接 |
 | **结束建议** | 继续澄清、结束，或经用户明确授权后交接一个既有 workflow |
 
 # Workflow Clarify
 
 > 任意阶段按需 sidecar：目标是减少阻塞性歧义，不是生产更多工件。事实调查可并发；人类取舍必须串行。
+
+## 0. 必读引用
+
+执行本 skill 前必须读取 [governance-boundaries.md](references/governance-boundaries.md)。它只提供 Workflow 运行时 invariant；Clarify 的进入条件、micro-loop、默认零写盘、候选交接和禁止面仍以本文件为准。
+
+只有用户明确要求落盘或进入下一 workflow 时，才读取 [handoff-contract.md](references/handoff-contract.md)。
 
 ## 1. 进入与跳过
 

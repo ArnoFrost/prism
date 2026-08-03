@@ -8,6 +8,8 @@ SKILL_DIR = REPO_ROOT / "skills" / "workflow" / "workflow-clarify"
 SKILL = SKILL_DIR / "SKILL.md"
 HANDOFF = SKILL_DIR / "references" / "handoff-contract.md"
 EVALS = SKILL_DIR / "evals" / "cases.yaml"
+GOVERNANCE_SHARED = REPO_ROOT / "skills" / "workflow" / "shared" / "governance-boundaries.md"
+GOVERNANCE_REF = SKILL_DIR / "references" / "governance-boundaries.md"
 CATALOG = REPO_ROOT / "skills" / "schema" / "skills-catalog.yaml"
 DIST = REPO_ROOT / "skills" / "schema" / "dist-whitelist.yaml"
 AGENTS = REPO_ROOT / "AGENTS.md"
@@ -29,6 +31,7 @@ def test_clarify_is_dev_experimental_and_user_invocable():
 def test_clarify_defaults_to_one_question_and_zero_writes():
     text = SKILL.read_text(encoding="utf-8")
     assert "任意阶段按需 sidecar" in text
+    assert "执行本 skill 前必须读取 [governance-boundaries.md](references/governance-boundaries.md)" in text
     assert "只问一个会改变下一阶段做法的问题" in text
     assert "每轮只询问了一个当前阻塞问题" in text
     assert "默认 `writes=0`" in text
@@ -36,11 +39,33 @@ def test_clarify_defaults_to_one_question_and_zero_writes():
     assert "不自动进入 Intake、Review、Scope、Decision 或 Execute" in text
 
 
+def test_clarify_required_runtime_governance_reference_resolves():
+    text = SKILL.read_text(encoding="utf-8")
+    assert "references/governance-boundaries.md" in text
+    assert GOVERNANCE_SHARED.exists()
+    assert GOVERNANCE_REF.exists()
+    assert GOVERNANCE_REF.resolve() == GOVERNANCE_SHARED
+
+    governance = GOVERNANCE_REF.read_text(encoding="utf-8")
+    assert "Workflow Skill 的最小运行时 invariant" in governance
+    assert "skill-governance-contract.md" in governance
+    assert "只认明确授权" in governance
+    assert "候选不是决定" in governance
+    assert "不自动晋级状态" in governance
+    assert "Handoff 不携带权力" in governance
+    assert "写入 fail-closed" in governance
+    assert "先调查再提问" in governance
+    assert "前置条件缺失即停止" in governance
+    assert "不是 vocabulary、catalog、schema、template、编排方案" in governance
+
+
 def test_handoff_is_candidate_only_and_requires_authorization():
     text = HANDOFF.read_text(encoding="utf-8")
     assert "候选交接" in text
     assert "requires_user_authorization: true" in text
     assert "writes: []" in text
+    assert "source: user_explicit" in text
+    assert "DEFER_DELETE(pilot)" in text
     assert "Clarify 只交候选内容" in text
     assert "command: prism decision record | null" in text
     assert "用户明确授权且属于可审计治理事件" in text
@@ -70,8 +95,13 @@ def test_clarify_p0_dogfood_surfaces_are_named_in_evals():
     for case_id in (
         "clarify-no-topic-01",
         "clarify-topic-handoff-01",
+        "clarify-natural-stop-01",
+        "clarify-scope-delta-no-auth-01",
         "clarify-review-oq-handoff-01",
         "clarify-review-derived-auth-01",
+        "clarify-review-finding-unaccepted-01",
+        "clarify-ambiguous-write-auth-01",
+        "clarify-multiple-exit-01",
         "clarify-skip-01",
     ):
         assert f"id: {case_id}" in text
@@ -79,4 +109,6 @@ def test_clarify_p0_dogfood_surfaces_are_named_in_evals():
     assert "自动创建 topic" in text
     assert "重开完整 Review" in text
     assert "把建议命名为 action" in text
+    assert "不视为写盘授权" in text
+    assert "只推荐一个最合适 handoff" in text
     assert "route: workflow-execute" in text

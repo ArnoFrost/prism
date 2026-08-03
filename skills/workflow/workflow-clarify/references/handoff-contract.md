@@ -13,13 +13,13 @@ clarify_handoff:
   candidate:
     kind: scope_delta | decision_candidate | review_question | intake_input | execution_target
     summary: "<待目标 workflow 复核的候选内容>"
-    source: user_explicit
+    source: user_explicit  # DEFER_DELETE(pilot)：等共享授权 invariant 被验证稳定后再评估是否删除
   handoff:
     skill: workflow-scope | workflow-review | workflow-intake | workflow-execute | null
     command: prism decision record | null
     reason: "<为何该 skill 是唯一合适出口>"
-    requires_user_authorization: true
-    writes: []
+    requires_user_authorization: true  # DEFER_DELETE(pilot)：作为 envelope 安全锚暂时保留
+    writes: []  # DEFER_DELETE(pilot)：Clarify 保持零写入
 ```
 
 规则：
@@ -27,6 +27,7 @@ clarify_handoff:
 - `confirmed` 只记录用户已经明确确认的内容，不推断接受。
 - `remaining_blocker` 非空时，不得交接 Execute。
 - `writes` 在 Clarify 阶段永远是空列表。
+- `source` / `requires_user_authorization` / `writes` 已由共享 runtime invariant 覆盖，但 pilot 阶段继续作为 `DEFER_DELETE` 安全字段保留。
 - envelope 只在需要交接时输出；普通澄清轮次使用自然语言短确认。
 - review finding / OQ / 建议可作为 Clarify 输入材料，但仍只是证据、判断或建议；Clarify 得出的变化仍是候选，不等于接受 review 或授权写盘。
 
