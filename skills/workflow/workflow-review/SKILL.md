@@ -23,13 +23,17 @@ public_gate:
 |------|------|
 | **是什么** | topic 内正式多视角评审：Align → Explore → Merge → Gate 4 |
 | **不是什么** | 不直接改 scope/focus、不隐式生成 decision、不替代人类裁决、不是日常小改默认入口 |
-| **读什么** | `prism sniff` / hotpath envelope；`review-templates.md`；full 时按需读 parallel / merge / trace / decision gate |
+| **读什么** | 必读 [governance-boundaries.md](references/governance-boundaries.md)；`prism sniff` / hotpath envelope；`review-templates.md`；full 时按需读 parallel / merge / trace / decision gate |
 | **写什么** | `reviews/rXX_描述.md`；条件 `reviews/raw/`；Accept/Reject/Defer 后调用 `prism decision record` 写 dXX 主链 |
 | **结束建议** | 先输出 pending synthesis；用户明确 Accept / Reject / Defer 后再决策落盘 |
 
 # 多角色协作评审 (Workflow Review)
 
 > 3.1 热路径：先拿机械 envelope，再做多视角判断；CLI / validator 只给路径、编号、引用和验证计划，不替人做治理判断。Envelope 约定见 [hotpath-envelope-spec.md](../shared/hotpath-envelope-spec.md)。
+
+## 0. 必读引用
+
+执行本 skill 前必须读取 [governance-boundaries.md](references/governance-boundaries.md)。它只提供 Workflow 运行时 invariant；Review 的 Align、真实并发、`task_probe`、Merge、Gate 4、pending rXX、`decision_artifact` 与 dXX 审计链仍以本文件与本地 references 为准。
 
 ## 1. 何时使用
 
@@ -88,6 +92,8 @@ Gate 前对话摘要必须足以让用户直接判断是否裁决，不得只说
 3.1 可吸收 grillme-like 的追问体验，为后续 clarify 语义预留；但本轮不内置 grillme/clarify，也不新增替代 skill。
 
 Review 是一次有边界的判断事件，不是长期治理状态。Finding 是 review 内基于证据形成的局部观察或问题判断；Finding 本身不具有授权效力，不自动成为 Scope、Decision 或执行任务。Merge 后形成结论与建议；用户 Accept / Reject / Defer 前，建议不得写成已确认 action。Review 来源的合同变化必须经 accepted dXX；独立低风险 scope 修正才可由显式授权直达 `workflow-scope`。
+
+> 运行时授权、写盘与 handoff 边界遵循 [governance-boundaries.md](references/governance-boundaries.md)；Review 本地收窄为：finding、结论、建议、候选行动和 handoff 只构成待裁决材料，不携带 scope / decision / execute 授权；接收 skill 必须重跑自身 Gate。
 
 ## 5. Merge 与 Trace
 

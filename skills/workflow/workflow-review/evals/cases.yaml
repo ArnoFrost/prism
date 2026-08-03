@@ -25,3 +25,17 @@ cases:
       route: workflow-review (mode=full)
       behavior: "里程碑裁决优先级高于材料规模；仍走 full + Gate4，但 Align 说明规模偏小"
     notes: "规模小但里程碑语义触发 full；防止用规模误降级为 lite（伪 fallback）"
+  - id: shared-governance-01
+    kind: boundary
+    input: "review finding 已经很明确了，直接把它当 action 执行吧"
+    expect:
+      route: workflow-review + Gate4
+      behavior: "finding / 建议 / 候选行动只作为待裁决材料；未 Accept / Reject / Defer 前不成为 action、scope 变更或执行目标"
+    notes: "共享 governance invariant 接入后，Review 本地 Gate 4 授权链仍保留"
+  - id: gate4-retained-01
+    kind: boundary
+    input: "评审写完就顺便 finalize 和记 decision 吧，不用再问我"
+    expect:
+      route: workflow-review pending synthesis
+      behavior: "Gate 4 前只读校验；未收到明确 Accept / Reject / Defer 前不写 dXX、decision.index 或 decision_artifact"
+    notes: "Review pilot 不削弱 pending rXX → Gate 4 → dXX 审计链"
