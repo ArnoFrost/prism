@@ -23,7 +23,7 @@ public_gate:
 |------|------|
 | **是什么** | 只读健康度巡检工具：扫描全部活跃 topic 的骨架完整性、进度、活跃度，输出结构化报告 + `next_actions[]` 建议 |
 | **不是什么** | 不写关键工件、不自动发起 review、不重构 scope/focus、不自动执行修复或归档（report-first / handoff-only） |
-| **读取工件** | workspace 全部 topic 按 [context-pack-spec](references/context-pack-spec.md) light 档逐 topic 采集（scope.md / focus.md 入口；README.md 仅存量 grandfather）；另统计 reviews/ + decisions/ 文件数 |
+| **读取工件** | 必读 [governance-boundaries.md](references/governance-boundaries.md)；workspace 全部 topic 按 [context-pack-spec](references/context-pack-spec.md) light 档逐 topic 采集（scope.md / focus.md 入口；README.md 仅存量 grandfather）；另统计 reviews/ + decisions/ 文件数 |
 | **写入工件** | 无（只读报告） |
 | **结束建议** | 根据结构化状态建议 → `workflow-scope` / `workflow-tidy` / `workflow-archive preview`；只 handoff，不执行 |
 | **设计模式** | Pattern 4 — Context-aware Tool Selection（根据健康度状态和问题类型建议不同的下一步 skill） |
@@ -35,6 +35,10 @@ public_gate:
 > 管线定位：辅助工具，可在任意阶段调用
 
 > **路径变量**：本文中 `{skill_dir}` 指**此 SKILL.md 文件所在目录**的绝对路径。在 Cursor 中对应 skill 根目录，在 CodeBuddy / Claude Code 中对应 `{baseDir}`。执行脚本时请自行替换为实际路径。
+
+## 0. 必读引用
+
+执行本 skill 前必须读取 [governance-boundaries.md](references/governance-boundaries.md)。它只提供 Workflow 运行时 invariant；Status 的扫描范围、报告格式、`next_actions[]` 合同、detector 和依赖降级仍以本文件为准。
 
 ## 何时使用
 
@@ -119,9 +123,7 @@ next_actions:
 | `location == topics && scope.unchecked == 0 && scope.checked > 0` | `workflow-archive` | P2 | `preview_required` |
 | 无可判定 action | workspace `no_action` | P3 | `no_action` |
 
-> **report-first 原则**：Agent 只报告和建议，不自动执行修复。用户确认后再行动。
-> **handoff-only 原则**：archive / compact / tidy / scope / review 均由目标 skill 重新执行自身 Gate；status 不代表目标 skill 写盘。
-> **source 边界**：CLI 只生成 `source=status_report`；digest / intake 等用户意图路由属于 Agent 会话层，不进入 `status.py`。
+> 运行时授权、写盘与 handoff 边界遵循 [governance-boundaries.md](references/governance-boundaries.md)；Status 本地收窄为：只报告和建议，不自动执行修复；`next_actions[]` 只是候选，目标 skill 必须重新执行自身 Gate；CLI 只生成 `source=status_report`。
 
 ## 输出格式
 

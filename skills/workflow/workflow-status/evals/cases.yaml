@@ -24,3 +24,17 @@ cases:
       route: workflow-status（报告）+ 建议后续 scope/tidy
       behavior: "status 输出发现与建议，但不自行落盘修改；修复交由对应 skill"
     notes: "查中带改：status 守只读，改动 handoff，不越权写盘"
+  - id: archive-preview-01
+    kind: boundary
+    input: "看下哪些 topic 已经都完成了，能归档的也帮我处理一下"
+    expect:
+      route: workflow-status（报告）+ 建议 workflow-archive preview
+      behavior: "status 只建议 preview_required，不移动 topic"
+    notes: "归档候选不携带移动授权"
+  - id: no-action-01
+    kind: boundary
+    input: "扫一下 workspace，如果没问题就告诉我"
+    expect:
+      route: workflow-status
+      behavior: "无稳定 next action 时输出 no_action，不制造后续 workflow"
+    notes: "无 action 不为了治理制造动作"
