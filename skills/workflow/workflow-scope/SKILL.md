@@ -25,13 +25,17 @@ public_gate:
 |------|------|
 | **是什么** | 合同维护器：根据授权更新 `scope.md`，再 rewrite `focus.md` |
 | **不是什么** | 不做 review、不记 findings、不建 scope-v2/focus-v2、不按裸 review 结论落权 |
-| **读什么** | context-pack light / hotpath envelope；必要时读 focus-derive 与 scope templates |
+| **读什么** | 必读 [governance-boundaries.md](references/governance-boundaries.md)；context-pack light / hotpath envelope；必要时读 focus-derive 与 scope templates |
 | **写什么** | `scope.md`、`focus.md`；按需 `structures/task-N_slug/` + `task.index.md` |
 | **结束建议** | 验证通过后继续执行；需要多视角判断才交 `workflow-review` |
 
 # 专项边界收敛与合同维护 (Workflow Scope)
 
 > 3.1 热路径：scope 是 focus 与 task.index 的唯一上游。CLI / validator 只提供机械 envelope、结构信号和校验计划，不替 Agent 或用户决定合同内容。Envelope 约定见 [hotpath-envelope-spec.md](../shared/hotpath-envelope-spec.md)。
+
+## 0. 必读引用
+
+执行本 skill 前必须读取 [governance-boundaries.md](references/governance-boundaries.md)。它只提供 Workflow 运行时 invariant；Scope 的授权来源、Delta、scope→focus 派生、task-fork gate、写入面和验证语义仍以本文件与本地 references 为准。
 
 ## 1. 何时使用
 
@@ -58,6 +62,8 @@ Phase 4 Verify  — product / trace / conservation 校验；只报告，不自�
 - 授权来源：accepted dXX、用户显式 scope 偏移修正，或 intake 后边界收敛。Review-derived 合同变化必须经 accepted dXX；显式 scope 修正只覆盖独立、低风险、可逆的非 review-derived 偏移。
 - 当前合同：`scope.md` + `focus.md`（或 2.x 由 intake upgrade 处理）。
 - 机械 envelope：topic_dir、work file、structures 状态、allowed writes、validator plan。
+
+> 运行时授权、写盘与 handoff 边界遵循 [governance-boundaries.md](references/governance-boundaries.md)；Scope 本地收窄为：只有 accepted dXX、显式 scope 修正或 intake 收敛能触发写盘；review / clarify / status 传入的 finding、candidate、`next_actions[]` 或 handoff 只作为输入材料，不携带授权。
 
 ## 3. Delta 必填
 

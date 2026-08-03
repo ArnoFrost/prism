@@ -24,3 +24,17 @@ cases:
       route: 需 accepted dXX
       behavior: "lite Accept 不等于 scope 写盘许可（FS-lite-no-direct）；review-derived 合同变化必须补 accepted dXX 后再改"
     notes: "lite ≠ 授权；防止 review-lite 结论直改合同"
+  - id: shared-governance-01
+    kind: boundary
+    input: "status 的 next_actions 建议 scope，同步一下吧"
+    expect:
+      route: workflow-scope 前置校验
+      behavior: "`next_actions[]` / handoff 只作为输入材料，不携带授权；Scope 必须重新校验 accepted dXX、显式 scope 修正或 intake 收敛"
+    notes: "共享 governance invariant 接入后，Scope 本地授权门仍保留"
+  - id: delta-retained-01
+    kind: boundary
+    input: "我已经授权了，别列 Delta，直接改 scope/focus"
+    expect:
+      route: workflow-scope
+      behavior: "即使授权明确，也必须先输出 Delta，再 scope 原地更新并 rewrite focus"
+    notes: "Scope pilot 不削弱 Delta 写盘骨架"
