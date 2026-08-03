@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prism Workflow Governance Demo</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --panel-soft: #f1f5f9;
+      --text: #111827;
+      --muted: #5b6472;
+      --line: #d8dee8;
+      --line-strong: #aeb8c8;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --green: #0f766e;
+      --green-soft: #ccfbf1;
+      --amber: #b45309;
+      --amber-soft: #fef3c7;
+      --red: #b91c1c;
+      --red-soft: #fee2e2;
+      --violet: #6d28d9;
+      --violet-soft: #ede9fe;
+      --shadow: 0 18px 55px rgba(15, 23, 42, 0.10);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        linear-gradient(180deg, rgba(37, 99, 235, 0.05), transparent 320px),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      max-width: 900px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .mode-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .workbench {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .side-panel {
+      grid-column: 1 / -1;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #f9fafb);
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .panel-note {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .scenario-list {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .scenario-button {
+      width: 100%;
+      min-height: 82px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .scenario-button:hover {
+      border-color: var(--line-strong);
+      transform: translateY(-1px);
+    }
+
+    .scenario-button[aria-pressed="true"] {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      box-shadow: inset 4px 0 0 var(--blue);
+    }
+
+    .scenario-kicker {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .scenario-name {
+      display: block;
+      margin-top: 5px;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .scenario-desc {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .main-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .scenario-stage {
+      min-height: 204px;
+      padding: 18px;
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(15, 118, 110, 0.08)),
+        #fff;
+    }
+
+    .stage-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .stage-title {
+      margin: 8px 0 8px;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .stage-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .stage-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pill.is-active {
+      border-color: currentColor;
+      color: var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .signal-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .signal-card {
+      min-height: 96px;
+      padding: 12px;
+      border: 1px solid rgba(37, 99, 235, 0.20);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .signal-card strong {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .signal-card p {
+      margin: 8px 0 0;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.55;
+    }
+
+    .contract-stack {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .layer-card {
+      position: relative;
+      min-height: 156px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+    }
+
+    .layer-card.is-hot {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      transform: translateY(-2px);
+    }
+
+    .layer-card.is-warm {
+      border-color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .layer-index {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .layer-card.is-hot .layer-index {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .layer-title {
+      margin: 12px 0 7px;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+
+    .layer-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .invariant-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(92px, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .invariant {
+      min-height: 96px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .invariant.is-hot {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: #0f3f3a;
+    }
+
+    .invariant-key {
+      display: block;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .invariant-text {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .skill-map {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .skill-node {
+      min-height: 78px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .skill-node.is-hot {
+      border-color: var(--violet);
+      background: var(--violet-soft);
+      color: #3b1a70;
+    }
+
+    .skill-name {
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .skill-role {
+      display: block;
+      margin-top: 7px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .diagram-wrap {
+      position: relative;
+      min-height: 620px;
+      overflow: hidden;
+      padding: 16px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(109, 40, 217, 0.08), transparent 38%),
+        linear-gradient(180deg, #fff, #f8fafc);
+    }
+
+    .diagram-orbit {
+      position: absolute;
+      left: 15%;
+      right: 15%;
+      top: 11%;
+      bottom: 10%;
+      border: 2px dashed rgba(148, 163, 184, 0.28);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .diagram-orbit.small {
+      left: 31%;
+      right: 31%;
+      top: 23%;
+      bottom: 22%;
+      opacity: 0.7;
+    }
+
+    .diagram-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .diagram-link {
+      fill: none;
+      stroke: rgba(148, 163, 184, 0.26);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      color: rgba(148, 163, 184, 0.42);
+      transition: stroke 180ms ease, stroke-width 180ms ease, opacity 180ms ease;
+    }
+
+    .diagram-link.is-hot {
+      stroke: var(--blue);
+      stroke-width: 7;
+      color: var(--blue);
+      opacity: 0.92;
+      filter: drop-shadow(0 10px 16px rgba(37, 99, 235, 0.20));
+    }
+
+    .diagram-label {
+      position: absolute;
+      color: #8993a5;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .diagram-label.is-hot {
+      color: var(--blue);
+    }
+
+    .diagram-hint {
+      position: absolute;
+      left: 50%;
+      top: 22px;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+      z-index: 5;
+    }
+
+    .diagram-node {
+      position: absolute;
+      display: grid;
+      align-content: center;
+      min-height: 116px;
+      padding: 18px 20px;
+      border: 2px solid rgba(203, 213, 225, 0.72);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.80);
+      color: #98a1b2;
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+      transition: border-color 180ms ease, background 180ms ease, color 180ms ease, opacity 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .diagram-node.is-hot {
+      border-color: var(--blue);
+      background: #fff;
+      color: var(--text);
+      opacity: 1;
+      transform: translateY(-2px);
+      box-shadow: 0 22px 55px rgba(37, 99, 235, 0.16);
+    }
+
+    .diagram-node.is-soft {
+      opacity: 0.45;
+    }
+
+    .diagram-node.context {
+      left: 35%;
+      top: 36%;
+      width: 30%;
+      min-height: 158px;
+      border-width: 4px;
+      border-radius: 24px;
+      text-align: center;
+      z-index: 3;
+    }
+
+    .diagram-node.intake {
+      left: 2%;
+      top: 39%;
+      width: 23%;
+    }
+
+    .diagram-node.clarify {
+      left: 7%;
+      top: 13%;
+      width: 27%;
+    }
+
+    .diagram-node.review {
+      right: 7%;
+      top: 13%;
+      width: 27%;
+    }
+
+    .diagram-node.scope {
+      left: 7%;
+      bottom: 12%;
+      width: 27%;
+    }
+
+    .diagram-node.execute {
+      right: 7%;
+      bottom: 12%;
+      width: 27%;
+    }
+
+    .diagram-node.decision {
+      left: 50%;
+      bottom: 13%;
+      width: 18%;
+      min-height: 54px;
+      padding: 12px 18px;
+      border-color: rgba(180, 83, 9, 0.50);
+      background: rgba(254, 243, 199, 0.78);
+      color: var(--amber);
+      transform: translateX(-50%);
+      z-index: 4;
+    }
+
+    .diagram-node.decision.is-hot {
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    .diagram-node.work {
+      right: -1%;
+      top: 55%;
+      width: 16%;
+      min-height: 74px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--green);
+    }
+
+    .diagram-node h3 {
+      margin: 7px 0 4px;
+      font-size: 25px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .diagram-node.context h3 {
+      font-size: 31px;
+    }
+
+    .diagram-node p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 750;
+    }
+
+    .diagram-tag {
+      justify-self: start;
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.10);
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .diagram-node.context .diagram-tag,
+    .diagram-node.work .diagram-tag {
+      justify-self: center;
+    }
+
+    .context-pills {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 14px 0 10px;
+    }
+
+    .context-pill {
+      min-width: 104px;
+      padding: 9px 14px;
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      border-radius: 999px;
+      background: var(--violet-soft);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    .migration-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .migration-card {
+      min-height: 118px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .migration-card.is-hot {
+      border-color: var(--amber);
+      background: var(--amber-soft);
+      color: #5f3508;
+    }
+
+    .migration-key {
+      display: block;
+      color: inherit;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .migration-text {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .side-body {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .state-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .state {
+      min-height: 74px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .state strong {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .state span {
+      display: block;
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .state.allowed {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: #0f3f3a;
+    }
+
+    .state.blocked {
+      border-color: var(--red);
+      background: var(--red-soft);
+      color: #6f1717;
+    }
+
+    .state.pending {
+      border-color: var(--amber);
+      background: var(--amber-soft);
+      color: #5f3508;
+    }
+
+    .decision-box {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+    }
+
+    .decision-box h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .decision-box p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .action-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .action-list li {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      min-height: 42px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .mark {
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .mark.allow {
+      background: var(--green);
+    }
+
+    .mark.block {
+      background: var(--red);
+    }
+
+    .trace {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: trace;
+    }
+
+    .trace li {
+      position: relative;
+      min-height: 46px;
+      padding: 9px 10px 9px 38px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .trace li::before {
+      counter-increment: trace;
+      content: counter(trace);
+      position: absolute;
+      left: 10px;
+      top: 10px;
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--text);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    @media (max-width: 1180px) {
+      .workbench {
+        grid-template-columns: 1fr;
+      }
+
+      .contract-stack {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .invariant-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .migration-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        width: min(100% - 20px, 720px);
+        padding-top: 14px;
+      }
+
+      .topbar,
+      .workbench {
+        grid-template-columns: 1fr;
+      }
+
+      .mode-chip {
+        justify-self: start;
+      }
+
+      .contract-stack,
+      .invariant-grid,
+      .skill-map,
+      .signal-board,
+      .migration-grid,
+      .state-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-stage {
+        min-height: 0;
+      }
+
+      .diagram-wrap {
+        display: grid;
+        gap: 10px;
+        min-height: 0;
+      }
+
+      .diagram-orbit,
+      .diagram-svg,
+      .diagram-label {
+        display: none;
+      }
+
+      .diagram-node,
+      .diagram-node.context,
+      .diagram-node.intake,
+      .diagram-node.clarify,
+      .diagram-node.review,
+      .diagram-node.scope,
+      .diagram-node.execute,
+      .diagram-node.decision,
+      .diagram-node.work {
+        position: static;
+        width: 100%;
+        min-height: 0;
+        border-radius: var(--radius);
+        text-align: left;
+      }
+
+      .diagram-node.context .diagram-tag,
+      .diagram-node.work .diagram-tag {
+        justify-self: start;
+      }
+
+      .context-pills {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Prism 3.2 Topic 060</p>
+        <h1>Workflow Governance Simplification</h1>
+        <p class="lede">
+          这页用可切换场景展示：遇到不同协作情况时，应该直接回答、先问清楚、先做判断、同步边界，还是开始执行。
+          规则细节放在下方，第一眼先看图和高亮路径。
+        </p>
+      </div>
+      <span class="mode-chip">演示对象：Prism Workflow 启动判断</span>
+    </header>
+
+    <section class="workbench" aria-label="Workflow governance interactive demo">
+      <aside class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">场景切换</h2>
+          <p class="panel-note">选择一个真实协作场景，观察共享边界和本地合同如何分工。</p>
+        </div>
+        <div class="scenario-list">
+          <button class="scenario-button" type="button" data-scenario="plain" aria-pressed="true">
+            <span class="scenario-kicker">Scenario A</span>
+            <span class="scenario-name">普通对话自然完成</span>
+            <span class="scenario-desc">能直接答，就直接结束。</span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="clarify" aria-pressed="false">
+            <span class="scenario-kicker">Scenario B</span>
+            <span class="scenario-name">一个取舍没问清</span>
+            <span class="scenario-desc">先问一个问题，不急着写。</span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="review" aria-pressed="false">
+            <span class="scenario-kicker">Scenario C</span>
+            <span class="scenario-name">需要先判断风险</span>
+            <span class="scenario-desc">建议要等你接受才生效。</span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="scope" aria-pressed="false">
+            <span class="scenario-kicker">Scenario D</span>
+            <span class="scenario-name">已确认，更新边界</span>
+            <span class="scenario-desc">只写被确认的变化。</span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="status" aria-pressed="false">
+            <span class="scenario-kicker">Scenario E</span>
+            <span class="scenario-name">不知道下一步</span>
+            <span class="scenario-desc">先看状态，只推荐一步。</span>
+          </button>
+          <button class="scenario-button" type="button" data-scenario="execute" aria-pressed="false">
+            <span class="scenario-kicker">Scenario F</span>
+            <span class="scenario-name">已有授权目标</span>
+            <span class="scenario-desc">只推进当前这一个。</span>
+          </button>
+        </div>
+      </aside>
+
+      <section class="main-grid">
+        <section class="panel scenario-stage" aria-live="polite">
+          <span class="stage-label" id="stageLabel">当前场景</span>
+          <h2 class="stage-title" id="stageTitle"></h2>
+          <p class="stage-copy" id="stageCopy"></p>
+          <div class="stage-pills" id="stagePills"></div>
+          <div class="signal-board">
+            <div class="signal-card">
+              <strong>用户信号</strong>
+              <p id="userSignal"></p>
+            </div>
+            <div class="signal-card">
+              <strong>治理解读</strong>
+              <p id="governanceRead"></p>
+            </div>
+            <div class="signal-card">
+              <strong>推荐出口</strong>
+              <p id="recommendedExit"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">协作心智图</h2>
+            <p class="panel-note">第一眼只回答“现在该从哪里启动”；内部规则留给下方细节面板。</p>
+          </div>
+          <div class="diagram-wrap" aria-label="Workflow governance map">
+            <span class="diagram-hint">先看当前问题属于哪一类，再选择一个入口</span>
+            <div class="diagram-orbit"></div>
+            <div class="diagram-orbit small"></div>
+            <svg class="diagram-svg" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <marker id="arrowHead" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto">
+                  <path d="M 0 0 L 10 6 L 0 12 z" fill="currentColor"></path>
+                </marker>
+              </defs>
+              <path class="diagram-link" data-link="clarify-context" d="M 275 170 C 340 205 360 225 395 250" marker-end="url(#arrowHead)"></path>
+              <path class="diagram-link" data-link="context-review" d="M 605 250 C 650 210 700 175 725 160" marker-end="url(#arrowHead)"></path>
+              <path class="diagram-link" data-link="review-decision" d="M 780 200 C 720 305 625 430 545 495" marker-end="url(#arrowHead)"></path>
+              <path class="diagram-link" data-link="decision-scope" d="M 455 510 C 370 525 300 515 270 493" marker-end="url(#arrowHead)"></path>
+              <path class="diagram-link" data-link="scope-context" d="M 275 455 C 340 410 360 380 402 350" marker-end="url(#arrowHead)"></path>
+              <path class="diagram-link" data-link="context-execute" d="M 605 350 C 650 395 710 430 725 455" marker-end="url(#arrowHead)"></path>
+            </svg>
+            <span class="diagram-label" data-link-label="clarify-context" style="left: 24%; top: 31%;">问清楚后回到共识</span>
+            <span class="diagram-label" data-link-label="context-review" style="right: 27%; top: 32%;">需要判断</span>
+            <span class="diagram-label" data-link-label="review-decision" style="right: 35%; bottom: 27%;">你确认后</span>
+            <span class="diagram-label" data-link-label="scope-context" style="left: 25%; bottom: 30%;">同步边界</span>
+            <span class="diagram-label" data-link-label="context-execute" style="right: 24%; bottom: 30%;">明确获权后</span>
+
+            <article class="diagram-node clarify" data-diagram-node="clarify">
+              <span class="diagram-tag">Clarify</span>
+              <h3>先问清楚</h3>
+              <p>只有一个关键取舍卡住下一步时使用</p>
+            </article>
+
+            <article class="diagram-node context" data-diagram-node="context">
+              <span class="diagram-tag">Shared Context</span>
+              <h3>当前共识</h3>
+              <p>目标、边界和当前工作重点</p>
+              <div class="context-pills">
+                <span class="context-pill">目标边界</span>
+                <span class="context-pill">当前焦点</span>
+              </div>
+              <p>只有明确授权才会改变这里</p>
+            </article>
+
+            <article class="diagram-node review" data-diagram-node="review">
+              <span class="diagram-tag">Review</span>
+              <h3>先做判断</h3>
+              <p>方向变化、风险变高、需要证据时使用</p>
+            </article>
+
+            <article class="diagram-node execute" data-diagram-node="execute">
+              <span class="diagram-tag">Execute</span>
+              <h3>开始执行</h3>
+              <p>只推进一个已经获权的目标</p>
+            </article>
+
+            <article class="diagram-node decision" data-diagram-node="decision">
+              <span class="diagram-tag">你的确认</span>
+            </article>
+
+            <article class="diagram-node scope" data-diagram-node="scope">
+              <span class="diagram-tag">Scope</span>
+              <h3>同步边界</h3>
+              <p>你已确认改变后，用它更新目标和范围</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Effective Skill Contract</h2>
+            <p class="panel-note">运行时合同 = 共享 invariant + Skill 能力 + 本地约束 + 任务引用。</p>
+          </div>
+          <div class="contract-stack">
+            <article class="layer-card" data-layer="shared">
+              <span class="layer-index">1</span>
+              <h3 class="layer-title">Shared Governance Invariants</h3>
+              <p class="layer-copy">授权、状态晋级、写入、handoff、停止边界。跨多个 Workflow Skill 稳定成立。</p>
+            </article>
+            <article class="layer-card" data-layer="capability">
+              <span class="layer-index">2</span>
+              <h3 class="layer-title">Skill Capability</h3>
+              <p class="layer-copy">Clarify 问一个阻塞取舍；Review 形成证据判断；Scope 更新合同。</p>
+            </article>
+            <article class="layer-card" data-layer="local">
+              <span class="layer-index">3</span>
+              <h3 class="layer-title">Skill-local Constraints</h3>
+              <p class="layer-copy">进入条件、跳过条件、写入面、stop / ask / fallback、局部禁止面。</p>
+            </article>
+            <article class="layer-card" data-layer="reference">
+              <span class="layer-index">4</span>
+              <h3 class="layer-title">Task-specific References</h3>
+              <p class="layer-copy">scope.md、focus.md、review rXX、decision dXX、handoff contract 等上下文材料。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">共享运行时 Invariants</h2>
+            <p class="panel-note">高亮项表示当前场景最容易出错、最需要 Agent 稳定加载的边界。</p>
+          </div>
+          <div class="invariant-grid">
+            <div class="invariant" data-invariant="auth"><span class="invariant-key">AUTH</span><span class="invariant-text">只认明确授权</span></div>
+            <div class="invariant" data-invariant="candidate"><span class="invariant-key">CANDIDATE</span><span class="invariant-text">候选不是决定</span></div>
+            <div class="invariant" data-invariant="advance"><span class="invariant-key">ADVANCE</span><span class="invariant-text">不自动晋级状态</span></div>
+            <div class="invariant" data-invariant="handoff"><span class="invariant-key">HANDOFF</span><span class="invariant-text">交接不携带权力</span></div>
+            <div class="invariant" data-invariant="write"><span class="invariant-key">WRITE</span><span class="invariant-text">写入 fail-closed</span></div>
+            <div class="invariant" data-invariant="inspect"><span class="invariant-key">INSPECT</span><span class="invariant-text">先调查再提问</span></div>
+            <div class="invariant" data-invariant="stop"><span class="invariant-key">STOP</span><span class="invariant-text">前置缺失即停止</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Skill 分层地图</h2>
+            <p class="panel-note">高亮 Skill 是当前场景可以推荐或进入的能力，不代表自动调用。</p>
+          </div>
+          <div class="skill-map">
+            <div class="skill-node" data-skill="clarify"><span class="skill-name">Clarify</span><span class="skill-role">阻塞歧义 sidecar</span></div>
+            <div class="skill-node" data-skill="review"><span class="skill-name">Review</span><span class="skill-role">有证据的判断</span></div>
+            <div class="skill-node" data-skill="decision"><span class="skill-name">Decision</span><span class="skill-role">授权后的裁决</span></div>
+            <div class="skill-node" data-skill="scope"><span class="skill-name">Scope</span><span class="skill-role">合同与 focus 同步</span></div>
+            <div class="skill-node" data-skill="execute"><span class="skill-name">Execute</span><span class="skill-role">推进唯一已授权游标</span></div>
+            <div class="skill-node" data-skill="status"><span class="skill-name">Status</span><span class="skill-role">report-first 健康巡检</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">迁移矩阵视角</h2>
+            <p class="panel-note">用这四类判断一条规则应该留在 Skill、上提共享、延后删除，还是直接删。</p>
+          </div>
+          <div class="migration-grid">
+            <div class="migration-card" data-migration="keep">
+              <span class="migration-key">KEEP</span>
+              <span class="migration-text">Skill 独有能力、过程、写入面和局部安全锚。</span>
+            </div>
+            <div class="migration-card" data-migration="move">
+              <span class="migration-key">MOVE</span>
+              <span class="migration-text">跨多个 Workflow Skill 稳定成立的 runtime invariant。</span>
+            </div>
+            <div class="migration-card" data-migration="defer">
+              <span class="migration-key">DEFER_DELETE</span>
+              <span class="migration-text">已上提但 pilot 仍要保留的安全字段或提示。</span>
+            </div>
+            <div class="migration-card" data-migration="delete">
+              <span class="migration-key">DELETE</span>
+              <span class="migration-text">同一文件内没有独立安全价值的纯重复表达。</span>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="panel side-panel">
+        <div class="panel-header">
+          <h2 class="panel-title">边界调试台</h2>
+          <p class="panel-note">用“允许 / 等待 / 禁止”表达治理结果，减少抽象规则的阅读负担。</p>
+        </div>
+        <div class="side-body">
+          <div class="state-strip">
+            <div class="state" id="authState"><strong>授权</strong><span></span></div>
+            <div class="state" id="writeState"><strong>写入</strong><span></span></div>
+            <div class="state" id="handoffState"><strong>交接</strong><span></span></div>
+          </div>
+
+          <div class="decision-box">
+            <h3>当前判断</h3>
+            <p id="judgement"></p>
+          </div>
+
+          <div>
+            <div class="panel-header" style="padding: 0 0 8px; border: 0; background: transparent;">
+              <h3 class="panel-title">可做动作</h3>
+            </div>
+            <ul class="action-list" id="allowedList"></ul>
+          </div>
+
+          <div>
+            <div class="panel-header" style="padding: 0 0 8px; border: 0; background: transparent;">
+              <h3 class="panel-title">必须拦住</h3>
+            </div>
+            <ul class="action-list" id="blockedList"></ul>
+          </div>
+
+          <div>
+            <div class="panel-header" style="padding: 0 0 8px; border: 0; background: transparent;">
+              <h3 class="panel-title">最小 trace</h3>
+            </div>
+            <ol class="trace" id="traceList"></ol>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer-note">
+      迭代提示：新增场景时优先补充 JavaScript 的 <strong>scenarios</strong> 数据；只有当表达模式变化时再调整布局。
+      这个演示页刻意不依赖外部资源，方便直接用浏览器打开和在仓库中版本化。
+    </p>
+  </main>
+
+  <script>
+    const scenarios = {
+      plain: {
+        title: "普通对话能自然完成时，Workflow 不需要登场",
+        copy: "如果只是一次普通讨论，直接回答就好。Prism 不要求每件事都进入流程，也不为了管理而制造管理。",
+        pills: ["直接回答", "自然停止", "不制造流程"],
+        signal: "“帮我看一下这个表达有没有更清楚。”",
+        read: "没有长期状态变化，也没有正式授权需求。普通对话即可消化。",
+        exit: "直接回答，然后停止。",
+        diagramNodes: ["context"],
+        diagramLinks: [],
+        layers: ["shared"],
+        invariants: ["advance", "stop"],
+        skills: [],
+        migration: ["move", "delete"],
+        states: {
+          auth: ["allowed", "不需要"],
+          write: ["blocked", "零写盘"],
+          handoff: ["blocked", "不推荐"]
+        },
+        judgement: "直接完成对话并停止。Workflow 是可选治理能力，不是普通协作的入口税。",
+        allowed: ["回答用户当前问题", "在回答中说明无需进入 Workflow"],
+        blocked: ["新建 topic 或 handoff", "为了套用某个 Skill 制造问题"],
+        trace: ["识别为普通对话", "检查没有阻塞性歧义", "直接回答并自然结束"]
+      },
+      clarify: {
+        title: "只有一个关键取舍卡住时，先问清楚",
+        copy: "Clarify 的感觉应该很轻：先自己看能查到的信息，然后只问一个会影响下一步的问题。问清楚之后先停住，不急着改文件。",
+        pills: ["先查", "只问一个", "不急着写"],
+        signal: "“可以吧，感觉先这样。”",
+        read: "这可能是方向性同意，但不是写盘授权。需要一个最小确认问题。",
+        exit: "Clarify 继续问一个问题；若形成 delta，只输出候选。",
+        diagramNodes: ["clarify", "context"],
+        diagramLinks: ["clarify-context"],
+        layers: ["shared", "capability", "local"],
+        invariants: ["auth", "candidate", "advance", "write", "inspect"],
+        skills: ["clarify"],
+        migration: ["keep", "move", "defer"],
+        states: {
+          auth: ["pending", "需明确"],
+          write: ["blocked", "零写盘"],
+          handoff: ["pending", "最多一个"]
+        },
+        judgement: "推荐一个最合适出口可以，但必须把它说成候选。用户未明确授权前，不能修改 scope/focus，也不能自动调用 Scope。",
+        allowed: ["问一个会改变下一步做法的问题", "给出推荐答案和短确认", "输出一个候选 handoff"],
+        blocked: ["把“可以吧”当作写盘授权", "同时推荐多个出口并并行扩权", "直接修改 scope.md 或 focus.md"],
+        trace: ["读取共享治理边界", "Inspect 当前对话和可查事实", "Ask One 并等待回答", "形成候选 delta 后停止或请求授权"]
+      },
+      review: {
+        title: "方向变了或风险变高时，先做判断",
+        copy: "Review 用来把隐性的判断说清楚。它可以提出建议，但建议不是决定；要等你明确接受后，才会改变工作边界。",
+        pills: ["形成判断", "等待确认", "不直接改边界"],
+        signal: "“r02 方向我觉得可以，但先窄接受。”",
+        read: "Review 输出被用户裁决前只是材料；narrow Accept 需要 Decision Record 固化边界。",
+        exit: "先 Decision，再按授权交给 Scope。",
+        diagramNodes: ["context", "review", "decision"],
+        diagramLinks: ["context-review", "review-decision"],
+        layers: ["shared", "capability", "reference"],
+        invariants: ["auth", "candidate", "handoff", "advance", "write"],
+        skills: ["review", "decision"],
+        migration: ["keep", "move"],
+        states: {
+          auth: ["pending", "未接受"],
+          write: ["blocked", "不可改合同"],
+          handoff: ["pending", "候选"]
+        },
+        judgement: "finding 可以进入讨论和后续裁决材料，但它本身不改变 scope，不授权执行，也不让接收 Skill 跳过自己的 Gate。",
+        allowed: ["记录证据和分级 findings", "提出 narrow Accept / Reject / Revise 建议", "等待用户裁决"],
+        blocked: ["把 finding 当作 dXX", "基于 review 结论直接写 scope", "让 Execute 消费未接受建议"],
+        trace: ["Align 评审对象", "Explore 多视角证据", "Merge 成 rXX", "Gate 4 等待用户裁决"]
+      },
+      scope: {
+        title: "你已经确认改变后，再同步边界",
+        copy: "Scope 负责把已经确认的目标、范围和当前焦点写清楚。它只同步被授权的部分，不顺手扩大任务。",
+        pills: ["已确认", "同步目标", "刷新焦点"],
+        signal: "“我接受这个 dXX，请同步 scope/focus。”",
+        read: "存在明确授权来源。Scope 可以进入限定写入面，但不能扩大授权范围。",
+        exit: "Scope 更新合同并刷新 focus，随后停止或建议下一步。",
+        diagramNodes: ["decision", "scope", "context"],
+        diagramLinks: ["decision-scope", "scope-context"],
+        layers: ["shared", "capability", "local", "reference"],
+        invariants: ["auth", "write", "handoff", "stop"],
+        skills: ["decision", "scope"],
+        migration: ["keep", "move", "defer"],
+        states: {
+          auth: ["allowed", "已接受"],
+          write: ["allowed", "限定写入"],
+          handoff: ["pending", "写后建议"]
+        },
+        judgement: "这里可以写盘，但写入面被 Scope 本地合同限制：更新 scope/focus，并做派生一致性验证，不顺手推进 Execute。",
+        allowed: ["读取 accepted Decision Record", "更新 scope.md", "刷新 focus.md 并验证合同一致"],
+        blocked: ["扩大 Decision 未授权范围", "同步后自动执行任务", "顺手迁移其他 Skill"],
+        trace: ["确认 dXX 为 accepted", "读取 scope/focus 与必要引用", "应用最小合同变更", "验证并给出后续建议"]
+      },
+      status: {
+        title: "不知道下一步时，先看状态",
+        copy: "Status 只帮你看当前局面并推荐一个最合适的下一步。推荐不等于自动开始，仍然等你选择。",
+        pills: ["先报告", "只推荐一步", "不自动执行"],
+        signal: "“看看现在这个 topic 下一步做什么。”",
+        read: "这是状态巡检请求，不是修复授权。next_actions 只能作为候选出口。",
+        exit: "Status 报告一个最合适 handoff，等待用户选择。",
+        diagramNodes: ["context"],
+        diagramLinks: [],
+        layers: ["shared", "capability", "local"],
+        invariants: ["candidate", "advance", "handoff", "stop"],
+        skills: ["status", "clarify", "scope"],
+        migration: ["move", "defer"],
+        states: {
+          auth: ["pending", "未授予"],
+          write: ["blocked", "只报告"],
+          handoff: ["pending", "候选"]
+        },
+        judgement: "Status 可以说“下一步建议 Scope”，但不能替 Scope 写，也不能让 Scope 因为 handoff 存在就跳过准入校验。",
+        allowed: ["输出健康报告", "给出一个最合适 next_action", "说明接收 Skill 仍需重跑 Gate"],
+        blocked: ["自动调用目标 Skill", "把 next_action 当作执行授权", "在报告中偷偷修复工件"],
+        trace: ["扫描 workspace/topic", "生成 report-first 结果", "形成 next_actions[] 候选", "停止并等待用户选择"]
+      },
+      execute: {
+        title: "目标已经明确获权时，才开始执行",
+        copy: "Execute 不负责选择方向，也不自动消费下一项。它只推进当前这个已经被授权、边界清楚的目标。",
+        pills: ["目标明确", "只推进一个", "做完再停"],
+        signal: "“按刚才确认的范围，把这个批次做完。”",
+        read: "这里已经不是澄清或评审问题；关键是确认只有一个当前目标，并且授权范围清楚。",
+        exit: "进入 Execute，完成实现、验证和证据回填。",
+        diagramNodes: ["context", "execute"],
+        diagramLinks: ["context-execute"],
+        layers: ["shared", "capability", "local", "reference"],
+        invariants: ["auth", "write", "advance", "stop"],
+        skills: ["execute"],
+        migration: ["keep", "move"],
+        states: {
+          auth: ["allowed", "已授权"],
+          write: ["allowed", "按范围"],
+          handoff: ["blocked", "不续跑"]
+        },
+        judgement: "可以开始做当前目标，但不能把完成一个目标解释成自动进入下一目标。完成后验证、报告，然后停止。",
+        allowed: ["推进一个明确目标", "修改授权范围内文件", "运行验证并记录结果"],
+        blocked: ["自己选择另一个目标", "自动进入下一批次", "遇到边界变化仍继续执行"],
+        trace: ["确认当前目标唯一且已获权", "执行最小必要改动", "运行验证", "同步结果并停止"]
+      }
+    };
+
+    const buttons = [...document.querySelectorAll(".scenario-button")];
+    const layerCards = [...document.querySelectorAll(".layer-card")];
+    const invariants = [...document.querySelectorAll(".invariant")];
+    const skillNodes = [...document.querySelectorAll(".skill-node")];
+    const migrationCards = [...document.querySelectorAll(".migration-card")];
+    const diagramNodes = [...document.querySelectorAll(".diagram-node")];
+    const diagramLinks = [...document.querySelectorAll(".diagram-link")];
+    const diagramLabels = [...document.querySelectorAll(".diagram-label")];
+    const stageTitle = document.querySelector("#stageTitle");
+    const stageCopy = document.querySelector("#stageCopy");
+    const stagePills = document.querySelector("#stagePills");
+    const userSignal = document.querySelector("#userSignal");
+    const governanceRead = document.querySelector("#governanceRead");
+    const recommendedExit = document.querySelector("#recommendedExit");
+    const judgement = document.querySelector("#judgement");
+    const allowedList = document.querySelector("#allowedList");
+    const blockedList = document.querySelector("#blockedList");
+    const traceList = document.querySelector("#traceList");
+    const authState = document.querySelector("#authState");
+    const writeState = document.querySelector("#writeState");
+    const handoffState = document.querySelector("#handoffState");
+
+    function renderList(target, items, kind) {
+      target.innerHTML = "";
+      for (const item of items) {
+        const li = document.createElement("li");
+        const mark = document.createElement("span");
+        mark.className = `mark ${kind}`;
+        mark.textContent = kind === "allow" ? "Y" : "N";
+        const text = document.createElement("span");
+        text.textContent = item;
+        li.append(mark, text);
+        target.append(li);
+      }
+    }
+
+    function renderTrace(items) {
+      traceList.innerHTML = "";
+      for (const item of items) {
+        const li = document.createElement("li");
+        li.textContent = item;
+        traceList.append(li);
+      }
+    }
+
+    function renderState(node, state) {
+      node.className = `state ${state[0]}`;
+      node.querySelector("span").textContent = state[1];
+    }
+
+    function selectScenario(key) {
+      const scenario = scenarios[key];
+      if (!scenario) return;
+
+      for (const button of buttons) {
+        button.setAttribute("aria-pressed", String(button.dataset.scenario === key));
+      }
+
+      stageTitle.textContent = scenario.title;
+      stageCopy.textContent = scenario.copy;
+      userSignal.textContent = scenario.signal;
+      governanceRead.textContent = scenario.read;
+      recommendedExit.textContent = scenario.exit;
+      judgement.textContent = scenario.judgement;
+
+      stagePills.innerHTML = "";
+      for (const label of scenario.pills) {
+        const pill = document.createElement("span");
+        pill.className = "pill is-active";
+        pill.textContent = label;
+        stagePills.append(pill);
+      }
+
+      for (const card of layerCards) {
+        card.classList.toggle("is-hot", scenario.layers.includes(card.dataset.layer));
+      }
+
+      for (const invariant of invariants) {
+        invariant.classList.toggle("is-hot", scenario.invariants.includes(invariant.dataset.invariant));
+      }
+
+      for (const node of skillNodes) {
+        node.classList.toggle("is-hot", scenario.skills.includes(node.dataset.skill));
+      }
+
+      for (const node of diagramNodes) {
+        const isHot = scenario.diagramNodes.includes(node.dataset.diagramNode);
+        node.classList.toggle("is-hot", isHot);
+        node.classList.toggle("is-soft", !isHot);
+      }
+
+      for (const link of diagramLinks) {
+        link.classList.toggle("is-hot", scenario.diagramLinks.includes(link.dataset.link));
+      }
+
+      for (const label of diagramLabels) {
+        label.classList.toggle("is-hot", scenario.diagramLinks.includes(label.dataset.linkLabel));
+      }
+
+      for (const card of migrationCards) {
+        card.classList.toggle("is-hot", scenario.migration.includes(card.dataset.migration));
+      }
+
+      renderState(authState, scenario.states.auth);
+      renderState(writeState, scenario.states.write);
+      renderState(handoffState, scenario.states.handoff);
+      renderList(allowedList, scenario.allowed, "allow");
+      renderList(blockedList, scenario.blocked, "block");
+      renderTrace(scenario.trace);
+    }
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => selectScenario(button.dataset.scenario));
+    }
+
+    selectScenario("plain");
+  </script>
+</body>
+</html>
