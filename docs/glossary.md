@@ -41,6 +41,8 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 | ⚠️ **AP** | 行动项（旧）→ action | Action Point | 废弃尾 |
 | ⚠️ **decision-chain** | 决策链 → decision-index | Decision chain | 废弃尾 |
 
+如果想按“高频核心 / 执行支持 / 维护生命周期 / 兼容面”理解 Workflow Skill 怎么选，读 [skill-taxonomy.md](./skill-taxonomy.md)。该分类是人类阅读层，不改变本页术语速查和 `vocabulary.md` SSOT。
+
 ## 使用规范
 
 > 详见 SSOT §使用约定。简版速查：
