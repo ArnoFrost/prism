@@ -25,11 +25,14 @@ def _catalog_entry(skill_id: str) -> str:
 def test_pilot_doc_names_baseline_and_exit_path() -> None:
     text = _read(PILOT)
     assert "Controlled Pilot" in text
-    assert "`v3.2.0-pilot.1`" in text
-    assert "git clone --branch v3.2.0-pilot.1" in text
+    assert "git clone --branch v3.2.0-pilot.1" not in text
+    assert "不要继续使用 `v3.2.0-pilot.1` 作为最新基线" in text
+    assert "`v3.2.0-pilot.2`" in text
+    assert "git clone --branch v3.2.0-pilot.2" in text
     assert "本文档不预写 commit SHA" in text
     assert "`v3.2-clarify`" in text
     assert "`v3.2.0`" in text
+    assert "本机 dogfood" in text
     assert "反馈模板" in text
     assert "退出与回滚" in text
     assert "NOT VERIFIED" in text
@@ -56,4 +59,4 @@ def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:
 def test_release_and_taxonomy_use_current_pilot_language() -> None:
     assert "按单一获权游标推进且不自动扩权" in _read(CHANGELOG)
     assert "可选、串行且不自动扩权" not in _read(CHANGELOG)
-    assert "| Skill | 治理的熵源 | 读取 | 输出 | 默认行为 | 当前状态 |" in _read(TAXONOMY)
+    assert "| Skill | 阅读层级 | 治理的熵源 | 读取 | 输出 | 默认行为 | 当前状态 |" in _read(TAXONOMY)
