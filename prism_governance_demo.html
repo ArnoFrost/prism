@@ -354,6 +354,72 @@
       padding: 12px;
     }
 
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .heatmap-card {
+      min-height: 118px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--muted);
+      transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .heatmap-card.is-hot {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: #163a7c;
+      transform: translateY(-2px);
+    }
+
+    .heatmap-card.allowed {
+      border-color: var(--green);
+      background: var(--green-soft);
+      color: #0f3f3a;
+    }
+
+    .heatmap-card.pending {
+      border-color: var(--amber);
+      background: var(--amber-soft);
+      color: #5f3508;
+    }
+
+    .heatmap-card.blocked {
+      border-color: var(--red);
+      background: var(--red-soft);
+      color: #6f1717;
+    }
+
+    .heatmap-key {
+      display: block;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .heatmap-title {
+      display: block;
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.3;
+      font-weight: 900;
+    }
+
+    .heatmap-value {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 750;
+    }
+
     .invariant {
       min-height: 96px;
       padding: 10px;
@@ -765,6 +831,10 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
+      .heatmap-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
       .migration-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -789,6 +859,7 @@
       .contract-stack,
       .flow-board,
       .invariant-grid,
+      .heatmap-grid,
       .skill-map,
       .signal-board,
       .migration-grid,
@@ -912,6 +983,50 @@
         <details class="details-panel">
           <summary>查看治理细节</summary>
           <div class="details-content">
+            <section class="panel">
+              <div class="panel-header">
+                <h2 class="panel-title">治理热力图</h2>
+                <p class="panel-note">这里解释当前场景为什么推荐这个入口，哪些边界正在生效。</p>
+              </div>
+              <div class="heatmap-grid">
+                <article class="heatmap-card" data-heat="entry">
+                  <span class="heatmap-key">ENTRY</span>
+                  <span class="heatmap-title">推荐入口</span>
+                  <span class="heatmap-value" id="heatEntry"></span>
+                </article>
+                <article class="heatmap-card" data-heat="auth">
+                  <span class="heatmap-key">AUTH</span>
+                  <span class="heatmap-title">授权状态</span>
+                  <span class="heatmap-value" id="heatAuth"></span>
+                </article>
+                <article class="heatmap-card" data-heat="candidate">
+                  <span class="heatmap-key">CANDIDATE</span>
+                  <span class="heatmap-title">候选边界</span>
+                  <span class="heatmap-value" id="heatCandidate"></span>
+                </article>
+                <article class="heatmap-card" data-heat="write">
+                  <span class="heatmap-key">WRITE</span>
+                  <span class="heatmap-title">写入边界</span>
+                  <span class="heatmap-value" id="heatWrite"></span>
+                </article>
+                <article class="heatmap-card" data-heat="advance">
+                  <span class="heatmap-key">ADVANCE</span>
+                  <span class="heatmap-title">状态推进</span>
+                  <span class="heatmap-value" id="heatAdvance"></span>
+                </article>
+                <article class="heatmap-card" data-heat="handoff">
+                  <span class="heatmap-key">HANDOFF</span>
+                  <span class="heatmap-title">交接边界</span>
+                  <span class="heatmap-value" id="heatHandoff"></span>
+                </article>
+                <article class="heatmap-card" data-heat="stop">
+                  <span class="heatmap-key">STOP</span>
+                  <span class="heatmap-title">停止边界</span>
+                  <span class="heatmap-value" id="heatStop"></span>
+                </article>
+              </div>
+            </section>
+
             <section class="panel">
               <div class="panel-header">
                 <h2 class="panel-title">Effective Skill Contract</h2>
@@ -1218,6 +1333,7 @@
     const invariants = [...document.querySelectorAll(".invariant")];
     const skillNodes = [...document.querySelectorAll(".skill-node")];
     const migrationCards = [...document.querySelectorAll(".migration-card")];
+    const heatmapCards = [...document.querySelectorAll(".heatmap-card")];
     const stageTitle = document.querySelector("#stageTitle");
     const stageCopy = document.querySelector("#stageCopy");
     const stagePills = document.querySelector("#stagePills");
@@ -1232,6 +1348,13 @@
     const flowConfirmCopy = document.querySelector("#flowConfirmCopy");
     const flowNext = document.querySelector("#flowNext");
     const flowNextCopy = document.querySelector("#flowNextCopy");
+    const heatEntry = document.querySelector("#heatEntry");
+    const heatAuth = document.querySelector("#heatAuth");
+    const heatCandidate = document.querySelector("#heatCandidate");
+    const heatWrite = document.querySelector("#heatWrite");
+    const heatAdvance = document.querySelector("#heatAdvance");
+    const heatHandoff = document.querySelector("#heatHandoff");
+    const heatStop = document.querySelector("#heatStop");
     const judgement = document.querySelector("#judgement");
     const allowedList = document.querySelector("#allowedList");
     const blockedList = document.querySelector("#blockedList");
@@ -1266,6 +1389,36 @@
     function renderState(node, state) {
       node.className = `state ${state[0]}`;
       node.querySelector("span").textContent = state[1];
+    }
+
+    function renderHeatmap(scenario) {
+      const heatValues = {
+        entry: scenario.read,
+        auth: scenario.states.auth[1],
+        candidate: scenario.invariants.includes("candidate") ? "候选态需等待裁决" : "不涉及候选升级",
+        write: scenario.states.write[1],
+        advance: scenario.invariants.includes("advance") ? "不自动进入下一步" : "当前步完成即停止",
+        handoff: scenario.states.handoff[1],
+        stop: scenario.invariants.includes("stop") ? "前置不足就停止" : "自然停止或等待选择"
+      };
+
+      heatEntry.textContent = heatValues.entry;
+      heatAuth.textContent = heatValues.auth;
+      heatCandidate.textContent = heatValues.candidate;
+      heatWrite.textContent = heatValues.write;
+      heatAdvance.textContent = heatValues.advance;
+      heatHandoff.textContent = heatValues.handoff;
+      heatStop.textContent = heatValues.stop;
+
+      for (const card of heatmapCards) {
+        const key = card.dataset.heat;
+        const isHot = key === "entry" || scenario.invariants.includes(key);
+        card.classList.remove("is-hot", "allowed", "pending", "blocked");
+        card.classList.toggle("is-hot", isHot);
+        if (key === "auth") card.classList.add(scenario.states.auth[0]);
+        if (key === "write") card.classList.add(scenario.states.write[0]);
+        if (key === "handoff") card.classList.add(scenario.states.handoff[0]);
+      }
     }
 
     function selectScenario(key) {
@@ -1318,6 +1471,7 @@
       renderState(authState, scenario.states.auth);
       renderState(writeState, scenario.states.write);
       renderState(handoffState, scenario.states.handoff);
+      renderHeatmap(scenario);
       renderList(allowedList, scenario.allowed, "allow");
       renderList(blockedList, scenario.blocked, "block");
       renderTrace(scenario.trace);
