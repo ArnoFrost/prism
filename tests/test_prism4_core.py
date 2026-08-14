@@ -14,6 +14,7 @@ from prism4 import (
     clarify_capability,
     is_starter_relation_kind,
     plan_capability,
+    project_brief,
     record_decision_operation,
     review_capability,
 )
@@ -262,3 +263,37 @@ def test_plan_is_proposed_until_decision_authorizes_it():
         and relation.target_ref == plan.id
         for relation in store.relations
     )
+
+
+def test_brief_can_be_regenerated_as_projection():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:prism-4", title="Prism 4.0 refoundation"))
+    intent = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="intent",
+            title="Foundation Intent",
+            body="Keep Core thin.",
+        )
+    )
+    decision = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="decision",
+            title="Authority Decision",
+            body="Committed outputs need authority.",
+        )
+    )
+
+    brief = project_brief(store, topic.id, artifact_id="artifact:brief.projection")
+
+    assert brief.role == "brief"
+    assert brief.metadata["authority"] == "projected"
+    assert brief.metadata["evolution"] == "regenerable"
+    assert "Foundation Intent" in brief.body
+    assert "Authority Decision" in brief.body
+    assert "not a fact source" in brief.body
+    assert intent.body not in brief.body
+    assert decision.body not in brief.body
