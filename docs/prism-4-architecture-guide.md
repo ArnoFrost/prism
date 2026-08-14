@@ -305,6 +305,8 @@ projects
 references
 ```
 
+This is a minimal starter set, not a closed enum. Add relations only when dogfood shows that a stable semantic relation cannot be represented clearly with the starter set.
+
 ## 8. Diagram Style Guidance
 
 When drawing Prism 4.0 diagrams:
@@ -362,7 +364,7 @@ Invocation
   records provenance and causality
 
 Decision Semantics
-  records authorized commitment over artifacts
+  governs authority and commitment over artifacts
 
 Outside Core
   Host / Workspace

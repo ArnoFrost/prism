@@ -310,6 +310,15 @@ authority_required: none | delegated | human-required
 mutation_target: none | proposed-patch | direct-update | record
 ```
 
+Invariant for committed outputs:
+
+```text
+output_status = committed
+=> authority_required = delegated | human-required
+```
+
+Autonomous execution may produce candidates or proposals. It cannot create committed Decisions without human authority or previously delegated authority.
+
 ### Phase 4: Canonical CLI Cutover
 
 Goal:

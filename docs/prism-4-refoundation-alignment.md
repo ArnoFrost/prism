@@ -389,6 +389,15 @@ authority_required: none | delegated | human-required
 mutation_target: none | proposed-patch | direct-update | record
 ```
 
+Protocol invariant:
+
+```text
+output_status = committed
+=> authority_required = delegated | human-required
+```
+
+Autonomous execution is not autonomous authority. A committed Decision must be backed by human authority or previously delegated authority.
+
 ### 7.2 Review
 
 `Review` 是主动评估、检验、洞察的能力。
@@ -415,7 +424,7 @@ effect: propose or patch
 policy: Understanding may be autonomous; commitment requires authority
 ```
 
-Clarify 可以产生 Decision Candidate，但不等于 Decision。Clarify 默认无权修改 authoritative artifacts；只有低风险事实修正或明确授权时，Adapter / Capability implementation 才可直接更新 Brief 或 Intent。
+Clarify 可以产生 Decision Candidate，但不等于 Decision。Clarify 默认无权修改 authoritative artifacts。Brief 作为 projection，可在 Adapter policy 下更新；Intent 的 direct mutation 必须有人类授权或预先委托授权。低风险事实修正可以由 Agent 自主提出，只有在明确 delegated policy 覆盖时才可直接应用。
 
 ### 7.4 Record Decision
 
@@ -430,7 +439,7 @@ Record Decision
 input:  Decision Candidate / Findings / Human Choice / affected Artifacts
 output: Decision
 effect: record
-policy: human-required | delegated | autonomous
+policy: human-required | delegated
 ```
 
 Decision 可以授权或解释后续对 Intent、Brief、Child Topic Intent 或 Plan 的修正，但 Decision 本身不自动修改这些工件。实际更新应通过 Invocation / proposed patch / adapter operation 留下关系。
@@ -548,7 +557,9 @@ projects
 references
 ```
 
-不要为了覆盖所有场景扩展 relation ontology。
+The listed relation vocabulary is a minimal starter set, not a closed enum.
+
+Do not expand relation ontology speculatively; add relations only when dogfood requires stable semantics.
 
 每次能力调用都可以形成一条 Invocation 记录：
 
