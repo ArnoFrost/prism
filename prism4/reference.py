@@ -51,6 +51,14 @@ class ReferenceStore:
         self.payloads[payload.id] = payload
         return payload
 
+    def add_relation(self, relation: Relation) -> Relation:
+        if not self._has_ref(relation.source_ref):
+            raise PrismProtocolError(f"relation source does not exist: {relation.source_ref}")
+        if not self._has_ref(relation.target_ref):
+            raise PrismProtocolError(f"relation target does not exist: {relation.target_ref}")
+        self.relations.append(relation)
+        return relation
+
     def invoke(
         self,
         capability: CapabilitySpec,

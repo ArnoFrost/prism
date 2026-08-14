@@ -13,6 +13,7 @@ from prism4 import (
     Topic,
     clarify_capability,
     is_starter_relation_kind,
+    plan_capability,
     record_decision_operation,
     review_capability,
 )
@@ -200,3 +201,64 @@ def test_record_decision_commits_payload_under_delegated_authority():
     assert invocation.policy.authority_required == "delegated"
     assert store.artifacts[decision.id].role == "decision"
     assert candidate.id in invocation.input_refs
+
+
+def test_plan_is_proposed_until_decision_authorizes_it():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:prism-4", title="Prism 4.0 refoundation"))
+    intent = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="intent",
+            body="Validate the minimal Prism 4.0 semantic vertical slice.",
+        )
+    )
+    finding = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="findings",
+            body="Plan can be generated without becoming operative.",
+        )
+    )
+    decision = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="decision",
+            body="Authorized: continue with Plan as the next reference artifact.",
+        )
+    )
+    plan = Artifact(
+        id=new_id("artifact"),
+        topic_id=topic.id,
+        role="plan",
+        body="1. Keep protocol thin. 2. Validate adapter later.",
+    )
+
+    invocation = store.invoke(
+        capability=plan_capability(),
+        inputs=(intent, finding, decision),
+        outputs=(plan,),
+    )
+
+    assert invocation.capability_id == "prism:plan"
+    assert invocation.policy.output_status == "proposed"
+    assert invocation.policy.authority_required == "none"
+    assert store.artifacts[plan.id].role == "plan"
+    assert not any(
+        relation.kind == "authorizes" and relation.target_ref == plan.id
+        for relation in store.relations
+    )
+
+    store.add_relation(
+        Relation(source_ref=decision.id, kind="authorizes", target_ref=plan.id)
+    )
+
+    assert any(
+        relation.kind == "authorizes"
+        and relation.source_ref == decision.id
+        and relation.target_ref == plan.id
+        for relation in store.relations
+    )
