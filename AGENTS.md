@@ -248,17 +248,19 @@ SDK 内置技能通过 `bin/relink` 分发到 IDE。4.0-canary 默认只分发 `
 
 ---
 
-## 术语词典（受控词汇 SSOT）
+## 3.x Legacy 术语词典（受控词汇 SSOT）
 
-Prism workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)。**14 活跃术语 + 3 废弃兼容**（3.0：`plan`→`focus` / `AP`→`action` / `decision-chain`→`decision-index`）— 核心含 `OQ` / `goal` (G) / `V` / `scope` / `focus` / `task` / `structure` / `wave` / `review` / `finding` 等，含形态类型分类、中英对照、一句话定义、14 组易混淆对比、Prefix dispatch 表、§演进规则；**永久平铺一张表，不分核心 / 衍生 / 别名**（平铺律硬约束）。
+4.0 语义基线以 [`docs/prism-4-refoundation-alignment.md`](docs/prism-4-refoundation-alignment.md) 与 [`docs/prism-4-dogfood-plan.md`](docs/prism-4-dogfood-plan.md) 为准。以下词典只服务 3.x legacy workflow、历史 topic 与兼容脚本。
+
+Prism 3.x workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)。**14 活跃术语 + 3 废弃兼容**（3.0：`plan`→`focus` / `AP`→`action` / `decision-chain`→`decision-index`）— 核心含 `OQ` / `goal` (G) / `V` / `scope` / `focus` / `task` / `structure` / `wave` / `review` / `finding` 等，含形态类型分类、中英对照、一句话定义、14 组易混淆对比、Prefix dispatch 表、§演进规则；**永久平铺一张表，不分核心 / 衍生 / 别名**（平铺律硬约束）。
 
 | 分发面 | 路径 | 角色 |
 |--------|------|------|
 | **文档分类索引** | [`docs/README.md`](docs/README.md) | SDK 客观面 / 当前叙事 / 历史内部；人类读 docs 先读 |
-| **SDK 协议级 SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 唯一 SSOT；其他面 cite 不复制 |
-| **人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
+| **3.x legacy SSOT** | [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md) | 旧 workflow 唯一 SSOT；其他面 cite 不复制 |
+| **3.x 人类阅读分发面** | [`docs/glossary.md`](docs/glossary.md) | cite SSOT，速查 |
 | **OFM / GFM callout 速查** | [`docs/ofm-cheatsheet.md`](docs/ofm-cheatsheet.md) | G0 词汇 + review 主报告映射；cite `obsidian-config` + `review-ofm` |
-| **各 workflow SKILL 子目录软链** | `skills/workflow/workflow-*/references/vocabulary.md` | `bin/relink` 分发到 IDE；SKILL.md 用 `references/vocabulary.md` 相对路径引用 |
+| **legacy workflow SKILL 子目录软链** | `skills/workflow/workflow-*/references/vocabulary.md` | legacy profile 分发到 IDE；SKILL.md 用 `references/vocabulary.md` 相对路径引用 |
 
 所有 SKILL / 文档 / topic 产物**不字字复制术语定义**（避免漂移），按需 cite 即可。词典演进走 dXX 决策门（详见 vocabulary.md §演进规则）。
 

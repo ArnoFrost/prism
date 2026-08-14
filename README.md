@@ -106,7 +106,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 > **视觉占位（待重绘）**：未来图示应表达安装、桥接、按需治理与日常维护，不画成强制 workflow 管线。
 
 ```text
-./setup.sh init → prism --version 验收 → workspace-init / 桥接
+./setup.sh init → prism --version 验收 → relink / 桥接
               → 按熵源启用治理能力（可选）→ update / doctor / relink 维护
 ```
 
@@ -115,8 +115,8 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 | **init** | `./setup.sh init` | 配置 + relink + CLI + uv |
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
 | **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 软链 |
-| **接入** | `/workspace-init` | 已有仓库挂 workspace |
-| **topic** | `prism status` · `/workflow-intake` | 可选治理（见下节） |
+| **接入** | `prism relink` · `/prism-topic` | 已有仓库挂 workspace，或创建 4.0 Topic |
+| **topic** | `prism topic list` · `/prism-topic` | 4.0 协作边界（见下节） |
 | **升级** | `prism update` · `./setup.sh update` | pull → doctor ci → relink --no-workspace |
 | **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope 体检 |
 
@@ -152,7 +152,7 @@ Prism 的交付术语分三层：
 | **optional deployment** | Skills、Env、Vault/Git backend 都按需组合，缺失不阻断 SDK/CLI。 |
 | **legacy mini/full** | 旧 zip profile，仅 maintenance-only；不再承担 3.0 GA certification 或新增特性承诺。 |
 
-`core` 不是独立分支；3.0 的统一外部入口是 `prism` CLI。仍需维护旧 mini/full 包时使用 experimental `prism dist`，由 SDK 内部 Python adapter 委托可选兼容实现。
+`core` 不是独立分支；4.0-canary 的统一外部入口是 `prism` CLI。仍需维护旧 mini/full 包时使用 experimental `prism dist`，由 SDK 内部 Python adapter 委托可选兼容实现。
 
 ---
 
@@ -190,7 +190,7 @@ Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Sk
 > - **完全跳过痕迹**：`finalize --no-trace-validate` 或 `PRISM_TRACE_VALIDATE=off`（CI 渐进接入用）
 > - **strict 模式启用**：通过 frontmatter `trace_strict: true` / `PRISM_TRACE_VALIDATE=strict` / `--trace-strict` 升级为 strict（任一族 missing 即 ERR）。完整优先级：CLI flag > ENV > frontmatter > 配置前缀默认（`prism_cli._STRICT_DEFAULT_PREFIXES`，**默认空集** — strict 为显式 opt-in，不再硬编码任何 topic 编号）
 >
-> 仅当你需要"多角色独立评审 + 决策可审计 + 入料路由防膨胀"等结构化协作场景时，workflow + trace 才进入产品默认行为。心智门槛不要把它当作 Prism 的硬入口。
+> 仅当你需要"多角色独立评审 + 决策可审计 + 入料路由防膨胀"等历史结构化协作场景时，workflow + trace 才进入显式 legacy 使用面。心智门槛不要把它当作 Prism 的硬入口。
 
 ---
 
@@ -206,43 +206,39 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 | `bin/setup`            | 一键初始化 / 健康检查 / 重配置检测（仓库→配置→relink→IDE→报告，`--check` 仅检查，`--non-interactive` 脚本调用） |
 | `bin/doctor`           | 统一体检入口（`--scope env/skill/sync/cli/config/release`，`--fix` 非破坏性自动修复）             |
 | `bin/setenv`           | 管理 `prism.local.yaml` 配置                                                         |
-| `bin/relink`           | 刷新所有软链接                                                                          |
+| `bin/relink`           | 刷新项目/Skills IDE 软链接；默认分发 4.0 semantic skills                                          |
 | `bin/create-skill`     | 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`）                                     |
 | `bin/validate-skills`  | 扫描全量 skill frontmatter 合规性                                                       |
 | `bin/clean`            | 归档技能管理（`--add/--restore/--list`）                                                 |
 | `bin/rename-artifacts` | 批量重命名产物                                                                          |
 
 
-### `prism <verb>` — 统一外部 CLI
+### `prism <verb>` — 4.0 reference CLI
 
 
 | 命令               | 职责                                                |
 | ---------------- | ------------------------------------------------- |
-| `prism sniff`    | 探测 topic_affinity / 下一轮编号（`--kind review\|intake`） |
-| `prism validate` | 校验 topic 产物格式（frontmatter / 命名规范，`--fix` 自动修复） |
-| `prism archive`  | 归档 topic 到 `archive/` |
-| `prism reactivate` | 将 archive topic 移回 `topics/` |
-| `prism migrate`  | 迁移历史 review 子目录格式 |
-| `prism sync`     | 嗅探 SDK / Skills / Env 三仓 Git 状态 |
+| `prism topic new` | 创建 4.0 Topic 边界 |
+| `prism topic list` | 列出 4.0 Topic |
+| `prism artifact show` | 查看 4.0 Artifact / Payload 正文 |
+| `prism brief project` | 从当前状态投影 Brief，用于 context recovery |
+| `prism capability run review` | 运行 Review 能力，产出 Findings |
+| `prism capability run clarify` | 运行 Clarify 能力，产出澄清 payload |
+| `prism legacy ...` | 显式委托旧 3.x CLI adapter |
 | `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
 | `prism update`   | 拉取 SDK 并执行核心 doctor + 代码层 relink（experimental；Vault/Workspace 可选） |
 | `prism dist`     | 分发统一 facade（experimental）；mini/full 仅 legacy maintenance-only |
-| `prism decision record` | 正式决策机械落盘（experimental）；原子写 dXX + decision.index + decision_artifact |
-| `prism finalize` | Decision 后一键串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示 |
-| `prism tidy`     | 工件机械对齐（focus 入口 / 索引 / frontmatter；README 仅存量兜底） |
-| `prism status`   | Workspace 活跃 topic 健康度扫描 |
-| `prism digest`   | Topic 工件采集，供摘要/汇报生成 |
-| `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact），`--lenient` 旧产物迁移期使用 |
-| `prism manifest` | 导出 verb registry 元数据 |
+
+旧 3.x `sniff / validate / finalize / status / digest / decision record` 等 verb 仍可通过 `prism legacy ...` 使用；它们服务历史 topic 与 legacy workflow，不是 4.0 默认入口。
 
 
 详见 [bin/README.md](bin/README.md)。
 
-如需查看当前 CLI 能力面的机器可见真源，优先运行：
+如需查看当前 4.0 CLI 能力面，优先运行：
 
 ```bash
-prism --json manifest
+prism --help
 ```
 
 ---
@@ -253,8 +249,8 @@ prism --json manifest
 
 - **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
-- **experimental 标记**：标注为 experimental 的 verb（当前含 `prism dist` / `prism decision` / `prism migrate` / `prism finalize` / `prism tidy` / `prism status` / `prism digest` / `prism validate-trace` / `prism manifest`）可能在下一个 minor 改名或改参数
-- **历史 breaking change**：`prism pipeline` 已物理移除；旧调用方请改用 `prism finalize`
+- **experimental 标记**：标注为 experimental 的 verb（当前含 4.0 `topic / artifact / brief / capability` 与部分 facade）可能在下一个 minor 改名或改参数
+- **历史 breaking change**：`prism pipeline` 已物理移除；旧调用方请改用 `prism legacy finalize`
 - **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 
 > 完整命令面契约、分层判断树、稳定性分级与破坏性变更策略见 [docs/cli-contract.md](docs/cli-contract.md)。

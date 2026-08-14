@@ -1,5 +1,7 @@
 # CLI Contract — Prism 命令面契约
 
+> 4.0-canary note：本文件当前记录 3.x legacy CLI adapter 的契约与守门表，服务 `prism legacy ...`、历史 topic 与回归测试。4.0 reference CLI 的当前能力面以 `prism --help`、[bin/README.md](../bin/README.md) 与 `prism4/cli.py` 为准；不要把本文件的 `sniff / validate / finalize / status` 表误读为 4.0 默认入口。
+>
 > 本文件固化 `bin/` 与 `prism <verb>` 命令面分层 / 稳定性承诺 / "30 秒加 verb" 设计门槛 / 双协议范围。
 > 所有对 `bin/` 与 `prism <verb>` 的新增、改名、删除必须引用本文作为依据。
 > **init 后日常速查** → [onboarding.md](./onboarding.md)

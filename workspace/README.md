@@ -2,6 +2,8 @@
 
 此目录保存 Workspace 的 schema 和模板定义。
 
+> 4.0-canary 说明：`workspace/templates/*` 当前仍是 3.x Markdown workspace 模板，服务显式 legacy `workspace-init` / `workflow-intake`。4.0 dogfood 的默认状态目前由 topic 根目录中的 `prism4-state.json` 承载；未来若需要，可由新的 Workspace Adapter 再引入 4.0 模板。
+
 ## 系统层 vs 实例层
 
 - **系统层**（本目录）：Workspace 的结构定义、模板、schema
@@ -25,7 +27,7 @@ workspace/
 
 ## 模板占位符规范
 
-模板文件使用以下占位符，由 `workspace-init` 技能在初始化时替换：
+模板文件使用以下占位符，由 3.x legacy `workspace-init` 技能在初始化时替换：
 
 | 占位符 | 含义 | 示例值 |
 |--------|------|--------|
@@ -58,6 +60,6 @@ workspace/
 1. 在 Prism vault 的 `Workspace/` 下创建项目目录
 2. 复制模板文件并填写项目信息
 3. 在工作仓库创建 `workspace.{PROJECT_CODE_LOWER}.local` 软链接
-4. 或使用 `workspace-init` 技能自动完成
+4. 4.0-canary 默认使用 `prism topic new ...` 创建 Topic 状态；旧 3.x 项目可显式使用 `workspace-init` 技能自动完成
 
 Prism 仓库内永远只保存系统定义，不保存实例数据。

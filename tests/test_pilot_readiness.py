@@ -1,4 +1,4 @@
-"""Controlled pilot readiness guards for Prism 3.2."""
+"""Controlled pilot and 4.0 default-surface readiness guards."""
 
 import re
 from pathlib import Path
@@ -44,7 +44,8 @@ def test_pilot_doc_names_baseline_and_exit_path() -> None:
 def test_pilot_entry_is_discoverable_from_public_docs() -> None:
     assert "docs/3.2-pilot.md" in _read(README)
     assert "[3.2-pilot.md](./3.2-pilot.md)" in _read(ROOT / "docs" / "README.md")
-    assert "/workflow-clarify" in _read(ONBOARDING)
+    assert "/prism-clarify" in _read(ONBOARDING)
+    assert "bin/relink --skill-profile legacy" in _read(ONBOARDING)
 
 
 def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:

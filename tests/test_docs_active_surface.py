@@ -1,4 +1,4 @@
-"""Keep the Prism 3.2 documentation surface small and coherent."""
+"""Keep the Prism 4.0 documentation surface small and coherent."""
 
 from pathlib import Path
 
@@ -24,7 +24,7 @@ def test_retired_visuals_are_absent_and_unreferenced() -> None:
         )
 
 
-def test_active_templates_keep_the_lightweight_governance_contract() -> None:
+def test_legacy_workspace_templates_are_labeled_legacy() -> None:
     agents = (ROOT / "workspace" / "templates" / "AGENTS.md").read_text(
         encoding="utf-8"
     )
@@ -35,9 +35,9 @@ def test_active_templates_keep_the_lightweight_governance_contract() -> None:
         encoding="utf-8"
     )
 
-    assert "prism decision record" in agents
-    assert "明确授权" in agents and "可审计治理事件" in agents
-    assert "/workflow-clarify" in agents and "/workflow-execute" in agents
+    assert "3.x legacy template" in agents
+    assert "3.x legacy template" in project
+    assert "/prism-topic" in agents and "/prism-clarify" in agents
     assert "/workflow-review-lite" not in agents
     assert "minimal topic 默认骨架" in project
     assert "intake → scope → review → decision" not in project
@@ -45,12 +45,25 @@ def test_active_templates_keep_the_lightweight_governance_contract() -> None:
     assert "[review.index.md]" not in focus
 
 
+def test_active_docs_advertise_prism4_default_surface() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    onboarding = (ROOT / "docs" / "onboarding.md").read_text(encoding="utf-8")
+    bin_readme = (ROOT / "bin" / "README.md").read_text(encoding="utf-8")
+    skills_readme = (ROOT / "skills" / "README.md").read_text(encoding="utf-8")
+
+    assert "/prism-topic" in readme and "prism topic list" in readme
+    assert "/prism-brief" in onboarding and "prism capability run review" in onboarding
+    assert "prism4/cli.py" in bin_readme and "prism legacy <3.x verb>" in bin_readme
+    assert "4.0 semantic skill surface" in skills_readme
+    assert "默认分发" in skills_readme and "skills/prism4" in skills_readme
+
+
 def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() -> None:
     surfaces = [
         ROOT / "README.md",
         ROOT / "AGENTS.md",
-        ROOT / "docs" / "prism-3.2.md",
-        ROOT / "docs" / "skill-taxonomy.md",
+        ROOT / "docs" / "onboarding.md",
+        ROOT / "docs" / "architecture.md",
     ]
     forbidden = [
         "主工作流顺序",

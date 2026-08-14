@@ -1,6 +1,6 @@
 # skills/ — 技能层
 
-SDK 内置的核心工作流技能 + 工作区管理技能，以及 schema/模板定义。
+SDK 内置的 4.0 semantic skills、3.x legacy workflow/workspace 源码，以及 schema/模板定义。
 
 ## 目录结构
 
@@ -14,7 +14,12 @@ skills/
 │   └── dist-whitelist.yaml           # 分发白名单
 ├── templates/
 │   └── SKILL.template.md             # 技能编写模板
-├── workflow/                          # ★ 内置工作流技能（v2.0）
+├── prism4/                            # ★ 4.0-canary 默认分发面
+│   ├── prism-topic/
+│   ├── prism-brief/
+│   ├── prism-review/
+│   └── prism-clarify/
+├── workflow/                          # 3.x legacy workflow 源码（非默认分发）
 │   ├── workflow-digest/
 │   ├── workflow-compact/          # dev experimental：preview-first；授权后 backup→apply
 │   ├── workflow-archive/          # dev experimental：topic 生命周期归档
@@ -27,7 +32,7 @@ skills/
 │   ├── workflow-status/
 │   ├── workflow-tidy/
 │   └── shared/                        # sniff_lib + scripts + references（非 skill）
-└── workspace/                         # ★ 工作区管理技能
+└── workspace/                         # 3.x legacy 工作区管理源码（非默认分发）
     └── workspace-init/
 ```
 
@@ -35,14 +40,28 @@ skills/
 
 | 类别 | 位置 | 技能 |
 |------|------|------|
-| workflow | `skills/workflow/` | workflow-intake … workflow-archive（目录名 = 分发 id） |
-| workspace | `skills/workspace/` | workspace-init（含 migrate 能力） |
+| prism4 | `skills/prism4/` | prism-topic / prism-brief / prism-review / prism-clarify（默认分发） |
+| workflow legacy | `skills/workflow/` | workflow-intake … workflow-archive（源码保留，显式 profile 才分发） |
+| workspace legacy | `skills/workspace/` | workspace-init（含 migrate 能力；显式 profile 才分发） |
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
-## Workflow 管线（v3.0）
+## 4.0 semantic skill surface
 
-内置 workflow skills 组成完整的人机协作管线。人类文档导航见 [docs/README.md](../docs/README.md)。
+4.0 默认面不再是固定 workflow 管线，而是围绕协议原语组织的轻量能力。
+
+| Skill | 触发 | 输入 | 产出 |
+|-------|------|------|------|
+| `prism-topic` | `/prism-topic` | 协作边界 / parent topic / intent | Topic state |
+| `prism-brief` | `/prism-brief` | Topic state / artifacts | Brief projection |
+| `prism-review` | `/prism-review` | 当前材料 / 风险或校准问题 | Findings |
+| `prism-clarify` | `/prism-clarify` | 一个阻塞问题 / 候选修正 | Clarification payload |
+
+这些 skill 使用 `bin/prism` 的 4.0 reference adapter：`topic`、`artifact`、`brief` 与 `capability run ...`。它们不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
+
+## Legacy Workflow（v3.x）
+
+旧 workflow skills 保留给历史 topic、legacy adapter、测试与迁移参考。它们不是 `prism-4` 分支默认分发面。人类文档导航见 [docs/README.md](../docs/README.md)。
 
 ```
 clarify（任意阶段按需 sidecar；不占固定阶段）→ intake · scope · review · execute
@@ -76,23 +95,22 @@ Compatibility-only：`workflow-review-lite` 自 3.2 起不属于现役管线，�
 ## SDK 与外部技能的关系
 
 ```
-~/prism/skills/     (SDK 内置)   — 工作流 + 工作区管理（随 SDK 版本发布）
+~/prism/skills/     (SDK 内置)   — 4.0 semantic skills + 3.x legacy 源码（随 SDK 版本发布）
 ~/prism-skills/     (外部注入)   — 个人工具 + dev ops（独立 Git，可分发）
 iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 ```
 
-内置技能通过 SDK `bin/relink` 分发到 IDE 环境；外部技能通过 `prism-skills` 自带 `relink` 分发。
+内置技能通过 SDK `bin/relink` 分发到 IDE 环境；外部技能通过 `prism-skills` 自带 `relink` 分发。SDK 默认 profile 是 `prism4`：
 
 ```
-~/.cursor/skills-cursor/workflow-* -> ~/prism/skills/workflow/workflow-*/
-~/.cursor/skills-cursor/workspace-* -> ~/prism/skills/workspace/workspace-*/
-~/.cursor/skills-cursor/prism-*    -> ~/prism-skills/prism-*
-~/.codex/skills/workflow-*         -> ~/prism/skills/workflow/workflow-*/
-~/.codex/skills/workspace-*        -> ~/prism/skills/workspace/workspace-*/
-~/.codex/skills/prism-*            -> ~/prism-skills/prism-*
-~/.codex-internal/skills/workflow-* -> ~/prism/skills/workflow/workflow-*/
-~/.codex-internal/skills/workspace-* -> ~/prism/skills/workspace/workspace-*/
-~/.codex-internal/skills/prism-*   -> ~/prism-skills/prism-*
+~/.codex/skills/prism-topic   -> ~/prism/skills/prism4/prism-topic/
+~/.codex/skills/prism-brief   -> ~/prism/skills/prism4/prism-brief/
+~/.codex/skills/prism-review  -> ~/prism/skills/prism4/prism-review/
+~/.codex/skills/prism-clarify -> ~/prism/skills/prism4/prism-clarify/
+
+# 仅显式 legacy profile：
+~/.codex/skills/workflow-*    -> ~/prism/skills/workflow/workflow-*/
+~/.codex/skills/workspace-*   -> ~/prism/skills/workspace/workspace-*/
 ```
 
 ## SKILL.md 规范
@@ -107,17 +125,17 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 
 | 检查项 | 规则 |
 |--------|------|
-| 父目录 | `workflow-archive/`（不是 `archive/`） |
-| frontmatter `name` | `workflow-archive`（与父目录一致） |
-| IDE 软链 | `~/.codex/skills/workflow-archive` → 同上目录 |
-| 触发 | `/workflow-archive` |
+| 父目录 | `prism-brief/`（不是 `brief/`） |
+| frontmatter `name` | `prism-brief`（与父目录一致） |
+| IDE 软链 | `~/.codex/skills/prism-brief` → 同上目录 |
+| 触发 | `/prism-brief` |
 
 `bin/validate-skills` 与 Codex 均校验 **name === 父目录 basename**。外部 `prism-skills` 顶层目录同理（`commit/` → `name: commit`）。
 
 ## 治理与 SSOT
 
 - 人类文档分类与读序：[docs/README.md](../docs/README.md)（SDK 客观面 / 当前叙事 / 历史内部）
-- CLI 契约：[docs/cli-contract.md](../docs/cli-contract.md) · 术语：[docs/glossary.md](../docs/glossary.md)（cite `workflow/shared/vocabulary.md`）
+- CLI 契约：[docs/cli-contract.md](../docs/cli-contract.md) · 4.0 语义地基：[docs/prism-4-refoundation-alignment.md](../docs/prism-4-refoundation-alignment.md)
 - **SDK 内置技能**：`schema/skills-catalog.yaml` 是 `visibility` / `stability` 的权威值；`SKILL.md` 可省略 C 层字段（validate 从 catalog 继承），写明则必须与 catalog 一致（见 `frontmatter-spec.md`）
 - **外部 prism-skills**：未入 catalog 者须在 `SKILL.md` 写明 `visibility` + `stability`（默认 `internal` + `experimental`）
 - 只有通过审计并满足 `public_gate` 的技能，才可标记为 `visibility=public`

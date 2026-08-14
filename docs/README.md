@@ -26,7 +26,7 @@
 
 | 文档 | 用途 |
 |------|------|
-| [cli-contract.md](./cli-contract.md) | `bin/` vs `prism <verb>` 稳定性、JSON 协议、verb 表 |
+| [cli-contract.md](./cli-contract.md) | 3.x legacy CLI adapter 稳定性、JSON 协议、verb 表；4.0 当前面看 `prism --help` |
 | [onboarding.md](./onboarding.md) | init 后命令面分层、日常运维、E2E 验收 checklist |
 | [cli-json-schema.json](./cli-json-schema.json) | `--json` envelope schema |
 | [glossary.md](./glossary.md) | 术语人类速查（cite `vocabulary.md` SSOT） |

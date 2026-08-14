@@ -1,6 +1,8 @@
 # {PROJECT_NAME} — 协作规范
 
 > 本文档定义项目的 AI 协作约定。标签与归档规则见 `workspace.schema.yaml`。
+>
+> 3.x legacy template：仅用于显式 legacy `workspace-init` / `workflow-*`。Prism 4.0 默认 Topic state 当前由 `prism4-state.json` 承载。
 
 ## 核心原则
 

@@ -172,9 +172,9 @@ flowchart LR
 | `verify/vXX.md` | 验收细则（`[auto]`/`[human]` 标记） | 按需创建 |
 | `README.md` | 2.x topic 控制台；3.0 起 deprecated / grandfather | 存量保留，新 topic 不再作为入口 |
 
-### CLI 自省与治理层（023 / 024 之后）
+### 3.x Legacy CLI 自省与治理层（023 / 024 之后）
 
-Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**自描述与自治理**能力：
+3.x workflow adapter 不再只是“Skill 集合 + 几个脚本”，而是具备**自描述与自治理**能力。本节服务 `prism legacy ...`、历史 topic 与回归测试，不描述 4.0 默认 CLI 面：
 
 | 能力 | 当前入口 | 说明 |
 |------|---------|------|
@@ -188,13 +188,13 @@ Prism 现在不再只是“Skill 集合 + 几个脚本”，而是开始具备**
 | 发布/体检治理 | `bin/doctor` | `--scope cli/release`、`--rollback`、`--output` 让 CLI 寻址和 release health 可检查、可回滚、可落盘 |
 | 多仓状态嗅探 | `prism sync` | 统一观察 SDK / Skills / Env 的 Git 状态（历史豁免命令） |
 
-这意味着 Prism 的核心主干已经从“散落脚本”收敛为：
+这意味着 3.x legacy 面已经从“散落脚本”收敛为：
 
 - `bin/`：仓库/环境级治理入口
 - `prism <verb>`：workspace/topic 级工作流入口
 - `manifest` / `doctor` / `sync`：系统自省与治理入口
 
-### 3.2 能力边界
+### 3.x Legacy 能力边界
 
 - 3.2 提供 Clarify、Decision Record 与 Execute 的按需治理闭环，并继续通过真实 Topic dogfood 交互体验。
 - Clarify、Decision Record、Execute、Compact 与 Archive 仍保持实验标记，不因版本发行晋升稳定性。
@@ -242,7 +242,13 @@ prism/
 │   ├── rename-artifacts             # 产物批量重命名
 │   ├── prism-local-schema.yaml
 │   └── README.md
-├── skills/                          # 技能层（自 v1.0 起内置 workflow / workspace 技能）
+├── prism4/                          # 4.0 reference adapter（protocol / storage / CLI）
+│   ├── cli.py
+│   ├── core.py
+│   ├── local_json.py
+│   ├── projection.py
+│   └── reference.py
+├── skills/                          # 技能层（4.0 semantic skills + 3.x legacy source）
 │   ├── schema/
 │   │   ├── skill.schema.yaml
 │   │   ├── frontmatter-spec.md      # frontmatter 分层与书写顺序 SSOT
@@ -250,7 +256,12 @@ prism/
 │   │   └── dist-whitelist.yaml
 │   ├── templates/
 │   │   └── SKILL.template.md
-│   ├── workflow/                    # ★ 内置工作流技能（目录名 = name）
+│   ├── prism4/                      # ★ 4.0-canary 默认分发面
+│   │   ├── prism-topic/
+│   │   ├── prism-brief/
+│   │   ├── prism-review/
+│   │   └── prism-clarify/
+│   ├── workflow/                    # 3.x legacy workflow（目录名 = name）
 │   │   ├── workflow-intake/
 │   │   ├── workflow-execute/      # dev experimental
 │   │   ├── workflow-review/
@@ -262,7 +273,7 @@ prism/
 │   │   ├── workflow-compact/      # dev experimental
 │   │   ├── workflow-archive/      # dev experimental
 │   │   └── shared/                # sniff_lib + scripts + references（非 skill）
-│   └── workspace/                   # ★ 工作区管理技能
+│   └── workspace/                   # 3.x legacy workspace skill
 │       └── workspace-init/
 └── workspace/                       # 工作区定义层
     ├── schema/

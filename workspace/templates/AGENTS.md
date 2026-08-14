@@ -1,6 +1,8 @@
 # {PROJECT_NAME}
 
 > AI 协作入口 · Powered by Prism
+>
+> 3.x legacy template：仅用于显式 legacy `workspace-init` / `workflow-*`。Prism 4.0 默认入口是 `/prism-topic`、`/prism-brief`、`/prism-review`、`/prism-clarify` 与 `prism4-state.json`。
 
 ## Workspace
 
