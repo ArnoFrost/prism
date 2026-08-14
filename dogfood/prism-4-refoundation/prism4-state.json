@@ -1,0 +1,261 @@
+{
+  "adapter": "prism4.reference-json",
+  "artifacts": [
+    {
+      "body": "Prism 4.0 is a lightweight governance protocol for humans and AI to maintain clear collaboration state in complex work. Core stays thin: Topic, Artifact, Capability, Invocation, Decision Semantics.",
+      "id": "artifact:intent.foundation",
+      "metadata": {
+        "authority": "authoritative",
+        "evolution": "supersedable"
+      },
+      "role": "intent",
+      "title": "Foundation Intent",
+      "topic_id": "topic:prism-4-refoundation"
+    },
+    {
+      "body": "Current slice: validate the Phase 2 JSON reference adapter and keep CLI cutover deferred. Review, Clarify, Record Decision, and Plan have minimal protocol evidence.",
+      "id": "artifact:brief.current",
+      "metadata": {
+        "authority": "projected",
+        "evolution": "regenerable"
+      },
+      "role": "brief",
+      "title": "Current Brief",
+      "topic_id": "topic:prism-4-refoundation"
+    },
+    {
+      "body": "The local representation should persist Topic, Artifact, SemanticPayload, Invocation, and Relation without making storage layout part of Core.",
+      "id": "artifact:findings.phase-2",
+      "metadata": {
+        "authority": "advisory",
+        "evolution": "historical"
+      },
+      "role": "findings",
+      "title": "Phase 2 Findings",
+      "topic_id": "topic:prism-4-refoundation.phase-2"
+    },
+    {
+      "body": "Accepted: use JsonReferenceStoreAdapter as the Phase 2 dogfood representation. The single-file JSON format is adapter evidence, not the Prism Core storage contract.",
+      "id": "artifact:decision.phase-2-json-adapter",
+      "metadata": {
+        "authority": "authoritative",
+        "evolution": "historical"
+      },
+      "role": "decision",
+      "title": "Use JSON Reference Adapter",
+      "topic_id": "topic:prism-4-refoundation"
+    },
+    {
+      "body": "1. Keep the JSON adapter minimal. 2. Use this dogfood state as the first persisted 4.0 Topic. 3. Defer canonical CLI cutover until the protocol remains stable under this state.",
+      "id": "artifact:plan.next",
+      "metadata": {
+        "authority": "operative-after-authorization",
+        "evolution": "historical-supersedable"
+      },
+      "role": "plan",
+      "title": "Next Plan",
+      "topic_id": "topic:prism-4-refoundation"
+    }
+  ],
+  "invocations": [
+    {
+      "capability_id": "prism:review",
+      "created_at": "2026-08-14T00:00:00+00:00",
+      "id": "invocation:review.phase-2",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:brief.current"
+      ],
+      "metadata": {
+        "note": "Review produced the first persisted Phase 2 Findings."
+      },
+      "output_refs": [
+        "artifact:findings.phase-2"
+      ],
+      "policy": {
+        "authority_required": "none",
+        "mutation_target": "none",
+        "output_status": "proposed"
+      }
+    },
+    {
+      "capability_id": "prism:clarify",
+      "created_at": "2026-08-14T00:05:00+00:00",
+      "id": "invocation:clarify.phase-2",
+      "input_refs": [
+        "artifact:findings.phase-2"
+      ],
+      "metadata": {
+        "note": "Clarify produced non-persistent semantic payloads."
+      },
+      "output_refs": [
+        "payload:proposed-patch.phase-2",
+        "payload:decision-candidate.phase-2"
+      ],
+      "policy": {
+        "authority_required": "none",
+        "mutation_target": "proposed-patch",
+        "output_status": "proposed"
+      }
+    },
+    {
+      "capability_id": "prism:record-decision",
+      "created_at": "2026-08-14T00:10:00+00:00",
+      "id": "invocation:record-decision.phase-2",
+      "input_refs": [
+        "payload:decision-candidate.phase-2"
+      ],
+      "metadata": {
+        "authority_source": "human"
+      },
+      "output_refs": [
+        "artifact:decision.phase-2-json-adapter"
+      ],
+      "policy": {
+        "authority_required": "human-required",
+        "mutation_target": "record",
+        "output_status": "committed"
+      }
+    },
+    {
+      "capability_id": "prism:plan",
+      "created_at": "2026-08-14T00:15:00+00:00",
+      "id": "invocation:plan.next",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:findings.phase-2",
+        "artifact:decision.phase-2-json-adapter"
+      ],
+      "metadata": {
+        "note": "Plan generation is proposed; authority is expressed by relation."
+      },
+      "output_refs": [
+        "artifact:plan.next"
+      ],
+      "policy": {
+        "authority_required": "none",
+        "mutation_target": "none",
+        "output_status": "proposed"
+      }
+    }
+  ],
+  "payloads": [
+    {
+      "body": "Document JsonReferenceStoreAdapter as an adapter choice in the dogfood plan.",
+      "id": "payload:proposed-patch.phase-2",
+      "metadata": {
+        "status": "applied"
+      },
+      "type": "proposed-patch"
+    },
+    {
+      "body": "Use one Windows-safe JSON file for the first Prism 4.0 dogfood state.",
+      "id": "payload:decision-candidate.phase-2",
+      "metadata": {
+        "status": "accepted"
+      },
+      "type": "decision-candidate"
+    }
+  ],
+  "relations": [
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:review.phase-2"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:brief.current",
+      "target_ref": "invocation:review.phase-2"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "artifact:findings.phase-2",
+      "target_ref": "invocation:review.phase-2"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.phase-2",
+      "target_ref": "invocation:clarify.phase-2"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "payload:proposed-patch.phase-2",
+      "target_ref": "invocation:clarify.phase-2"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "payload:decision-candidate.phase-2",
+      "target_ref": "invocation:clarify.phase-2"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "payload:decision-candidate.phase-2",
+      "target_ref": "invocation:record-decision.phase-2"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "artifact:decision.phase-2-json-adapter",
+      "target_ref": "invocation:record-decision.phase-2"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:plan.next"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.phase-2",
+      "target_ref": "invocation:plan.next"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:decision.phase-2-json-adapter",
+      "target_ref": "invocation:plan.next"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "artifact:plan.next",
+      "target_ref": "invocation:plan.next"
+    },
+    {
+      "kind": "authorizes",
+      "metadata": {
+        "authority": "human-required"
+      },
+      "source_ref": "artifact:decision.phase-2-json-adapter",
+      "target_ref": "artifact:plan.next"
+    }
+  ],
+  "schema_version": 1,
+  "topics": [
+    {
+      "id": "topic:prism-4-refoundation",
+      "metadata": {
+        "status": "active"
+      },
+      "parent_id": null,
+      "title": "Prism 4.0 Refoundation"
+    },
+    {
+      "id": "topic:prism-4-refoundation.phase-2",
+      "metadata": {
+        "status": "active"
+      },
+      "parent_id": "topic:prism-4-refoundation",
+      "title": "Reference Artifact Store"
+    }
+  ]
+}
