@@ -1,0 +1,751 @@
+---
+status: draft
+target: Prism 4.0
+type: alignment
+created: 2026-08-14
+---
+
+# Prism 4.0 Re-foundation Alignment
+
+> 多方校准草案。本文用于对齐 Prism 4.0 的概念边界、术语、能力抽象与迁移方向；不是实现计划，不是正式决策记录，也不要求立即改代码。
+
+## 1. 背景
+
+Prism 3.x 已经验证了长期人机协作中的几个有效思想：
+
+- 用工件承载跨会话状态。
+- 用澄清降低歧义。
+- 用评审暴露风险、缺口和取舍点。
+- 用决策记录避免重复争论。
+- 用当前切片帮助 Agent 快速恢复上下文。
+
+但 3.x 也逐渐把这些思想绑定到了 `workflow-*`、Markdown 文件、Obsidian 风格、CLI、目录结构和一组较重的治理产物上。4.0 的目标不是继续补丁式演进，而是重新抽出更薄、更通用的协议层。
+
+## 2. 北极星
+
+Prism 4.0 的北极星：
+
+> 人与 AI 在复杂任务中共同维护清晰协作状态的一层轻量治理协议。
+
+更具体地说：
+
+```text
+Artifact carries state.
+Capability transforms artifacts.
+Invocation relates artifacts.
+Decision records commitment.
+Style controls representation.
+Adapter controls runtime integration.
+```
+
+Prism 4.0 不再预设固定 workflow。它只定义可组合能力、工件角色和调用关系。实际路径由当前任务需要自然形成。
+
+## 2.1 Grounding Documents
+
+三份 4.0 grounding 文档职责分离：
+
+| Document | Responsibility |
+|----------|----------------|
+| `prism-4-refoundation-alignment.md` | 说明 Prism 4.0 是什么、什么属于 Core、概念如何定义、3.x 概念如何迁移 |
+| `prism-4-architecture-guide.md` | 说明协议应如何被图示和表达、哪些语义关系稳定、哪些视觉暗示应避免 |
+| `prism-4-dogfood-plan.md` | 说明如何用最小实现验证协议、按什么顺序施工、哪些内容刻意延后 |
+
+若三个文件对同一概念存在不同说法：
+
+```text
+Alignment is semantic source.
+Architecture Guide mirrors it.
+Dogfood Plan consumes it.
+```
+
+## 3. 核心边界
+
+### 3.1 Core
+
+4.0 Core 只保留稳定协作语义：
+
+- Topic semantics
+- Artifact Contract
+- Capability Contract
+- Relation / Invocation Contract
+- Decision Semantics
+- Artifact authority and evolution semantics
+
+`Workspace` / `Host`、`Adapter` 和 `Style` 不与 Topic、Artifact、Capability 同级。它们是 Core 外围的宿主、运行、存储与呈现层。
+
+### 3.2 Adapter
+
+以下内容不进入 Core，只作为参考实现或适配层：
+
+- Python / uv CLI
+- Markdown 文件
+- Obsidian 格式
+- Git 目录布局
+- symlink 分发
+- macOS / Linux / Windows 平台适配
+- Codex / Cursor / Claude Code / CodeBuddy 等 Agent Harness 集成
+
+### 3.3 Style
+
+Style 控制工件长什么样，不定义 Prism 是什么。
+
+例如，个人可以偏好 Obsidian Markdown、frontmatter、callout、wiki link、目录命名和排版规则；这些是 `Style Profile`，不影响 Core Contract。
+
+## 4. 容器与工件
+
+### 4.1 Workspace / Host
+
+`Workspace` 是一组 Topic 的宿主或 namespace。
+
+它可以映射为：
+
+- 一个 Git 仓库
+- 一个普通目录
+- 一个 Obsidian Vault
+- 一个远端 store
+- 一个数据库
+- 一个 Agent 平台中的项目空间
+
+Workspace 是协议支持的容器概念，但暂不作为 Prism 本体的一级原语。一个 Topic 理论上可以独立存在，不要求用户先理解 Workspace。
+
+### 4.2 Topic
+
+`Topic` 是一个持续协作的问题空间。
+
+它承载一个高内聚问题在多轮讨论、评审、澄清、决策和执行中的协作状态。
+
+Topic 是 4.0 Core 的协作边界语义。
+
+Topic 可以通过 `parent` relation 形成层级：
+
+```text
+Topic
+  parent: <topic-id | null>
+```
+
+需要独立协作上下文时，创建 Child Topic；只是需要被做掉时，保持为 Plan Item / Action。
+
+### 4.3 Artifact
+
+`Artifact` 是 Topic 内可引用、可演进的语义单元。
+
+Artifact 不要求是 Markdown，不要求是文件，也不要求位于 Obsidian。Core 只要求它能表达必要语义和关系。
+
+建议最小 envelope：
+
+```text
+id
+role
+status
+version
+relations
+body
+metadata
+```
+
+字段名可以由 adapter 映射；Core 关心语义，不绑定序列化格式。
+
+### 4.4 Artifact Role vs Semantic Payload
+
+Persistent Artifact Role 不等于 typed semantic payload。
+
+4.0 Core Artifact Roles 暂时只有：
+
+```text
+Intent
+Brief
+Findings
+Decision
+Plan
+```
+
+以下概念默认只是 Capability 内部或 Invocation 间的 typed semantic payload / structured content：
+
+```text
+Understanding Update
+Proposed Patch
+Decision Candidate
+Open Question
+Evidence Reference
+```
+
+晋升原则：
+
+```text
+A semantic payload becomes an Artifact Role only when dogfood proves it needs
+independent identity, independent lifecycle, independent authority,
+and cross-invocation reference.
+```
+
+不要因为实现方便、文件方便或某个 CLI 命令方便，就预先扩展 Core ontology。实现不便先记录为 Findings。
+
+## 5. 工件角色
+
+### 5.1 Intent
+
+`Intent` 是当前权威的目标与边界层。
+
+它回答：
+
+- 为什么做
+- 要到哪里
+- 不做什么
+- 有哪些关键约束
+- 什么条件成立算完成
+- 当前北极星是什么
+
+`Intent` 替代 3.x 中 `scope` 的核心价值，但不沿用 `scope` 这个较窄、偏工程范围管理的词。它不是单纯愿景，而是当前有效的 boundary and purpose。
+
+```text
+Intent is the authoritative boundary until superseded.
+```
+
+### 5.2 Brief
+
+`Brief` 是当前工作的投影视图。
+
+它对标 3.x 的 `focus`，而不是整个 Topic 的主 SSOT。它用于让当前这一轮人类或 Agent 快速恢复上下文。
+
+它回答：
+
+- 当前看什么
+- 当前基于哪些输入
+- 当前要产出什么
+- 当前不碰什么
+- 当前关键已知是什么
+
+```text
+Brief is a current projection for context recovery.
+```
+
+Brief 不是事实源。若 Brief 与 Decision、Intent 或源 Findings 冲突，Decision / Intent / source artifacts 拥有更高权威。Brief 可以被重写、压缩、重新生成或丢弃后恢复。
+
+### 5.3 Findings
+
+`Findings` 是发现集。
+
+它记录：
+
+- 事实
+- 证据
+- 风险
+- 缺口
+- 冲突
+- 假设
+- 取舍点
+- 建议
+
+Findings 不等于决策。它负责暴露问题，不替人拍板。
+
+```text
+Findings surface what matters.
+```
+
+更完整地说，Finding 暴露值得关注的事实、观察、解释、风险、缺口、冲突、假设或取舍点，并在可能时引用 Evidence 作为依据。
+
+### 5.4 Decision
+
+`Decision` 是关键选择记录。
+
+只有会影响后续方向、边界、架构、风险承诺或长期设计的选择，才需要进入 Decision。
+
+普通确认、路线跳转、能力调用顺序和可回退的小调整不必成为 Decision Record。
+
+```text
+Decisions are commitments.
+```
+
+### 5.5 Plan
+
+`Plan` 是行动结构或方案投影。
+
+它回答：
+
+- 怎么做
+- 先后顺序是什么
+- 依赖是什么
+- 如何验证
+- 哪些风险需要处理
+
+Plan 是可选、可重算的行动结构。被引用和被接受不是同一层语义。
+
+```text
+Reference creates provenance.
+Acceptance creates authority.
+```
+
+Proposed Plan 是 advisory / regenerable。被 Review、Clarify 或其他 Invocation 读取的 Plan，可能因为 provenance 获得 historical value，但不会自动获得执行权威。只有被 Decision 或明确 authority 接受的 Plan，才成为 operative / historical / supersedable。
+
+### 5.6 Child Topic and Plan Item
+
+4.0 Core 不保留 `Task` 原语。
+
+如果一个子问题需要独立上下文、独立边界、独立发现或独立决策，它就是带 `parent` relation 的 Child Topic。
+
+普通执行颗粒不升级为 Topic，保留在 Plan 中：
+
+```text
+Topic
+  -> Child Topic
+
+Plan
+  -> Plan Item / Action
+```
+
+边界：
+
+```text
+Independent collaboration context -> Child Topic.
+Need to be done -> Plan Item / Action.
+```
+
+## 6. Artifact Authority and Evolution
+
+4.0 Core 不用 `append-only`、`rewrite` 这类存储写法描述工件生命周期。协议层只定义权威性与演进性；具体是修改文件、追加记录、写数据库还是生成投影视图，均由 Adapter 决定。
+
+### 6.1 Authority
+
+| Authority | Meaning | Typical Artifacts |
+|-----------|---------|-------------------|
+| Authoritative | 在某个语义范围内可作为判断依据 | Intent, Decision |
+| Advisory | 暴露判断、风险、建议或问题，但不携带授权 | Findings, proposed Plan |
+| Projected | 从其他工件综合出的当前视图，不作为最终事实源 | Brief |
+| Operative | 被接受后可指导执行，但仍受 Intent / Decision 约束 | accepted Plan |
+
+### 6.2 Evolution
+
+| Evolution | Meaning | Typical Artifacts |
+|-----------|---------|-------------------|
+| Durable | 持续有效，直到被后续工件取代 | Intent |
+| Supersedable | 可被后续工件替代，旧判断仍可追溯 | Intent, Findings, Plan, Decision |
+| Regenerable | 可从当前权威工件重新生成 | Brief, proposed Plan |
+| Historical | 需要保留其曾经存在、被使用或被裁决的事实 | Findings, Decision, accepted or superseded Plan |
+| Committed | 已形成授权或长期承诺 | Decision |
+
+### 6.3 Role Defaults
+
+| Artifact | Authority | Evolution |
+|----------|-----------|-----------|
+| Intent | Authoritative | Durable / Supersedable |
+| Brief | Projected | Regenerable |
+| Findings | Advisory | Historical / Supersedable |
+| Decision | Authoritative | Historical / Supersedable / Committed |
+| Plan | Advisory before acceptance; Operative after acceptance | Regenerable before acceptance; Historical when referenced for provenance; Historical / Supersedable when accepted |
+
+简写：
+
+```text
+Intent is the authoritative boundary until superseded.
+Brief is a regenerable projection for context recovery.
+Findings surface what matters, with support when available.
+Decisions commit authorized choices.
+Reference creates provenance; acceptance creates authority.
+```
+
+Findings 被后续事实证伪时，不要求删除或原地改写。协议语义是用 relation 标记 `superseded`、`invalidated`、`withdrawn`、`reframed` 或 `resolved`；具体存储方式由 Adapter 决定。
+
+Authority / Evolution 是 protocol semantics first。它们的具体序列化可以是 metadata、relation、derived state 或 adapter representation；Phase 1 不应 schema-first 地把它们固化成必填 enum 或固定字段。
+
+## 7. 能力模型
+
+### 7.1 Capability Contract
+
+`Capability` 是一个可独立调用的协作变换。
+
+它只定义：
+
+```text
+typed inputs
+typed outputs
+effect policy
+```
+
+它不定义自己在固定流程中的位置。
+
+建议表达：
+
+```text
+Capability:
+  purpose
+  inputs
+  outputs
+  effects
+  policy
+  optional runtime dependencies
+```
+
+其中：
+
+- `inputs` / `outputs` 可以是 Artifact Roles，也可以是 typed semantic payload。
+- `effects` 描述 read / propose / patch / record 等影响。
+- `policy` 描述 output status、authority required、mutation target。
+- runtime dependencies 只属于 adapter，不进入 Core。
+
+最小 policy 维度：
+
+```text
+output_status: candidate | proposed | committed
+authority_required: none | delegated | human-required
+mutation_target: none | proposed-patch | direct-update | record
+```
+
+### 7.2 Review
+
+`Review` 是主动评估、检验、洞察的能力。
+
+```text
+Review
+input:  Brief / Intent / Plan / Evidence Reference / existing Artifacts
+output: Findings
+effect: propose
+policy: Findings are not authorization
+```
+
+Review 可以覆盖风险评估、完整性检查、方案审查、洞察抽取、冲突发现等场景。4.0 不需要为这些场景过早拆出多个 Core Capability。
+
+### 7.3 Clarify
+
+`Clarify` 是消除未知、歧义、冲突和错误假设的能力。
+
+```text
+Clarify
+input:  Brief / Intent / Findings / Open Questions / Human context
+output: Understanding Update / Proposed Patch / Decision Candidate
+effect: propose or patch
+policy: Understanding may be autonomous; commitment requires authority
+```
+
+Clarify 可以产生 Decision Candidate，但不等于 Decision。Clarify 默认无权修改 authoritative artifacts；只有低风险事实修正或明确授权时，Adapter / Capability implementation 才可直接更新 Brief 或 Intent。
+
+### 7.4 Record Decision
+
+`Decide` 暂不作为 MVP Core Capability。
+
+4.0 Core 先只定义 Decision Semantics、Decision Record 与 Authority Policy。现实中的决策可能来自人类对话、按钮确认、团队审批、Agent 预授权、CLI 命令或外部系统，因此不应过早要求一个名为 `Decide` 的通用能力。
+
+`Record Decision` 可以作为 Reference Capability / Adapter Operation：
+
+```text
+Record Decision
+input:  Decision Candidate / Findings / Human Choice / affected Artifacts
+output: Decision
+effect: record
+policy: human-required | delegated | autonomous
+```
+
+Decision 可以授权或解释后续对 Intent、Brief、Child Topic Intent 或 Plan 的修正，但 Decision 本身不自动修改这些工件。实际更新应通过 Invocation / proposed patch / adapter operation 留下关系。
+
+### 7.5 Plan
+
+`Plan` 是生成行动结构或方案投影的能力。
+
+```text
+Plan
+input:  Intent / Brief / Findings / Decisions
+output: Plan
+effect: propose
+policy: Reference creates provenance; acceptance creates authority
+```
+
+Plan 不应该重新变成固定 workflow。它只是按需产生的行动结构。
+
+## 8. 不保留 Frame
+
+4.0 Core 不保留 `Frame`。
+
+原因是它混合了两类动作：
+
+```text
+1. 把原始输入整理成可协作理解
+2. 创建 Topic / 工件骨架 / 存储位置
+```
+
+第 1 类可以由 Clarify、Review、Plan 等能力组合完成。
+
+第 2 类属于 adapter / CLI bootstrap，例如：
+
+```text
+Create Topic
+Create initial Intent
+Create initial Brief
+Attach raw input
+```
+
+这些是实现动作，不是 Core Capability。
+
+## 9. Intake 的拆分
+
+3.x 的 `Intake` 在 4.0 中不再作为 Core 流程，而拆成三个更薄的动作：
+
+| Former Intake Concern | 4.0 Placement |
+|-----------------------|---------------|
+| 记录原始输入 | Capture Input, optional artifact or metadata |
+| 创建 Topic 骨架 | Adapter / CLI bootstrap |
+| 整理初始理解 | Clarify / Review / Plan composition |
+
+这样可以保留 Intake 的价值，但避免把它变成默认入口和固定 workflow。
+
+## 10. 按需编排
+
+4.0 的能力像插件一样组合。
+
+典型路径可以是：
+
+```text
+Review -> Findings
+```
+
+也可以是：
+
+```text
+Clarify -> Brief
+```
+
+还可以是：
+
+```text
+Review -> Findings -> Clarify -> Decision Candidate -> Record Decision -> Decision -> proposed Intent patch
+```
+
+或者：
+
+```text
+Intent + Brief + Decisions -> Plan
+```
+
+这些路径都是 Invocation Graph 的结果，不是 Prism 预设的固定流程。
+
+核心规则：
+
+```text
+能力只承诺输入输出，不承诺自己在流程中的位置。
+```
+
+## 11. Graph 与 Invocation
+
+`Invocation` 是一次真实 Capability 使用及其因果来源记录。
+
+Protocol 层的最薄 contract：
+
+```text
+invocation identity
+capability used
+referenced inputs
+produced outputs
+optional execution metadata
+```
+
+`Relation` 是 artifacts、decisions 和/或 invocations 之间的语义关系。
+
+推荐先只使用少量稳定关系：
+
+```text
+derived-from
+supports
+supersedes
+authorizes
+projects
+references
+```
+
+不要为了覆盖所有场景扩展 relation ontology。
+
+每次能力调用都可以形成一条 Invocation 记录：
+
+```text
+Artifact(s)
+  -> Capability
+  -> Artifact(s)
+```
+
+连续 Invocation 记录与 Relation 自然形成 Graph。
+
+Graph 用于追踪：
+
+- 某个工件从哪里来
+- 某个发现基于什么输入
+- 某个决策影响哪些工件
+- 某个 Plan 是否被接受或废弃
+- 当前 Brief 为什么长成这样
+
+Graph 是 observed structure，不是预设 workflow，不是 Graph Engine，也不是 Core runtime。
+
+## 12. Decision Semantics
+
+4.0 保留 Decision 的独立地位。
+
+```text
+Decision = an Artifact role.
+Decision Semantics = Core rules governing authority, commitment,
+supersession, and affected artifacts.
+```
+
+Decision Semantics 是协议规则，不是另一种 artifact，也不是 runtime object。
+
+基本原则：
+
+```text
+Findings surface.
+Clarification is understanding.
+Decision is commitment.
+```
+
+Decision 分层建议：
+
+| Level | Meaning | Protocol handling |
+|-------|---------|-------------------|
+| Route | 普通能力调用路径 | Invocation Graph |
+| Lightweight Decision | 局部、低风险、容易回退，但值得后续知道 | Decision relation / metadata / projection note |
+| Material Decision | 影响方向、边界、架构、风险承诺或长期设计 | Decision Record |
+
+Clarify 可以产生 Decision Candidate；只有 material choice 才进入独立 Decision Record。
+
+## 13. 3.x 到 4.0 的概念迁移
+
+| 3.x Concept | 4.0 Concept | Notes |
+|-------------|-------------|-------|
+| workspace backend | Workspace / Adapter Store | 存储实现降权 |
+| topic | Topic | 保留为核心容器语义 |
+| scope | Intent | 保留目标、边界、非目标、约束、验收 |
+| focus | Brief | 当前工作切片，可重写 |
+| review | Review capability | 动词能力 |
+| finding | Findings artifact | 产物，不是授权 |
+| clarify | Clarify capability | 保留，但不产出必然 Decision |
+| decision / decision.index | Decision semantics | 保留关键选择记录，降权普通 route |
+| plan | Plan artifact / capability | 恢复通用语义，可选且可重算 |
+| task | Child Topic / Plan Item | 耐久子问题用 `Topic(parent=...)`；普通执行颗粒用 Plan Item / Action |
+| wave | Execution adapter/profile | 不进入 Core 默认面 |
+| intake | Capture + Create Topic + Draft Brief/Intent | 拆分，不再是 Core workflow |
+| workflow-* | Capability implementations or historical profiles | 不进入 Core 术语 |
+
+## 14. 平台与插件化能力
+
+4.0 面向现代 Agent Harness 和插件能力设计。
+
+Prism Core 不重新实现：
+
+- 搜索
+- 浏览
+- 文件读取
+- Tool calling
+- Shell
+- 代码执行
+- 模型调度
+- Memory runtime
+- UI
+
+这些都由 Codex、Cursor、Claude Code、CodeBuddy 或未来插件提供。
+
+Prism 只要求能力声明它需要什么输入、会产出什么、会产生什么副作用，以及是否需要人类授权。
+
+## 15. 建议仓库分层
+
+仅作为讨论草案：
+
+```text
+prism/
+  protocol/
+    artifact.md
+    capability.md
+    invocation.md
+    decision.md
+    lifecycle.md
+
+  capabilities/
+    review/
+    clarify/
+    plan/
+
+  adapters/
+    cli/
+    record-decision/
+    markdown/
+    obsidian/
+    git/
+    posix/
+    windows/
+
+  styles/
+    arno-obsidian/
+    gfm/
+
+  examples/
+    software/
+    research/
+    writing/
+    product/
+
+  docs/
+    concepts/
+    migration/
+    decisions/
+```
+
+目录结构不是协议本身。它只是帮助实现阶段保持边界清晰。
+
+## 16. Git 策略候选
+
+待用户正式授权后再执行：
+
+```text
+tag:    v3-final
+branch: archive/prism-3
+branch: prism-4
+```
+
+4.0 分支允许破坏性删除和重排，但不丢弃历史思想。迁移时先判断旧内容属于：
+
+- Protocol
+- Capability
+- Adapter
+- Style
+- Example
+- Historical archive
+- Delete
+
+## 17. Acceptance Criteria
+
+Prism 4.0 MVP 只有在以下条件成立时才算完成：
+
+- 删除 CLI、Adapter、Workspace 实现后，Core 语义仍完整成立。
+- 新人可以先理解 Artifact / Capability / Invocation / Decision，而不需要学习 workflow。
+- 单独调用 Review 即可获得 Findings，不需要先走固定入口。
+- Artifact 不依赖 Markdown、Obsidian 或特定目录布局。
+- 同一 Capability 可以理论上运行在 Codex、Cursor、Claude Code、CodeBuddy、人类协作流程中。
+- 至少三个不同领域 case 能使用相同基本语义。
+- 替换 runtime、storage、model、UI 或 CLI，不要求重新定义 Prism。
+
+## 18. 待多方校准问题
+
+1. `Intent` 是否是替代 3.x `scope` 的最佳通用词？
+2. `Brief` 是否足够准确表达当前切片，并替代 3.x `focus`？
+3. `Review` 是否应该覆盖 evaluation / inspection / assessment / insight extraction，而不继续拆分？
+4. `Record Decision` 是否长期保持 Adapter Operation，还是未来升级为特殊 Capability？
+5. `Workspace` 是否只作为 Host / namespace，还是需要进入 Core primitive？
+6. `Action / Plan Item` 是否只留在 Plan 内部，不进入 Core artifact roles？
+7. Windows / Linux 支持是否只需要预留 adapter 边界，MVP 是否只实现当前平台参考 CLI？
+
+## 19. 当前结论快照
+
+本轮已确认的倾向：
+
+- 4.0 不承诺兼容 3.x 内部 workspace/topic/CLI 结构。
+- Core 从 `SDK + uv` 降为协议与工件合同；Python / uv CLI 是 reference adapter。
+- Obsidian Markdown 是个人 style/profile，不是 Core。
+- `Frame` 移出 Core。
+- `Intake` 拆为 capture input、create topic、draft initial understanding。
+- `Topic` 保留为核心协作容器。
+- `Task` 从 Core 删除：耐久子问题改为 Child Topic，普通执行颗粒改为 Plan Item / Action。
+- `Wave` 移出 Core，放入 execution adapter/profile。
+- `Brief` 定义为 current projection，不作为事实源。
+- `Findings` 定义为 surface what matters，不再等同 evidence。
+- Artifact lifecycle 改为 Authority / Evolution 双轴，避免存储实现泄漏。
+- `Clarify` 与 `Decision` 分层：Clarify 可以产生 Decision Candidate / Proposed Patch，但默认无权修改 authoritative artifacts。
+- `Decide` 暂不进入 MVP Core Capability；`Record Decision` 作为 Reference Capability / Adapter Operation。
+- Capability Contract 只定义 typed inputs、typed outputs、effect policy，不定义固定执行顺序。
+
+## 20. 一句话版本
+
+Prism 4.0 不是一套固定工作流，而是一组轻量协议：
+
+> 在 Topic 中，用 Artifact 承载状态；用 Capability 松耦合加工状态；用 Invocation 形成可追踪关系；用 Decision 固化关键承诺；用 Adapter 和 Style 适配不同平台、工具和个人偏好。
