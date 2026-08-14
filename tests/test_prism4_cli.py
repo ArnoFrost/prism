@@ -87,7 +87,7 @@ def test_bin_prism_brief_project_does_not_require_saving():
     )
 
     assert result.returncode == 0, result.stderr
-    assert "This brief is a projection" in result.stdout
+    assert "不是事实源" in result.stdout
     assert "Foundation Intent" in result.stdout
 
 
@@ -173,3 +173,92 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
     assert store.payloads["payload:proposed-patch.cli-clarify"].type == "proposed-patch"
     assert any(invocation.capability_id == "prism:review" for invocation in store.invocations.values())
     assert any(invocation.capability_id == "prism:clarify" for invocation in store.invocations.values())
+
+
+def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
+    root = tmp_path / "state"
+    root.mkdir()
+
+    topic = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "topic",
+            "new",
+            "topic:prism-4-dev-process",
+            "--title",
+            "Prism 4.0 Dev Process",
+            "--intent",
+            "用 Prism 4.0 语义演进 Prism 4.0 自身的开发流程规范。",
+            "--root",
+            str(root),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert topic.returncode == 0, topic.stderr
+    assert "topic:prism-4-dev-process" in topic.stdout
+
+    plan = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "capability",
+            "run",
+            "plan",
+            "topic:prism-4-dev-process",
+            "--root",
+            str(root),
+            "--id",
+            "artifact:plan.dev-process",
+            "--body",
+            "1. 修 CLI 漂移。2. 中文化 Brief 投影。3. 用 Findings 记录实现痛点。",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert plan.returncode == 0, plan.stderr
+    assert "artifact:plan.dev-process" in plan.stdout
+
+    record = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "decision",
+            "record",
+            "topic:prism-4-dev-process",
+            "--root",
+            str(root),
+            "--id",
+            "artifact:decision.dev-process",
+            "--authority",
+            "human-required",
+            "--body",
+            "已确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert record.returncode == 0, record.stderr
+    assert "artifact:decision.dev-process" in record.stdout
+
+    store = JsonReferenceStoreAdapter(root).load()
+    assert "topic:prism-4-dev-process" in store.topics
+    assert any(
+        artifact.role == "intent"
+        and artifact.topic_id == "topic:prism-4-dev-process"
+        for artifact in store.artifacts.values()
+    )
+    assert store.artifacts["artifact:plan.dev-process"].role == "plan"
+    assert store.artifacts["artifact:decision.dev-process"].role == "decision"
+    assert store.artifacts["artifact:decision.dev-process"].metadata["authority"] == "authoritative"
+    assert any(
+        invocation.capability_id == "prism:plan" for invocation in store.invocations.values()
+    )
+    assert any(
+        invocation.capability_id == "prism:record-decision"
+        for invocation in store.invocations.values()
+    )

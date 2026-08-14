@@ -18,12 +18,15 @@
 #   brief project   从当前状态投影 Brief
 #   capability run review   运行 4.0 Review → Findings
 #   capability run clarify  运行 4.0 Clarify → semantic payloads
+#   capability run plan     运行 4.0 Plan → Plan 工件
+#   decision record         记录被授权的 Decision
 #   legacy ...      委托旧 3.x CLI adapter
 #
 # 旧 3.x verb:
 #   sniff / validate / validate-trace / archive / reactivate / migrate / sync
-#   relink / doctor / update / dist / decision / finalize / tidy / status
+#   relink / doctor / update / dist / finalize / tidy / status
 #   digest / manifest
+#   （3.x decision 已升级为 4.0 `decision record`；旧用法走 `prism legacy decision ...`）
 #
 # 退出码: 透传子命令的退出码
 #

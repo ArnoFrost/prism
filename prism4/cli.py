@@ -24,7 +24,9 @@ from prism4 import (  # noqa: E402
     SemanticPayload,
     Topic,
     clarify_capability,
+    plan_capability,
     project_brief,
+    record_decision_operation,
     review_capability,
 )
 
@@ -34,7 +36,6 @@ VERSION_FILE = SDK_ROOT / "VERSION"
 LEGACY_CLI = SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "prism_cli.py"
 LEGACY_VERBS = {
     "archive",
-    "decision",
     "digest",
     "dist",
     "doctor",
@@ -86,9 +87,10 @@ def build_parser() -> argparse.ArgumentParser:
     topic = subparsers.add_parser("topic", help="manage 4.0 topics")
     topic_sub = topic.add_subparsers(dest="topic_verb", required=True)
     topic_new = topic_sub.add_parser("new", help="create a Topic")
-    topic_new.add_argument("title")
-    topic_new.add_argument("--id", required=True, dest="topic_id")
-    topic_new.add_argument("--parent", dest="parent_id")
+    topic_new.add_argument("topic_id", help="topic id, e.g. topic:prism-4-dev-process")
+    topic_new.add_argument("--title", required=True, help="topic title")
+    topic_new.add_argument("--parent", dest="parent_id", help="parent topic id for a Child Topic")
+    topic_new.add_argument("--intent", help="optional initial Intent body for the new Topic")
     add_root_arg(topic_new)
     topic_new.set_defaults(func=cmd_topic_new)
 
@@ -135,6 +137,31 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(clarify)
     clarify.set_defaults(func=cmd_capability_clarify)
 
+    plan = capability_run_sub.add_parser("plan", help="generate an optional action structure")
+    plan.add_argument("topic_id")
+    plan.add_argument("--body", required=True, help="plan body")
+    plan.add_argument("--id", dest="artifact_id")
+    plan.add_argument("--title", default="Plan")
+    add_root_arg(plan)
+    plan.set_defaults(func=cmd_capability_plan)
+
+    decision = subparsers.add_parser("decision", help="record authorized Decisions")
+    decision_sub = decision.add_subparsers(dest="decision_verb", required=True)
+    decision_record = decision_sub.add_parser("record", help="record a Decision artifact")
+    decision_record.add_argument("topic_id")
+    decision_record.add_argument("--body", required=True, help="decision body")
+    decision_record.add_argument("--candidate", help="decision-candidate payload ref as input")
+    decision_record.add_argument(
+        "--authority",
+        default="human-required",
+        choices=("human-required", "delegated"),
+        help="authority backing the Decision (default: human-required)",
+    )
+    decision_record.add_argument("--id", dest="artifact_id")
+    decision_record.add_argument("--title", default="Decision")
+    add_root_arg(decision_record)
+    decision_record.set_defaults(func=cmd_decision_record)
+
     legacy = subparsers.add_parser("legacy", help="delegate to the Prism 3.x CLI adapter")
     legacy.add_argument("args", nargs=argparse.REMAINDER)
     legacy.set_defaults(func=cmd_legacy)
@@ -165,6 +192,17 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
     topic = store.add_topic(
         Topic(id=args.topic_id, title=args.title, parent_id=args.parent_id)
     )
+    if args.intent:
+        store.add_artifact(
+            Artifact(
+                id=make_artifact_id("intent"),
+                topic_id=topic.id,
+                role="intent",
+                title=f"{topic.title} Intent",
+                body=args.intent,
+                metadata={"authority": "authoritative", "evolution": "supersedable"},
+            )
+        )
     adapter.save(store)
     print(topic.id)
     return 0
@@ -259,6 +297,64 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
     adapter.save(store)
     for output in outputs:
         print(output.id)
+    print(invocation.id)
+    return 0
+
+
+def cmd_capability_plan(args: argparse.Namespace) -> int:
+    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    store = adapter.load()
+    if args.topic_id not in store.topics:
+        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
+    inputs = topic_artifacts(
+        store, args.topic_id, roles=("intent", "brief", "findings", "decision")
+    )
+    plan_artifact = Artifact(
+        id=args.artifact_id or make_artifact_id("plan"),
+        topic_id=args.topic_id,
+        role="plan",
+        title=args.title,
+        body=args.body,
+        metadata={"authority": "advisory", "evolution": "regenerable"},
+    )
+    invocation = store.invoke(plan_capability(), inputs=inputs, outputs=(plan_artifact,))
+    adapter.save(store)
+    print(plan_artifact.id)
+    print(invocation.id)
+    return 0
+
+
+def cmd_decision_record(args: argparse.Namespace) -> int:
+    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    store = adapter.load()
+    if args.topic_id not in store.topics:
+        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
+
+    inputs: list = topic_artifacts(store, args.topic_id, roles=("intent", "findings"))
+    if args.candidate:
+        if args.candidate not in store.payloads:
+            raise PrismProtocolError(f"payload does not exist: {args.candidate}")
+        inputs.append(store.payloads[args.candidate])
+
+    decision_artifact = Artifact(
+        id=args.artifact_id or make_artifact_id("decision"),
+        topic_id=args.topic_id,
+        role="decision",
+        title=args.title,
+        body=args.body,
+        metadata={
+            "authority": "authoritative",
+            "evolution": "committed",
+            "authority_required": args.authority,
+        },
+    )
+    invocation = store.invoke(
+        record_decision_operation(authority_required=args.authority),
+        inputs=inputs,
+        outputs=(decision_artifact,),
+    )
+    adapter.save(store)
+    print(decision_artifact.id)
     print(invocation.id)
     return 0
 

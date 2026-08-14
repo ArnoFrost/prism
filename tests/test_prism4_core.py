@@ -294,6 +294,6 @@ def test_brief_can_be_regenerated_as_projection():
     assert brief.metadata["evolution"] == "regenerable"
     assert "Foundation Intent" in brief.body
     assert "Authority Decision" in brief.body
-    assert "not a fact source" in brief.body
+    assert "不是事实源" in brief.body
     assert intent.body not in brief.body
     assert decision.body not in brief.body

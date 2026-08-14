@@ -34,15 +34,15 @@ def project_brief(
     lines = [
         f"# Brief — {store.topics[topic_id].title}",
         "",
-        "This brief is a projection for context recovery, not a fact source.",
+        "本 Brief 是用于上下文恢复的投影，不是事实源。",
     ]
     if artifacts:
-        lines.extend(["", "## Current Artifacts"])
+        lines.extend(["", "## 当前工件"])
         for artifact in artifacts:
             label = artifact.title or artifact.id
             lines.append(f"- {artifact.role}: {label}")
     else:
-        lines.extend(["", "## Current Artifacts", "- none"])
+        lines.extend(["", "## 当前工件", "- 无"])
 
     decision_count = sum(1 for artifact in artifacts if artifact.role == "decision")
     findings_count = sum(1 for artifact in artifacts if artifact.role == "findings")
@@ -50,7 +50,7 @@ def project_brief(
     lines.extend(
         [
             "",
-            "## Recovery Hints",
+            "## 恢复提示",
             f"- decisions: {decision_count}",
             f"- findings: {findings_count}",
             f"- plans: {plan_count}",
