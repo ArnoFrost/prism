@@ -21,8 +21,11 @@ from prism4 import (  # noqa: E402
     JsonReferenceStoreAdapter,
     PrismProtocolError,
     ReferenceStore,
+    SemanticPayload,
     Topic,
+    clarify_capability,
     project_brief,
+    review_capability,
 )
 
 
@@ -107,6 +110,29 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(brief_project)
     brief_project.set_defaults(func=cmd_brief_project)
 
+    capability = subparsers.add_parser("capability", help="run 4.0 capabilities")
+    capability_sub = capability.add_subparsers(dest="capability_verb", required=True)
+    capability_run = capability_sub.add_parser("run", help="run a reference capability")
+    capability_run_sub = capability_run.add_subparsers(dest="capability_id", required=True)
+
+    review = capability_run_sub.add_parser("review", help="produce Findings")
+    review.add_argument("topic_id")
+    review.add_argument("--body", required=True, help="finding body")
+    review.add_argument("--id", dest="artifact_id")
+    review.add_argument("--title", default="Review Findings")
+    add_root_arg(review)
+    review.set_defaults(func=cmd_capability_review)
+
+    clarify = capability_run_sub.add_parser("clarify", help="produce clarify payloads")
+    clarify.add_argument("topic_id")
+    clarify.add_argument("--question", required=True, help="question or ambiguity")
+    clarify.add_argument("--proposed-patch")
+    clarify.add_argument("--decision-candidate")
+    clarify.add_argument("--patch-id")
+    clarify.add_argument("--candidate-id")
+    add_root_arg(clarify)
+    clarify.set_defaults(func=cmd_capability_clarify)
+
     legacy = subparsers.add_parser("legacy", help="delegate to the Prism 3.x CLI adapter")
     legacy.add_argument("args", nargs=argparse.REMAINDER)
     legacy.set_defaults(func=cmd_legacy)
@@ -176,6 +202,65 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_capability_review(args: argparse.Namespace) -> int:
+    adapter = JsonReferenceStoreAdapter(args.root)
+    store = adapter.load()
+    if args.topic_id not in store.topics:
+        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
+    inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "plan"))
+    findings = Artifact(
+        id=args.artifact_id or make_artifact_id("findings"),
+        topic_id=args.topic_id,
+        role="findings",
+        title=args.title,
+        body=args.body,
+        metadata={"authority": "advisory", "evolution": "historical"},
+    )
+    invocation = store.invoke(review_capability(), inputs=inputs, outputs=(findings,))
+    adapter.save(store)
+    print(findings.id)
+    print(invocation.id)
+    return 0
+
+
+def cmd_capability_clarify(args: argparse.Namespace) -> int:
+    if not args.proposed_patch and not args.decision_candidate:
+        raise PrismProtocolError(
+            "clarify requires --proposed-patch and/or --decision-candidate"
+        )
+    adapter = JsonReferenceStoreAdapter(args.root)
+    store = adapter.load()
+    if args.topic_id not in store.topics:
+        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
+
+    inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "findings"))
+    outputs: list[SemanticPayload] = []
+    if args.proposed_patch:
+        outputs.append(
+            SemanticPayload(
+                id=args.patch_id or make_payload_id("proposed-patch"),
+                type="proposed-patch",
+                body=args.proposed_patch,
+                metadata={"question": args.question},
+            )
+        )
+    if args.decision_candidate:
+        outputs.append(
+            SemanticPayload(
+                id=args.candidate_id or make_payload_id("decision-candidate"),
+                type="decision-candidate",
+                body=args.decision_candidate,
+                metadata={"question": args.question},
+            )
+        )
+    invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
+    adapter.save(store)
+    for output in outputs:
+        print(output.id)
+    print(invocation.id)
+    return 0
+
+
 def cmd_legacy(args: argparse.Namespace) -> int:
     if not args.args:
         print("error: legacy requires arguments", file=sys.stderr)
@@ -194,6 +279,31 @@ def load_or_empty(adapter: JsonReferenceStoreAdapter) -> ReferenceStore:
     if adapter.path.exists():
         return adapter.load()
     return ReferenceStore()
+
+
+def topic_artifacts(
+    store: ReferenceStore,
+    topic_id: str,
+    *,
+    roles: tuple[str, ...],
+) -> list[Artifact]:
+    return [
+        artifact
+        for artifact in store.artifacts.values()
+        if artifact.topic_id == topic_id and artifact.role in roles
+    ]
+
+
+def make_artifact_id(role: str) -> str:
+    from prism4.core import new_id
+
+    return new_id(f"artifact.{role}")
+
+
+def make_payload_id(payload_type: str) -> str:
+    from prism4.core import new_id
+
+    return new_id(f"payload.{payload_type}")
 
 
 def read_version() -> str:
