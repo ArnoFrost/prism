@@ -340,6 +340,12 @@ Rules:
 - Old 3.x CLI may move behind legacy adapter or archive path.
 - CLI must not define protocol semantics.
 
+Initial cutover:
+
+- `bin/prism` invokes `prism4/cli.py` as the canonical branch-local adapter.
+- Known 3.x verbs are delegated through the legacy adapter instead of being reimplemented in 4.0 Core.
+- The first 4.0 surface stays narrow: topic listing/creation, artifact display, and Brief projection.
+
 Possible first verbs:
 
 ```text

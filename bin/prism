@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prism — 统一 CLI 入口，转发到 shared/scripts/prism_cli.py。
+# Prism — 统一 CLI 入口，转发到 Prism 4.0 reference adapter。
 #
 # 用法:
 #   prism <verb> [args...]       运行指定子命令
@@ -9,31 +9,24 @@
 # 全局选项:
 #   --version, -V                显示版本后退出
 #   --json                       以 outer schema 输出 JSON（见 docs/cli-json-schema.json）
-#                                当前覆盖: sniff / validate / decision / manifest
+#                                4.0 reference adapter 暂未承诺完整 JSON outer schema
 #
 # 可用子命令:
-#   sniff           嗅探项目环境（topic affinity / next_review_number）
-#   validate        校验产物格式（frontmatter / 命名规范）
-#   validate-trace  扫描痕迹义务家族（task_probe/decision_artifact/...）
-#   archive         归档 topic 到 archive/
-#   reactivate      将 archive topic 移回 topics/
-#   migrate         迁移子目录评审格式
-#   sync            嗅探 Prism 三仓 Git 状态
-#   relink          刷新项目/Skills IDE 软链接（委托 bin/relink）
-#   doctor          仓库/环境体检（委托 bin/doctor）
-#   update          pull SDK → doctor ci → relink --no-workspace（experimental）
-#   dist            分发统一入口；委托 SDK Python adapter（experimental）
-#   decision        正式决策机械落盘（record；experimental）
-#   finalize        Decision 后一键 tidy + validate + validate-trace (Step 2.5) + scope 提示
-#   tidy            工件机械对齐（README/review.index/frontmatter）
-#   status          Workspace 活跃 topic 健康度扫描
-#   digest          Topic 工件采集（供 Agent 生成摘要）
-#   manifest        导出 verb 元数据（stability + schema_compliant）
+#   topic new       创建 4.0 Topic
+#   topic list      列出 4.0 Topic
+#   artifact show   查看 4.0 Artifact / Payload 正文
+#   brief project   从当前状态投影 Brief
+#   legacy ...      委托旧 3.x CLI adapter
+#
+# 旧 3.x verb:
+#   sniff / validate / validate-trace / archive / reactivate / migrate / sync
+#   relink / doctor / update / dist / decision / finalize / tidy / status
+#   digest / manifest
 #
 # 退出码: 透传子命令的退出码
 #
-# 注：本脚本是 prism_cli.py 的 bash 壳，核心实现在：
-#   $PRISM_SDK/skills/workflow/shared/scripts/prism_cli.py
+# 注：本脚本是 Prism 4.0 CLI 的 bash 壳，核心实现在：
+#   $PRISM_SDK/prism4/cli.py
 
 set -o pipefail
 
@@ -54,7 +47,7 @@ _resolve() {
 REAL_SCRIPT="$(_resolve "$0")"
 SCRIPT_DIR="$(cd "$(dirname "$REAL_SCRIPT")" && pwd)"
 PRISM_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-CLI_SCRIPT="$PRISM_DIR/skills/workflow/shared/scripts/prism_cli.py"
+CLI_SCRIPT="$PRISM_DIR/prism4/cli.py"
 
 RED='\033[0;31m'
 YELLOW='\033[0;33m'
@@ -100,7 +93,7 @@ fi
 
 # ── 前置检查：CLI 脚本必须存在 ──────────
 if [[ ! -f "$CLI_SCRIPT" ]]; then
-  echo -e "${RED}✗ prism_cli.py 未找到${NC}" >&2
+  echo -e "${RED}✗ prism4/cli.py 未找到${NC}" >&2
   echo -e "  ${DIM}期望路径: $CLI_SCRIPT${NC}" >&2
   echo -e "  ${DIM}运行 bin/doctor --scope cli 诊断${NC}" >&2
   exit 127
