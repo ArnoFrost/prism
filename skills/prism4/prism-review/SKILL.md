@@ -1,6 +1,6 @@
 ---
 name: prism-review
-description: "Prism 4.0 Review capability that exposes Findings without committing decisions. Use when: Prism 4.0 review, findings, risk review, semantic review, prism-review"
+description: "Prism 4.0 Review 能力：审视当前状态并产出 Findings，不自动形成决策。Use when: Prism 4.0 review、findings、risk review、semantic review、评审、prism-review"
 description_zh: "Prism 4.0 Review 能力：审视当前状态并产出 Findings，不自动形成决策。"
 license: MIT
 metadata:
@@ -10,23 +10,23 @@ visibility: dev
 stability: experimental
 user_invocable: true
 ---
-# Prism Review
+# Prism Review — 产出 Findings 的审视能力
 
-Use this skill for a bounded Prism 4.0 review that produces Findings.
+使用本技能执行一次有边界的 Prism 4.0 Review，产出 Findings。
 
-## Rules
+## 规则
 
-- Review is a Capability. Its output is Findings: observations, risks, gaps, conflicts, assumptions, trade-offs, or suggestions that expose relevant change in understanding.
-- Findings are advisory. They do not authorize implementation, mutate Intent, or become Decision.
-- First recover context with `prism brief project <topic_id> --root <topic_dir>` when the active state is not already clear.
-- Persist only when the user asks, or when the current work needs a durable 4.0 trace:
+- Review 是一个 Capability。其输出是 Findings：观察、风险、缺口、冲突、假设、取舍点或建议，用于暴露理解上的相关变化。
+- Findings 是建议性的。它们不授权实施、不修改 Intent，也不构成 Decision。
+- 当活跃状态尚不清晰时，先用 `prism brief project <topic_id> --root <topic_dir>` 恢复上下文。
+- 仅在用户要求、或当前工作需要持久化 4.0 痕迹时才落盘：
 
 ```bash
 prism capability run review <topic_id> --root <topic_dir> --body "<finding body>"
 ```
 
-- Do not create 3.x `reviews/rXX.md`, `review.index.md`, Gate 4, dXX, scope/focus, task, or wave artifacts.
+- 不要创建 3.x 的 `reviews/rXX.md`、`review.index.md`、Gate 4、dXX、scope/focus、task 或 wave 产物。
 
-## Output
+## 输出
 
-Lead with the strongest Findings and the implication for the next step. Separate facts from suggestions when that distinction matters.
+先给出最强 Findings 及其对下一步的影响。当区分重要时，把事实与建议分开。

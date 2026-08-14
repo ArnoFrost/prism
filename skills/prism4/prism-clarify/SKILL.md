@@ -1,6 +1,6 @@
 ---
 name: prism-clarify
-description: "Prism 4.0 Clarify capability for one blocking question and optional semantic payload. Use when: Prism 4.0 clarify, blocking ambiguity, proposed patch, decision candidate, prism-clarify"
+description: "Prism 4.0 Clarify 能力：一次澄清一个阻塞歧义，并可选留下语义候选 payload。Use when: Prism 4.0 clarify、blocking ambiguity、proposed patch、decision candidate、澄清、prism-clarify"
 description_zh: "Prism 4.0 Clarify 能力：一次澄清一个阻塞歧义，并可选留下语义候选 payload。"
 license: MIT
 metadata:
@@ -10,24 +10,24 @@ visibility: dev
 stability: experimental
 user_invocable: true
 ---
-# Prism Clarify
+# Prism Clarify — 澄清阻塞歧义
 
-Use this skill when a Prism 4.0 topic is blocked by a human choice or ambiguous commitment.
+当某个 Prism 4.0 Topic 被一个人类选择或模糊承诺阻塞时，使用本技能。
 
-## Rules
+## 规则
 
-- Ask one question at a time. Investigate facts first; only ask the user for choices you cannot infer safely.
-- Clarify may output semantic payloads such as `proposed-patch` or `decision-candidate`. These are candidates, not committed Decisions.
-- Persist only when the user asks, or when the current work needs a durable 4.0 trace:
+- 一次只问一个问题。先调查事实；只向用户询问你无法安全推断的选择。
+- Clarify 可以产出语义 payload，例如 `proposed-patch` 或 `decision-candidate`。这些是候选，不是已提交的 Decision。
+- 仅在用户要求、或当前工作需要持久化 4.0 痕迹时才落盘：
 
 ```bash
 prism capability run clarify <topic_id> --root <topic_dir> --question "<question>" --proposed-patch "<patch>"
 prism capability run clarify <topic_id> --root <topic_dir> --question "<question>" --decision-candidate "<candidate>"
 ```
 
-- A committed Decision requires explicit authority. Do not treat an answer, recommendation, or candidate payload as a Decision unless the authority boundary is clear.
-- Do not call 3.x `workflow-clarify`, create handoff files, or write scope/focus/task/wave artifacts.
+- 已提交的 Decision 需要明确的授权。除非授权边界清晰，否则不要把答案、建议或候选 payload 当作 Decision。
+- 不要调用 3.x `workflow-clarify`、创建 handoff 文件，或写 scope/focus/task/wave 产物。
 
-## Output
+## 输出
 
-Give the recommended answer briefly, then ask the single blocking question. After the user answers, restate what changed and whether anything still blocks progress.
+先简要给出推荐答案，然后提出那一个阻塞性问题。用户回答后，重述发生了什么变化，以及是否仍有东西阻塞进展。
