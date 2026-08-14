@@ -25,6 +25,7 @@ from .core import (
     clarify_capability,
 )
 from .reference import ReferenceStore
+from .local_json import JsonReferenceStoreAdapter
 
 __all__ = [
     "CORE_ARTIFACT_ROLES",
@@ -34,6 +35,7 @@ __all__ = [
     "AuthorityPolicy",
     "CapabilitySpec",
     "Invocation",
+    "JsonReferenceStoreAdapter",
     "PrismProtocolError",
     "ReferenceStore",
     "Relation",

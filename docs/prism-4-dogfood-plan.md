@@ -234,6 +234,12 @@ Rules:
 - Do not require 3.x `workspace.*.local`.
 - Keep Windows-safe physical paths.
 
+Initial adapter choice:
+
+- Use `JsonReferenceStoreAdapter` as the Phase 2 reference representation.
+- Store all logical ids and relations in a single Windows-safe `prism4-state.json` file.
+- Treat the file format as dogfood evidence, not as the Prism Core storage contract.
+
 Exit criteria:
 
 - Can create a Topic.
