@@ -91,6 +91,20 @@ def test_bin_prism_brief_project_does_not_require_saving():
     assert "Foundation Intent" in result.stdout
 
 
+def test_bin_prism_discovers_workspace_v4_topic_from_repo_root():
+    result = subprocess.run(
+        [str(BIN_PRISM), "topic", "list"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "topic:prism-4-refoundation" in result.stdout
+
+
 def test_bin_prism_can_delegate_legacy_version_flag():
     result = subprocess.run(
         [str(BIN_PRISM), "legacy", "--version"],

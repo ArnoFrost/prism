@@ -146,8 +146,8 @@ def build_parser() -> argparse.ArgumentParser:
 def add_root_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--root",
-        default=".",
-        help="directory containing prism4-state.json",
+        default=None,
+        help="directory containing prism4-state.json; defaults to the active workspace 4.0 topic when discoverable",
     )
 
 
@@ -160,7 +160,7 @@ def cmd_default(args: argparse.Namespace) -> int:
 
 
 def cmd_topic_new(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(args.root)
+    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
     store = load_or_empty(adapter)
     topic = store.add_topic(
         Topic(id=args.topic_id, title=args.title, parent_id=args.parent_id)
@@ -171,7 +171,7 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
 
 
 def cmd_topic_list(args: argparse.Namespace) -> int:
-    store = JsonReferenceStoreAdapter(args.root).load()
+    store = JsonReferenceStoreAdapter(resolve_root(args.root)).load()
     for topic in store.topics.values():
         if topic.parent_id:
             print(f"{topic.id}\t{topic.title}\tparent={topic.parent_id}")
@@ -181,7 +181,7 @@ def cmd_topic_list(args: argparse.Namespace) -> int:
 
 
 def cmd_artifact_show(args: argparse.Namespace) -> int:
-    store = JsonReferenceStoreAdapter(args.root).load()
+    store = JsonReferenceStoreAdapter(resolve_root(args.root)).load()
     if args.ref in store.artifacts:
         print(store.artifacts[args.ref].body)
         return 0
@@ -192,7 +192,7 @@ def cmd_artifact_show(args: argparse.Namespace) -> int:
 
 
 def cmd_brief_project(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(args.root)
+    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
     store = adapter.load()
     brief = project_brief(store, args.topic_id, artifact_id=args.artifact_id)
     if args.save:
@@ -205,7 +205,7 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
 
 
 def cmd_capability_review(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(args.root)
+    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
     store = adapter.load()
     if args.topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
@@ -230,7 +230,7 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
         raise PrismProtocolError(
             "clarify requires --proposed-patch and/or --decision-candidate"
         )
-    adapter = JsonReferenceStoreAdapter(args.root)
+    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
     store = adapter.load()
     if args.topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
@@ -281,6 +281,21 @@ def load_or_empty(adapter: JsonReferenceStoreAdapter) -> ReferenceStore:
     if adapter.path.exists():
         return adapter.load()
     return ReferenceStore()
+
+
+def resolve_root(root: str | None) -> Path:
+    if root:
+        return Path(root)
+
+    cwd = Path.cwd()
+    for base in (cwd, *cwd.parents):
+        direct = base / "prism4-state.json"
+        if direct.is_file():
+            return base
+        candidates = sorted(base.glob("workspace.*.local/topics/*/prism4-state.json"))
+        if candidates:
+            return candidates[-1].parent
+    return cwd
 
 
 def topic_artifacts(
