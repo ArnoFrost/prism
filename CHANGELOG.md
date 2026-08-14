@@ -1,5 +1,22 @@
 ## [Unreleased]
 
+## [4.0-canary] — 2026-08-14
+
+> **Prism 4.0 re-foundation canary** — 本机 dogfood 分支切到破坏性重构目标：Core 从 3.x workflow 结构中剥离为轻量协作协议，`prism` 默认进入 4.0 reference adapter，旧 3.x verb 经 legacy adapter 过渡。
+
+### Added
+
+- **Prism 4.0 protocol skeleton** — 新增 Topic、Artifact、SemanticPayload、CapabilitySpec、Invocation、Relation 与 AuthorityPolicy 的最小协议模型。
+- **JSON reference adapter** — 新增单文件 `prism4-state.json` 参考存储，用于 dogfood，不作为 Core storage contract。
+- **首个 4.0 dogfood state** — 新增 `dogfood/prism-4-refoundation`，验证 Topic、Child Topic、Artifact、Payload、Invocation 与 Relation 可被落盘恢复。
+- **Brief projection** — 支持从当前状态重新投影 Brief，保持 Brief 为 context recovery artifact 而非事实源。
+- **4.0 CLI adapter** — `bin/prism` 在 `prism-4` 分支转向 `prism4/cli.py`，支持 topic/artifact/brief 基础命令，旧 3.x verb 通过 legacy adapter 委托。
+
+### Changed
+
+- **版本目标** — `VERSION` 推进到 `4.0-canary`，Python package metadata 使用 PEP 440 兼容的 `4.0.0.dev0`。
+- **Core 边界** — Grounding 文档冻结 `Topic / Artifact / Capability / Invocation / Decision Semantics`，并明确 Graph、Adapter、Style、Workspace Host 不进入 MVP Core。
+
 ## [v3.2.0] — 2026-07-31
 
 > **Prism 3.2 按需治理闭环** — 在 3.1 瘦身基线上补齐阻塞歧义澄清、可审计决策落盘与单游标执行闭环，同时保持 Workflow Skills 可选、按单一获权游标推进且不自动扩权。

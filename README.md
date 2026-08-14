@@ -5,7 +5,7 @@
 **轻量管理长期人机协作中的认知熵。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Stage](https://img.shields.io/badge/stage-v3.2.0-release-blue)](CHANGELOG.md)
+[![Stage](https://img.shields.io/badge/stage-4.0--canary-blue)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
 [快速开始](#快速开始) · [生命周期](#生命周期总览) · [认知熵与 Skills](#认知熵与-workflow-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
@@ -16,13 +16,13 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 
 > 共享规则，本地状态，清晰边界。
 
-**当前发行**：v3.2.0 — 在 v3.1 瘦身主线上形成按需治理闭环：Clarify 作为 sidecar，Decision Record 负责显式授权后的可审计落盘，Execute 只推进唯一游标；这些能力不把 workflow 变成固定管线。
+**当前发行**：4.0-canary — Prism 4.0 re-foundation 分支进入本机 dogfood：Core 收敛为 Topic / Artifact / Capability / Invocation / Decision Semantics，`prism` 默认进入 4.0 reference adapter，旧 3.x CLI 通过 legacy adapter 保留。
 
-**稳定性边界**：Clarify、Decision Record 与 Execute 随 3.2 提供但保持 experimental；Review Lite 退出现役推荐面，仅保留显式调用与旧产物兼容。
+**稳定性边界**：4.0-canary 是破坏性重构期目标，不承诺 3.x workspace/topic/CLI 内部结构兼容；Review / Clarify / Brief projection 先作为日常协作最小能力面 dogfood。
 
 **发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）
 
-**当前治理叙事** → [docs/prism-3.2.md](docs/prism-3.2.md) · **3.2 controlled pilot** → [docs/3.2-pilot.md](docs/3.2-pilot.md) · **发行历史** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **3.0 / 2.0 历史** → [docs/prism-3.0.md](docs/prism-3.0.md) / [docs/prism-2.0.md](docs/prism-2.0.md)
+**当前治理叙事** → [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) · **4.0 dogfood plan** → [docs/prism-4-dogfood-plan.md](docs/prism-4-dogfood-plan.md) · **发行历史** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **3.2 / 3.0 / 2.0 历史** → [docs/prism-3.2.md](docs/prism-3.2.md) / [docs/prism-3.0.md](docs/prism-3.0.md) / [docs/prism-2.0.md](docs/prism-2.0.md)
 
 ---
 

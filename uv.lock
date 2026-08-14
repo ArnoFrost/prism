@@ -40,7 +40,7 @@ wheels = [
 
 [[package]]
 name = "prism"
-version = "3.2.0"
+version = "4.0.0.dev0"
 source = { virtual = "." }
 
 [package.dev-dependencies]
