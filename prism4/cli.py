@@ -55,6 +55,8 @@ LEGACY_VERBS = {
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    if len(args) >= 2 and args[0] == "--json" and args[1] in LEGACY_VERBS:
+        return run_legacy(args)
     if args and args[0] == "legacy":
         if len(args) == 1:
             print("error: legacy requires arguments", file=sys.stderr)
