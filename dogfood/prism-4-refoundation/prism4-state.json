@@ -55,6 +55,41 @@
       "role": "plan",
       "title": "Next Plan",
       "topic_id": "topic:prism-4-refoundation"
+    },
+    {
+      "body": "1. CLI 与技能文档曾漂移：topic new 签名不一致、decision verb 被 legacy 路由拦截、plan / decision record 语义已定义但未接线。现已对齐并新增测试覆盖。2. resolve_root() 的 workspace 发现路径 workspace.*.local/topics/*/ 仍是 3.x 目录布局残留；4.0 JSON adapter 只需要 state 文件所在目录，桥接布局尚未被 4.0 语义重新定义。3. dogfood 状态与 SDK 仓库耦合：当前作为测试夹具随分支演进合理，但 Prism 项目自身的活跃协作状态在 4.0 稳定后应评估迁移到 Workspace backend。",
+      "id": "artifact:findings.cli-cutover-round",
+      "metadata": {
+        "authority": "advisory",
+        "evolution": "historical"
+      },
+      "role": "findings",
+      "title": "CLI Cutover Round Findings",
+      "topic_id": "topic:prism-4-refoundation"
+    },
+    {
+      "body": "Dogfood 状态在 4.0 稳定前保持 SDK 仓库内证据角色（测试夹具随分支演进）；4.0 稳定后评估迁移到 Workspace backend 或 workspace.prism.local 桥接。",
+      "id": "artifact:decision.state-placement",
+      "metadata": {
+        "authority": "authoritative",
+        "authority_required": "human-required",
+        "evolution": "committed"
+      },
+      "role": "decision",
+      "title": "Dogfood State Placement",
+      "topic_id": "topic:prism-4-refoundation"
+    },
+    {
+      "body": "技能说明使用中文；协议原语术语（Topic / Artifact / Capability / Invocation / Decision / Intent / Brief / Findings / Plan / Review / Clarify）保留英文，与 grounding 文档 SSOT 一致。",
+      "id": "artifact:decision.skill-language",
+      "metadata": {
+        "authority": "authoritative",
+        "authority_required": "human-required",
+        "evolution": "committed"
+      },
+      "role": "decision",
+      "title": "Skill Language Policy",
+      "topic_id": "topic:prism-4-refoundation"
     }
   ],
   "invocations": [
@@ -137,6 +172,81 @@
         "mutation_target": "none",
         "output_status": "proposed"
       }
+    },
+    {
+      "capability_id": "prism:review",
+      "created_at": "2026-08-14T15:58:38+00:00",
+      "id": "invocation:dec9f935a790",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:brief.current",
+        "artifact:plan.next"
+      ],
+      "metadata": {},
+      "output_refs": [
+        "artifact:findings.cli-cutover-round"
+      ],
+      "policy": {
+        "authority_required": "none",
+        "mutation_target": "none",
+        "output_status": "proposed"
+      }
+    },
+    {
+      "capability_id": "prism:clarify",
+      "created_at": "2026-08-14T15:58:43+00:00",
+      "id": "invocation:ba5ad4405c42",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:brief.current",
+        "artifact:findings.cli-cutover-round"
+      ],
+      "metadata": {},
+      "output_refs": [
+        "payload:decision-candidate.state-placement"
+      ],
+      "policy": {
+        "authority_required": "none",
+        "mutation_target": "proposed-patch",
+        "output_status": "proposed"
+      }
+    },
+    {
+      "capability_id": "prism:record-decision",
+      "created_at": "2026-08-14T15:58:48+00:00",
+      "id": "invocation:82353bb471bd",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:findings.cli-cutover-round",
+        "payload:decision-candidate.state-placement"
+      ],
+      "metadata": {},
+      "output_refs": [
+        "artifact:decision.state-placement"
+      ],
+      "policy": {
+        "authority_required": "human-required",
+        "mutation_target": "record",
+        "output_status": "committed"
+      }
+    },
+    {
+      "capability_id": "prism:record-decision",
+      "created_at": "2026-08-14T15:58:49+00:00",
+      "id": "invocation:8025535636b6",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:findings.cli-cutover-round"
+      ],
+      "metadata": {},
+      "output_refs": [
+        "artifact:decision.skill-language"
+      ],
+      "policy": {
+        "authority_required": "human-required",
+        "mutation_target": "record",
+        "output_status": "committed"
+      }
     }
   ],
   "payloads": [
@@ -153,6 +263,14 @@
       "id": "payload:decision-candidate.phase-2",
       "metadata": {
         "status": "accepted"
+      },
+      "type": "decision-candidate"
+    },
+    {
+      "body": "4.0 稳定前保持 SDK 仓库内证据角色（测试夹具随分支演进）；4.0 稳定后评估迁移到 Workspace backend 或 workspace.prism.local 桥接，用迁移本身验证\"存储位置是 Adapter 选择\"的协议语义。",
+      "id": "payload:decision-candidate.state-placement",
+      "metadata": {
+        "question": "dogfood 状态现在应留在 SDK 仓库作为证据，还是迁移到 Workspace backend？"
       },
       "type": "decision-candidate"
     }
@@ -237,6 +355,96 @@
       },
       "source_ref": "artifact:decision.phase-2-json-adapter",
       "target_ref": "artifact:plan.next"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:dec9f935a790"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:brief.current",
+      "target_ref": "invocation:dec9f935a790"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:plan.next",
+      "target_ref": "invocation:dec9f935a790"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "artifact:findings.cli-cutover-round",
+      "target_ref": "invocation:dec9f935a790"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:ba5ad4405c42"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:brief.current",
+      "target_ref": "invocation:ba5ad4405c42"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.cli-cutover-round",
+      "target_ref": "invocation:ba5ad4405c42"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "payload:decision-candidate.state-placement",
+      "target_ref": "invocation:ba5ad4405c42"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:82353bb471bd"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.cli-cutover-round",
+      "target_ref": "invocation:82353bb471bd"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "payload:decision-candidate.state-placement",
+      "target_ref": "invocation:82353bb471bd"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "artifact:decision.state-placement",
+      "target_ref": "invocation:82353bb471bd"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:8025535636b6"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.cli-cutover-round",
+      "target_ref": "invocation:8025535636b6"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "artifact:decision.skill-language",
+      "target_ref": "invocation:8025535636b6"
     }
   ],
   "schema_version": 1,
