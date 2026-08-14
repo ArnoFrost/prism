@@ -11,6 +11,7 @@ from prism4 import (
     Relation,
     SemanticPayload,
     Topic,
+    clarify_capability,
     is_starter_relation_kind,
     record_decision_operation,
     review_capability,
@@ -120,3 +121,82 @@ def test_review_vertical_slice_records_findings_invocation():
     assert invocation.policy.authority_required == "none"
     assert store.artifacts[findings.id].role == "findings"
     assert {relation.kind for relation in store.relations} == {"references", "derived-from"}
+
+
+def test_clarify_outputs_payloads_without_promoting_artifact_roles():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:prism-4", title="Prism 4.0 refoundation"))
+    intent = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="intent",
+            body="Keep Core thin and authority explicit.",
+        )
+    )
+    findings = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="findings",
+            body="Intent mutation rules need sharper authority language.",
+        )
+    )
+    proposed_patch = SemanticPayload(
+        type="proposed-patch",
+        body="Intent direct mutation requires delegated or human authority.",
+    )
+    decision_candidate = SemanticPayload(
+        type="decision-candidate",
+        body="Adopt the authority invariant for committed outputs.",
+    )
+
+    invocation = store.invoke(
+        capability=clarify_capability(),
+        inputs=(intent, findings),
+        outputs=(proposed_patch, decision_candidate),
+    )
+
+    assert invocation.capability_id == "prism:clarify"
+    assert invocation.policy.output_status == "proposed"
+    assert proposed_patch.id in store.payloads
+    assert decision_candidate.id in store.payloads
+    assert proposed_patch.id not in store.artifacts
+    assert set(store.artifacts) == {intent.id, findings.id}
+
+
+def test_record_decision_commits_payload_under_delegated_authority():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:prism-4", title="Prism 4.0 refoundation"))
+    finding = store.add_artifact(
+        Artifact(
+            id=new_id("artifact"),
+            topic_id=topic.id,
+            role="findings",
+            body="Reference does not create authority.",
+        )
+    )
+    candidate = store.add_payload(
+        SemanticPayload(
+            type="decision-candidate",
+            body="Only acceptance creates authority for a Plan.",
+        )
+    )
+    decision = Artifact(
+        id=new_id("artifact"),
+        topic_id=topic.id,
+        role="decision",
+        body="Accepted: Reference creates provenance; acceptance creates authority.",
+    )
+
+    invocation = store.invoke(
+        capability=record_decision_operation(authority_required="delegated"),
+        inputs=(finding, candidate),
+        outputs=(decision,),
+    )
+
+    assert invocation.capability_id == "prism:record-decision"
+    assert invocation.policy.output_status == "committed"
+    assert invocation.policy.authority_required == "delegated"
+    assert store.artifacts[decision.id].role == "decision"
+    assert candidate.id in invocation.input_refs

@@ -116,9 +116,11 @@ class SemanticPayload:
 
     type: str
     body: str
+    id: str = field(default_factory=lambda: new_id("payload"))
     metadata: Mapping[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        _require_non_empty(self.id, "payload.id")
         if not is_semantic_payload_type(self.type):
             raise PrismProtocolError(f"unknown semantic payload type: {self.type}")
         if self.type in CORE_ARTIFACT_ROLES:
