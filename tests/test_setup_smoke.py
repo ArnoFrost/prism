@@ -351,6 +351,46 @@ def test_relink_no_workspace_does_not_require_vault_config(tmp_path):
     assert "错误: 0" in result.stdout or "错误:0" in result.stdout.replace(" ", "")
 
 
+def test_relink_default_prism4_profile_prunes_legacy_sdk_skills(tmp_path):
+    """4.0 canary: 默认 relink 只分发 semantic skills，--prune 移除旧 workflow 软链。"""
+    tmp_sdk = tmp_path / "sdk"
+    codex_skills = tmp_path / "home" / ".codex" / "skills"
+    (tmp_sdk / "bin").mkdir(parents=True)
+    (tmp_sdk / "skills/prism4/prism-review").mkdir(parents=True)
+    (tmp_sdk / "skills/workflow/workflow-review").mkdir(parents=True)
+    codex_skills.mkdir(parents=True)
+
+    shutil.copy(SDK_ROOT / "bin" / "relink", tmp_sdk / "bin" / "relink")
+    (tmp_sdk / "bin" / "relink").chmod(0o755)
+    (tmp_sdk / "skills/prism4/prism-review" / "SKILL.md").write_text(
+        "---\nname: prism-review\n---\n",
+        encoding="utf-8",
+    )
+    (tmp_sdk / "skills/workflow/workflow-review" / "SKILL.md").write_text(
+        "---\nname: workflow-review\n---\n",
+        encoding="utf-8",
+    )
+    (codex_skills / "workflow-review").symlink_to(
+        tmp_sdk / "skills/workflow/workflow-review"
+    )
+
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path / "home")
+    result = subprocess.run(
+        [str(tmp_sdk / "bin" / "relink"), "--no-workspace", "--prune"],
+        cwd=str(tmp_sdk),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (codex_skills / "prism-review").is_symlink()
+    assert not (codex_skills / "workflow-review").exists()
+    assert "SDK skill profile: prism4" in result.stdout
+
+
 def test_bin_prism_header_has_python3_fallback():
     """r10 A2: 静态保证 bin/prism 的 _run_python 包含 python3 fallback 分支。"""
     content = PRISM.read_text(encoding="utf-8")

@@ -1,8 +1,8 @@
 ---
 name: workflow-clarify
 description: |
-  用纯文本单问单答澄清会阻塞下一阶段的歧义：先调查可查事实，再逐个询问人类取舍，每轮给出推荐答案与短确认；Prism 4.0-canary topic 可在明确授权后用 `prism capability run clarify` 写入 Proposed Patch / Decision Candidate payload；旧 3.x 默认零写盘，只在授权后输出候选交接给既有 workflow。Use when: 继续讨论澄清、需求仍有关键歧义、执行或评审前需要收敛一个人类取舍、clarify、workflow-clarify
-description_zh: "纯文本单问单答澄清阻塞歧义；4.0 可授权写入语义 payload，旧 3.x 默认零写盘。"
+  Prism 3.x legacy 纯文本单问单答澄清：先调查可查事实，再逐个询问人类取舍，每轮给出推荐答案与短确认；4.0 topic 请改用 prism-clarify。Use when: 旧 Prism topic 澄清、3.x workflow clarify、阻塞歧义、workflow-clarify
+description_zh: "Prism 3.x legacy 单问单答澄清；4.0 topic 请改用 prism-clarify。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -31,28 +31,6 @@ user_invocable: true
 执行本 skill 前必须读取 [governance-boundaries.md](references/governance-boundaries.md)。它只提供 Workflow 运行时 invariant；Clarify 的进入条件、micro-loop、默认零写盘、候选交接和禁止面仍以本文件为准。
 
 只有用户明确要求落盘或进入下一 workflow 时，才读取 [handoff-contract.md](references/handoff-contract.md)。
-
-## 0.1 Prism 4.0-canary 分流
-
-若目标协作目录包含 `prism4-state.json`，或用户明确要求在 Prism 4.0 topic 内 clarify：
-
-1. 保持单问单答：先调查可查事实，再问一个真正阻塞的问题。
-2. 默认仍可零写盘；但当用户要求持久化、或本轮需要留下 4.0 协作痕迹时，运行：
-
-```bash
-prism capability run clarify <topic_id> --root <topic_dir> --question "<question>" --proposed-patch "<patch>"
-```
-
-需要记录可裁决候选时，可同时或改用：
-
-```bash
-prism capability run clarify <topic_id> --root <topic_dir> --question "<question>" --decision-candidate "<candidate>"
-```
-
-3. Clarify 产物是 semantic payload：`proposed-patch` / `decision-candidate`。它们不是 Artifact Role，不等于 Decision，不自动修改 Intent。
-4. `output_status=committed` 必须来自 human-required 或 delegated authority；Clarify 本身不产生 committed Decision。
-
-只有未检测到 4.0 state 时，才继续执行下面的 3.x micro-loop / handoff 规则。
 
 ## 1. 进入与跳过
 

@@ -1,7 +1,7 @@
 ---
 name: workflow-review
-description: "多角色协作评审，用于方向变更、范围调整或里程碑检查点。Prism 4.0-canary topic 使用 `prism capability run review` 写入 Findings；旧 3.x topic 仍按 Align-Explore-Merge-Gate4 输出 reviews/rXX.md。 Use when: 方向变更评审、里程碑检查、多角色审查、范围调整、workflow-review"
-description_zh: "多角色协作评审；4.0-canary topic 写入 Findings，旧 3.x topic 输出 reviews/rXX.md。"
+description: "Prism 3.x legacy 多角色协作评审，用于旧 topic 的方向变更、范围调整或里程碑检查点。4.0 topic 请改用 prism-review。 Use when: 旧 Prism topic 评审、3.x workflow review、方向变更评审、workflow-review"
+description_zh: "Prism 3.x legacy 多角色协作评审；4.0 topic 请改用 prism-review。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -34,23 +34,6 @@ public_gate:
 ## 0. 必读引用
 
 执行本 skill 前必须读取 [governance-boundaries.md](references/governance-boundaries.md)。它只提供 Workflow 运行时 invariant；Review 的 Align、真实并发、`task_probe`、Merge、Gate 4、pending rXX、`decision_artifact` 与 dXX 审计链仍以本文件与本地 references 为准。
-
-## 0.1 Prism 4.0-canary 分流
-
-若目标协作目录包含 `prism4-state.json`，或用户明确要求在 Prism 4.0 topic 内 review：
-
-1. 使用 4.0 reference adapter，不创建 `reviews/rXX.md`、`review.index.md`、dXX 或 3.x trace family。
-2. 先读取当前 `prism4-state.json` 中的 Topic、Intent、Brief、Findings、Decision、Plan。
-3. 在对话中给出简短 review synthesis：结论、Findings body、风险/OQ、建议下一步。
-4. 用户要求持久化或当前任务需要留下 4.0 痕迹时，运行：
-
-```bash
-prism capability run review <topic_id> --root <topic_dir> --body "<finding body>"
-```
-
-5. Review 产物是 `Findings`：advisory，不携带授权，不自动修改 Intent / Brief / Plan。
-
-只有未检测到 4.0 state 时，才继续执行下面的 3.x hot path。
 
 ## 1. 何时使用
 

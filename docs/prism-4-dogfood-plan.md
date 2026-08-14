@@ -418,6 +418,8 @@ Do not put `:` in directory or file names.
 During 4.0 dogfood:
 
 - Prefer editing 4.0 docs and protocol skeletons over patching 3.x workflow.
+- Use `prism-topic`, `prism-brief`, `prism-review`, and `prism-clarify` as the default local skill surface.
+- Keep `workflow-*` as explicit legacy compatibility, not as a 4.0 branch fallback.
 - Do not create new Core concepts to solve adapter problems.
 - Do not promote a concept because implementation is inconvenient.
 - Do not keep `Task` as a compatibility concept in Core.
@@ -498,6 +500,7 @@ If authority is missing, stop at Proposed Patch. Brief may then be regenerated o
 Success means:
 
 - The loop can be explained without 3.x workflow terms.
+- `bin/relink --skill-profile prism4 --prune` leaves the local IDE/Codex surface with semantic 4.0 skills, not old `workflow-*` skills.
 - The same loop can be represented without Obsidian.
 - Brief can be regenerated from source artifacts.
 - A material commitment can be distinguished from a proposed patch.

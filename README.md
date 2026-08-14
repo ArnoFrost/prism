@@ -8,7 +8,7 @@
 [![Stage](https://img.shields.io/badge/stage-4.0--canary-blue)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
-[快速开始](#快速开始) · [生命周期](#生命周期总览) · [认知熵与 Skills](#认知熵与-workflow-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
+[快速开始](#快速开始) · [生命周期](#生命周期总览) · [4.0 Skills](#prism-40-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
 
 </div>
 
@@ -122,24 +122,23 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 
 ---
 
-## 认知熵与 Workflow Skills
+## Prism 4.0 Skills
 
-Prism 内置 **workflow** 是一组可选的认知熵治理能力：按当前问题选择，不要求从 Intake 一路执行完整清单。3.2 当前叙事见 [docs/prism-3.2.md](docs/prism-3.2.md)，能力全景见 [docs/skill-taxonomy.md](docs/skill-taxonomy.md)。
+Prism 4.0-canary 默认分发新的 **semantic skills**，它们围绕 Topic / Artifact / Capability / Invocation / Decision Semantics 工作，不再把 3.x `workflow-*` 作为默认体验面。旧 workflow 源码仍保留给 legacy adapter、历史 topic 和测试使用。
 
 > **视觉占位（待重绘）**：未来图示应将输入、歧义、边界、判断、决策、注意力和恢复成本映射到可选能力，Clarify 作为 sidecar，而非前置阶段。
 
-| 你想… | 优先 skill / 入口 |
+| 你想… | 4.0 skill / 入口 |
 |--------|-------------------|
-| 新需求不知归哪 | `/workflow-intake` |
-| 当前对话被一个人类取舍阻塞 | `/workflow-clarify`；默认零写盘，只给候选交接 |
-| 决策后更新边界 | `/workflow-scope` |
-| 继续当前 task / wave，并同步代码与工件 | `/workflow-execute` |
-| 方向变更 / 里程碑需要多视角判断 | `/workflow-review`；结论先完整呈现，再进入人类 Gate |
-| 日常小改动确认 | 模型原生自检；需要持久评审时显式用 `/workflow-review` |
-| 看进度 / 下一步 | `/workflow-status` |
+| 创建或定位协作边界 | `/prism-topic` · `prism topic ...` |
+| 恢复当前上下文切片 | `/prism-brief` · `prism brief project ...` |
+| 审视现状并留下 Findings | `/prism-review` · `prism capability run review ...` |
+| 澄清一个阻塞取舍 | `/prism-clarify` · `prism capability run clarify ...` |
 | 升级 SDK | `prism update` · `./setup.sh update` |
 
-合同变化按授权强度分级：intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆的 scope 修正可由显式授权进入 Scope；review 驱动或需要长期审计的变化先形成 Decision Record，再由 Scope 更新合同；尚无合法 Topic 时先走 Intake。Clarify 只交候选内容，不替代授权入口。
+`bin/relink` 默认使用 `--skill-profile prism4`，会把 `skills/prism4/*` 分发到本机 IDE/Codex skill 目录。需要旧面时显式运行 `bin/relink --skill-profile legacy`；维护者调试可用 `--skill-profile all`。
+
+4.0 合同变化按授权强度分级：Findings 只暴露认知增量；Clarify payload 只是候选；Decision 才固化关键承诺。Brief 是可再生成投影，不是事实源。
 
 ---
 
@@ -166,7 +165,7 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 | **安装（人类 · GitHub）** | [SETUP_GITHUB.md](SETUP_GITHUB.md) |
 | **安装（Agent）** | [SETUP_AGENT.md](SETUP_AGENT.md) |
 | **init 后日常 / 生命周期** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
-| **认知熵 / skill 怎么选** | [docs/skill-taxonomy.md](docs/skill-taxonomy.md) · 上文 [认知熵与 Workflow Skills](#认知熵与-workflow-skills) |
+| **4.0 skill 怎么选** | 上文 [Prism 4.0 Skills](#prism-40-skills) · [docs/prism-4-dogfood-plan.md](docs/prism-4-dogfood-plan.md) |
 | 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
 | Prism 当前如何形成按需治理闭环 | [docs/prism-3.2.md](docs/prism-3.2.md) |
 | Prism 3.2 controlled pilot 怎么试 | [docs/3.2-pilot.md](docs/3.2-pilot.md) |
@@ -178,9 +177,9 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 | 术语速查 | [docs/glossary.md](docs/glossary.md) |
 | 历史迁移 | [docs/migration.md](docs/migration.md) |
 
-Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Skills 承载可复用能力，Env 承载个人环境，Workspace 承载项目状态。其中 workflow skills 是内置的认知熵治理工作流，用来把混沌需求收敛成可恢复、可追踪、可协作的状态。详细分层见 [docs/architecture.md](docs/architecture.md)。
+Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Skills 承载可复用能力，Env 承载个人环境，Workspace 承载项目状态。4.0-canary 的默认 skill 面是 `skills/prism4/*`；3.x workflow 文档与技能属于 legacy / historical surface。详细分层见 [docs/architecture.md](docs/architecture.md)。
 
-`bin/relink` 会将 SDK 内置 workflow skills 分发到 IDE 目录（Cursor · Claude Code · CodeBuddy · Codex），无需手动配置。
+`bin/relink` 会将当前 skill profile 下的 SDK 内置 skills 分发到 IDE 目录（Cursor · Claude Code · CodeBuddy · Codex），无需手动配置。
 
 > **workflow / 痕迹义务家族都是可选项**
 >

@@ -84,7 +84,8 @@ def test_clarify_is_not_projected_as_a_fixed_prerequisite():
     agents = AGENTS.read_text(encoding="utf-8")
     catalog = CATALOG.read_text(encoding="utf-8")
     assert "前置澄清" not in agents
-    assert "Clarify 可在任意阶段按需触发" in agents
+    assert "prism-clarify" in agents
+    assert "候选 payload 不等于 Decision" in agents
     assert "Prism 3.0 experimental skills" not in catalog
     assert "3.1 Lite" not in agents
     assert "3.1 Lite" not in catalog

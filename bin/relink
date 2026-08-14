@@ -9,6 +9,8 @@
 #   bin/relink --prune      清理陈旧/失效软链接（可与 --dry-run 组合）
 #   bin/relink --no-workspace
 #                           跳过 Workspace backend 链接，仅刷新代码层 Skills 分发
+#   bin/relink --skill-profile prism4|legacy|all
+#                           选择 SDK 内置 skill 分发面；默认 prism4
 
 set -euo pipefail
 
@@ -28,6 +30,7 @@ CHECK_ONLY=false
 PRUNE=false
 TARGET_PROJECT=""
 SKIP_WORKSPACE=false
+SKILL_PROFILE="${PRISM_SKILL_PROFILE:-prism4}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -35,6 +38,12 @@ while [[ $# -gt 0 ]]; do
     --dry-run)  DRY_RUN=true; shift ;;
     --prune)    PRUNE=true; shift ;;
     --no-workspace|--code-only) SKIP_WORKSPACE=true; shift ;;
+    --skill-profile)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo -e "${RED}✗ --skill-profile 需要参数: prism4|legacy|all${NC}" >&2; exit 1
+      fi
+      SKILL_PROFILE="$2"; shift 2
+      ;;
     --project)
       if [[ $# -lt 2 || -z "$2" ]]; then
         echo -e "${RED}✗ --project 需要指定项目代号${NC}" >&2; exit 1
@@ -42,7 +51,7 @@ while [[ $# -gt 0 ]]; do
       TARGET_PROJECT="$2"; shift 2
       ;;
     --help|-h)
-      echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE|--no-workspace]"
+      echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE|--no-workspace|--skill-profile prism4|legacy|all]"
       echo "  (无参数)     刷新所有软链接"
       echo "  --check      仅检查状态"
       echo "  --dry-run    预览变更"
@@ -50,11 +59,40 @@ while [[ $# -gt 0 ]]; do
       echo "  --project X  仅刷新指定项目"
       echo "  --no-workspace / --code-only"
       echo "               跳过 Workspace backend 链接，仅刷新代码层 Skills 分发"
+      echo "  --skill-profile prism4|legacy|all"
+      echo "               SDK 内置 skill 分发面；默认 prism4"
       exit 0
       ;;
     *) echo "未知参数: $1"; exit 1 ;;
   esac
 done
+
+case "$SKILL_PROFILE" in
+  prism4|legacy|all) ;;
+  *) echo -e "${RED}✗ --skill-profile 仅支持 prism4|legacy|all，当前: ${SKILL_PROFILE}${NC}" >&2; exit 1 ;;
+esac
+
+SDK_SKILL_CATEGORIES=()
+case "$SKILL_PROFILE" in
+  prism4) SDK_SKILL_CATEGORIES=(prism4) ;;
+  legacy) SDK_SKILL_CATEGORIES=(workflow workspace) ;;
+  all)    SDK_SKILL_CATEGORIES=(prism4 workflow workspace) ;;
+esac
+ACTIVE_SDK_LINK_NAMES=()
+
+is_active_sdk_link_name() {
+  local name="$1"
+  for active_name in "${ACTIVE_SDK_LINK_NAMES[@]+"${ACTIVE_SDK_LINK_NAMES[@]}"}"; do
+    [[ "$active_name" == "$name" ]] && return 0
+  done
+  return 1
+}
+
+remember_active_sdk_link_name() {
+  local name="$1"
+  is_active_sdk_link_name "$name" && return 0
+  ACTIVE_SDK_LINK_NAMES+=("$name")
+}
 
 if [[ ! -f "$CONFIG" && "$SKIP_WORKSPACE" != true ]]; then
   echo -e "${RED}✗ prism.local.yaml 不存在，运行 bin/setenv --init 初始化${NC}"
@@ -398,6 +436,7 @@ fi
 if $SKIP_WORKSPACE; then
   echo -e "${DIM}模式: 跳过 Workspace backend，仅刷新代码层 Skills 分发${NC}"
 fi
+echo -e "${DIM}SDK skill profile: ${SKILL_PROFILE}${NC}"
 echo "─────────────────────────────────"
 
 # 1. 检查基础路径
@@ -557,11 +596,11 @@ if [[ ${#PLATFORM_TARGETS[@]} -eq 0 ]]; then
   log_skip "未探测到可用平台目录，跳过所有 Skills 映射"
 fi
 
-# 3a. SDK 内置技能分发（workflow-* / workspace-*）
+# 3a. SDK 内置技能分发（默认 Prism 4.0 semantic skills；legacy 需显式选择）
 if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
   echo -e "\n${CYAN}[SDK 内置技能 → Agent/IDE]${NC}"
   sdk_skill_count=0
-  for category in workflow workspace; do
+  for category in "${SDK_SKILL_CATEGORIES[@]}"; do
     category_dir="$SDK_PATH/skills/${category}"
     [[ -d "$category_dir" ]] || continue
     for skill_dir in "$category_dir"/*/; do
@@ -569,12 +608,13 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       skill_name=$(basename "$skill_dir")
       [[ "$skill_name" == "shared" ]] && continue
       [[ ! -f "$skill_dir/SKILL.md" ]] && continue
-      # 目录名已与 frontmatter name / IDE 分发 id 对齐（workflow-archive 等）
-      if [[ "$skill_name" == "${category}-"* ]]; then
+      # 目录名已与 frontmatter name / IDE 分发 id 对齐（workflow-archive、prism-review 等）
+      if [[ "$skill_name" == "${category}-"* || "$skill_name" == "prism-"* ]]; then
         link_name="$skill_name"
       else
         link_name="${category}-${skill_name}"
       fi
+      remember_active_sdk_link_name "$link_name"
 
       if is_archived "$link_name"; then
         log_skip "${link_name} ${DIM}(archived)${NC}"
@@ -734,6 +774,18 @@ if $PRUNE; then
     ((PRUNED++)) || true
   }
 
+  is_active_sdk_skill_target() {
+    local link_target="$1"
+    [[ -d "$link_target" && -f "$link_target/SKILL.md" ]] || return 1
+
+    local target_category
+    target_category=$(basename "$(dirname "$link_target")")
+    for active_category in "${SDK_SKILL_CATEGORIES[@]}"; do
+      [[ "$target_category" == "$active_category" ]] && return 0
+    done
+    return 1
+  }
+
   # 4a. IDE 平台目录：清理 Prism 管辖范围内的陈旧链接
   for target in ${PLATFORM_TARGETS[@]+"${PLATFORM_TARGETS[@]}"}; do
     platform="${target%%|*}"
@@ -743,12 +795,14 @@ if $PRUNE; then
       link_target=$(readlink "$link")
       # SDK 内置技能（指向 prism/skills/）
       if [[ "$link_target" == "$SDK_PATH/skills/"* ]]; then
-        if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
+        if ! is_active_sdk_skill_target "$link_target"; then
           prune_link "$link" "${platform}: $(basename "$link")"
         fi
       # 外部 Skills（指向 prism-skills/）
       elif [[ -n "$SKILLS_PATH" && "$link_target" == "$SKILLS_PATH"* ]] || [[ "$link_target" == *prism-skills* ]]; then
-        if [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
+        if is_active_sdk_link_name "$(basename "$link")"; then
+          :
+        elif [[ ! -d "$link_target" ]] || [[ ! -f "$link_target/SKILL.md" ]]; then
           prune_link "$link" "${platform}: $(basename "$link")"
         fi
       # env 层 Skills（指向 env_path/skills/）

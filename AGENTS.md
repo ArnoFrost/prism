@@ -8,6 +8,19 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。
 
 它不是任务调度器，不是 Agent 编排平台，也不是重型运行时。它负责把共享协作规范以最小侵入方式折射进本地工作区。
 
+## 4.0-canary 分支口径
+
+当前分支进入 Prism 4.0 re-foundation dogfood。默认协作面改为 `skills/prism4/*`：
+
+| 技能 | 职责 |
+|------|------|
+| `prism-topic` | 管理 4.0 Topic 边界 |
+| `prism-brief` | 从当前有效状态生成 Brief 投影 |
+| `prism-review` | 运行 Review 能力并产出 Findings |
+| `prism-clarify` | 澄清一个阻塞取舍并可选留下候选 payload |
+
+旧 `workflow-*` 与 `workspace-init` 源码保留为 3.x legacy surface。默认 `bin/relink` 使用 `--skill-profile prism4`，不再分发旧 workflow 技能；需要旧 topic 兼容时显式使用 `bin/relink --skill-profile legacy` 或 `prism legacy ...`。
+
 ## 四层模型
 
 | 层 | 职责 | 必需 | SDK 内对应 |
@@ -19,7 +32,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。
 
 核心分离：Protocol / Env / Skills 是无状态层，Workspace 是有状态层。
 
-Skills 和 Env 是**可选的能力扩展层**，不是硬依赖。Prism 的最小可用集合是 Protocol + Workspace。为了开箱即用，SDK 在 `skills/workflow/` 内置了一套工作流最佳实践——这是便利性设计，不改变 Skills 层本身可选的架构定位。
+Skills 和 Env 是**可选的能力扩展层**，不是硬依赖。Prism 的最小可用集合是 Protocol + Workspace。4.0-canary 默认只分发 `skills/prism4/` 的语义技能；3.x `skills/workflow/` 作为 legacy 源码保留。
 
 ---
 
@@ -115,8 +128,8 @@ Workspace backend/
 - 保持状态与逻辑分离。
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
-- **Workflow / 痕迹义务家族是可选增强，不是 Prism 硬入口**。core contract 只含 SDK + `uv`；Workspace 是逻辑状态层，默认可落本地目录，Vault 仅为可选 backend。review / decision / `task_probe` 等只在结构化协作场景启用。
-- **Topic 路由分流**：`/workflow-intake` 默认创建新 topic（裸 slash 调用永远 new，显式 `--append <topic>` 优先，不因 cohesion 静默 append）；`workflow-review` 在 sniff 高/中置信 affinity 时可 cohesion 落盘已有 topic；显式 legacy `workflow-review-lite` 保留相同兼容行为；`workflow-compact` 是 explicit-topic-only 低频维护技能，不跟随 review cohesion。路由语义 SSOT 见 [`skills/workflow/workflow-intake/references/intake-routing-spec.md`](skills/workflow/workflow-intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) §0.1 — cite 不复制。
+- **Workflow / 痕迹义务家族是 3.x legacy 增强，不是 4.0 硬入口**。core contract 只含 SDK + `uv`；Workspace 是逻辑状态层，默认可落本地目录，Vault 仅为可选 backend。4.0 当前只 dogfood Topic / Artifact / Capability / Invocation / Decision Semantics。
+- **Topic 路由分流**：4.0 不再用 `workflow-intake` 作为默认入口；用 `prism-topic` 创建或定位 Topic，用 child Topic 表达耐久子问题。3.x 路由语义仍保留在 [`skills/workflow/workflow-intake/references/intake-routing-spec.md`](skills/workflow/workflow-intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) 供 legacy 使用。
 
 ---
 
@@ -133,7 +146,7 @@ Workspace backend/
 - **schema + 模板**：`schema/` 和 `templates/` 定义技能规范
 - **内置最佳实践**：`workflow/`（工作流管线）和 `workspace/`（工作区管理），为开箱即用随 SDK 发布
 
-Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 workflow 技能是一套开箱即用的最佳实践，不改变 Skills 层可选的架构定位。外部个人技能仓库（`~/prism-skills`）按需配置，提供个人工具和 git 同步能力。两者通过各自的 `bin/relink` 独立分发到 IDE。
+Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 4.0 semantic skills 是当前 canary dogfood 面；3.x workflow 技能仅在显式 legacy 场景启用。外部个人技能仓库（`~/prism-skills`）按需配置，提供个人工具和 git 同步能力。两者通过各自的 `bin/relink` 独立分发到 IDE。
 
 ### Workspace
 项目级 AI 协作状态容器。SDK 内的 `workspace/` 保存 schema 和模板（系统层）；项目状态实例默认可存放在本地 backend，也可选用 Vault，并通过 `workspace.{code}.local` 桥接。
@@ -222,23 +235,16 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Prism 内置技能
 
-SDK 内置的工作流与工作区管理技能，通过 `bin/relink` 分发到 IDE。Clarify 可在任意阶段按需触发；下表是按常见熵源整理的能力入口，不是固定管线或必经顺序。
+SDK 内置技能通过 `bin/relink` 分发到 IDE。4.0-canary 默认只分发 `skills/prism4/*`；旧 `workflow-*` 不再是默认体验面。
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
-| workspace-init | `/workspace-init` | 项目初始化 / 工作区创建（含路径迁移） |
-| workflow-clarify | `/workflow-clarify` | 阻塞歧义澄清 — 纯文本单问；默认零写盘，按需输出候选交接（3.2 dev experimental） |
-| workflow-intake | `/workflow-intake` | 入料 → 路由 → 专项初始化 |
-| workflow-scope | `/workflow-scope` | 合同收敛 → focus 刷新 |
-| workflow-execute | `/workflow-execute` | 单游标执行 — structured task/wave 或受限 topic-focus → 授权变更 → 验证 → 证据/focus 闭环（3.0 能力，dev experimental） |
-| workflow-review | `/workflow-review` | 正式评审 — 多角色协作（总分总结构） |
-| workflow-tidy | `/workflow-tidy` | 工件对齐 — review/decision 后的状态同步（不改 what 只改 how） |
-| workflow-digest | `/workflow-digest` | 状态通报 — 从 topic 工件生成面向协作者的摘要（快照，非 SSOT） |
-| workflow-status | `/workflow-status` | 健康度巡检 — report-first + `next_actions[]` handoff（不自动写盘） |
-| workflow-compact | `/workflow-compact` | 低频压实 — 默认 preview；授权后 backup→apply（dev experimental，不列入 3.0 GA formal 能力面） |
-| workflow-archive | `/workflow-archive` | 生命周期归档 / 再激活 — preview-first（dev experimental，不列入 3.0 GA formal 能力面） |
+| prism-topic | `/prism-topic` | 4.0 Topic 边界管理；不创建 3.x scope/focus/task/wave |
+| prism-brief | `/prism-brief` | Brief 投影与上下文恢复；可再生成，非事实源 |
+| prism-review | `/prism-review` | Review 能力；产出 Findings，不自动授权 |
+| prism-clarify | `/prism-clarify` | 单问澄清；可选 proposed-patch / decision-candidate payload |
 
-3.0 GA formal 能力面曾包含 `workflow-review-lite`。3.2 起它进入 retired-with-compat：从现役 public/default/recommended surfaces 移除，但显式调用与旧 `type: review-lite` 产物仍保持兼容。迁移说明见 [`docs/review-lite-compatibility.md`](docs/review-lite-compatibility.md)。`workflow-clarify` 从 3.2 以 dev/experimental 进入可选澄清面；`workflow-execute`、`workflow-compact` 与 `workflow-archive` 继续保持实验标记。
+3.x `workspace-init` 与 `workflow-*` 保留为 legacy compatibility：源码仍在 `skills/workflow/` 与 `skills/workspace/`，但本分支默认 `relink` 不分发。需要临时恢复旧面时运行 `bin/relink --skill-profile legacy`。
 
 ---
 
@@ -318,13 +324,8 @@ git commit -m "feat: 新增 xxx 脚本"
 
 | 条件 | 动作 |
 |------|------|
-| 有新需求，或不确定该归入哪个专项 | 先执行 `/workflow-intake` 路由 |
-| 接受了评审决策（dXX），需更新边界或刷新 focus | 执行 `/workflow-scope` 同步 |
-| 已有唯一 task/wave，或无 structures 且当前 focus 为唯一 V-backed 有界批次，需要同步代码与工件 | 执行 `/workflow-execute`（多游标、fork-S3、结构异常或 scope 漂移时停止并交回治理） |
-| 方向变更、里程碑检查点、需多视角深度审查 | 执行 `/workflow-review` |
-| 日常迭代、小改动确认、scope/focus 快速对齐 | 3.1 起默认模型原生自检；需要持久评审时显式执行 `/workflow-review` |
-| 评审/决策落盘后，rXX decision 镜像、既有 review.index、frontmatter 需机械对齐 | 执行 `/workflow-tidy`（或随 `prism finalize` 自动串联） |
-| 想了解专项进度 / 检查骨架完整性 / 启动新一轮工作前的现状回顾 | 执行 `/workflow-status`（report-first + `next_actions[]` handoff，只报告不修改） |
-| 需要对外通报专项状态（产品 / 协作者 / 自我回顾） | 执行 `/workflow-digest`（生成 `digest.md` 快照） |
-| topic 上下文膨胀、接续阅读成本过高 | 执行 `/workflow-compact`（先 preview；授权后 backup→apply） |
-| topic 已结束需释放注意力，或从 archive 拉回继续跟踪 | 执行 `/workflow-archive` / `prism archive` / `prism reactivate`（preview-first） |
+| 需要创建或定位 4.0 Topic | 使用 `/prism-topic` |
+| 需要恢复当前上下文 | 使用 `/prism-brief` 或 `prism brief project` |
+| 需要审视现状、暴露风险/缺口/取舍 | 使用 `/prism-review`；Findings 不自动授权 |
+| 下一步被一个人类取舍阻塞 | 使用 `/prism-clarify`；候选 payload 不等于 Decision |
+| 需要旧 3.x topic 兼容 | 显式使用 legacy skill 或 `prism legacy ...` |

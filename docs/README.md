@@ -11,10 +11,10 @@
 1. 仓库根 [README](../README.md) — **`./setup.sh init`** + 工具入口  
 2. [SETUP_GITHUB.md](../SETUP_GITHUB.md) — 人类安装；[SETUP_AGENT.md](../SETUP_AGENT.md) — Agent  
 3. [onboarding.md](./onboarding.md) — init 后：`setup.sh` · **`prism update` / `doctor`** · E2E  
-4. [prism-3.2.md](./prism-3.2.md) — 当前按需治理闭环与职责边界
-5. [3.2-pilot.md](./3.2-pilot.md) — controlled pilot 安装、体验、反馈与退出
-6. [topic-lifecycle.md](./topic-lifecycle.md) + [skill-taxonomy.md](./skill-taxonomy.md) — topic 与 skill 怎么选
-7. 已有 workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
+4. [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) — 4.0 语义地基
+5. [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) — 本机 dogfood 与渐进施工路径
+6. [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) — 架构图与表达口径
+7. 旧 3.x workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
 
 贡献者与协议修订 → [contributing.md](./contributing.md)（L3+）。
 
@@ -38,9 +38,20 @@
 
 ---
 
-## B — 当前 3.2 叙事（guide）
+## B — 当前 4.0 叙事（guide）
 
-随 3.x 产品演进；允许改措辞，不进 vocabulary。不重复发行号。
+随 4.0-canary dogfood 演进；允许改措辞，不进 legacy vocabulary。
+
+| 文档 | 用途 |
+|------|------|
+| [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) | 4.0 Core 语义、概念边界与 3.x 迁移口径 |
+| [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) | 本机长期 dogfood、CLI 切换、legacy 隔离与 MVP 推进计划 |
+| [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) | 4.0 架构图设计指导 |
+| [architecture.md](./architecture.md) | 四层模型、部署视图、当前 skill profile 与机械边界 |
+
+## C — 3.x legacy / historical
+
+保留给旧 topic、legacy adapter、测试与迁移参考；不作为 4.0 默认读序。
 
 | 文档 | 用途 |
 |------|------|
@@ -50,11 +61,10 @@
 | [topic-lifecycle.md](./topic-lifecycle.md) | topic 从 intake 到 archive |
 | [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
 | [review-lite-compatibility.md](./review-lite-compatibility.md) | review-lite 3.2 退役边界与旧产物迁移选择 |
-| [architecture.md](./architecture.md) | 四层模型、部署视图、按需 workflow 闭环与机械边界 |
 
 ---
 
-## C — 历史 / 内部（historical / internal）
+## D — 历史 / 内部（historical / internal）
 
 非默认面；首屏导航不依赖本层。
 

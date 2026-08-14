@@ -2,11 +2,20 @@
 # 控制 prism-dist 打包时包含哪些 skills
 # 策略与机制分离：修改此文件即可调整分发范围，无需改脚本
 
-version: "0.9.0"
+version: "4.0.0"
 
 profiles:
+  prism4:
+    description: "4.0 canary 分发 — semantic skills only，不携带 3.x workflow 技能面"
+    skills:
+      - prism-topic
+      - prism-brief
+      - prism-review
+      - prism-clarify
+    include_shared: false
+
   mini:
-    description: "mini 轻量分发 — SDK 内置 workflow/workspace 完整闭环，不要求外部 Skills"
+    description: "legacy mini 轻量分发 — 3.x workflow/workspace 完整闭环，不要求外部 Skills"
     skills:
       - workspace-init             # [core] 项目初始化（含迁移）
       - workflow-intake            # [core] 入料路由
@@ -20,7 +29,7 @@ profiles:
     include_shared: false
 
   full:
-    description: "完整版 — mini core + 外部 common / devops 扩展"
+    description: "legacy full — 3.x mini core + 外部 common / devops 扩展"
     skills:
       - workspace-init             # [core] 项目初始化（含迁移）
       - workflow-intake            # [core] 入料路由

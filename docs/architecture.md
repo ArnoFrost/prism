@@ -1,6 +1,6 @@
 # Prism — 架构详解
 
-> 本文档包含 Prism 的**结构客观面**（四层模型、部署、按需 workflow 闭环）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；当前叙事见 [prism-3.2.md](./prism-3.2.md)；3.0 / 2.0 历史见 [prism-3.0.md](./prism-3.0.md) / [prism-2.0.md](./prism-2.0.md)。
+> 本文档包含 Prism 的**结构客观面**（四层模型、部署、4.0 semantic skills 与 legacy workflow 边界）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；当前 4.0 叙事见 [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) 与 [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md)；3.x 历史见 [prism-3.2.md](./prism-3.2.md) / [prism-3.0.md](./prism-3.0.md)。
 
 ---
 
@@ -15,7 +15,7 @@
 
 Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和 Env 是**可选的能力扩展层**。Prism 的 **core contract** 是 SDK + `uv`；Protocol + Workspace 构成逻辑最小模型，但 Workspace backend 不等于 Vault，默认可使用本地目录。
 
-为了开箱即用，SDK 在 `skills/workflow/` 内置了一套工作流最佳实践，这是便利性设计，不改变 Skills 层可选的架构定位。
+4.0-canary 默认在 `skills/prism4/` 分发最小 semantic skills；3.x `skills/workflow/` 与 `skills/workspace/` 保留为 legacy compatibility。这是分发面的选择，不改变 Skills 层可选的架构定位。
 
 ---
 
@@ -39,11 +39,11 @@ Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和
 
 | 位置 | 含义 | 必需 | 对应层 |
 |------|------|:----:|--------|
-| **SDK 仓库** | 协议 + schema + 内置 workflow/workspace + bin 工具 | 是 | Protocol + Skills(内置) + Workspace(模板) |
+| **SDK 仓库** | 协议 + schema + 内置 semantic skills + legacy workflow/workspace + bin 工具 | 是 | Protocol + Skills(内置) + Workspace(模板) |
 | **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
 | **Workspace backend**（默认本地，可选 Vault/Git） | 项目状态、评审记录 | 是（逻辑实例） | Workspace(实例) |
 
-SDK 提供 Protocol、Workspace schema/模板、可选内置 workflow 与 CLI。外部技能仓库、Env 和 Vault backend 均按需配置；缺失时不阻断 core contract。
+SDK 提供 Protocol、Workspace schema/模板、4.0 semantic skills、legacy workflow 与 CLI。外部技能仓库、Env 和 Vault backend 均按需配置；缺失时不阻断 core contract。
 
 ---
 
@@ -94,9 +94,22 @@ v3.0 在既有 workflow 基础上，把 Prism 的上层目标收敛为**长期�
 
 ---
 
-## Workflow 按需闭环
+## 4.0 Semantic Skills
 
-Prism Workflow 是一组基于 AI Skill 的认知熵治理能力。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮判断事件，clarify 是任意阶段的对话 sidecar**。这些能力按熵源进入，不构成必须完整执行的固定管线。
+Prism 4.0 的默认分发面不是固定 workflow，而是围绕协议原语组织的可组合能力：
+
+| Skill | 触发 | 职责 |
+|-------|------|------|
+| `prism-topic` | `/prism-topic` | 管理 Topic 边界；child Topic 表达耐久子问题 |
+| `prism-brief` | `/prism-brief` | 生成 Brief projection，用于 context recovery |
+| `prism-review` | `/prism-review` | 运行 Review 能力，输出 Findings |
+| `prism-clarify` | `/prism-clarify` | 单问澄清，输出候选 payload |
+
+`bin/relink` 默认等价于 `bin/relink --skill-profile prism4`。旧 3.x 能力面需要显式 `--skill-profile legacy` 或 `--skill-profile all`。
+
+## Legacy Workflow 按需闭环
+
+Prism 3.x Workflow 是一组基于 AI Skill 的认知熵治理能力。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮判断事件，clarify 是任意阶段的对话 sidecar**。这些能力按熵源进入，不构成必须完整执行的固定管线。4.0-canary 保留本节作为历史兼容说明，不作为默认入口。
 
 ### 关系图
 
