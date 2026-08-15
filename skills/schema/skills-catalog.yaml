@@ -36,8 +36,8 @@ entries:
     source_repo: prism
     inject_default: true
     reviewed_by: ArnoFrost
-    reviewed_at: "2026-08-14"
-    rationale: "Prism 4.0 Topic boundary management; replaces workflow-intake for canary dogfood without reusing 3.x scope/focus/task/wave semantics."
+    reviewed_at: "2026-08-15"
+    rationale: "Prism 4.0 Topic boundary management; Host probe before create; replaces workflow-intake for canary dogfood without reusing 3.x scope/focus/task/wave semantics."
   - id: prism-brief
     visibility: dev
     stability: experimental

@@ -14,7 +14,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。
 
 | 技能 | 职责 |
 |------|------|
-| `prism-topic` | 管理 4.0 Topic 边界 |
+| `prism-topic` | 管理 4.0 Topic 边界；创建前机械探测 Workspace 桥接 |
 | `prism-brief` | 从当前有效状态生成 Brief 投影 |
 | `prism-review` | 运行 Review 能力并产出 Findings |
 | `prism-clarify` | 澄清一个阻塞取舍并可选留下候选 payload |
@@ -240,7 +240,7 @@ SDK 内置技能通过 `bin/relink` 分发到 IDE。4.0-canary 默认只分发 `
 
 | 技能 | 触发 | 说明 |
 |------|------|------|
-| prism-topic | `/prism-topic` | 4.0 Topic 边界管理；不创建 3.x scope/focus/task/wave |
+| prism-topic | `/prism-topic` | 4.0 Topic 边界管理；创建前 `prism topic probe`；未桥接用 `prism host attach`；不创建 3.x scope/focus/task/wave |
 | prism-brief | `/prism-brief` | Brief 投影与上下文恢复；可再生成，非事实源 |
 | prism-review | `/prism-review` | Review 能力；产出 Findings，不自动授权 |
 | prism-clarify | `/prism-clarify` | 单问澄清；可选 proposed-patch / decision-candidate payload |
@@ -328,7 +328,7 @@ git commit -m "feat: 新增 xxx 脚本"
 
 | 条件 | 动作 |
 |------|------|
-| 需要创建或定位 4.0 Topic | 使用 `/prism-topic` |
+| 需要创建或定位 4.0 Topic | 使用 `/prism-topic`；先 `prism topic probe`，未桥接则 `prism host attach --code CODE`，不要调用 `workspace-init` |
 | 需要恢复当前上下文 | 使用 `/prism-brief` 或 `prism brief project` |
 | 阅读面漂移、假待办堆积、进度与现状不对齐 | 使用 `/prism-compress`；先 preview，低频对齐，不要实时压缩 |
 | 需要审视现状、暴露风险/缺口/取舍 | 使用 `/prism-review`；Findings 不自动授权 |

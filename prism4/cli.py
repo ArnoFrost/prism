@@ -32,6 +32,18 @@ from prism4 import (  # noqa: E402
     review_capability,
 )
 from prism4.core import utc_now_iso  # noqa: E402
+from prism4.host import (  # noqa: E402
+    allocate_topic_dir,
+    attach_workspace,
+    dangling_bridge_guidance,
+    discover_workspace_bridge,
+    format_attach_result,
+    format_workspace_probe,
+    is_store_root,
+    list_bridged_topic_stores,
+    probe_workspace,
+    unbridged_guidance,
+)
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -97,6 +109,12 @@ def build_parser() -> argparse.ArgumentParser:
     topic_new.add_argument("--intent", help="optional initial Intent body for the new Topic")
     add_root_arg(topic_new)
     topic_new.set_defaults(func=cmd_topic_new)
+
+    topic_probe = topic_sub.add_parser(
+        "probe", help="check whether this directory is bridged to a Workspace"
+    )
+    add_root_arg(topic_probe)
+    topic_probe.set_defaults(func=cmd_topic_probe)
 
     topic_list = topic_sub.add_parser("list", help="list Topics")
     add_root_arg(topic_list)
@@ -167,6 +185,45 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(decision_record)
     decision_record.set_defaults(func=cmd_decision_record)
 
+    host = subparsers.add_parser("host", help="associate a project with a Workspace")
+    host_sub = host.add_subparsers(dest="host_verb", required=True)
+    host_attach = host_sub.add_parser(
+        "attach",
+        help="register a project and bridge workspace.{code}.local without 3.x init",
+    )
+    host_attach.add_argument("--code", required=True, help="project code, e.g. DEMO")
+    host_attach.add_argument(
+        "--path",
+        default=None,
+        help="project directory; defaults to the current directory",
+    )
+    host_attach.add_argument(
+        "--workspace",
+        default=None,
+        help="named workspace id (personal/work); defaults to default_workspace",
+    )
+    host_attach.add_argument(
+        "--config",
+        default=None,
+        help="prism.local.yaml path; defaults to the SDK local config",
+    )
+    host_attach.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="preview yaml/mkdir/bridge without writing",
+    )
+    host_attach.add_argument(
+        "--skip-relink",
+        action="store_true",
+        help="skip bin/relink --project (tests / already-linked hosts)",
+    )
+    host_attach.add_argument(
+        "--relink-bin",
+        default=None,
+        help="relink executable; defaults to SDK bin/relink",
+    )
+    host_attach.set_defaults(func=cmd_host_attach)
+
     legacy = subparsers.add_parser("legacy", help="delegate to the Prism 3.x CLI adapter")
     legacy.add_argument("args", nargs=argparse.REMAINDER)
     legacy.set_defaults(func=cmd_legacy)
@@ -179,7 +236,7 @@ def add_root_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--root",
         default=None,
-        help="directory containing prism4-state.json; defaults to the active workspace 4.0 topic when discoverable",
+        help="Topic store directory; omit to discover workspace.{code}.local",
     )
 
 
@@ -192,7 +249,7 @@ def cmd_default(args: argparse.Namespace) -> int:
 
 
 def cmd_topic_new(args: argparse.Namespace) -> int:
-    adapter = open_adapter(resolve_root(args.root))
+    adapter = open_adapter(topic_new_root(args))
 
     def mutate(store: ReferenceStore) -> str:
         topic = store.add_topic(
@@ -216,16 +273,25 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
         return topic.id
 
     print(adapter.update(mutate))
+    print(adapter.root)
     return 0
 
 
+def cmd_topic_probe(args: argparse.Namespace) -> int:
+    start = Path(args.root) if args.root else Path.cwd()
+    probe = probe_workspace(start)
+    print(format_workspace_probe(probe))
+    return 0 if probe.live else 2
+
+
 def cmd_topic_list(args: argparse.Namespace) -> int:
-    store = open_adapter(resolve_root(args.root)).load()
-    for topic in store.topics.values():
-        if topic.parent_id:
-            print(f"{topic.id}\t{topic.title}\tparent={topic.parent_id}")
-        else:
-            print(f"{topic.id}\t{topic.title}")
+    for root in topic_list_roots(args.root):
+        store = open_adapter(root).load()
+        for topic in store.topics.values():
+            if topic.parent_id:
+                print(f"{topic.id}\t{topic.title}\tparent={topic.parent_id}")
+            else:
+                print(f"{topic.id}\t{topic.title}")
     return 0
 
 
@@ -437,6 +503,20 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_host_attach(args: argparse.Namespace) -> int:
+    result = attach_workspace(
+        code=args.code,
+        project_path=Path(args.path) if args.path else Path.cwd(),
+        config_path=Path(args.config) if args.config else SDK_ROOT / "prism.local.yaml",
+        workspace_id=args.workspace,
+        dry_run=args.dry_run,
+        skip_relink=args.skip_relink,
+        relink_bin=Path(args.relink_bin) if args.relink_bin else None,
+    )
+    print(format_attach_result(result))
+    return 0
+
+
 def cmd_legacy(args: argparse.Namespace) -> int:
     if not args.args:
         print("error: legacy requires arguments", file=sys.stderr)
@@ -449,6 +529,60 @@ def run_legacy(args: list[str]) -> int:
         print(f"error: legacy CLI not found: {LEGACY_CLI}", file=sys.stderr)
         return 127
     return subprocess.call([sys.executable, str(LEGACY_CLI), *args])
+
+
+def topic_new_root(args: argparse.Namespace) -> Path:
+    """Pick the store root for `topic new`.
+
+    Explicit `--root` is the isolated-store escape hatch (tests, a Topic
+    that is allowed to exist without a Workspace). Otherwise this Host
+    adapter refuses to write into the project directory: it requires a
+    live `workspace.{code}.local` bridge and allocates a sibling topic
+    directory under `topics/`.
+    """
+    if args.root:
+        return Path(args.root)
+
+    start = Path.cwd()
+    bridge = discover_workspace_bridge(start)
+    if bridge is None:
+        raise PrismProtocolError(unbridged_guidance(start))
+    if not bridge.is_dir():
+        raise PrismProtocolError(dangling_bridge_guidance(bridge))
+
+    if args.parent_id:
+        found = find_store_containing(bridge, args.parent_id)
+        if found is None:
+            raise PrismProtocolError(
+                f"parent topic does not exist in this workspace: {args.parent_id}"
+            )
+        return found
+
+    taken = find_store_containing(bridge, args.topic_id)
+    if taken is not None:
+        raise PrismProtocolError(f"topic already exists: {args.topic_id} ({taken})")
+    return allocate_topic_dir(bridge, args.topic_id)
+
+
+def topic_list_roots(root: str | None) -> list[Path]:
+    if root:
+        return [Path(root)]
+    bridge = discover_workspace_bridge(Path.cwd())
+    if bridge is not None and bridge.is_dir():
+        stores = list_bridged_topic_stores(bridge)
+        if stores:
+            return stores
+    resolved = resolve_root(None)
+    if is_store_root(resolved):
+        return [resolved]
+    return []
+
+
+def find_store_containing(bridge: Path, topic_id: str) -> Path | None:
+    for root in list_bridged_topic_stores(bridge):
+        if topic_id in open_adapter(root).load().topics:
+            return root
+    return None
 
 
 def load_or_empty(adapter) -> ReferenceStore:
@@ -493,14 +627,6 @@ def resolve_root(root: str | None) -> Path:
         if discovered is not None:
             return discovered
     return cwd
-
-
-def is_store_root(candidate: Path) -> bool:
-    """A store root holds topic.md, a legacy topics/*.md layout, or a JSON index."""
-    if (candidate / "topic.md").is_file() or (candidate / STATE_FILENAME).is_file():
-        return True
-    legacy = candidate / "topics"
-    return legacy.is_dir() and any(legacy.glob("*.md"))
 
 
 def discover_bridged_state(base: Path) -> Path | None:

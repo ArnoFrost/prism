@@ -12,8 +12,10 @@
 #                                4.0 reference adapter 暂未承诺完整 JSON outer schema
 #
 # 可用子命令:
-#   topic new       创建 4.0 Topic
+#   topic probe     机械探测当前目录是否已桥接 Workspace
+#   topic new       创建 4.0 Topic（无 --root 时写入桥接下的新专项目录）
 #   topic list      列出 4.0 Topic
+#   host attach     登记项目并桥接 workspace.{code}.local（不调用 3.x init）
 #   artifact show   查看 4.0 Artifact / Payload 正文
 #   brief project   从当前状态投影 Brief
 #   capability run review   运行 4.0 Review → Findings

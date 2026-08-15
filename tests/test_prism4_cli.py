@@ -28,6 +28,7 @@ def test_bin_prism_points_to_v4_help_surface():
 
     assert result.returncode == 0
     assert "Prism 4.0" in result.stdout
+    assert "host attach" in result.stdout
     assert "topic new" in result.stdout
     assert "artifact show" in result.stdout
     assert "capability" in result.stdout
