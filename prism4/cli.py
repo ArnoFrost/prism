@@ -32,6 +32,7 @@ from prism4 import (  # noqa: E402
     review_capability,
 )
 from prism4.core import utc_now_iso  # noqa: E402
+from prism4.local_files import next_artifact_id, next_payload_id  # noqa: E402
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -127,13 +128,14 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("topic_id")
     review.add_argument("--body", required=True, help="finding body")
     review.add_argument("--id", dest="artifact_id")
-    review.add_argument("--title", default="Review Findings")
+    review.add_argument("--title", default="评审发现")
     add_root_arg(review)
     review.set_defaults(func=cmd_capability_review)
 
     clarify = capability_run_sub.add_parser("clarify", help="produce clarify payloads")
     clarify.add_argument("topic_id")
-    clarify.add_argument("--question", required=True, help="question or ambiguity")
+    clarify.add_argument("--question", required=True, help="阻塞问题或歧义点")
+    clarify.add_argument("--title", help="澄清标题（用于文件名与索引；缺省时取问题）")
     clarify.add_argument("--proposed-patch")
     clarify.add_argument("--decision-candidate")
     clarify.add_argument("--patch-id")
@@ -145,7 +147,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("topic_id")
     plan.add_argument("--body", required=True, help="plan body")
     plan.add_argument("--id", dest="artifact_id")
-    plan.add_argument("--title", default="Plan")
+    plan.add_argument("--title", default="行动结构")
     add_root_arg(plan)
     plan.set_defaults(func=cmd_capability_plan)
 
@@ -162,7 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="authority backing the Decision (default: human-required)",
     )
     decision_record.add_argument("--id", dest="artifact_id")
-    decision_record.add_argument("--title", default="Decision")
+    decision_record.add_argument("--title", default="决策")
     add_root_arg(decision_record)
     decision_record.set_defaults(func=cmd_decision_record)
 
@@ -199,7 +201,7 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
     if args.intent:
         store.add_artifact(
             Artifact(
-                id=make_artifact_id("intent"),
+                id=next_artifact_id(store, "intent"),
                 topic_id=topic.id,
                 role="intent",
                 title=f"{topic.title} Intent",
@@ -257,7 +259,7 @@ def cmd_capability_review(args: argparse.Namespace) -> int:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
     inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "plan"))
     findings = Artifact(
-        id=args.artifact_id or make_artifact_id("findings"),
+        id=args.artifact_id or next_artifact_id(store, "findings"),
         topic_id=args.topic_id,
         role="findings",
         title=args.title,
@@ -288,30 +290,44 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
 
     inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "findings"))
     outputs: list[SemanticPayload] = []
+    reserved: list[str] = []
+
+    def allocate(explicit: str | None) -> str:
+        """澄清可以一次产出多个 payload，逐个递增序号而不是共用一个。"""
+        if explicit:
+            reserved.append(explicit)
+            return explicit
+        taken = {payload.id for payload in store.payloads.values()} | set(reserved)
+        candidate = next_payload_id(store)
+        while candidate in taken:
+            number = int(candidate.rsplit("c", 1)[1]) + 1
+            candidate = f"clarify:c{number:02d}"
+        reserved.append(candidate)
+        return candidate
+
+    clarify_metadata = {
+        "title": args.title or args.question,
+        "question": args.question,
+        "capability": "prism:clarify",
+        "created_at": utc_now_iso(),
+    }
+
     if args.proposed_patch:
         outputs.append(
             SemanticPayload(
-                id=args.patch_id or make_payload_id("proposed-patch"),
+                id=allocate(args.patch_id),
                 type="proposed-patch",
                 body=args.proposed_patch,
-                metadata={
-                    "question": args.question,
-                    "capability": "prism:clarify",
-                    "created_at": utc_now_iso(),
-                },
+                metadata=dict(clarify_metadata),
             )
         )
     if args.decision_candidate:
         outputs.append(
             SemanticPayload(
-                id=args.candidate_id or make_payload_id("decision-candidate"),
+                id=allocate(args.candidate_id),
                 type="decision-candidate",
                 body=args.decision_candidate,
-                metadata={
-                    "question": args.question,
-                    "capability": "prism:clarify",
-                    "created_at": utc_now_iso(),
-                },
+                metadata=dict(clarify_metadata),
             )
         )
     invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
@@ -331,7 +347,7 @@ def cmd_capability_plan(args: argparse.Namespace) -> int:
         store, args.topic_id, roles=("intent", "brief", "findings", "decision")
     )
     plan_artifact = Artifact(
-        id=args.artifact_id or make_artifact_id("plan"),
+        id=args.artifact_id or next_artifact_id(store, "plan"),
         topic_id=args.topic_id,
         role="plan",
         title=args.title,
@@ -363,7 +379,7 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
         inputs.append(store.payloads[args.candidate])
 
     decision_artifact = Artifact(
-        id=args.artifact_id or make_artifact_id("decision"),
+        id=args.artifact_id or next_artifact_id(store, "decision"),
         topic_id=args.topic_id,
         role="decision",
         title=args.title,
@@ -500,18 +516,6 @@ def topic_artifacts(
         for artifact in store.artifacts.values()
         if artifact.topic_id == topic_id and artifact.role in roles
     ]
-
-
-def make_artifact_id(role: str) -> str:
-    from prism4.core import new_id
-
-    return new_id(f"artifact.{role}")
-
-
-def make_payload_id(payload_type: str) -> str:
-    from prism4.core import new_id
-
-    return new_id(f"payload.{payload_type}")
 
 
 def read_version() -> str:

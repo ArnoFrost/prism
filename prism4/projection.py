@@ -1,9 +1,20 @@
-"""Projection helpers for Prism 4.0 reference dogfood."""
+"""Brief 投影 — Prism 4.0 参考实现。"""
 
 from __future__ import annotations
 
-from .core import Artifact, PrismProtocolError, new_id
+from .core import Artifact, PrismProtocolError
 from .reference import ReferenceStore
+
+
+BRIEF_ID = "brief:current"
+
+ROLE_LABELS = {
+    "intent": "Intent（边界与目的）",
+    "decision": "Decision（已授权承诺）",
+    "findings": "Findings（发现）",
+    "plan": "Plan（行动结构）",
+}
+ROLE_ORDER = {"intent": 0, "decision": 1, "findings": 2, "plan": 3}
 
 
 def project_brief(
@@ -11,54 +22,76 @@ def project_brief(
     topic_id: str,
     *,
     artifact_id: str | None = None,
-    title: str = "Projected Brief",
+    title: str = "当前切片",
 ) -> Artifact:
-    """Create a Brief projection from current store state.
+    """从当前 store 状态投影一份 Brief。
 
-    Brief is a recoverability artifact, not a source of truth. This function
-    therefore reads existing state and returns a new Brief artifact; it does
-    not mutate authoritative artifacts.
+    Brief 是用于上下文恢复的工件，不是事实源。本函数只读取现状并返回一个新的
+    Brief 工件，不修改任何权威工件。
     """
 
     if topic_id not in store.topics:
-        raise PrismProtocolError(f"topic does not exist: {topic_id}")
+        raise PrismProtocolError(f"主题不存在：{topic_id}")
 
     artifacts = [
         artifact
         for artifact in store.artifacts.values()
         if artifact.topic_id == topic_id and artifact.role != "brief"
     ]
-    role_order = {"intent": 0, "decision": 1, "findings": 2, "plan": 3}
-    artifacts.sort(key=lambda item: (role_order.get(item.role, 99), item.id))
+    artifacts.sort(key=lambda item: (ROLE_ORDER.get(item.role, 99), item.id))
+
+    superseded = {
+        relation.target_ref
+        for relation in store.relations
+        if relation.kind == "supersedes"
+    }
 
     lines = [
         f"# Brief — {store.topics[topic_id].title}",
         "",
-        "本 Brief 是用于上下文恢复的投影，不是事实源。",
+        "> 本 Brief 是用于上下文恢复的投影，不是事实源。",
+        "> 与 Intent、Decision 或来源 Findings 冲突时，以后者为准。",
     ]
-    if artifacts:
-        lines.extend(["", "## 当前工件"])
-        for artifact in artifacts:
-            label = artifact.title or artifact.id
-            lines.append(f"- {artifact.role}: {label}")
-    else:
-        lines.extend(["", "## 当前工件", "- 无"])
 
-    decision_count = sum(1 for artifact in artifacts if artifact.role == "decision")
-    findings_count = sum(1 for artifact in artifacts if artifact.role == "findings")
-    plan_count = sum(1 for artifact in artifacts if artifact.role == "plan")
+    active = [item for item in artifacts if item.id not in superseded]
+    history = [item for item in artifacts if item.id in superseded]
+
+    lines.extend(["", "## 当前有效工件", ""])
+    if active:
+        current_role = None
+        for artifact in active:
+            if artifact.role != current_role:
+                current_role = artifact.role
+                lines.append(f"**{ROLE_LABELS.get(artifact.role, artifact.role)}**")
+            label = artifact.title or artifact.id
+            lines.append(f"- `{artifact.id}` {label}")
+    else:
+        lines.append("- 暂无")
+
+    if history:
+        lines.extend(["", "## 已被取代（保留可追溯）", ""])
+        for artifact in history:
+            label = artifact.title or artifact.id
+            lines.append(f"- `{artifact.id}` {label}")
+
+    counts = {
+        "decision": sum(1 for item in active if item.role == "decision"),
+        "findings": sum(1 for item in active if item.role == "findings"),
+        "plan": sum(1 for item in active if item.role == "plan"),
+    }
     lines.extend(
         [
             "",
             "## 恢复提示",
-            f"- decisions: {decision_count}",
-            f"- findings: {findings_count}",
-            f"- plans: {plan_count}",
+            "",
+            f"- 决策 {counts['decision']} 条 · 发现 {counts['findings']} 条 · 计划 {counts['plan']} 条",
+            "- 决策链索引：`decisions/decision.index.md`",
+            "- 发现链索引：`findings/finding.index.md`",
         ]
     )
 
     return Artifact(
-        id=artifact_id or new_id("artifact"),
+        id=artifact_id or BRIEF_ID,
         topic_id=topic_id,
         role="brief",
         title=title,

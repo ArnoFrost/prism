@@ -27,6 +27,17 @@ prism brief project <topic_id> --root <topic_dir>
 - 若 Brief 与 Intent、Findings、Decision 语义或 Plan 冲突，把冲突识别为 Finding 或请求澄清。不要默许把 Brief 当作权威。
 - 不要从本技能创建 3.x `focus.md` 或改写旧 workflow 文件。
 
+## 导航面
+
+Topic 内有两份人类可读索引，都是从工件再生成的投影：
+
+| 索引 | 位置 | 内容 |
+|------|------|------|
+| 发现链 | `findings/finding.index.md` | fXX 时序表：标题、来源能力、时间、权威性 |
+| 决策链 | `decisions/decision.index.md` | 澄清链（cXX）+ 决策链（dXX）两张表，含取代关系 |
+
+序号越大越新。需要快速定位最近发生了什么时，先读索引再读具体工件。
+
 ## 输出
 
-返回一份紧凑的恢复摘要：当前目标、重要证据、已承诺的约束、未决风险，以及下一步有用的动作。
+返回一份紧凑的中文恢复摘要：当前目标、重要证据、已承诺的约束、未决风险，以及下一步有用的动作。

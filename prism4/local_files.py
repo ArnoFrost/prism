@@ -1,35 +1,38 @@
-"""File-based reference adapter for Prism 4.0 dogfood.
+"""本地文件参考适配器 — Prism 4.0 dogfood 载体。
 
-This is an adapter choice, not the Prism Core storage model.
+这是一个 Adapter 选择，不是 Prism Core 的存储模型。
 
-Every unit of collaboration state is a Markdown document. Humans read, diff,
-wiki-link, and render them directly; there is no separate index file to keep
-in sync.
+每一份协作状态都是一份 Markdown 文档。人类直接读、直接 diff、直接 wiki link，
+不存在需要同步的机器索引。
 
-Layout::
+目录布局::
 
     <root>/
-      topics/<slug>.md       Topic boundaries (frontmatter carries parent)
-      intent/<slug>.md
-      brief/<slug>.md
-      findings/<slug>.md
-      decisions/<slug>.md
-      plans/<slug>.md
-      payloads/<slug>.md
+      topics/<主题>.md
+      intent/i01_<标题>.md
+      brief/brief.md
+      findings/f01_<标题>.md
+      findings/finding.index.md          发现链索引（投影，自动重建）
+      decisions/d01_<标题>.md
+      decisions/decision.index.md        决策链索引（投影，自动重建）
+      clarifications/c01_<标题>.md
+      plans/p01_<标题>.md
 
-Invocation records are deliberately not persisted. `Invocation` remains a Core
-protocol concept, but this adapter measured its stored form as write-only data
-that no read path consumed, so it stays in memory only. Artifact-to-artifact
-semantics that the protocol does rely on (`supersedes`, `authorizes`) live in
-the source document's frontmatter, because they are properties of the artifact
-rather than a log of calls.
+设计要点：
 
-Frontmatter stays flat so it renders well in Obsidian.
+- **序号即时序**。`f01 → f02`、`d01 → d02` 让人和 Agent 一眼看出先后与总量。
+- **文件名含中文标题**。不打开文件即可判断内容。
+- **索引是投影**。`*.index.md` 由工件再生成，读取时被忽略，不作为事实源。
+- **Invocation 不落盘**。它仍是 Core 协议概念，但实测其存储形态是无读取路径的
+  write-only 数据；溯源改由工件 frontmatter 的 `capability` / `created_at` 承载。
+- **工件间语义关系存于来源文档**。`supersedes` / `authorizes` 是工件自身属性，
+  不是调用日志。
 """
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -46,14 +49,9 @@ from .reference import ReferenceStore
 ADAPTER_ID = "prism4.reference-files"
 
 TOPIC_DIRECTORY = "topics"
-ROLE_DIRECTORIES = {
-    "intent": "intent",
-    "brief": "brief",
-    "findings": "findings",
-    "decisions": "decisions",
-    "plan": "plans",
-}
-# Artifact role -> directory. `decision` uses the plural directory name.
+CLARIFICATION_DIRECTORY = "clarifications"
+
+# Artifact role -> 目录名
 ROLE_TO_DIRECTORY = {
     "intent": "intent",
     "brief": "brief",
@@ -62,31 +60,54 @@ ROLE_TO_DIRECTORY = {
     "plan": "plans",
 }
 DIRECTORY_TO_ROLE = {value: key for key, value in ROLE_TO_DIRECTORY.items()}
-PAYLOAD_DIRECTORY = "payloads"
 
-# Relation kinds that describe artifact-to-artifact semantics. Stored on the
-# source document. Anything pointing at an invocation is dropped on save.
+# Artifact role -> id 命名空间与序号前缀。brief 是单一投影，不参与编号。
+ROLE_ID_NAMESPACE = {
+    "intent": "intent",
+    "brief": "brief",
+    "findings": "finding",
+    "decision": "decision",
+    "plan": "plan",
+}
+ROLE_SEQUENCE_PREFIX = {
+    "intent": "i",
+    "findings": "f",
+    "decision": "d",
+    "plan": "p",
+}
+CLARIFY_NAMESPACE = "clarify"
+CLARIFY_SEQUENCE_PREFIX = "c"
+
+BRIEF_ID = "brief:current"
+BRIEF_FILENAME = "brief.md"
+
+INDEX_SUFFIX = ".index.md"
+FINDING_INDEX = f"finding{INDEX_SUFFIX}"
+DECISION_INDEX = f"decision{INDEX_SUFFIX}"
+
+# 存于来源文档 frontmatter 的工件间语义关系。指向 invocation 的关系在保存时丢弃。
 PERSISTED_RELATION_KINDS = ("supersedes", "authorizes")
 
 ARTIFACT_RESERVED_KEYS = ("id", "role", "title", "topic", *PERSISTED_RELATION_KINDS)
-PAYLOAD_RESERVED_KEYS = ("id", "type", *PERSISTED_RELATION_KINDS)
+PAYLOAD_RESERVED_KEYS = ("id", "type", "title", *PERSISTED_RELATION_KINDS)
 TOPIC_RESERVED_KEYS = ("id", "title", "parent")
 
-_UNSAFE_PATH_CHARS = '<>:"/\\|?*'
+_SEQUENCE_PATTERN = re.compile(r"^([a-z])(\d+)$")
+_FILENAME_STRIP = re.compile(r'[<>:"/\\|?*\s、，。；：！？（）()\[\]{}“”‘’\'`~!@#$%^&+=,.;]+')
 
 
 class LocalFileStoreAdapter:
-    """Persist a ReferenceStore as plain Markdown documents, with no index."""
+    """把 ReferenceStore 持久化为一组可读的 Markdown 文档。"""
 
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root)
 
     @property
     def path(self) -> Path:
-        """Existence probe used by callers that ask 'is there a store here?'."""
+        """存在性探针：调用方用它判断"这里有没有 store"。"""
         return self.root / TOPIC_DIRECTORY
 
-    # ── save ────────────────────────────────────────────────────────────
+    # ── 写入 ────────────────────────────────────────────────────────────
 
     def save(self, store: ReferenceStore) -> Path:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -117,12 +138,38 @@ class LocalFileStoreAdapter:
             )
             expected.add(target)
 
+        expected.update(self._write_indexes(store))
         self._prune(expected)
         return self.root
 
+    def _write_indexes(self, store: ReferenceStore) -> set[Path]:
+        """重建导航索引。索引是投影，每次保存都从工件重算。"""
+        written: set[Path] = set()
+
+        findings = _sorted_artifacts(store, "findings")
+        if findings:
+            target = self.root / ROLE_TO_DIRECTORY["findings"] / FINDING_INDEX
+            _write_plain(target, _render_finding_index(store, findings))
+            written.add(target)
+
+        decisions = _sorted_artifacts(store, "decision")
+        clarifications = _sorted_payloads(store)
+        if decisions or clarifications:
+            target = self.root / ROLE_TO_DIRECTORY["decision"] / DECISION_INDEX
+            _write_plain(
+                target, _render_decision_index(store, decisions, clarifications)
+            )
+            written.add(target)
+        return written
+
     def _prune(self, expected: set[Path]) -> None:
-        """Remove documents this adapter owns that are no longer in the store."""
-        for directory in (TOPIC_DIRECTORY, PAYLOAD_DIRECTORY, *ROLE_TO_DIRECTORY.values()):
+        """删除本适配器拥有、但已不在 store 中的文档。"""
+        directories = (
+            TOPIC_DIRECTORY,
+            CLARIFICATION_DIRECTORY,
+            *ROLE_TO_DIRECTORY.values(),
+        )
+        for directory in directories:
             base = self.root / directory
             if not base.is_dir():
                 continue
@@ -130,18 +177,20 @@ class LocalFileStoreAdapter:
                 if existing not in expected:
                     existing.unlink()
 
-    # ── load ────────────────────────────────────────────────────────────
+    # ── 读取 ────────────────────────────────────────────────────────────
 
     def load(self) -> ReferenceStore:
         topic_dir = self.root / TOPIC_DIRECTORY
         if not topic_dir.is_dir():
-            raise PrismProtocolError(f"topic documents do not exist: {topic_dir}")
+            raise PrismProtocolError(f"主题文档不存在：{topic_dir}")
 
         store = ReferenceStore()
 
-        pending: list[Topic] = []
-        for document in sorted(topic_dir.glob("*.md")):
-            pending.append(_topic_from_document(document))
+        pending = [
+            _topic_from_document(document)
+            for document in sorted(topic_dir.glob("*.md"))
+            if not document.name.endswith(INDEX_SUFFIX)
+        ]
         for topic in _ordered_by_parent(pending):
             store.add_topic(topic)
 
@@ -152,13 +201,17 @@ class LocalFileStoreAdapter:
             if not base.is_dir():
                 continue
             for document in sorted(base.glob("*.md")):
+                if document.name.endswith(INDEX_SUFFIX):
+                    continue  # 索引是投影，不是工件
                 artifact, relations = _artifact_from_document(document, role)
                 store.add_artifact(artifact)
                 deferred_relations.extend(relations)
 
-        payload_dir = self.root / PAYLOAD_DIRECTORY
-        if payload_dir.is_dir():
-            for document in sorted(payload_dir.glob("*.md")):
+        clarify_dir = self.root / CLARIFICATION_DIRECTORY
+        if clarify_dir.is_dir():
+            for document in sorted(clarify_dir.glob("*.md")):
+                if document.name.endswith(INDEX_SUFFIX):
+                    continue
                 payload, relations = _payload_from_document(document)
                 store.add_payload(payload)
                 deferred_relations.extend(relations)
@@ -168,11 +221,53 @@ class LocalFileStoreAdapter:
         return store
 
 
-# ── document io ─────────────────────────────────────────────────────────
+# ── 序号分配 ────────────────────────────────────────────────────────────
+
+
+def next_artifact_id(store: ReferenceStore, role: str) -> str:
+    """按角色分配下一个带序号的工件 id，例如 `finding:f03`。"""
+    if role == "brief":
+        return BRIEF_ID
+    namespace = ROLE_ID_NAMESPACE.get(role)
+    prefix = ROLE_SEQUENCE_PREFIX.get(role)
+    if namespace is None or prefix is None:
+        raise PrismProtocolError(f"未知的核心工件角色：{role}")
+    existing = (
+        artifact.id for artifact in store.artifacts.values() if artifact.role == role
+    )
+    return f"{namespace}:{prefix}{_next_number(existing, prefix):02d}"
+
+
+def next_payload_id(store: ReferenceStore) -> str:
+    """分配下一个澄清序号 id，例如 `clarify:c02`。"""
+    existing = (payload.id for payload in store.payloads.values())
+    number = _next_number(existing, CLARIFY_SEQUENCE_PREFIX)
+    return f"{CLARIFY_NAMESPACE}:{CLARIFY_SEQUENCE_PREFIX}{number:02d}"
+
+
+def _next_number(refs: Iterable[str], prefix: str) -> int:
+    highest = 0
+    for ref in refs:
+        match = _SEQUENCE_PATTERN.match(_local_part(ref))
+        if match and match.group(1) == prefix:
+            highest = max(highest, int(match.group(2)))
+    return highest + 1
+
+
+def sequence_label(ref: str) -> str:
+    """取出用于展示的序号标签；无序号时回落到 id 局部名。"""
+    local = _local_part(ref)
+    return local if _SEQUENCE_PATTERN.match(local) else local
+
+
+def _local_part(ref: str) -> str:
+    return ref.split(":", 1)[1] if ":" in ref else ref
+
+
+# ── 文档读写 ────────────────────────────────────────────────────────────
 
 
 def _write_document(target: Path, frontmatter: Mapping[str, Any], body: str) -> None:
-    target.parent.mkdir(parents=True, exist_ok=True)
     lines = ["---"]
     for key, value in frontmatter.items():
         if value is None or value == [] or value == {}:
@@ -180,19 +275,25 @@ def _write_document(target: Path, frontmatter: Mapping[str, Any], body: str) -> 
         lines.append(f"{key}: {json.dumps(value, ensure_ascii=False)}")
     lines.append("---")
     lines.append("")
-    # A single trailing newline keeps save -> load -> save stable.
     normalized = body.rstrip("\n")
     if normalized:
         normalized += "\n"
+    _write_plain(target, "\n".join(lines) + normalized)
+
+
+def _write_plain(target: Path, text: str) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if not text.endswith("\n"):
+        text += "\n"
     tmp = target.with_name(f".{target.name}.tmp")
-    tmp.write_text("\n".join(lines) + normalized, encoding="utf-8")
+    tmp.write_text(text, encoding="utf-8")
     tmp.replace(target)
 
 
 def _read_document(target: Path) -> tuple[dict[str, Any], str]:
     text = target.read_text(encoding="utf-8")
     if not text.startswith("---"):
-        raise PrismProtocolError(f"document has no frontmatter: {target}")
+        raise PrismProtocolError(f"文档缺少 frontmatter：{target}")
 
     lines = text.split("\n")
     closing = None
@@ -201,7 +302,7 @@ def _read_document(target: Path) -> tuple[dict[str, Any], str]:
             closing = index
             break
     if closing is None:
-        raise PrismProtocolError(f"unterminated frontmatter: {target}")
+        raise PrismProtocolError(f"frontmatter 未闭合：{target}")
 
     frontmatter: dict[str, Any] = {}
     for line in lines[1:closing]:
@@ -209,7 +310,7 @@ def _read_document(target: Path) -> tuple[dict[str, Any], str]:
         if not stripped or stripped.startswith("#"):
             continue
         if ":" not in stripped:
-            raise PrismProtocolError(f"invalid frontmatter line in {target}: {line}")
+            raise PrismProtocolError(f"frontmatter 行格式非法（{target}）：{line}")
         key, _, raw_value = stripped.partition(":")
         frontmatter[key.strip()] = _parse_scalar(raw_value.strip(), target)
 
@@ -226,9 +327,7 @@ def _parse_scalar(raw: str, target: Path) -> Any:
         try:
             return json.loads(raw)
         except json.JSONDecodeError as error:
-            raise PrismProtocolError(
-                f"invalid frontmatter value in {target}: {raw}"
-            ) from error
+            raise PrismProtocolError(f"frontmatter 值格式非法（{target}）：{raw}") from error
     if raw == "null":
         return None
     if raw == "true":
@@ -238,7 +337,7 @@ def _parse_scalar(raw: str, target: Path) -> Any:
     return raw
 
 
-# ── topics ──────────────────────────────────────────────────────────────
+# ── 主题 ────────────────────────────────────────────────────────────────
 
 
 def _topic_frontmatter(topic: Topic) -> dict[str, Any]:
@@ -253,14 +352,14 @@ def _topic_frontmatter(topic: Topic) -> dict[str, Any]:
 
 def _topic_body(topic: Topic) -> str:
     if topic.parent_id:
-        return f"# {topic.title}\n\nChild Topic of `{topic.parent_id}`.\n"
-    return f"# {topic.title}\n\nTopic boundary for this collaboration space.\n"
+        return f"# {topic.title}\n\n本主题是 `{topic.parent_id}` 的子主题，承载一个需要独立上下文的子问题。\n"
+    return f"# {topic.title}\n\n本主题界定一个持续协作的问题空间。\n"
 
 
 def _topic_from_document(document: Path) -> Topic:
     front, _ = _read_document(document)
     if "id" not in front or "title" not in front:
-        raise PrismProtocolError(f"topic document needs id and title: {document}")
+        raise PrismProtocolError(f"主题文档需要 id 与 title：{document}")
     metadata = {
         key: value for key, value in front.items() if key not in TOPIC_RESERVED_KEYS
     }
@@ -273,7 +372,7 @@ def _topic_from_document(document: Path) -> Topic:
 
 
 def _ordered_by_parent(topics: Iterable[Topic]) -> list[Topic]:
-    """Parents must be added before their children."""
+    """父主题必须先于子主题加入。"""
     remaining = list(topics)
     known: set[str] = set()
     ordered: list[Topic] = []
@@ -286,12 +385,12 @@ def _ordered_by_parent(topics: Iterable[Topic]) -> list[Topic]:
                 remaining.remove(topic)
                 progressed = True
         if not progressed:
-            missing = ", ".join(sorted(topic.id for topic in remaining))
-            raise PrismProtocolError(f"topic parent is missing or cyclic: {missing}")
+            missing = "、".join(sorted(topic.id for topic in remaining))
+            raise PrismProtocolError(f"主题的父级缺失或成环：{missing}")
     return ordered
 
 
-# ── artifacts and payloads ──────────────────────────────────────────────
+# ── 工件与澄清 ──────────────────────────────────────────────────────────
 
 
 def _artifact_frontmatter(
@@ -310,16 +409,12 @@ def _artifact_frontmatter(
     return front
 
 
-def _artifact_from_document(
-    document: Path, role: str
-) -> tuple[Artifact, list[Relation]]:
+def _artifact_from_document(document: Path, role: str) -> tuple[Artifact, list[Relation]]:
     front, body = _read_document(document)
     if "id" not in front or "topic" not in front:
-        raise PrismProtocolError(f"artifact document needs id and topic: {document}")
+        raise PrismProtocolError(f"工件文档需要 id 与 topic：{document}")
     metadata = {
-        key: value
-        for key, value in front.items()
-        if key not in ARTIFACT_RESERVED_KEYS
+        key: value for key, value in front.items() if key not in ARTIFACT_RESERVED_KEYS
     }
     artifact = Artifact(
         id=str(front["id"]),
@@ -335,8 +430,13 @@ def _artifact_from_document(
 def _payload_frontmatter(
     payload: SemanticPayload, relations: Mapping[str, list[str]]
 ) -> dict[str, Any]:
-    front: dict[str, Any] = {"id": payload.id, "type": payload.type}
-    _merge_metadata(front, payload.metadata, payload.id, PAYLOAD_RESERVED_KEYS)
+    metadata = dict(payload.metadata)
+    front: dict[str, Any] = {
+        "id": payload.id,
+        "type": payload.type,
+        "title": metadata.pop("title", None),
+    }
+    _merge_metadata(front, metadata, payload.id, PAYLOAD_RESERVED_KEYS)
     for kind in PERSISTED_RELATION_KINDS:
         if relations.get(kind):
             front[kind] = relations[kind]
@@ -346,10 +446,12 @@ def _payload_frontmatter(
 def _payload_from_document(document: Path) -> tuple[SemanticPayload, list[Relation]]:
     front, body = _read_document(document)
     if "id" not in front or "type" not in front:
-        raise PrismProtocolError(f"payload document needs id and type: {document}")
+        raise PrismProtocolError(f"澄清文档需要 id 与 type：{document}")
     metadata = {
         key: value for key, value in front.items() if key not in PAYLOAD_RESERVED_KEYS
     }
+    if front.get("title"):
+        metadata["title"] = front["title"]
     payload = SemanticPayload(
         id=str(front["id"]),
         type=str(front["type"]),
@@ -377,7 +479,7 @@ def _relations_from_frontmatter(
 
 
 def _group_relations(relations: Iterable[Relation]) -> dict[str, dict[str, list[str]]]:
-    """Keep only artifact-to-artifact semantics, grouped by source."""
+    """只保留工件间语义关系，按来源分组。"""
     grouped: dict[str, dict[str, list[str]]] = {}
     for relation in relations:
         if relation.kind not in PERSISTED_RELATION_KINDS:
@@ -397,13 +499,168 @@ def _merge_metadata(
 ) -> None:
     for key, value in metadata.items():
         if key in reserved:
-            raise PrismProtocolError(
-                f"metadata key collides with reserved frontmatter key in {ref}: {key}"
-            )
+            raise PrismProtocolError(f"metadata 键与保留 frontmatter 键冲突（{ref}）：{key}")
         front[key] = value
 
 
-# ── paths ───────────────────────────────────────────────────────────────
+# ── 索引投影 ────────────────────────────────────────────────────────────
+
+
+def _sorted_artifacts(store: ReferenceStore, role: str) -> list[Artifact]:
+    items = [a for a in store.artifacts.values() if a.role == role]
+    return sorted(items, key=lambda item: _local_part(item.id))
+
+
+def _sorted_payloads(store: ReferenceStore) -> list[SemanticPayload]:
+    return sorted(store.payloads.values(), key=lambda item: _local_part(item.id))
+
+
+def _render_finding_index(
+    store: ReferenceStore, findings: list[Artifact]
+) -> str:
+    lines = [
+        "---",
+        'type: "finding-index"',
+        'kind: "projection"',
+        "---",
+        "",
+        f"# 发现链索引 — {_primary_title(store)}",
+        "",
+        "> 本索引是从 findings 工件再生成的投影，不是事实源。工件本身才是。",
+        "",
+        "## 发现时序表",
+        "",
+        "| 编号 | 标题 | 来源能力 | 记录时间 | 权威性 |",
+        "|:----:|------|:--------:|:--------:|:------:|",
+    ]
+    for finding in findings:
+        label = sequence_label(finding.id)
+        link = _artifact_link(finding)
+        capability = str(finding.metadata.get("capability") or "—")
+        created = _short_time(finding.metadata.get("created_at"))
+        authority = str(finding.metadata.get("authority") or "advisory")
+        lines.append(
+            f"| {label} | [{finding.title or label}]({link}) | `{capability}` | {created} | {authority} |"
+        )
+    lines.extend(
+        [
+            "",
+            f"共 {len(findings)} 条发现。序号越大越新。",
+            "",
+            "> Findings 是 advisory：它们暴露值得关注的事实与问题，不授权实施。",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _render_decision_index(
+    store: ReferenceStore,
+    decisions: list[Artifact],
+    clarifications: list[SemanticPayload],
+) -> str:
+    lines = [
+        "---",
+        'type: "decision-index"',
+        'kind: "projection"',
+        "---",
+        "",
+        f"# 决策链索引 — {_primary_title(store)}",
+        "",
+        "> 本索引是从 decisions 与 clarifications 工件再生成的投影，不是事实源。",
+        "> 决策链反映人机协作的交互过程：澄清暴露取舍，决策固化承诺。",
+        "",
+    ]
+
+    lines.extend(["## 澄清链", ""])
+    if clarifications:
+        lines.extend(
+            [
+                "| 编号 | 阻塞问题 | 产出类型 | 记录时间 |",
+                "|:----:|---------|:--------:|:--------:|",
+            ]
+        )
+        for payload in clarifications:
+            label = sequence_label(payload.id)
+            link = f"../{CLARIFICATION_DIRECTORY}/{_payload_filename(payload)}"
+            question = _one_line(payload.metadata.get("question")) or "—"
+            created = _short_time(payload.metadata.get("created_at"))
+            lines.append(
+                f"| {label} | [{question}]({link}) | `{payload.type}` | {created} |"
+            )
+        lines.append("")
+        lines.append(f"共 {len(clarifications)} 条澄清。候选 payload 不等于 Decision。")
+    else:
+        lines.append("_暂无澄清记录。_")
+
+    lines.extend(["", "## 决策链", ""])
+    if decisions:
+        lines.extend(
+            [
+                "| 编号 | 决策标题 | 授权 | 记录时间 | 取代 |",
+                "|:----:|---------|:----:|:--------:|------|",
+            ]
+        )
+        superseded_by_source = _group_relations(store.relations)
+        for decision in decisions:
+            label = sequence_label(decision.id)
+            link = _artifact_link(decision)
+            authority = str(
+                decision.metadata.get("authority_required")
+                or decision.metadata.get("authority")
+                or "—"
+            )
+            created = _short_time(decision.metadata.get("created_at"))
+            supersedes = superseded_by_source.get(decision.id, {}).get("supersedes", [])
+            targets = (
+                "、".join(sequence_label(ref) for ref in supersedes)
+                if supersedes
+                else "—"
+            )
+            lines.append(
+                f"| {label} | [{decision.title or label}]({link}) | `{authority}` | {created} | {targets} |"
+            )
+        lines.append("")
+        lines.append(f"共 {len(decisions)} 条决策。序号越大越新。")
+    else:
+        lines.append("_暂无决策记录。_")
+
+    lines.extend(
+        [
+            "",
+            "> 已提交的 Decision 需要明确的人类授权或预先委托授权。",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _primary_title(store: ReferenceStore) -> str:
+    for topic in store.topics.values():
+        if topic.parent_id is None:
+            return topic.title
+    for topic in store.topics.values():
+        return topic.title
+    return "未命名主题"
+
+
+def _artifact_link(artifact: Artifact) -> str:
+    return f"./{_artifact_filename(artifact)}"
+
+
+def _one_line(value: Any) -> str:
+    if not value:
+        return ""
+    text = str(value).replace("\n", " ").replace("|", "\\|").strip()
+    return text if len(text) <= 48 else text[:47] + "…"
+
+
+def _short_time(value: Any) -> str:
+    if not value:
+        return "—"
+    text = str(value)
+    return text[:10] if len(text) >= 10 else text
+
+
+# ── 路径 ────────────────────────────────────────────────────────────────
 
 
 def _topic_path(topic: Topic) -> str:
@@ -413,24 +670,49 @@ def _topic_path(topic: Topic) -> str:
 def _artifact_path(artifact: Artifact) -> str:
     directory = ROLE_TO_DIRECTORY.get(artifact.role)
     if directory is None:
-        raise PrismProtocolError(f"unknown core artifact role: {artifact.role}")
-    return f"{directory}/{_slug(artifact.id, artifact.role)}.md"
+        raise PrismProtocolError(f"未知的核心工件角色：{artifact.role}")
+    return f"{directory}/{_artifact_filename(artifact)}"
+
+
+def _artifact_filename(artifact: Artifact) -> str:
+    if artifact.role == "brief":
+        return BRIEF_FILENAME
+    return _sequenced_filename(artifact.id, artifact.title)
 
 
 def _payload_path(payload: SemanticPayload) -> str:
-    # Payload filenames keep their type, so `proposed-patch.x` and
-    # `decision-candidate.x` never collapse onto the same document.
-    return f"{PAYLOAD_DIRECTORY}/{_slug(payload.id, '')}.md"
+    return f"{CLARIFICATION_DIRECTORY}/{_payload_filename(payload)}"
+
+
+def _payload_filename(payload: SemanticPayload) -> str:
+    title = payload.metadata.get("title") or payload.metadata.get("question")
+    return _sequenced_filename(payload.id, title)
+
+
+def _sequenced_filename(ref: str, title: Any) -> str:
+    label = _local_part(ref)
+    readable = _readable_slug(title)
+    return f"{label}_{readable}.md" if readable else f"{label}.md"
+
+
+def _readable_slug(title: Any) -> str:
+    """把标题压成文件名片段。保留中文与字母数字，去掉标点与空白。"""
+    if not title:
+        return ""
+    text = str(title).strip()
+    text = _FILENAME_STRIP.sub("", text)
+    text = text.replace("-", "").replace("_", "")
+    return text[:32]
 
 
 def _slug(ref: str, prefix: str) -> str:
-    ident = ref.split(":", 1)[1] if ":" in ref else ref
+    ident = _local_part(ref)
     if prefix:
         for candidate in (f"{prefix}.", f"{prefix}-"):
             if ident.startswith(candidate):
                 ident = ident[len(candidate) :]
                 break
     ident = ident.replace(".", "-")
-    cleaned = "".join("-" if char in _UNSAFE_PATH_CHARS else char for char in ident)
+    cleaned = _FILENAME_STRIP.sub("", ident)
     cleaned = cleaned.strip(" .-")
     return cleaned or "item"

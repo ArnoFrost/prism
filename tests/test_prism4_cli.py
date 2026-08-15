@@ -132,7 +132,7 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
             "--root",
             str(root),
             "--id",
-            "artifact:findings.cli-review",
+            "finding:f01",
             "--body",
             "Review can be used from the 4.0 CLI.",
         ],
@@ -142,7 +142,7 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
         env=_env(),
     )
     assert review.returncode == 0, review.stderr
-    assert "artifact:findings.cli-review" in review.stdout
+    assert "finding:f01" in review.stdout
 
     clarify = subprocess.run(
         [
@@ -156,7 +156,7 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
             "--question",
             "How should daily collaboration work?",
             "--patch-id",
-            "payload:proposed-patch.cli-clarify",
+            "clarify:c01",
             "--proposed-patch",
             "Keep review and clarify as explicit capability invocations.",
         ],
@@ -166,11 +166,11 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
         env=_env(),
     )
     assert clarify.returncode == 0, clarify.stderr
-    assert "payload:proposed-patch.cli-clarify" in clarify.stdout
+    assert "clarify:c01" in clarify.stdout
 
     store = JsonReferenceStoreAdapter(root).load()
-    assert store.artifacts["artifact:findings.cli-review"].role == "findings"
-    assert store.payloads["payload:proposed-patch.cli-clarify"].type == "proposed-patch"
+    assert store.artifacts["finding:f01"].role == "findings"
+    assert store.payloads["clarify:c01"].type == "proposed-patch"
     assert any(invocation.capability_id == "prism:review" for invocation in store.invocations.values())
     assert any(invocation.capability_id == "prism:clarify" for invocation in store.invocations.values())
 
@@ -210,7 +210,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
             "--root",
             str(root),
             "--id",
-            "artifact:plan.dev-process",
+            "plan:p01",
             "--body",
             "1. 修 CLI 漂移。2. 中文化 Brief 投影。3. 用 Findings 记录实现痛点。",
         ],
@@ -220,7 +220,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
         env=_env(),
     )
     assert plan.returncode == 0, plan.stderr
-    assert "artifact:plan.dev-process" in plan.stdout
+    assert "plan:p01" in plan.stdout
 
     record = subprocess.run(
         [
@@ -231,7 +231,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
             "--root",
             str(root),
             "--id",
-            "artifact:decision.dev-process",
+            "decision:d01",
             "--authority",
             "human-required",
             "--body",
@@ -243,7 +243,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
         env=_env(),
     )
     assert record.returncode == 0, record.stderr
-    assert "artifact:decision.dev-process" in record.stdout
+    assert "decision:d01" in record.stdout
 
     store = LocalFileStoreAdapter(root).load()
     assert "topic:prism-4-dev-process" in store.topics
@@ -252,20 +252,20 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
         and artifact.topic_id == "topic:prism-4-dev-process"
         for artifact in store.artifacts.values()
     )
-    assert store.artifacts["artifact:plan.dev-process"].role == "plan"
-    assert store.artifacts["artifact:decision.dev-process"].role == "decision"
-    assert store.artifacts["artifact:decision.dev-process"].metadata["authority"] == "authoritative"
+    assert store.artifacts["plan:p01"].role == "plan"
+    assert store.artifacts["decision:d01"].role == "decision"
+    assert store.artifacts["decision:d01"].metadata["authority"] == "authoritative"
     # Invocation is a protocol concept, but this adapter does not persist it.
     assert store.invocations == {}
-    assert store.artifacts["artifact:plan.dev-process"].metadata["capability"] == "prism:plan"
+    assert store.artifacts["plan:p01"].metadata["capability"] == "prism:plan"
     assert (
-        store.artifacts["artifact:decision.dev-process"].metadata["capability"]
+        store.artifacts["decision:d01"].metadata["capability"]
         == "prism:record-decision"
     )
     # Every unit of state is a readable Markdown document; no index file exists.
-    assert (root / "plans" / "dev-process.md").is_file()
-    assert (root / "decisions" / "dev-process.md").is_file()
+    assert (root / "plans" / "p01_行动结构.md").is_file()
+    assert (root / "decisions" / "d01_决策.md").is_file()
     assert not (root / "prism4-state.json").exists()
-    assert "技能说明使用中文" in (root / "decisions" / "dev-process.md").read_text(
+    assert "技能说明使用中文" in (root / "decisions" / "d01_决策.md").read_text(
         encoding="utf-8"
     )

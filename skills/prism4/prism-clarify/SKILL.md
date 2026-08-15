@@ -28,6 +28,36 @@ prism capability run clarify <topic_id> --root <topic_dir> --question "<question
 - 已提交的 Decision 需要明确的授权。除非授权边界清晰，否则不要把答案、建议或候选 payload 当作 Decision。
 - 不要调用 3.x `workflow-clarify`、创建 handoff 文件，或写 scope/focus/task/wave 产物。
 
+## 工件格式
+
+澄清落在 `clarifications/`，序号由适配器分配（`c01`、`c02`……）。正文用中文，
+遵循固定章节：
+
+```markdown
+## 阻塞问题
+
+一句话说明是什么取舍阻塞了下一步。
+
+## 推荐答案
+
+推荐选项与理由。
+
+## 用户选择
+
+用户实际选择，以及是否构成授权。
+
+## 产出
+
+- 类型：proposed-patch 或 decision-candidate
+- 后续：是否需要 decision record 固化
+```
+
+传 `--title` 会用于文件名与索引显示；缺省时取 `--question`。写入后
+`decisions/decision.index.md` 的澄清链会自动重建。
+
+澄清产物是 semantic payload，**不是 Artifact Role**。序号与索引只解决可读性，
+不构成把它晋升为 Core 概念的理由。
+
 ## 输出
 
 先简要给出推荐答案，然后提出那一个阻塞性问题。用户回答后，重述发生了什么变化，以及是否仍有东西阻塞进展。
