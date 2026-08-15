@@ -8,6 +8,7 @@ protocol semantics themselves.
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -19,6 +20,7 @@ if __package__ in (None, ""):
 from prism4 import (  # noqa: E402
     Artifact,
     JsonReferenceStoreAdapter,
+    MarkdownReferenceStoreAdapter,
     PrismProtocolError,
     ReferenceStore,
     SemanticPayload,
@@ -33,6 +35,7 @@ from prism4 import (  # noqa: E402
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = SDK_ROOT / "VERSION"
+STATE_FILENAME = "prism4-state.json"
 LEGACY_CLI = SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "prism_cli.py"
 LEGACY_VERBS = {
     "archive",
@@ -187,7 +190,7 @@ def cmd_default(args: argparse.Namespace) -> int:
 
 
 def cmd_topic_new(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    adapter = open_adapter(resolve_root(args.root))
     store = load_or_empty(adapter)
     topic = store.add_topic(
         Topic(id=args.topic_id, title=args.title, parent_id=args.parent_id)
@@ -209,7 +212,7 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
 
 
 def cmd_topic_list(args: argparse.Namespace) -> int:
-    store = JsonReferenceStoreAdapter(resolve_root(args.root)).load()
+    store = open_adapter(resolve_root(args.root)).load()
     for topic in store.topics.values():
         if topic.parent_id:
             print(f"{topic.id}\t{topic.title}\tparent={topic.parent_id}")
@@ -219,7 +222,7 @@ def cmd_topic_list(args: argparse.Namespace) -> int:
 
 
 def cmd_artifact_show(args: argparse.Namespace) -> int:
-    store = JsonReferenceStoreAdapter(resolve_root(args.root)).load()
+    store = open_adapter(resolve_root(args.root)).load()
     if args.ref in store.artifacts:
         print(store.artifacts[args.ref].body)
         return 0
@@ -230,7 +233,7 @@ def cmd_artifact_show(args: argparse.Namespace) -> int:
 
 
 def cmd_brief_project(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    adapter = open_adapter(resolve_root(args.root))
     store = adapter.load()
     brief = project_brief(store, args.topic_id, artifact_id=args.artifact_id)
     if args.save:
@@ -243,7 +246,7 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
 
 
 def cmd_capability_review(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    adapter = open_adapter(resolve_root(args.root))
     store = adapter.load()
     if args.topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
@@ -268,7 +271,7 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
         raise PrismProtocolError(
             "clarify requires --proposed-patch and/or --decision-candidate"
         )
-    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    adapter = open_adapter(resolve_root(args.root))
     store = adapter.load()
     if args.topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
@@ -302,7 +305,7 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
 
 
 def cmd_capability_plan(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    adapter = open_adapter(resolve_root(args.root))
     store = adapter.load()
     if args.topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
@@ -325,7 +328,7 @@ def cmd_capability_plan(args: argparse.Namespace) -> int:
 
 
 def cmd_decision_record(args: argparse.Namespace) -> int:
-    adapter = JsonReferenceStoreAdapter(resolve_root(args.root))
+    adapter = open_adapter(resolve_root(args.root))
     store = adapter.load()
     if args.topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
@@ -373,10 +376,33 @@ def run_legacy(args: list[str]) -> int:
     return subprocess.call([sys.executable, str(LEGACY_CLI), *args])
 
 
-def load_or_empty(adapter: JsonReferenceStoreAdapter) -> ReferenceStore:
+def load_or_empty(adapter) -> ReferenceStore:
     if adapter.path.exists():
         return adapter.load()
     return ReferenceStore()
+
+
+def open_adapter(root: Path):
+    """Pick the reference adapter that matches the on-disk representation.
+
+    New topics default to the Markdown-first representation. Existing stores
+    keep whichever adapter wrote them, so legacy single-file JSON dogfood
+    state stays readable.
+    """
+    state_path = Path(root) / STATE_FILENAME
+    if state_path.is_file():
+        try:
+            adapter_id = json.loads(state_path.read_text(encoding="utf-8")).get(
+                "adapter"
+            )
+        except (OSError, json.JSONDecodeError) as error:
+            raise PrismProtocolError(f"cannot read reference index: {state_path}") from error
+        if adapter_id == "prism4.reference-json":
+            return JsonReferenceStoreAdapter(root)
+        if adapter_id == "prism4.reference-markdown":
+            return MarkdownReferenceStoreAdapter(root)
+        raise PrismProtocolError(f"unsupported adapter: {adapter_id}")
+    return MarkdownReferenceStoreAdapter(root)
 
 
 def resolve_root(root: str | None) -> Path:
@@ -385,13 +411,39 @@ def resolve_root(root: str | None) -> Path:
 
     cwd = Path.cwd()
     for base in (cwd, *cwd.parents):
-        direct = base / "prism4-state.json"
+        direct = base / STATE_FILENAME
         if direct.is_file():
             return base
-        candidates = sorted(base.glob("workspace.*.local/topics/*/prism4-state.json"))
-        if candidates:
-            return candidates[-1].parent
+        discovered = discover_bridged_state(base)
+        if discovered is not None:
+            return discovered
     return cwd
+
+
+def discover_bridged_state(base: Path) -> Path | None:
+    """Find a 4.0 state directory under a workspace bridge.
+
+    The physical layout under a bridge belongs to the Host / Adapter, not to
+    the protocol, so this only does a bounded-depth search instead of assuming
+    a fixed `topics/<topic>/` nesting. When several candidates exist, the most
+    recently touched one wins; that is a local discovery heuristic, not a
+    protocol rule.
+    """
+    relative_patterns = (
+        STATE_FILENAME,
+        f"*/{STATE_FILENAME}",
+        f"*/*/{STATE_FILENAME}",
+    )
+    candidates: list[Path] = []
+    for bridge in sorted(base.glob("workspace.*.local")):
+        if not bridge.is_dir():
+            continue
+        for pattern in relative_patterns:
+            candidates.extend(path for path in bridge.glob(pattern) if path.is_file())
+    if not candidates:
+        return None
+    newest = max(candidates, key=lambda path: path.stat().st_mtime)
+    return newest.parent
 
 
 def topic_artifacts(

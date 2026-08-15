@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 from shutil import copytree
 
-from prism4 import JsonReferenceStoreAdapter
+from prism4 import JsonReferenceStoreAdapter, MarkdownReferenceStoreAdapter
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -245,7 +245,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert record.returncode == 0, record.stderr
     assert "artifact:decision.dev-process" in record.stdout
 
-    store = JsonReferenceStoreAdapter(root).load()
+    store = MarkdownReferenceStoreAdapter(root).load()
     assert "topic:prism-4-dev-process" in store.topics
     assert any(
         artifact.role == "intent"
@@ -262,3 +262,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
         invocation.capability_id == "prism:record-decision"
         for invocation in store.invocations.values()
     )
+    # New topics use the Markdown-first representation: bodies live in .md files
+    assert (root / "plans" / "dev-process.md").is_file()
+    assert (root / "decisions" / "dev-process.md").is_file()
+    assert "技能说明使用中文" not in (root / "prism4-state.json").read_text(encoding="utf-8")
