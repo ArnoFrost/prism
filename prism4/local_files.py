@@ -33,8 +33,15 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, TypeVar
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows
+    fcntl = None  # type: ignore[assignment]
 
 from .core import (
     Artifact,
@@ -47,6 +54,9 @@ from .reference import ReferenceStore
 
 
 ADAPTER_ID = "prism4.reference-files"
+LOCK_FILENAME = ".prism4.lock"
+
+T = TypeVar("T")
 
 TOPIC_DIRECTORY = "topics"
 CLARIFICATION_DIRECTORY = "clarifications"
@@ -101,15 +111,34 @@ class LocalFileStoreAdapter:
 
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root)
+        self._known_owned: set[Path] | None = None
+        self._lock_depth = 0
+        self._lock_fh = None
 
     @property
     def path(self) -> Path:
         """存在性探针：调用方用它判断"这里有没有 store"。"""
         return self.root / TOPIC_DIRECTORY
 
+    def update(self, mutator: Callable[[ReferenceStore], T]) -> T:
+        """在排他锁内 load → 变更 → save。
+
+        序号分配必须发生在这次 load 之后、这次 save 之前，否则两个进程
+        会算出同一个序号；后写者的 `_prune` 还会把先写者的文件删掉。
+        """
+        with self._exclusive():
+            store = self._load_or_empty()
+            result = mutator(store)
+            self.save(store)
+            return result
+
     # ── 写入 ────────────────────────────────────────────────────────────
 
     def save(self, store: ReferenceStore) -> Path:
+        with self._exclusive():
+            return self._save_unlocked(store)
+
+    def _save_unlocked(self, store: ReferenceStore) -> Path:
         self.root.mkdir(parents=True, exist_ok=True)
 
         expected: set[Path] = set()
@@ -140,6 +169,7 @@ class LocalFileStoreAdapter:
 
         expected.update(self._write_indexes(store))
         self._prune(expected)
+        self._known_owned = self._owned_markdown()
         return self.root
 
     def _write_indexes(self, store: ReferenceStore) -> set[Path]:
@@ -163,19 +193,52 @@ class LocalFileStoreAdapter:
         return written
 
     def _prune(self, expected: set[Path]) -> None:
-        """删除本适配器拥有、但已不在 store 中的文档。"""
-        directories = (
+        """删除本适配器拥有、但已不在 store 中的文档。
+
+        若本次 save 之前做过 load，只删除 load 时见过的文件。load 之后才出现
+        的文档视为并发写入，不得静默删除。未 load 直接 save 仍是整库替换，
+        会清掉所有不在 store 里的托管文档。
+        """
+        known = self._known_owned
+        for existing in self._owned_markdown():
+            if existing in expected:
+                continue
+            if known is not None and existing not in known:
+                continue
+            existing.unlink()
+
+    def _owned_markdown(self) -> set[Path]:
+        owned: set[Path] = set()
+        for directory in (
             TOPIC_DIRECTORY,
             CLARIFICATION_DIRECTORY,
             *ROLE_TO_DIRECTORY.values(),
-        )
-        for directory in directories:
+        ):
             base = self.root / directory
             if not base.is_dir():
                 continue
-            for existing in base.glob("*.md"):
-                if existing not in expected:
-                    existing.unlink()
+            owned.update(base.glob("*.md"))
+        return owned
+
+    @contextmanager
+    def _exclusive(self):
+        """同一适配器实例可重入；跨进程用 flock 互斥。"""
+        if self._lock_depth == 0:
+            self.root.mkdir(parents=True, exist_ok=True)
+            handle = (self.root / LOCK_FILENAME).open("a+")
+            if fcntl is not None:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            self._lock_fh = handle
+        self._lock_depth += 1
+        try:
+            yield
+        finally:
+            self._lock_depth -= 1
+            if self._lock_depth == 0 and self._lock_fh is not None:
+                if fcntl is not None:
+                    fcntl.flock(self._lock_fh.fileno(), fcntl.LOCK_UN)
+                self._lock_fh.close()
+                self._lock_fh = None
 
     # ── 读取 ────────────────────────────────────────────────────────────
 
@@ -218,14 +281,26 @@ class LocalFileStoreAdapter:
 
         for relation in deferred_relations:
             store.add_relation(relation)
+        self._known_owned = self._owned_markdown()
         return store
+
+    def _load_or_empty(self) -> ReferenceStore:
+        topic_dir = self.root / TOPIC_DIRECTORY
+        if not topic_dir.is_dir():
+            self._known_owned = set()
+            return ReferenceStore()
+        return self.load()
 
 
 # ── 序号分配 ────────────────────────────────────────────────────────────
 
 
 def next_artifact_id(store: ReferenceStore, role: str) -> str:
-    """按角色分配下一个带序号的工件 id，例如 `finding:f03`。"""
+    """按角色分配下一个带序号的工件 id，例如 `finding:f03`。
+
+    只根据当前 in-memory store 计算。并发安全依赖调用方在
+    `LocalFileStoreAdapter.update()` 的锁内先 load 再分配。
+    """
     if role == "brief":
         return BRIEF_ID
     namespace = ROLE_ID_NAMESPACE.get(role)

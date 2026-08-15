@@ -1,5 +1,6 @@
 """文件适配器：序号即时序、中文文件名、索引为投影。"""
 
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -280,6 +281,98 @@ def test_removed_artifacts_are_pruned(tmp_path: Path) -> None:
     adapter.save(_store())
 
     assert not (tmp_path / "findings" / "f01_旧发现.md").exists()
+
+
+def test_prune_after_load_keeps_files_unknown_at_load_time(tmp_path: Path) -> None:
+    """P4：后写者不得把 load 之后才出现的并发工件静默删掉。"""
+    adapter = LocalFileStoreAdapter(tmp_path)
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo",
+            role="findings",
+            title="已知",
+            body="一",
+        )
+    )
+    adapter.save(store)
+
+    loaded = adapter.load()
+    peer = tmp_path / "findings" / "f02_并发写入.md"
+    peer.write_text(
+        '---\nid: "finding:f02"\nrole: "findings"\ntitle: "并发"\n'
+        'topic: "topic:demo"\n---\n\n并发写入。\n',
+        encoding="utf-8",
+    )
+    adapter.save(loaded)
+
+    assert peer.is_file()
+    assert (tmp_path / "findings" / "f01_已知.md").is_file()
+
+
+def test_prune_after_load_still_removes_dropped_known_files(tmp_path: Path) -> None:
+    adapter = LocalFileStoreAdapter(tmp_path)
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo",
+            role="findings",
+            title="将被删除",
+            body="旧的。",
+        )
+    )
+    adapter.save(store)
+
+    loaded = adapter.load()
+    del loaded.artifacts["finding:f01"]
+    adapter.save(loaded)
+
+    assert not (tmp_path / "findings" / "f01_将被删除.md").exists()
+
+
+def _write_finding_via_update(root: str, title: str) -> str:
+    """供跨进程测试调用；必须在模块顶层以便 spawn 可 pickle。"""
+    assigned: list[str] = []
+    adapter = LocalFileStoreAdapter(root)
+
+    def mutate(store: ReferenceStore) -> None:
+        artifact_id = next_artifact_id(store, "findings")
+        store.add_artifact(
+            Artifact(
+                id=artifact_id,
+                topic_id="topic:demo",
+                role="findings",
+                title=title,
+                body=title,
+            )
+        )
+        assigned.append(artifact_id)
+
+    adapter.update(mutate)
+    return assigned[0]
+
+
+def test_locked_update_assigns_distinct_ids_across_processes(tmp_path: Path) -> None:
+    LocalFileStoreAdapter(tmp_path).save(_store())
+
+    with ProcessPoolExecutor(max_workers=2) as pool:
+        futures = [
+            pool.submit(_write_finding_via_update, str(tmp_path), "alpha"),
+            pool.submit(_write_finding_via_update, str(tmp_path), "beta"),
+        ]
+        ids = [future.result(timeout=15) for future in futures]
+
+    assert len(set(ids)) == 2
+    reloaded = LocalFileStoreAdapter(tmp_path).load()
+    findings = [
+        artifact
+        for artifact in reloaded.artifacts.values()
+        if artifact.role == "findings"
+    ]
+    assert len(findings) == 2
+    assert {artifact.id for artifact in findings} == set(ids)
 
 
 def test_payloads_with_same_slug_but_different_types_do_not_collide(

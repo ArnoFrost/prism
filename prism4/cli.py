@@ -194,27 +194,29 @@ def cmd_default(args: argparse.Namespace) -> int:
 
 def cmd_topic_new(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
-    store = load_or_empty(adapter)
-    topic = store.add_topic(
-        Topic(id=args.topic_id, title=args.title, parent_id=args.parent_id)
-    )
-    if args.intent:
-        store.add_artifact(
-            Artifact(
-                id=next_artifact_id(store, "intent"),
-                topic_id=topic.id,
-                role="intent",
-                title=f"{topic.title} Intent",
-                body=args.intent,
-                metadata={
-                    "authority": "authoritative",
-                    "evolution": "supersedable",
-                    "created_at": utc_now_iso(),
-                },
-            )
+
+    def mutate(store: ReferenceStore) -> str:
+        topic = store.add_topic(
+            Topic(id=args.topic_id, title=args.title, parent_id=args.parent_id)
         )
-    adapter.save(store)
-    print(topic.id)
+        if args.intent:
+            store.add_artifact(
+                Artifact(
+                    id=next_artifact_id(store, "intent"),
+                    topic_id=topic.id,
+                    role="intent",
+                    title=f"{topic.title} Intent",
+                    body=args.intent,
+                    metadata={
+                        "authority": "authoritative",
+                        "evolution": "supersedable",
+                        "created_at": utc_now_iso(),
+                    },
+                )
+            )
+        return topic.id
+
+    print(adapter.update(mutate))
     return 0
 
 
@@ -241,40 +243,49 @@ def cmd_artifact_show(args: argparse.Namespace) -> int:
 
 def cmd_brief_project(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
-    store = adapter.load()
-    brief = project_brief(store, args.topic_id, artifact_id=args.artifact_id)
     if args.save:
-        store.add_artifact(brief)
-        adapter.save(store)
-        print(brief.id)
-    else:
-        print(brief.body, end="")
+
+        def mutate(store: ReferenceStore) -> str:
+            brief = project_brief(store, args.topic_id, artifact_id=args.artifact_id)
+            store.add_artifact(brief)
+            return brief.id
+
+        print(adapter.update(mutate))
+        return 0
+
+    brief = project_brief(adapter.load(), args.topic_id, artifact_id=args.artifact_id)
+    print(brief.body, end="")
     return 0
 
 
 def cmd_capability_review(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
-    store = adapter.load()
-    if args.topic_id not in store.topics:
-        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
-    inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "plan"))
-    findings = Artifact(
-        id=args.artifact_id or next_artifact_id(store, "findings"),
-        topic_id=args.topic_id,
-        role="findings",
-        title=args.title,
-        body=args.body,
-        metadata={
-            "authority": "advisory",
-            "evolution": "historical",
-            "capability": "prism:review",
-            "created_at": utc_now_iso(),
-        },
-    )
-    invocation = store.invoke(review_capability(), inputs=inputs, outputs=(findings,))
-    adapter.save(store)
-    print(findings.id)
-    print(invocation.id)
+
+    def mutate(store: ReferenceStore) -> tuple[str, str]:
+        if args.topic_id not in store.topics:
+            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
+        inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "plan"))
+        findings = Artifact(
+            id=args.artifact_id or next_artifact_id(store, "findings"),
+            topic_id=args.topic_id,
+            role="findings",
+            title=args.title,
+            body=args.body,
+            metadata={
+                "authority": "advisory",
+                "evolution": "historical",
+                "capability": "prism:review",
+                "created_at": utc_now_iso(),
+            },
+        )
+        invocation = store.invoke(
+            review_capability(), inputs=inputs, outputs=(findings,)
+        )
+        return findings.id, invocation.id
+
+    findings_id, invocation_id = adapter.update(mutate)
+    print(findings_id)
+    print(invocation_id)
     return 0
 
 
@@ -284,122 +295,135 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
             "clarify requires --proposed-patch and/or --decision-candidate"
         )
     adapter = open_adapter(resolve_root(args.root))
-    store = adapter.load()
-    if args.topic_id not in store.topics:
-        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
 
-    inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "findings"))
-    outputs: list[SemanticPayload] = []
-    reserved: list[str] = []
+    def mutate(store: ReferenceStore) -> tuple[list[str], str]:
+        if args.topic_id not in store.topics:
+            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
 
-    def allocate(explicit: str | None) -> str:
-        """澄清可以一次产出多个 payload，逐个递增序号而不是共用一个。"""
-        if explicit:
-            reserved.append(explicit)
-            return explicit
-        taken = {payload.id for payload in store.payloads.values()} | set(reserved)
-        candidate = next_payload_id(store)
-        while candidate in taken:
-            number = int(candidate.rsplit("c", 1)[1]) + 1
-            candidate = f"clarify:c{number:02d}"
-        reserved.append(candidate)
-        return candidate
-
-    clarify_metadata = {
-        "title": args.title or args.question,
-        "question": args.question,
-        "capability": "prism:clarify",
-        "created_at": utc_now_iso(),
-    }
-
-    if args.proposed_patch:
-        outputs.append(
-            SemanticPayload(
-                id=allocate(args.patch_id),
-                type="proposed-patch",
-                body=args.proposed_patch,
-                metadata=dict(clarify_metadata),
-            )
+        inputs = topic_artifacts(
+            store, args.topic_id, roles=("intent", "brief", "findings")
         )
-    if args.decision_candidate:
-        outputs.append(
-            SemanticPayload(
-                id=allocate(args.candidate_id),
-                type="decision-candidate",
-                body=args.decision_candidate,
-                metadata=dict(clarify_metadata),
+        outputs: list[SemanticPayload] = []
+        reserved: list[str] = []
+
+        def allocate(explicit: str | None) -> str:
+            """澄清可以一次产出多个 payload，逐个递增序号而不是共用一个。"""
+            if explicit:
+                reserved.append(explicit)
+                return explicit
+            taken = {payload.id for payload in store.payloads.values()} | set(reserved)
+            candidate = next_payload_id(store)
+            while candidate in taken:
+                number = int(candidate.rsplit("c", 1)[1]) + 1
+                candidate = f"clarify:c{number:02d}"
+            reserved.append(candidate)
+            return candidate
+
+        clarify_metadata = {
+            "title": args.title or args.question,
+            "question": args.question,
+            "capability": "prism:clarify",
+            "created_at": utc_now_iso(),
+        }
+
+        if args.proposed_patch:
+            outputs.append(
+                SemanticPayload(
+                    id=allocate(args.patch_id),
+                    type="proposed-patch",
+                    body=args.proposed_patch,
+                    metadata=dict(clarify_metadata),
+                )
             )
-        )
-    invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
-    adapter.save(store)
-    for output in outputs:
-        print(output.id)
-    print(invocation.id)
+        if args.decision_candidate:
+            outputs.append(
+                SemanticPayload(
+                    id=allocate(args.candidate_id),
+                    type="decision-candidate",
+                    body=args.decision_candidate,
+                    metadata=dict(clarify_metadata),
+                )
+            )
+        invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
+        return [output.id for output in outputs], invocation.id
+
+    output_ids, invocation_id = adapter.update(mutate)
+    for output_id in output_ids:
+        print(output_id)
+    print(invocation_id)
     return 0
 
 
 def cmd_capability_plan(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
-    store = adapter.load()
-    if args.topic_id not in store.topics:
-        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
-    inputs = topic_artifacts(
-        store, args.topic_id, roles=("intent", "brief", "findings", "decision")
-    )
-    plan_artifact = Artifact(
-        id=args.artifact_id or next_artifact_id(store, "plan"),
-        topic_id=args.topic_id,
-        role="plan",
-        title=args.title,
-        body=args.body,
-        metadata={
-            "authority": "advisory",
-            "evolution": "regenerable",
-            "capability": "prism:plan",
-            "created_at": utc_now_iso(),
-        },
-    )
-    invocation = store.invoke(plan_capability(), inputs=inputs, outputs=(plan_artifact,))
-    adapter.save(store)
-    print(plan_artifact.id)
-    print(invocation.id)
+
+    def mutate(store: ReferenceStore) -> tuple[str, str]:
+        if args.topic_id not in store.topics:
+            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
+        inputs = topic_artifacts(
+            store, args.topic_id, roles=("intent", "brief", "findings", "decision")
+        )
+        plan_artifact = Artifact(
+            id=args.artifact_id or next_artifact_id(store, "plan"),
+            topic_id=args.topic_id,
+            role="plan",
+            title=args.title,
+            body=args.body,
+            metadata={
+                "authority": "advisory",
+                "evolution": "regenerable",
+                "capability": "prism:plan",
+                "created_at": utc_now_iso(),
+            },
+        )
+        invocation = store.invoke(
+            plan_capability(), inputs=inputs, outputs=(plan_artifact,)
+        )
+        return plan_artifact.id, invocation.id
+
+    plan_id, invocation_id = adapter.update(mutate)
+    print(plan_id)
+    print(invocation_id)
     return 0
 
 
 def cmd_decision_record(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
-    store = adapter.load()
-    if args.topic_id not in store.topics:
-        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
 
-    inputs: list = topic_artifacts(store, args.topic_id, roles=("intent", "findings"))
-    if args.candidate:
-        if args.candidate not in store.payloads:
-            raise PrismProtocolError(f"payload does not exist: {args.candidate}")
-        inputs.append(store.payloads[args.candidate])
+    def mutate(store: ReferenceStore) -> tuple[str, str]:
+        if args.topic_id not in store.topics:
+            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
 
-    decision_artifact = Artifact(
-        id=args.artifact_id or next_artifact_id(store, "decision"),
-        topic_id=args.topic_id,
-        role="decision",
-        title=args.title,
-        body=args.body,
-        metadata={
-            "authority": "authoritative",
-            "evolution": "committed",
-            "authority_required": args.authority,
-            "capability": "prism:record-decision",
-            "created_at": utc_now_iso(),
-        },
-    )
-    invocation = store.invoke(
-        record_decision_operation(authority_required=args.authority),
-        inputs=inputs,
-        outputs=(decision_artifact,),
-    )
-    adapter.save(store)
-    print(decision_artifact.id)
-    print(invocation.id)
+        inputs: list = topic_artifacts(store, args.topic_id, roles=("intent", "findings"))
+        if args.candidate:
+            if args.candidate not in store.payloads:
+                raise PrismProtocolError(f"payload does not exist: {args.candidate}")
+            inputs.append(store.payloads[args.candidate])
+
+        decision_artifact = Artifact(
+            id=args.artifact_id or next_artifact_id(store, "decision"),
+            topic_id=args.topic_id,
+            role="decision",
+            title=args.title,
+            body=args.body,
+            metadata={
+                "authority": "authoritative",
+                "evolution": "committed",
+                "authority_required": args.authority,
+                "capability": "prism:record-decision",
+                "created_at": utc_now_iso(),
+            },
+        )
+        invocation = store.invoke(
+            record_decision_operation(authority_required=args.authority),
+            inputs=inputs,
+            outputs=(decision_artifact,),
+        )
+        return decision_artifact.id, invocation.id
+
+    decision_id, invocation_id = adapter.update(mutate)
+    print(decision_id)
+    print(invocation_id)
     return 0
 
 

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Mapping
+from collections.abc import Callable
+from typing import Any, Mapping, TypeVar
 
 from .core import (
     Artifact,
@@ -25,6 +26,8 @@ from .reference import ReferenceStore
 STORE_FILENAME = "prism4-state.json"
 SCHEMA_VERSION = 1
 ADAPTER_ID = "prism4.reference-json"
+
+T = TypeVar("T")
 
 
 class JsonReferenceStoreAdapter:
@@ -44,6 +47,13 @@ class JsonReferenceStoreAdapter:
         )
         tmp.replace(self.path)
         return self.path
+
+    def update(self, mutator: Callable[[ReferenceStore], T]) -> T:
+        """load → 变更 → save。JSON 载体是单文件，无目录 prune 风险。"""
+        store = self.load() if self.path.exists() else ReferenceStore()
+        result = mutator(store)
+        self.save(store)
+        return result
 
     def load(self) -> ReferenceStore:
         if not self.path.exists():
