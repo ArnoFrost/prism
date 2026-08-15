@@ -123,6 +123,18 @@
       "role": "findings",
       "title": "Review 方法论边界修正",
       "topic_id": "topic:prism-4-refoundation"
+    },
+    {
+      "body": "已确认：Prism 4.0 工件载体采用 Markdown-first + JSON 索引。artifact body 用独立 .md 文件承载（人类可读、Obsidian 友好、可 wiki link、可 diff）；prism4-state.json 降级为仅存 id/role/relations/invocations 的派生索引。本决策 supersede artifact:decision.phase-2-json-adapter 中\"单文件 JSON 承载全部状态\"的部分；JSON 作为 adapter 选择的语义不变。落点：新建 062 topic 目录承载新格式，061 保留为 canary 历史证据。",
+      "id": "artifact:decision.artifact-carrier-markdown-first",
+      "metadata": {
+        "authority": "authoritative",
+        "authority_required": "human-required",
+        "evolution": "committed"
+      },
+      "role": "decision",
+      "title": "工件载体改为 Markdown-first + JSON 索引",
+      "topic_id": "topic:prism-4-refoundation"
     }
   ],
   "invocations": [
@@ -337,6 +349,51 @@
         "mutation_target": "none",
         "output_status": "proposed"
       }
+    },
+    {
+      "capability_id": "prism:clarify",
+      "created_at": "2026-08-15T01:49:38+00:00",
+      "id": "invocation:6575da3ae6e0",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:brief.current",
+        "artifact:findings.cli-cutover-round",
+        "artifact:findings.progress-review-2026-08-15",
+        "artifact:findings.review-multi-perspective-gap",
+        "artifact:findings.review-methodology-corrected"
+      ],
+      "metadata": {},
+      "output_refs": [
+        "payload:proposed-patch.agents-device-split",
+        "payload:decision-candidate.artifact-carrier"
+      ],
+      "policy": {
+        "authority_required": "none",
+        "mutation_target": "proposed-patch",
+        "output_status": "proposed"
+      }
+    },
+    {
+      "capability_id": "prism:record-decision",
+      "created_at": "2026-08-15T01:49:48+00:00",
+      "id": "invocation:0039bba2fb80",
+      "input_refs": [
+        "artifact:intent.foundation",
+        "artifact:findings.cli-cutover-round",
+        "artifact:findings.progress-review-2026-08-15",
+        "artifact:findings.review-multi-perspective-gap",
+        "artifact:findings.review-methodology-corrected",
+        "payload:decision-candidate.artifact-carrier"
+      ],
+      "metadata": {},
+      "output_refs": [
+        "artifact:decision.artifact-carrier-markdown-first"
+      ],
+      "policy": {
+        "authority_required": "human-required",
+        "mutation_target": "record",
+        "output_status": "committed"
+      }
     }
   ],
   "payloads": [
@@ -361,6 +418,22 @@
       "id": "payload:decision-candidate.state-placement",
       "metadata": {
         "question": "dogfood 状态现在应留在 SDK 仓库作为证据，还是迁移到 Workspace backend？"
+      },
+      "type": "decision-candidate"
+    },
+    {
+      "body": "AGENTS 分层（可安全推断，无需人类拍板）：AGENTS.local.md 继续软链到共享 AGENTS.md 承载跨机通用规则；本机新增真实文件 AGENTS.prism4.local.md 承载 4.0-canary 本机状态，不入库不同步。依据 .gitignore 已含 AGENTS.*.local.md pattern，且 bin/relink 只管 AGENTS.local.md 一个软链。",
+      "id": "payload:proposed-patch.agents-device-split",
+      "metadata": {
+        "question": "Prism 4.0 工件的物理载体选哪种（决定 adapter 实现、目录结构与迁移方式）？"
+      },
+      "type": "proposed-patch"
+    },
+    {
+      "body": "Markdown-first + JSON 索引：artifact body 用独立 .md 文件承载（人类可读、Obsidian 友好、可 wiki link、可 diff）；prism4-state.json 降级为仅存 id/role/relations/invocations 的派生索引。依据 Dogfood Plan Phase 2 原文 can be Markdown or JSON 与 Alignment §3.3 Style Profile。需新写 MarkdownReferenceStoreAdapter，并 supersede Phase 2 的 JSON adapter 决策。",
+      "id": "payload:decision-candidate.artifact-carrier",
+      "metadata": {
+        "question": "Prism 4.0 工件的物理载体选哪种（决定 adapter 实现、目录结构与迁移方式）？"
       },
       "type": "decision-candidate"
     }
@@ -607,6 +680,96 @@
       "metadata": {},
       "source_ref": "artifact:findings.review-methodology-corrected",
       "target_ref": "invocation:c6bf1a236f75"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:brief.current",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.cli-cutover-round",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.progress-review-2026-08-15",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.review-multi-perspective-gap",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.review-methodology-corrected",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "payload:proposed-patch.agents-device-split",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "payload:decision-candidate.artifact-carrier",
+      "target_ref": "invocation:6575da3ae6e0"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:intent.foundation",
+      "target_ref": "invocation:0039bba2fb80"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.cli-cutover-round",
+      "target_ref": "invocation:0039bba2fb80"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.progress-review-2026-08-15",
+      "target_ref": "invocation:0039bba2fb80"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.review-multi-perspective-gap",
+      "target_ref": "invocation:0039bba2fb80"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "artifact:findings.review-methodology-corrected",
+      "target_ref": "invocation:0039bba2fb80"
+    },
+    {
+      "kind": "references",
+      "metadata": {},
+      "source_ref": "payload:decision-candidate.artifact-carrier",
+      "target_ref": "invocation:0039bba2fb80"
+    },
+    {
+      "kind": "derived-from",
+      "metadata": {},
+      "source_ref": "artifact:decision.artifact-carrier-markdown-first",
+      "target_ref": "invocation:0039bba2fb80"
     }
   ],
   "schema_version": 1,
