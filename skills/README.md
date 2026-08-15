@@ -1,6 +1,6 @@
 # skills/ — 技能层
 
-SDK 内置的 4.0 semantic skills、3.x legacy workflow/workspace 源码，以及 schema/模板定义。
+SDK 内置的 4.0 semantic skills 是默认分发面。3.x `workflow/` / `workspace/` 源码保留，仅显式 `--skill-profile legacy` 才分发。
 
 ## 目录结构
 
@@ -8,33 +8,20 @@ SDK 内置的 4.0 semantic skills、3.x legacy workflow/workspace 源码，以�
 skills/
 ├── README.md
 ├── schema/
-│   ├── skill.schema.yaml             # 技能结构约束
-│   ├── frontmatter-spec.md           # frontmatter 分层与书写顺序
-│   ├── skills-catalog.yaml           # 技能注册表 SSOT
-│   └── dist-whitelist.yaml           # 分发白名单
+│   ├── skill.schema.yaml
+│   ├── frontmatter-spec.md
+│   ├── skills-catalog.yaml
+│   └── dist-whitelist.yaml
 ├── templates/
-│   └── SKILL.template.md             # 技能编写模板
-├── prism4/                            # ★ 4.0-canary 默认分发面
+│   └── SKILL.template.md
+├── prism4/                 # ★ 4.0-canary 默认分发面
 │   ├── prism-topic/
 │   ├── prism-brief/
 │   ├── prism-review/
 │   ├── prism-clarify/
 │   └── prism-compress/
-├── workflow/                          # 3.x legacy workflow 源码（非默认分发）
-│   ├── workflow-digest/
-│   ├── workflow-compact/          # dev experimental：preview-first；授权后 backup→apply
-│   ├── workflow-archive/          # dev experimental：topic 生命周期归档
-│   ├── workflow-clarify/          # Prism 3.2：单问澄清 + candidate handoff（dev experimental）
-│   ├── workflow-execute/          # Prism 3.0：单游标执行 + 工件闭环（dev experimental）
-│   ├── workflow-intake/
-│   ├── workflow-review/
-│   ├── workflow-review-lite/      # retired-with-compat：显式 legacy 调用与旧产物
-│   ├── workflow-scope/
-│   ├── workflow-status/
-│   ├── workflow-tidy/
-│   └── shared/                        # sniff_lib + scripts + references（非 skill）
-└── workspace/                         # 3.x legacy 工作区管理源码（非默认分发）
-    └── workspace-init/
+├── workflow/               # 3.x legacy 源码（非默认分发）
+└── workspace/              # 3.x legacy workspace-init（非默认分发）
 ```
 
 ## 技能分类
@@ -61,7 +48,7 @@ skills/
 
 这些 skill 使用 `bin/prism` 的 4.0 reference adapter：`topic`、`artifact`、`brief` 与 `capability run ...`。它们不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
 
-## Legacy Workflow（v3.x）
+## Legacy Workflow（v3.x，显式 profile 才分发）
 
 旧 workflow skills 保留给历史 topic、legacy adapter、测试与迁移参考。它们不是 `prism-4` 分支默认分发面。人类文档导航见 [docs/README.md](../docs/README.md)。
 
@@ -137,7 +124,7 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 
 ## 治理与 SSOT
 
-- 人类文档分类与读序：[docs/README.md](../docs/README.md)（SDK 客观面 / 当前叙事 / 历史内部）
+- 人类文档分类与读序：[docs/README.md](../docs/README.md)
 - CLI 契约：[docs/cli-contract.md](../docs/cli-contract.md) · 4.0 语义地基：[docs/prism-4-refoundation-alignment.md](../docs/prism-4-refoundation-alignment.md)
 - **SDK 内置技能**：`schema/skills-catalog.yaml` 是 `visibility` / `stability` 的权威值；`SKILL.md` 可省略 C 层字段（validate 从 catalog 继承），写明则必须与 catalog 一致（见 `frontmatter-spec.md`）
 - **外部 prism-skills**：未入 catalog 者须在 `SKILL.md` 写明 `visibility` + `stability`（默认 `internal` + `experimental`）

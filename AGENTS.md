@@ -4,13 +4,13 @@
 
 ## 定位
 
-Prism 是一套本地优先、无侵入的个人 AI 协作基座。
+Prism 是一套本地优先、无侵入的个人 AI 协作基座。协议核心是 Topic / Artifact / Capability / Invocation / Decision Semantics。
 
 它不是任务调度器，不是 Agent 编排平台，也不是重型运行时。它负责把共享协作规范以最小侵入方式折射进本地工作区。
 
 ## 4.0-canary 分支口径
 
-当前分支进入 Prism 4.0 re-foundation dogfood。默认协作面改为 `skills/prism4/*`：
+当前默认协作面是 `skills/prism4/*`：
 
 | 技能 | 职责 |
 |------|------|
@@ -22,18 +22,28 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。
 
 旧 `workflow-*` 与 `workspace-init` 源码保留为 3.x legacy surface。默认 `bin/relink` 使用 `--skill-profile prism4`，不再分发旧 workflow 技能；需要旧 topic 兼容时显式使用 `bin/relink --skill-profile legacy` 或 `prism legacy ...`。
 
-## 四层模型
+## 公开叙事与分发视图
 
-| 层 | 职责 | 必需 | SDK 内对应 |
-|----|------|:----:|-----------|
-| **Protocol** | 人与 AI 的协作契约 | 是 | `AGENTS.md`（本文件） |
-| **Env** | 运行环境与终端基座 | 可选 | 由外部 DotFiles 承担，作为可选扩展保留 |
-| **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（schema + 模板 + 内置技能） |
-| **Workspace** | 项目级 AI 协作状态容器 | 是 | `workspace/`（schema + 模板） |
+公开叙事分三层，**不是**第三套 primitive：
 
-核心分离：Protocol / Env / Skills 是无状态层，Workspace 是有状态层。
+| 层 | 回答什么 | 不是什么 |
+|----|----------|----------|
+| **Protocol Core** | Topic / Artifact / Capability / Invocation / Decision Semantics | 不是 SDK 目录 |
+| **Reference Experience** | CLI、Markdown 适配器、`prism-*` skills、Workspace 桥接、Brief | 不是第二套 Core |
+| **Legacy Compatibility** | 3.x `workflow-*`、旧 CLI、旧 topic 布局 | 文件还在 ≠ 架构权威 |
 
-Skills 和 Env 是**可选的能力扩展层**，不是硬依赖。Prism 的最小可用集合是 Protocol + Workspace。4.0-canary 默认只分发 `skills/prism4/` 的语义技能；3.x `skills/workflow/` 作为 legacy 源码保留。
+分发与所有权（旧称「四层模型」）只解释「放哪」，嵌套在 Reference Experience 下：
+
+| 载体 | 职责 | 必需 | 典型落点 |
+|------|------|:----:|----------|
+| **SDK** | 协议文本、schema、模板、参考 CLI | 安装时是 | `~/prism` |
+| **Env** | 运行环境与终端基座 | 可选 | 外部 DotFiles |
+| **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（默认 `prism4/`） |
+| **Workspace** | 项目级协作状态实例 | 逻辑上要有地方放 | 默认本地 backend，Vault 可选 |
+
+语义最小是 Protocol Core。跑起来还要 Minimal Reference Installation（SDK + `uv`）和可选的 Workspace 实例。不要把「Protocol + Workspace」说成最小可用集合而与 Core 抢解释权。
+
+Skills 和 Env 不是硬依赖。4.0-canary 默认只分发 `skills/prism4/`；3.x `skills/workflow/` 作为 legacy 源码保留。
 
 ---
 
@@ -94,7 +104,7 @@ Workspace backend/
     └── {OTHER_PROJECT}/
 ```
 
-工作流技能内置于 SDK `skills/` 目录；个人工具技能存放在独立 Git 仓库（`~/prism-skills`）。两者通过各自的 `bin/relink` 分发到 IDE 环境。
+工作流技能内置于 SDK `skills/` 目录（默认分发 `prism4/`；`workflow/` 为 legacy）；个人工具技能存放在独立 Git 仓库（`~/prism-skills`）。两者通过各自的 `bin/relink` 分发到 IDE 环境。
 
 ---
 
@@ -129,15 +139,15 @@ Workspace backend/
 - 保持状态与逻辑分离。
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
-- **Workflow / 痕迹义务家族是 3.x legacy 增强，不是 4.0 硬入口**。core contract 只含 SDK + `uv`；Workspace 是逻辑状态层，默认可落本地目录，Vault 仅为可选 backend。4.0 当前只 dogfood Topic / Artifact / Capability / Invocation / Decision Semantics。
+- **Workflow / 痕迹义务家族是 3.x legacy 增强，不是 4.0 硬入口**。最小参考安装只含 SDK + `uv`；Workspace 是逻辑状态层，默认可落本地目录，Vault 仅为可选 backend。4.0 当前只 dogfood Topic / Artifact / Capability / Invocation / Decision Semantics。
 - **Topic 路由分流**：4.0 不再用 `workflow-intake` 作为默认入口；用 `prism-topic` 创建或定位 Topic，用 child Topic 表达耐久子问题。3.x 路由语义仍保留在 [`skills/workflow/workflow-intake/references/intake-routing-spec.md`](skills/workflow/workflow-intake/references/intake-routing-spec.md) 与 [`skills/workflow/shared/topic-sniff-spec.md`](skills/workflow/shared/topic-sniff-spec.md) 供 legacy 使用。
 
 ---
 
 ## 分层说明
 
-### Protocol
-本文件即为协作契约入口。定义规则、边界、约定和行为原则。
+### Protocol Core
+本文件承载协作契约文本。定义规则、边界、约定和行为原则。它不是 SDK 本身。
 
 ### Env
 运行环境与终端基座。包括 shell 初始化、aliases、bootstrap 脚本。此层作为可选扩展保留，由外部 DotFiles 仓库承担。
@@ -145,9 +155,10 @@ Workspace backend/
 ### Skills
 可选的自然语言能力扩展层。SDK 内的 `skills/` 包含：
 - **schema + 模板**：`schema/` 和 `templates/` 定义技能规范
-- **内置最佳实践**：`workflow/`（工作流管线）和 `workspace/`（工作区管理），为开箱即用随 SDK 发布
+- **默认分发**：`prism4/`（`prism-topic` 等 semantic skills）
+- **legacy 源码**：`workflow/` 与 `workspace/`，仅显式 `--skill-profile legacy` 才分发
 
-Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 4.0 semantic skills 是当前 canary dogfood 面；3.x workflow 技能仅在显式 legacy 场景启用。外部个人技能仓库（`~/prism-skills`）按需配置，提供个人工具和 git 同步能力。两者通过各自的 `bin/relink` 独立分发到 IDE。
+Skills 层本身是可选的。外部个人技能仓库（`~/prism-skills`）按需配置。两者通过各自的 `bin/relink` 独立分发到 IDE。
 
 ### Workspace
 项目级 AI 协作状态容器。SDK 内的 `workspace/` 保存 schema 和模板（系统层）；项目状态实例默认可存放在本地 backend，也可选用 Vault，并通过 `workspace.{code}.local` 桥接。
@@ -156,13 +167,13 @@ Skills 层本身是可选的——Prism 没有它也能工作。SDK 内置 4.0 s
 
 ## 部署视图
 
-四层模型是逻辑架构；实际部署分为三个物理位置：
+分发视图对应三个物理位置。SDK 是参考分发容器，不是 Protocol Core。
 
-| 位置 | 含义 | 必需 | 对应层 |
+| 位置 | 含义 | 必需 | 放什么 |
 |------|------|:----:|--------|
-| **SDK 仓库** | 协议 + schema + 内置 workflow | 是 | Protocol + Skills(内置) + Workspace(模板) |
-| **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
-| **Workspace backend** | 项目状态、评审记录；默认本地，可选 Vault/Git | 是（逻辑实例） | Workspace(实例) |
+| **SDK 仓库** | 协议文本 + schema + 4.0 semantic skills + legacy 源码 | 是 | 参考实现与默认技能面 |
+| **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills 扩展 |
+| **Workspace backend** | 项目状态、评审记录；默认本地，可选 Vault/Git | 是（逻辑实例） | Workspace 实例 |
 
 ---
 
@@ -210,7 +221,7 @@ prism.local.yaml        # 本地配置
 
 ## 向后兼容
 
-四层模型中 Skills 和 Env 是可选扩展层，Prism 不强制外部依赖：
+分发视图中 Skills 和 Env 是可选扩展层，Prism 不强制外部依赖：
 
 - **Prism SDK** 单独 clone + `./setup.sh init` 即可建立本地 Workspace backend；不要求配置 Skills、Env 或 Vault。
 - **Skills 仓库**（prism-skills）是**可选扩展**——提供个人工具和 git 同步，按需创建。
@@ -229,6 +240,8 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 |------|------|------|
 | `bin/setenv` | 管理 prism.local.yaml 配置，导出环境变量 | ✅ 可用 |
 | `bin/relink` | 基于配置刷新所有软链接（项目桥接 + Skills IDE 分发） | ✅ 可用 |
+| `prism topic probe` | 机械探测当前目录是否已桥接 Workspace | ✅ 可用 |
+| `prism host attach` | 登记项目并桥接 `workspace.{code}.local`（不调用 3.x init） | ✅ 可用 |
 
 工具入口可配合同名 Skill 使用，形成 "脚本 + 自然语言" 的双通道能力。
 
@@ -250,7 +263,7 @@ SDK 内置技能通过 `bin/relink` 分发到 IDE。4.0-canary 默认只分发 `
 
 ---
 
-## 3.x Legacy 术语词典（受控词汇 SSOT）
+## 3.x Legacy 术语词典（只服务旧 workflow，不定义 4.0）
 
 4.0 语义基线以 [`docs/prism-4-refoundation-alignment.md`](docs/prism-4-refoundation-alignment.md) 与 [`docs/prism-4-dogfood-plan.md`](docs/prism-4-dogfood-plan.md) 为准。以下词典只服务 3.x legacy workflow、历史 topic 与兼容脚本。
 
@@ -268,7 +281,7 @@ Prism 3.x workflow 的受控词汇 SSOT 在 [`skills/workflow/shared/vocabulary.
 
 ---
 
-## CodeBuddy IDE Hook（可选）
+## CodeBuddy IDE Hook（3.x legacy，可选）
 
 CodeBuddy IDE 支持 `PostToolUse` hook，可在 agent 写入文件后自动触发工作流脚本。
 

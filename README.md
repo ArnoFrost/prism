@@ -111,7 +111,7 @@ Prism 的交付术语分三层：
 
 | 术语 | 含义 |
 |------|------|
-| **core contract** | 最小运行合同：SDK + `uv`。Protocol / Workspace 保持逻辑模型；Workspace 实例默认可落本地目录。 |
+| **Minimal Reference Installation** | 最小能跑：SDK + `uv`。Workspace 实例默认可落本地目录。历史文档与脚本可能仍写 **core contract**，含义相同。 |
 | **optional deployment** | Skills、Env、Vault/Git backend 都按需组合，缺失不阻断 SDK/CLI。 |
 | **legacy mini/full** | 旧 zip profile，仅 maintenance-only；不再承担 3.0 GA certification 或新增特性承诺。 |
 

@@ -70,9 +70,23 @@ def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() ->
         "完整的人机协作管线",
         "candidate / handoff",
         "正式合同变化只有两条入口",
+        "最小可用集合是 Protocol + Workspace",
+        "四层模型（愿景架构）",
     ]
 
     for path in surfaces:
         text = path.read_text(encoding="utf-8")
         for phrase in forbidden:
             assert phrase not in text, f"{phrase!r} leaked into {path}"
+
+
+def test_active_docs_use_nested_public_narrative() -> None:
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+    assert "Protocol Core" in agents and "Protocol Core" in architecture
+    assert "Minimal Reference Installation" in architecture
+    assert "## 核心规则" in agents
+    assert "无侵入优先" in agents
+    assert "需要旧 3.x topic 兼容" in agents
+    assert architecture.index("## 公开叙事") < architecture.index("## Legacy Compatibility")
+    assert architecture.index("## 4.0 Semantic Skills") < architecture.index("## Legacy Compatibility")

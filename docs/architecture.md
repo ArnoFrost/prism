@@ -1,49 +1,63 @@
 # Prism — 架构详解
 
-> 本文档包含 Prism 的**结构客观面**（四层模型、部署、4.0 semantic skills 与 legacy workflow 边界）。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；当前 4.0 叙事见 [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) 与 [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md)；3.x 历史见 [prism-3.2.md](./prism-3.2.md) / [prism-3.0.md](./prism-3.0.md)。
+> 公开叙事是三段式，不是新的 primitive。SDK / Skills / Workspace / Env 只解释「放哪」。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；当前 4.0 语义见 [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md)；3.x 历史见 C 区。
 
 ---
 
-## 四层模型（愿景架构）
+## 公开叙事
 
-| 层 | 职责 | 必需 | SDK 内对应 |
-|----|------|:----:|-----------|
-| **Protocol** | 人与 AI 的协作契约 | 是 | `AGENTS.md` |
-| **Env** | 运行环境与终端基座 | 可选 | 由外部 DotFiles 承担，作为可选扩展保留 |
-| **Skills** | 可复用的自然语言能力 | 可选 | `skills/`（schema + 模板 + 内置技能） |
-| **Workspace** | 项目级 AI 协作状态容器 | 是 | `workspace/`（schema + 模板） |
+| 层 | 回答什么 | 不是什么 |
+|----|----------|----------|
+| **Protocol Core** | Topic / Artifact / Capability / Invocation / Decision Semantics | 不是 SDK 仓库，也不是 `AGENTS.md` 这一份文件 |
+| **Reference Experience** | 参考实现怎么好用：CLI、Markdown 适配器、`prism-*` skills、Workspace 桥接、Brief 投影 | 不是第二套 Core |
+| **Legacy Compatibility** | 3.x `workflow-*`、旧 CLI、旧 topic 布局 | 文件还在 ≠ 架构权威 |
 
-Protocol / Env / Skills 是无状态层，Workspace 是有状态层。Skills 和 Env 是**可选的能力扩展层**。Prism 的 **core contract** 是 SDK + `uv`；Protocol + Workspace 构成逻辑最小模型，但 Workspace backend 不等于 Vault，默认可使用本地目录。
-
-4.0-canary 默认在 `skills/prism4/` 分发最小 semantic skills；3.x `skills/workflow/` 与 `skills/workspace/` 保留为 legacy compatibility。这是分发面的选择，不改变 Skills 层可选的架构定位。
+禁止再画一张把 Core、Skill、Profile、Workspace、Adapter 并列的总表当「Prism 是什么」。
 
 ---
 
-## 交付术语
+## 分发与所有权
+
+旧称「四层模型」。它只解释东西放在哪，嵌套在 Reference Experience 下，**不是** Protocol Core。
+
+| 载体 | 职责 | 必需 | 典型落点 |
+|------|------|:----:|----------|
+| **SDK** | 协议文本、schema、模板、参考 CLI | 安装时是 | `~/prism` |
+| **Skills** | 可复用的自然语言能力 | 可选 | SDK `skills/prism4/`（默认）+ 外部 `~/prism-skills` |
+| **Workspace** | 项目级协作状态实例 | 逻辑上要有地方放 | 默认本地 backend，Vault/Git 可选 |
+| **Env** | 运行环境与终端基座 | 可选 | 外部 DotFiles |
+
+Skills 和 Env 不是硬依赖。4.0-canary 默认只分发 `skills/prism4/`；3.x `skills/workflow/` 与 `skills/workspace/` 是 Legacy Compatibility 源码。
+
+---
+
+## 最小参考安装
+
+新表面称 **Minimal Reference Installation** = SDK + `uv`。历史文档和 `bin/setup` / doctor 仍可能写 **core contract**，含义相同，本轮不改脚本字符串。
 
 | 术语 | 定义 | 维护方式 |
 |------|------|----------|
-| **core contract** | 最小运行合同：SDK + `uv`；Workspace 实例默认可落本地 backend | 主干架构合同，不是分支 |
+| **Minimal Reference Installation** | 最小能跑：SDK + `uv`；Workspace 实例默认可落本地 backend | 发行合同，不进 Protocol Core |
 | **optional deployment** | 外部 Skills、Env、Vault/Git backend 按需组合 | 缺失不阻断 SDK/CLI |
-| **legacy mini/full** | 历史 zip profile，仅保留安全修复、迁移兼容与弃用窗口 | maintenance-only，不参与 3.0 GA certification |
+| **legacy mini/full** | 历史 zip profile，仅保留安全修复、迁移兼容与弃用窗口 | maintenance-only |
 
-`core` 回答“最小能跑需要什么”；可选部署回答“状态和扩展落在哪里”。mini/full 不再是 3.0 主交付面，统一外部入口改为 `prism` CLI。
+可选部署回答「状态和扩展落在哪里」。mini/full 不再是主交付面，统一外部入口是 `prism` CLI。
 
-> 兼容窗口：旧 `/prism-dist` Skill 仅作为可选兼容壳存在；新文档与自动化一律调用 `prism dist`。SDK 内部 Python adapter 负责定位 legacy packer，未安装时清晰降级，不影响 core。
+> 兼容窗口：旧 `/prism-dist` Skill 仅作为可选兼容壳；新文档与自动化一律调用 `prism dist`。
 
 ---
 
 ## 部署视图
 
-四层模型是逻辑架构，实际部署分为三个物理位置：
+分发视图对应三个物理位置。SDK 是参考分发容器，不是 Protocol Core。
 
-| 位置 | 含义 | 必需 | 对应层 |
+| 位置 | 含义 | 必需 | 放什么 |
 |------|------|:----:|--------|
-| **SDK 仓库** | 协议 + schema + 内置 semantic skills + legacy workflow/workspace + bin 工具 | 是 | Protocol + Skills(内置) + Workspace(模板) |
-| **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills(扩展) |
-| **Workspace backend**（默认本地，可选 Vault/Git） | 项目状态、评审记录 | 是（逻辑实例） | Workspace(实例) |
+| **SDK 仓库** | 协议文本 + schema + 4.0 semantic skills + legacy 源码 + bin | 是 | 参考实现与默认技能面 |
+| **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills 扩展 |
+| **Workspace backend**（默认本地，可选 Vault/Git） | 项目状态 | 是（逻辑实例） | Workspace 实例 |
 
-SDK 提供 Protocol、Workspace schema/模板、4.0 semantic skills、legacy workflow 与 CLI。外部技能仓库、Env 和 Vault backend 均按需配置；缺失时不阻断 core contract。
+外部技能仓库、Env 和 Vault backend 均按需配置；缺失时不阻断最小参考安装。
 
 ---
 
@@ -71,26 +85,6 @@ Prism 通过 `.local` 后缀软链接将 backend 中的 Workspace 挂载到工�
 两种模式可共存，`workspace.{code}.local` 优先。
 
 </details>
-
----
-
-## 设计锚点：轻量认知熵管理
-
-v3.0 在既有 workflow 基础上，把 Prism 的上层目标收敛为**长期人机协作中的轻量认知熵管理**。这里的认知熵不是协议级术语，而是架构叙事锚点：复杂问题在时间维度上会出现理解发散、上下文遗忘、决策漂移、结构膨胀与重复重建，Prism 通过协议、CLI、技能分发和 workspace 状态容器提供轻量管理框架；内置 workflow 则是一套可选的认知熵治理工作流。
-
-| 熵源 | 典型表现 | Prism 机制 |
-|------|----------|------------|
-| 输入熵 | 原始想法混沌、边界不清 | `intake` / `scope` |
-| 歧义熵 | 当前对话被一个人类取舍阻塞 | `clarify` 单问 micro-loop |
-| 分析熵 | 判断隐性化、发现不可追溯 | `review` / findings |
-| 决策熵 | 重复争论、结论漂移 | Decision Record / `decision.index` |
-| 注意力熵 | 什么都重要、当前工作集膨胀 | `focus` |
-| 结构熵 | 长期问题切片失控、目录变杂物间 | `task` / `structures` |
-| 方向熵 | 不知道下一步该做什么 | `status` + `next_actions[]`（handoff-only） |
-| 注意力熵 | 已结束 topic 仍占活跃注意力 | `archive` / `prism reactivate` |
-| 上下文熵 | 跨会话、跨设备恢复成本高 | digest / compact preview→apply（按需） |
-
-这也决定了 Prism 与 OpenSpec / Spec workflow 的关系：OpenSpec 更像 planning layer，负责把想法组织成 spec、design、tasks；Prism 更像 cognitive governance layer，负责让这些产物在长期协作后仍能被恢复、审计和继续演化。二者可以串联，不构成替代关系。
 
 ---
 
@@ -123,7 +117,29 @@ flowchart LR
   CL -. "按需" .-> DC
 ```
 
-## Legacy Workflow 按需闭环
+## Legacy Compatibility
+
+本节不是 4.0 默认入口。3.x 文件保留给历史 topic、legacy adapter 与测试。
+
+### 3.x 叙事锚点：轻量认知熵管理
+
+v3.0 把上层目标写成**长期人机协作中的轻量认知熵管理**。认知熵不是 Protocol Core 术语；下表的机制列仍是 3.x 的 `intake` / `scope` / `focus` / `task`。
+
+| 熵源 | 典型表现 | 3.x 机制 |
+|------|----------|----------|
+| 输入熵 | 原始想法混沌、边界不清 | `intake` / `scope` |
+| 歧义熵 | 当前对话被一个人类取舍阻塞 | `clarify` 单问 micro-loop |
+| 分析熵 | 判断隐性化、发现不可追溯 | `review` / findings |
+| 决策熵 | 重复争论、结论漂移 | Decision Record / `decision.index` |
+| 注意力熵 | 什么都重要、当前工作集膨胀 | `focus` |
+| 结构熵 | 长期问题切片失控、目录变杂物间 | `task` / `structures` |
+| 方向熵 | 不知道下一步该做什么 | `status` + `next_actions[]`（handoff-only） |
+| 注意力熵 | 已结束 topic 仍占活跃注意力 | `archive` / `prism reactivate` |
+| 上下文熵 | 跨会话、跨设备恢复成本高 | digest / compact preview→apply（按需） |
+
+OpenSpec 更像 planning layer；3.x Prism workflow 更像 cognitive governance layer。二者可以串联。4.0 默认面用 Topic / Artifact / Capability / Decision，不再用这张熵源表定义「Prism 是什么」。
+
+### Legacy Workflow 按需闭环
 
 Prism 3.x Workflow 是一组基于 AI Skill 的认知熵治理能力。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮判断事件，clarify 是任意阶段的对话 sidecar**。这些能力按熵源进入，不构成必须完整执行的固定管线。4.0-canary 保留本节作为历史兼容说明，不作为默认入口。
 
@@ -215,7 +231,7 @@ flowchart LR
 - 3.2 提供 Clarify、Decision Record 与 Execute 的按需治理闭环，并继续通过真实 Topic dogfood 交互体验。
 - Clarify、Decision Record、Execute、Compact 与 Archive 仍保持实验标记，不因版本发行晋升稳定性。
 - Workspace template、topic lifecycle 与现役文档表面已对齐按需治理叙事；旧图暂以文字占位等待重绘。
-- verify 与 trace 仍是结构化协作的可选增强，不成为 Prism core contract 的硬入口。
+- verify 与 trace 仍是结构化协作的可选增强，不成为最小参考安装的硬入口。
 
 ### 痕迹义务家族封顶政策（v2.0 起永久生效）
 
@@ -337,8 +353,9 @@ prism/
 | 未来视觉 | 文字真源 |
 |----------|----------|
 | 安装与维护生命周期 | [onboarding.md](./onboarding.md) |
-| 认知熵源到可选能力 | [skill-taxonomy.md](./skill-taxonomy.md) |
-| Clarify / Review / Decision / Scope / Execute 回流 | 本文「Workflow 按需闭环」 |
+| 认知熵源到可选能力（3.x） | [skill-taxonomy.md](./skill-taxonomy.md) |
+| Clarify / Review / Decision 回流（4.0） | 本文「4.0 Semantic Skills」 |
+| 3.x Workflow 按需闭环 | 本文「Legacy Compatibility」 |
 | Prism ↔ SDD / OpenSpec | [现有关系图](assets/v3/prism-sdd-relation.png) |
 
 ![Prism 与 SDD / OpenSpec 层关系](assets/v3/prism-sdd-relation.png)
@@ -353,7 +370,8 @@ prism/
 
 | 面 | 入口 |
 |----|------|
-| 当前 4.0 语义与 dogfood | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) · [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) |
+| 当前 4.0 语义 | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) |
+| 本机施工笔记 | [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) |
 | 当前 3.x legacy 治理叙事 | [prism-3.2.md](./prism-3.2.md) |
 | v3.0 GA 历史成立锚点 | [prism-3.0.md](./prism-3.0.md) |
 | 文档分类与读序 | [docs/README.md](./README.md) |

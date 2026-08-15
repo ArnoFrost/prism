@@ -65,7 +65,7 @@ setup.sh init → prism --version 验收 → relink / 桥接
 
 ---
 
-## 运行时：`uv`（core contract）
+## 运行时：`uv`（最小参考安装）
 
 Prism 脚本运行时 = **`uv`** + Python 3.11+（见 `pyproject.toml`）。
 
