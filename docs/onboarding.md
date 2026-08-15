@@ -32,7 +32,7 @@ cd ~/prism
 
 ```text
 setup.sh init → prism --version 验收 → relink / 桥接
-             → 按熵源启用治理能力（可选）→ update / doctor / relink 维护
+             → /prism-topic（先 probe）→ update / doctor / relink 维护
 ```
 
 | 阶段 | 人类常用 | 说明 |

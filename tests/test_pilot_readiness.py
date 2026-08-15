@@ -42,8 +42,16 @@ def test_pilot_doc_names_baseline_and_exit_path() -> None:
 
 
 def test_pilot_entry_is_discoverable_from_public_docs() -> None:
-    assert "docs/3.2-pilot.md" in _read(README)
-    assert "[3.2-pilot.md](./3.2-pilot.md)" in _read(ROOT / "docs" / "README.md")
+    docs_index = _read(ROOT / "docs" / "README.md")
+    readme = _read(README)
+    l1, _, rest = docs_index.partition("## A —")
+    assert "[3.2-pilot.md](./3.2-pilot.md)" in docs_index
+    assert "## C — 3.x legacy / historical" in docs_index
+    assert "3.2-pilot" not in l1
+    assert "workspace-v3-upgrade" not in l1
+    assert "prism-4-dogfood-plan" not in l1
+    assert "FrostAtlas" not in readme
+    assert "开源生态" not in readme
     assert "/prism-clarify" in _read(ONBOARDING)
     assert "bin/relink --skill-profile legacy" in _read(ONBOARDING)
 

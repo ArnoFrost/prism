@@ -67,9 +67,10 @@ prism doctor --scope config --quick
 
 | 意图 | 入口 |
 |------|------|
-| 接入已有项目 | `/workspace-init` |
+| 接入已有项目 | `prism host attach --code CODE` · `/prism-topic` |
+| 创建或定位 Topic | `/prism-topic`（先 `prism topic probe`） |
+| 恢复当前上下文 | `/prism-brief` |
 | 刷新软链接 | `prism relink` · `./setup.sh relink` |
-| topic 工作流 | `prism status` · `/workflow-intake`（见 [docs/onboarding.md](docs/onboarding.md)） |
 | 命令面分层与 E2E 验收 | [docs/onboarding.md](docs/onboarding.md) |
 
 ## 6. 日常运维（init 之后）
@@ -78,11 +79,12 @@ prism doctor --scope config --quick
 
 - **环境 / 软链** → `prism relink` · `prism doctor` · `./setup.sh check`
 - **升级** → `prism update`（或分步 pull + doctor + relink）
-- **topic 产物** → `prism validate` · `prism finalize` · `prism status`
+- **4.0 Topic** → `prism topic` · `prism brief` · `prism capability run ...` · `/prism-*`
+- **旧 3.x topic** → `prism legacy ...`
 
 ```bash
 prism --version
-prism status --project PRISM    # 示例
+prism topic list
 prism doctor --scope config --quick
 ```
 

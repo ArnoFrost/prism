@@ -8,66 +8,23 @@
 [![Stage](https://img.shields.io/badge/stage-4.0--canary-blue)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
-[快速开始](#快速开始) · [生命周期](#生命周期总览) · [4.0 Skills](#prism-40-skills) · [开源生态](#开源生态) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
+[快速开始](#快速开始) · [生命周期](#生命周期总览) · [4.0 Skills](#prism-40-skills) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
 
 </div>
 
-Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它把共享规则、CLI、技能分发与项目状态容器组合成一个可长期运转的个人协作基座；通过软链接桥接将共享规则折射进本地工作区——不接管目录结构，不污染版本历史。
+Prism 是一套**本地优先、无侵入**的个人 AI 协作基座。协议核心是 Topic / Artifact / Capability / Invocation / Decision Semantics；共享规则通过软链接折射进本地工作区——不接管目录结构，不污染版本历史。
 
 > 共享规则，本地状态，清晰边界。
 
-**当前发行**：4.0-canary — Prism 4.0 re-foundation 分支进入本机 dogfood：Core 收敛为 Topic / Artifact / Capability / Invocation / Decision Semantics，`prism` 默认进入 4.0 reference adapter，旧 3.x CLI 通过 legacy adapter 保留。
+**当前发行**：4.0-canary — 默认协作面是 4.0 semantic skills（`/prism-topic` 等）。Core 收敛为 Topic / Artifact / Capability / Invocation / Decision Semantics；`prism` 默认进入 4.0 reference adapter，旧 3.x CLI 通过 `prism legacy` 保留。
 
-**稳定性边界**：4.0-canary 是破坏性重构期目标，不承诺 3.x workspace/topic/CLI 内部结构兼容；Review / Clarify / Brief projection 先作为日常协作最小能力面 dogfood。
+**稳定性边界**：4.0-canary 是破坏性重构期目标，不承诺 3.x workspace/topic/CLI 内部结构兼容；Review / Clarify / Brief projection 先作为日常协作最小能力面。
 
 **发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）
 
-**当前治理叙事** → [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) · **4.0 dogfood plan** → [docs/prism-4-dogfood-plan.md](docs/prism-4-dogfood-plan.md) · **发行历史** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **3.2 / 3.0 / 2.0 历史** → [docs/prism-3.2.md](docs/prism-3.2.md) / [docs/prism-3.0.md](docs/prism-3.0.md) / [docs/prism-2.0.md](docs/prism-2.0.md)
+**当前语义** → [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) · **发行历史** → [CHANGELOG](CHANGELOG.md)
 
 ---
-
-## 开源生态
-
-近期与 [FrostAtlas](https://github.com/ArnoFrost/FrostAtlas) 一并开源的两套工具，解决长程 AI 协作里不同层面的失控问题：
-
-| | **Prism**（本仓库） | **[FrostAtlas](https://github.com/ArnoFrost/FrostAtlas)** |
-|---|---|---|
-| **一句话** | 轻量认知熵管理框架 | 治具优先的长程 Agent 控制面 |
-| **管什么** | 边界、注意力、决策链、跨会话恢复 | 完成合同、证据验证、关口、执行审计 |
-| **核心工件** | `Intent` / `Brief` / `Findings` / `Decision` / `Plan` | `scope`（合同）/ `handover` / `evidence` / `gate` |
-| **典型场景** | 专项推进、评审收敛、多人/多 Agent 协作状态 | 数十步工程任务、自动化迭代、断点恢复 |
-| **立场** | 降低“忘了为什么、重复争论、读不懂下一步” | 降低“Agent 自称完成、无检查点漂移、状态只在上下文里” |
-
-```mermaid
-flowchart TB
-  subgraph governance ["认知治理层 · Prism 4.0"]
-    T["Topic：协作边界"]
-    A["Artifact：承载状态"]
-    RV["Review"] --> FN["Findings"]
-    CL["Clarify"] --> CD["候选 payload"]
-    DC["Decision：固化承诺"]
-    BR["Brief：当前切片投影"]
-    T --> A
-    FN --> A
-    DC --> A
-    BR -.-> A
-    CL -. "按需 sidecar" .-> DC
-  end
-  subgraph harness ["执行控制层 · FrostAtlas"]
-    O[observe] --> HD[decide] --> A2[act]
-    A2 --> V[verify] --> G[gate]
-  end
-  governance -->|"定义做什么、验收什么"| harness
-  harness -->|"证据与关口回流"| governance
-```
-
-**怎么组合用**：在 Prism 里治理为什么做、做什么、边界和决策；当任务需要 Agent 长程自动执行时，用 FrostAtlas 管理执行循环、证据和关口。二者通过合同与证据交换，不互相扩权。
-
-| 你想… | 优先看 |
-|--------|--------|
-| 治理 topic 状态、评审与决策 | 本仓库 [4.0 Skills](#prism-40-skills) + [alignment](docs/prism-4-refoundation-alignment.md) |
-| 治理 Agent 多轮执行与完成判定 | [FrostAtlas README](https://github.com/ArnoFrost/FrostAtlas) |
-| 从 v2 迁到 v3 focus 入口 | [workspace-v3-upgrade](docs/workspace-v3-upgrade.md) |
 
 ## 快速开始
 
@@ -112,7 +69,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 
 ```text
 ./setup.sh init → prism --version 验收 → relink / 桥接
-              → 按熵源启用治理能力（可选）→ update / doctor / relink 维护
+              → /prism-topic（先 probe）→ update / doctor / relink 维护
 ```
 
 | 阶段 | 命令 | 做什么 |
@@ -164,7 +121,7 @@ Prism 的交付术语分三层：
 
 ## 读什么
 
-README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md)**（SDK 客观面 / 当前叙事 / 历史内部）。
+README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md)**。
 
 | 你想了解 | 入口 |
 |----------|------|
@@ -172,32 +129,27 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 | **安装（Agent）** | [SETUP_AGENT.md](SETUP_AGENT.md) |
 | **4.0 协议与技能怎么理解** | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) · 上文 [Prism 4.0 Skills](#prism-40-skills) |
 | **init 后日常 / 生命周期** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
-| **4.0 dogfood 怎么走** | [docs/prism-4-dogfood-plan.md](docs/prism-4-dogfood-plan.md) |
 | 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
-| Prism 3.x 如何形成按需治理闭环 | [docs/prism-3.2.md](docs/prism-3.2.md) |
-| Prism 3.2 controlled pilot 怎么试 | [docs/3.2-pilot.md](docs/3.2-pilot.md) |
-| Prism 3.0 的历史成立锚点 | [docs/prism-3.0.md](docs/prism-3.0.md) |
-| 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
-| topic 从 intake 到 archive 怎么走 | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |
 | 完整架构与部署视图 | [docs/architecture.md](docs/architecture.md) |
-| CLI 稳定性与 verb 契约 | [docs/cli-contract.md](docs/cli-contract.md) |
-| 术语速查 | [docs/glossary.md](docs/glossary.md) |
-| 历史迁移 | [docs/migration.md](docs/migration.md) |
 
-Prism 当前以四个正交载体协同工作：SDK 承载协议/模板/CLI，Skills 承载可复用能力，Env 承载个人环境，Workspace 承载项目状态。4.0-canary 的默认 skill 面是 `skills/prism4/*`；3.x workflow 文档与技能属于 legacy / historical surface。详细分层见 [docs/architecture.md](docs/architecture.md)。
+### Legacy / 历史
+
+3.x 文档不定义 4.0。需要旧面或施工笔记时看 [docs/README.md](docs/README.md) 的 C/D 区。
+
+| 你想了解 | 入口 |
+|----------|------|
+| 4.0 本机施工笔记 | [docs/prism-4-dogfood-plan.md](docs/prism-4-dogfood-plan.md) |
+| Prism 3.x 按需治理闭环 | [docs/prism-3.2.md](docs/prism-3.2.md) |
+| Prism 3.2 controlled pilot | [docs/3.2-pilot.md](docs/3.2-pilot.md) |
+| 3.0 / 2.0 历史锚点 | [docs/prism-3.0.md](docs/prism-3.0.md) · [docs/prism-2.0.md](docs/prism-2.0.md) |
+| 存量 workspace 接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
+| topic 从 intake 到 archive | [docs/topic-lifecycle.md](docs/topic-lifecycle.md) |
+| CLI 稳定性（3.x verb 契约） | [docs/cli-contract.md](docs/cli-contract.md) |
+| 术语速查 / 历史迁移 | [docs/glossary.md](docs/glossary.md) · [docs/migration.md](docs/migration.md) |
+
+分发与所有权上，Prism 以四个正交载体协同：SDK 承载协议/模板/CLI，Skills 承载可复用能力，Env 承载个人环境，Workspace 承载项目状态。这是「放哪」，不是 Semantic Core。4.0-canary 的默认 skill 面是 `skills/prism4/*`。详细分层见 [docs/architecture.md](docs/architecture.md)。
 
 `bin/relink` 会将当前 skill profile 下的 SDK 内置 skills 分发到 IDE 目录（Cursor · Claude Code · CodeBuddy · Codex），无需手动配置。
-
-> **workflow / 痕迹义务家族都是可选项**
->
-> Prism 的 core contract（最小运行合同）只要求 SDK + `uv`；本地 Workspace backend 可由 setup 自动建立，Vault 不是硬依赖。**workflow 系列技能** 与配套的 **痕迹义务家族**（`task_probe` / `decision_artifact` / `intake_gate_out` / `merge_artifact`，自 v2.0 起永久封顶在 4 族）是认知熵治理工作流的可选增强：
->
-> - **不用 workflow 技能**：项目状态可纯手写到 `workspace.{code}.local/` 下，Prism 不强制 review/decision/scope 三件套
-> - **不用痕迹义务（默认行为）**：`prism finalize` Step 2.5 默认 lenient — 只 WARN 不 ERR，不阻塞 `success: true`；`bin/prism validate-trace --lenient` 同效
-> - **完全跳过痕迹**：`finalize --no-trace-validate` 或 `PRISM_TRACE_VALIDATE=off`（CI 渐进接入用）
-> - **strict 模式启用**：通过 frontmatter `trace_strict: true` / `PRISM_TRACE_VALIDATE=strict` / `--trace-strict` 升级为 strict（任一族 missing 即 ERR）。完整优先级：CLI flag > ENV > frontmatter > 配置前缀默认（`prism_cli._STRICT_DEFAULT_PREFIXES`，**默认空集** — strict 为显式 opt-in，不再硬编码任何 topic 编号）
->
-> 仅当你需要"多角色独立评审 + 决策可审计 + 入料路由防膨胀"等历史结构化协作场景时，workflow + trace 才进入显式 legacy 使用面。心智门槛不要把它当作 Prism 的硬入口。
 
 ---
 
@@ -225,8 +177,10 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 
 | 命令               | 职责                                                |
 | ---------------- | ------------------------------------------------- |
+| `prism topic probe` | 机械探测当前目录是否已桥接 Workspace |
 | `prism topic new` | 创建 4.0 Topic 边界 |
 | `prism topic list` | 列出 4.0 Topic |
+| `prism host attach` | 登记项目并桥接 `workspace.{code}.local`（不调用 3.x init） |
 | `prism artifact show` | 查看 4.0 Artifact / Payload 正文 |
 | `prism brief project` | 从当前状态投影 Brief，用于 context recovery |
 | `prism capability run review` | 运行 Review 能力，产出 Findings |
@@ -237,8 +191,7 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 | `prism update`   | 拉取 SDK 并执行核心 doctor + 代码层 relink（experimental；Vault/Workspace 可选） |
 | `prism dist`     | 分发统一 facade（experimental）；mini/full 仅 legacy maintenance-only |
 
-旧 3.x `sniff / validate / finalize / status / digest / decision record` 等 verb 仍可通过 `prism legacy ...` 使用；它们服务历史 topic 与 legacy workflow，不是 4.0 默认入口。
-
+旧 3.x `sniff / validate / finalize / status / digest / decision record` 等 verb 仍可通过 `prism legacy ...` 使用；它们服务历史 topic 与 legacy workflow，不是 4.0 默认入口。需要旧 `workflow-*` 技能面时显式 `bin/relink --skill-profile legacy`。痕迹义务家族（`task_probe` 等）同属 legacy，默认 lenient，不是硬入口。
 
 详见 [bin/README.md](bin/README.md)。
 

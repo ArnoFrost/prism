@@ -332,8 +332,9 @@ bin/relink --check
 软链接: N 个技能已映射到 {检测到的 IDE 列表}
 
 下一步：
-  - 接入项目: 使用 /workspace-init
-  - 启动评审: 使用 /workflow-review
+  - 接入项目: prism host attach --code CODE（未桥接时）
+  - 创建 Topic: 使用 /prism-topic（先 prism topic probe）
+  - 恢复上下文: 使用 /prism-brief
 ```
 
 ---
@@ -395,17 +396,18 @@ done
 
 ```
 问题（单选）: "初始化已完成，你想接下来？"
-  - "接入一个项目到 Prism（/workspace-init）"
+  - "接入一个项目到 Prism（prism host attach / /prism-topic）"
   - "先看看当前状态就好"
-  - "直接开始一轮评审（/workflow-review）"
+  - "恢复当前上下文（/prism-brief）"
 ```
 
 #### 模式 B（对话式）
 
 ```
 初始化已完成。你可以：
-- 输入 /workspace-init 为项目创建工作区
-- 输入 /workflow-review 对当前项目启动评审
+- 未桥接时运行 prism host attach --code CODE
+- 输入 /prism-topic 创建或定位 4.0 Topic（先 probe）
+- 输入 /prism-brief 恢复当前上下文
 - 或告诉我你接下来想做什么
 ```
 
@@ -508,4 +510,4 @@ bin/relink                        # 刷新软链接排除它
 - 项目说明：[README.md](README.md)
 - 日常运维与 E2E 验收：[docs/onboarding.md](docs/onboarding.md)
 - CLI 分层：[docs/cli-contract.md](docs/cli-contract.md)
-- 首屏能力闭环：`setenv → relink → workspace-init → review`
+- 首屏能力闭环：`setenv → relink → prism topic probe → /prism-topic`

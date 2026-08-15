@@ -8,21 +8,21 @@
 
 ## 建议读序（L1 使用者）
 
-1. 仓库根 [README](../README.md) — **`./setup.sh init`** + 工具入口  
+1. 仓库根 [README](../README.md) — **`./setup.sh init`** + 4.0 工具入口  
 2. [SETUP_GITHUB.md](../SETUP_GITHUB.md) — 人类安装；[SETUP_AGENT.md](../SETUP_AGENT.md) — Agent  
 3. [onboarding.md](./onboarding.md) — init 后：`setup.sh` · **`prism update` / `doctor`** · E2E  
 4. [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) — 4.0 语义地基
-5. [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) — 本机 dogfood 与渐进施工路径
-6. [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) — 架构图与表达口径
-7. 旧 3.x workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
+5. [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) — 架构图与表达口径
+
+3.x 升级、pilot、施工笔记不在本表。见下方 B 区施工笔记与 C 区。
 
 贡献者与协议修订 → [contributing.md](./contributing.md)（L3+）。
 
 ---
 
-## A — SDK 客观面（contract / reference）
+## A — SDK 参考（含 3.x 契约）
 
-可验证、随代码与契约守门；改 CLI 须同步本层。
+可验证、随代码守门；其中 CLI 契约与术语速查主要服务 3.x / 维护者，**不是 4.0 世界观**。4.0 当前命令面看 `prism --help`。
 
 | 文档 | 用途 |
 |------|------|
@@ -45,9 +45,9 @@
 | 文档 | 用途 |
 |------|------|
 | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) | 4.0 Core 语义、概念边界与 3.x 迁移口径 |
-| [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) | 本机长期 dogfood、CLI 切换、legacy 隔离与 MVP 推进计划 |
+| [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) | 本机施工笔记，非默认世界观 |
 | [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) | 4.0 架构图设计指导 |
-| [architecture.md](./architecture.md) | 四层模型、部署视图、当前 skill profile 与机械边界 |
+| [architecture.md](./architecture.md) | 分发/所有权视图、当前 skill 面；3.x 闭环见 C |
 
 ## C — 3.x legacy / historical
 
