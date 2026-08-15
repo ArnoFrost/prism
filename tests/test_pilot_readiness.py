@@ -52,7 +52,13 @@ def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:
     catalog = _read(CATALOG)
     assert "Prism 4.0 canary skills" in catalog
     assert "Prism 3.x legacy public/stable skills" in catalog
-    for skill_id in ("prism-topic", "prism-brief", "prism-review", "prism-clarify"):
+    for skill_id in (
+        "prism-topic",
+        "prism-brief",
+        "prism-review",
+        "prism-clarify",
+        "prism-compress",
+    ):
         entry = _catalog_entry(skill_id)
         assert "visibility: dev" in entry
         assert "stability: experimental" in entry

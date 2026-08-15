@@ -18,7 +18,8 @@ skills/
 │   ├── prism-topic/
 │   ├── prism-brief/
 │   ├── prism-review/
-│   └── prism-clarify/
+│   ├── prism-clarify/
+│   └── prism-compress/
 ├── workflow/                          # 3.x legacy workflow 源码（非默认分发）
 │   ├── workflow-digest/
 │   ├── workflow-compact/          # dev experimental：preview-first；授权后 backup→apply
@@ -40,7 +41,7 @@ skills/
 
 | 类别 | 位置 | 技能 |
 |------|------|------|
-| prism4 | `skills/prism4/` | prism-topic / prism-brief / prism-review / prism-clarify（默认分发） |
+| prism4 | `skills/prism4/` | prism-topic / prism-brief / prism-review / prism-clarify / prism-compress（默认分发） |
 | workflow legacy | `skills/workflow/` | workflow-intake … workflow-archive（源码保留，显式 profile 才分发） |
 | workspace legacy | `skills/workspace/` | workspace-init（含 migrate 能力；显式 profile 才分发） |
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
@@ -56,6 +57,7 @@ skills/
 | `prism-brief` | `/prism-brief` | Topic state / artifacts | Brief projection |
 | `prism-review` | `/prism-review` | 当前材料 / 风险或校准问题 | Findings |
 | `prism-clarify` | `/prism-clarify` | 一个阻塞问题 / 候选修正 | Clarification payload |
+| `prism-compress` | `/prism-compress` | 膨胀或漂移的 Topic 阅读面 | 对齐后的 Plan / archive / Brief |
 
 这些 skill 使用 `bin/prism` 的 4.0 reference adapter：`topic`、`artifact`、`brief` 与 `capability run ...`。它们不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
 
@@ -107,6 +109,7 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 ~/.codex/skills/prism-brief   -> ~/prism/skills/prism4/prism-brief/
 ~/.codex/skills/prism-review  -> ~/prism/skills/prism4/prism-review/
 ~/.codex/skills/prism-clarify -> ~/prism/skills/prism4/prism-clarify/
+~/.codex/skills/prism-compress -> ~/prism/skills/prism4/prism-compress/
 
 # 仅显式 legacy profile：
 ~/.codex/skills/workflow-*    -> ~/prism/skills/workflow/workflow-*/

@@ -32,7 +32,6 @@ from prism4 import (  # noqa: E402
     review_capability,
 )
 from prism4.core import utc_now_iso  # noqa: E402
-from prism4.local_files import next_artifact_id, next_payload_id  # noqa: E402
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -202,7 +201,7 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
         if args.intent:
             store.add_artifact(
                 Artifact(
-                    id=next_artifact_id(store, "intent"),
+                    id=adapter.next_artifact_id(store, "intent"),
                     topic_id=topic.id,
                     role="intent",
                     title=f"{topic.title} Intent",
@@ -247,6 +246,11 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
 
         def mutate(store: ReferenceStore) -> str:
             brief = project_brief(store, args.topic_id, artifact_id=args.artifact_id)
+            existing = store.artifacts.get(brief.id)
+            if existing is not None:
+                if existing.role != "brief":
+                    raise PrismProtocolError(f"不能覆盖非 Brief 工件：{brief.id}")
+                del store.artifacts[brief.id]
             store.add_artifact(brief)
             return brief.id
 
@@ -266,7 +270,7 @@ def cmd_capability_review(args: argparse.Namespace) -> int:
             raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
         inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "plan"))
         findings = Artifact(
-            id=args.artifact_id or next_artifact_id(store, "findings"),
+            id=args.artifact_id or adapter.next_artifact_id(store, "findings"),
             topic_id=args.topic_id,
             role="findings",
             title=args.title,
@@ -312,7 +316,7 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
                 reserved.append(explicit)
                 return explicit
             taken = {payload.id for payload in store.payloads.values()} | set(reserved)
-            candidate = next_payload_id(store)
+            candidate = adapter.next_payload_id(store)
             while candidate in taken:
                 number = int(candidate.rsplit("c", 1)[1]) + 1
                 candidate = f"clarify:c{number:02d}"
@@ -364,7 +368,7 @@ def cmd_capability_plan(args: argparse.Namespace) -> int:
             store, args.topic_id, roles=("intent", "brief", "findings", "decision")
         )
         plan_artifact = Artifact(
-            id=args.artifact_id or next_artifact_id(store, "plan"),
+            id=args.artifact_id or adapter.next_artifact_id(store, "plan"),
             topic_id=args.topic_id,
             role="plan",
             title=args.title,
@@ -401,7 +405,7 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
             inputs.append(store.payloads[args.candidate])
 
         decision_artifact = Artifact(
-            id=args.artifact_id or next_artifact_id(store, "decision"),
+            id=args.artifact_id or adapter.next_artifact_id(store, "decision"),
             topic_id=args.topic_id,
             role="decision",
             title=args.title,

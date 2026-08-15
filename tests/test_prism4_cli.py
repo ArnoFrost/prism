@@ -263,9 +263,9 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
         == "prism:record-decision"
     )
     # Every unit of state is a readable Markdown document; no index file exists.
-    assert (root / "plans" / "p01_行动结构.md").is_file()
-    assert (root / "decisions" / "d01_决策.md").is_file()
+    plans = list((root / "plans").glob("p01*.md"))
+    decisions = list((root / "decisions").glob("d01*.md"))
+    assert len(plans) == 1 and plans[0].is_file()
+    assert len(decisions) == 1 and decisions[0].is_file()
     assert not (root / "prism4-state.json").exists()
-    assert "技能说明使用中文" in (root / "decisions" / "d01_决策.md").read_text(
-        encoding="utf-8"
-    )
+    assert "技能说明使用中文" in decisions[0].read_text(encoding="utf-8")

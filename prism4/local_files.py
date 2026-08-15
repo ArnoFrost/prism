@@ -41,7 +41,7 @@ import re
 from collections.abc import Callable
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterable, Mapping, TypeVar
+from typing import Any, Iterable, Mapping, NamedTuple, TypeVar
 
 try:
     import fcntl
@@ -69,41 +69,38 @@ CHILDREN_DIRECTORY = "children"
 CLARIFICATION_DIRECTORY = "clarifications"
 ARCHIVE_DIRECTORY = "archive"
 LEGACY_TOPIC_DIRECTORY = "topics"
+BRIEF_ID = "brief:current"
+BRIEF_FILENAME = "brief.md"
 
-# 治理目录只在 store 根；intent / brief 是单文件。
+
+class RoleLayout(NamedTuple):
+    """单一角色的 Adapter 呈现：id 形态 + 现行路径 + 旧目录。"""
+
+    namespace: str
+    prefix: str | None
+    directory: str | None = None
+    filename: str | None = None
+    legacy_directory: str | None = None
+
+
+ROLE_SPEC: dict[str, RoleLayout] = {
+    "intent": RoleLayout("intent", "i", filename=INTENT_FILENAME, legacy_directory="intent"),
+    "brief": RoleLayout("brief", None, filename=BRIEF_FILENAME, legacy_directory="brief"),
+    "findings": RoleLayout("finding", "f", directory="findings", legacy_directory="findings"),
+    "decision": RoleLayout("decision", "d", directory="decisions", legacy_directory="decisions"),
+    "plan": RoleLayout("plan", "p", directory="plans", legacy_directory="plans"),
+}
 ROLE_TO_DIRECTORY = {
-    "findings": "findings",
-    "decision": "decisions",
-    "plan": "plans",
+    role: spec.directory for role, spec in ROLE_SPEC.items() if spec.directory
 }
-DIRECTORY_TO_ROLE = {value: key for key, value in ROLE_TO_DIRECTORY.items()}
+DIRECTORY_TO_ROLE = {directory: role for role, directory in ROLE_TO_DIRECTORY.items()}
 LEGACY_ROLE_TO_DIRECTORY = {
-    "intent": "intent",
-    "brief": "brief",
-    "findings": "findings",
-    "decision": "decisions",
-    "plan": "plans",
-}
-
-# Artifact role -> id 命名空间与序号前缀。brief 是单一投影，不参与编号。
-ROLE_ID_NAMESPACE = {
-    "intent": "intent",
-    "brief": "brief",
-    "findings": "finding",
-    "decision": "decision",
-    "plan": "plan",
-}
-ROLE_SEQUENCE_PREFIX = {
-    "intent": "i",
-    "findings": "f",
-    "decision": "d",
-    "plan": "p",
+    role: spec.legacy_directory
+    for role, spec in ROLE_SPEC.items()
+    if spec.legacy_directory
 }
 CLARIFY_NAMESPACE = "clarify"
 CLARIFY_SEQUENCE_PREFIX = "c"
-
-BRIEF_ID = "brief:current"
-BRIEF_FILENAME = "brief.md"
 
 INDEX_SUFFIX = ".index.md"
 FINDING_INDEX = f"finding{INDEX_SUFFIX}"
@@ -145,6 +142,12 @@ class LocalFileStoreAdapter:
             result = mutator(store)
             self.save(store)
             return result
+
+    def next_artifact_id(self, store: ReferenceStore, role: str) -> str:
+        return next_artifact_id(store, role)
+
+    def next_payload_id(self, store: ReferenceStore) -> str:
+        return next_payload_id(store)
 
     # ── 写入 ────────────────────────────────────────────────────────────
 
@@ -271,9 +274,9 @@ class LocalFileStoreAdapter:
             if path.is_file():
                 owned.add(path)
         directories = (
-            (CLARIFICATION_DIRECTORY, "findings", "decisions", "plans")
+            (CLARIFICATION_DIRECTORY, *ROLE_TO_DIRECTORY.values())
             if store_root
-            else ("plans",)
+            else (ROLE_TO_DIRECTORY["plan"],)
         )
         for directory in directories:
             folder = base / directory
@@ -402,16 +405,15 @@ def next_artifact_id(store: ReferenceStore, role: str) -> str:
     只根据当前 in-memory store 计算。并发安全依赖调用方在
     `LocalFileStoreAdapter.update()` 的锁内先 load 再分配。
     """
-    if role == "brief":
-        return BRIEF_ID
-    namespace = ROLE_ID_NAMESPACE.get(role)
-    prefix = ROLE_SEQUENCE_PREFIX.get(role)
-    if namespace is None or prefix is None:
+    spec = ROLE_SPEC.get(role)
+    if spec is None:
         raise PrismProtocolError(f"未知的核心工件角色：{role}")
+    if spec.prefix is None:
+        return BRIEF_ID
     existing = (
         artifact.id for artifact in store.artifacts.values() if artifact.role == role
     )
-    return f"{namespace}:{prefix}{_next_number(existing, prefix):02d}"
+    return f"{spec.namespace}:{spec.prefix}{_next_number(existing, spec.prefix):02d}"
 
 
 def next_payload_id(store: ReferenceStore) -> str:
@@ -706,8 +708,8 @@ def _render_finding_index(
         "",
         "## 发现时序表",
         "",
-        "| 编号 | 标题 | 来源能力 | 记录时间 | 权威性 |",
-        "|:----:|------|:--------:|:--------:|:------:|",
+        "| 编号 | 标题 | 来源能力 | 记录时间 | 权威性 | 演进 |",
+        "|:----:|------|:--------:|:--------:|:------:|:----:|",
     ]
     for finding in findings:
         label = sequence_label(finding.id)
@@ -715,8 +717,9 @@ def _render_finding_index(
         capability = str(finding.metadata.get("capability") or "—")
         created = _short_time(finding.metadata.get("created_at"))
         authority = str(finding.metadata.get("authority") or "advisory")
+        evolution = str(finding.metadata.get("evolution") or "—")
         lines.append(
-            f"| {label} | [{finding.title or label}]({link}) | `{capability}` | {created} | {authority} |"
+            f"| {label} | [{finding.title or label}]({link}) | `{capability}` | {created} | {authority} | {evolution} |"
         )
     lines.extend(
         [
@@ -772,8 +775,8 @@ def _render_decision_index(
     if decisions:
         lines.extend(
             [
-                "| 编号 | 决策标题 | 授权 | 记录时间 | 取代 |",
-                "|:----:|---------|:----:|:--------:|------|",
+                "| 编号 | 决策标题 | 授权 | 记录时间 | 演进 | 取代 |",
+                "|:----:|---------|:----:|:--------:|:----:|------|",
             ]
         )
         superseded_by_source = _group_relations(store.relations)
@@ -786,6 +789,7 @@ def _render_decision_index(
                 or "—"
             )
             created = _short_time(decision.metadata.get("created_at"))
+            evolution = str(decision.metadata.get("evolution") or "—")
             supersedes = superseded_by_source.get(decision.id, {}).get("supersedes", [])
             targets = (
                 "、".join(sequence_label(ref) for ref in supersedes)
@@ -793,7 +797,7 @@ def _render_decision_index(
                 else "—"
             )
             lines.append(
-                f"| {label} | [{decision.title or label}]({link}) | `{authority}` | {created} | {targets} |"
+                f"| {label} | [{decision.title or label}]({link}) | `{authority}` | {created} | {evolution} | {targets} |"
             )
         lines.append("")
         lines.append(f"共 {len(decisions)} 条决策。序号越大越新。")

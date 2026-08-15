@@ -134,6 +134,7 @@ Prism 4.0-canary 默认分发新的 **semantic skills**，它们围绕 Topic / A
 | 恢复当前上下文切片 | `/prism-brief` · `prism brief project ...` |
 | 审视现状并留下 Findings | `/prism-review` · `prism capability run review ...` |
 | 澄清一个阻塞取舍 | `/prism-clarify` · `prism capability run clarify ...` |
+| 对齐阅读面并同步进度 | `/prism-compress`（低频；先 preview） |
 | 升级 SDK | `prism update` · `./setup.sh update` |
 
 `bin/relink` 默认使用 `--skill-profile prism4`，会把 `skills/prism4/*` 分发到本机 IDE/Codex skill 目录。需要旧面时显式运行 `bin/relink --skill-profile legacy`；维护者调试可用 `--skill-profile all`。

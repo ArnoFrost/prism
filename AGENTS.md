@@ -18,6 +18,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。
 | `prism-brief` | 从当前有效状态生成 Brief 投影 |
 | `prism-review` | 运行 Review 能力并产出 Findings |
 | `prism-clarify` | 澄清一个阻塞取舍并可选留下候选 payload |
+| `prism-compress` | 低频对齐压缩：自检阅读面、归档假待办、同步进度后再生成 Brief |
 
 旧 `workflow-*` 与 `workspace-init` 源码保留为 3.x legacy surface。默认 `bin/relink` 使用 `--skill-profile prism4`，不再分发旧 workflow 技能；需要旧 topic 兼容时显式使用 `bin/relink --skill-profile legacy` 或 `prism legacy ...`。
 
@@ -243,6 +244,7 @@ SDK 内置技能通过 `bin/relink` 分发到 IDE。4.0-canary 默认只分发 `
 | prism-brief | `/prism-brief` | Brief 投影与上下文恢复；可再生成，非事实源 |
 | prism-review | `/prism-review` | Review 能力；产出 Findings，不自动授权 |
 | prism-clarify | `/prism-clarify` | 单问澄清；可选 proposed-patch / decision-candidate payload |
+| prism-compress | `/prism-compress` | 低频对齐压缩；preview-first，不改 Intent/Decision 承诺语义 |
 
 3.x `workspace-init` 与 `workflow-*` 保留为 legacy compatibility：源码仍在 `skills/workflow/` 与 `skills/workspace/`，但本分支默认 `relink` 不分发。需要临时恢复旧面时运行 `bin/relink --skill-profile legacy`。
 
@@ -328,6 +330,7 @@ git commit -m "feat: 新增 xxx 脚本"
 |------|------|
 | 需要创建或定位 4.0 Topic | 使用 `/prism-topic` |
 | 需要恢复当前上下文 | 使用 `/prism-brief` 或 `prism brief project` |
+| 阅读面漂移、假待办堆积、进度与现状不对齐 | 使用 `/prism-compress`；先 preview，低频对齐，不要实时压缩 |
 | 需要审视现状、暴露风险/缺口/取舍 | 使用 `/prism-review`；Findings 不自动授权 |
 | 下一步被一个人类取舍阻塞 | 使用 `/prism-clarify`；候选 payload 不等于 Decision |
 | 需要旧 3.x topic 兼容 | 显式使用 legacy skill 或 `prism legacy ...` |

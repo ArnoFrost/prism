@@ -49,7 +49,7 @@ user_invocable: true
 
 ## 工件格式
 
-落盘的 Findings 正文使用中文，遵循固定章节。序号由适配器分配（`f01`、`f02`……），
+落盘的 Findings 正文使用中文，遵循固定章节（与 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 一致）。序号由适配器分配（`f01`、`f02`……），
 序号越大越新。
 
 ```markdown

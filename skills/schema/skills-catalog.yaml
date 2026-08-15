@@ -62,6 +62,14 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-14"
     rationale: "Prism 4.0 Clarify capability; records optional proposed-patch or decision-candidate payloads without committing Decisions."
+  - id: prism-compress
+    visibility: dev
+    stability: experimental
+    source_repo: prism
+    inject_default: true
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-08-15"
+    rationale: "Prism 4.0 occasional alignment compression; audits reading-surface format, archives stale pending clarifications, and regenerates Brief without changing Decision commitments."
 
 # ─────────────────────────────────────────────
 # Prism 3.x legacy public/stable skills — source retained, not default on prism-4

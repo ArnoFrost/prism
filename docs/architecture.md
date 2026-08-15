@@ -104,6 +104,7 @@ Prism 4.0 的默认分发面不是固定 workflow，而是围绕协议原语组�
 | `prism-brief` | `/prism-brief` | 生成 Brief projection，用于 context recovery |
 | `prism-review` | `/prism-review` | 运行 Review 能力，输出 Findings |
 | `prism-clarify` | `/prism-clarify` | 单问澄清，输出候选 payload |
+| `prism-compress` | `/prism-compress` | 低频对齐压缩阅读面，再生成 Brief |
 
 `bin/relink` 默认等价于 `bin/relink --skill-profile prism4`。旧 3.x 能力面需要显式 `--skill-profile legacy` 或 `--skill-profile all`。
 
@@ -260,7 +261,8 @@ prism/
 │   │   ├── prism-topic/
 │   │   ├── prism-brief/
 │   │   ├── prism-review/
-│   │   └── prism-clarify/
+│   │   ├── prism-clarify/
+│   │   └── prism-compress/
 │   ├── workflow/                    # 3.x legacy workflow（目录名 = name）
 │   │   ├── workflow-intake/
 │   │   ├── workflow-execute/      # dev experimental

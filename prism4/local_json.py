@@ -55,6 +55,16 @@ class JsonReferenceStoreAdapter:
         self.save(store)
         return result
 
+    def next_artifact_id(self, store: ReferenceStore, role: str) -> str:
+        from .local_files import next_artifact_id
+
+        return next_artifact_id(store, role)
+
+    def next_payload_id(self, store: ReferenceStore) -> str:
+        from .local_files import next_payload_id
+
+        return next_payload_id(store)
+
     def load(self) -> ReferenceStore:
         if not self.path.exists():
             raise PrismProtocolError(f"reference store does not exist: {self.path}")

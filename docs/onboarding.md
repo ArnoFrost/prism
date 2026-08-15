@@ -106,7 +106,7 @@ prism capability run review <topic_id> --body "..."
 prism capability run clarify <topic_id> --question "..." --proposed-patch "..."
 ```
 
-Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify`。
+Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。
 
 旧 3.x workflow 仅在历史 topic 兼容时显式启用：`prism legacy ...`，或 `bin/relink --skill-profile legacy` 后使用 `/workflow-*`。
 

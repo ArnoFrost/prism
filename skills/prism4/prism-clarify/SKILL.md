@@ -31,7 +31,7 @@ prism capability run clarify <topic_id> --root <topic_dir> --question "<question
 ## 工件格式
 
 未晋升的澄清落在 `clarifications/`，序号由适配器分配（`c01`、`c02`……）。
-正文用中文，遵循固定章节：
+正文用中文，遵循固定章节（与 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 一致）：
 
 ```markdown
 ## 阻塞问题

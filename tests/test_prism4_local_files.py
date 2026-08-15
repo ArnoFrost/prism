@@ -7,6 +7,7 @@ import pytest
 
 from prism4 import (
     Artifact,
+    CORE_ARTIFACT_ROLES,
     LocalFileStoreAdapter,
     PrismProtocolError,
     ReferenceStore,
@@ -15,7 +16,18 @@ from prism4 import (
     Topic,
     review_capability,
 )
-from prism4.local_files import next_artifact_id, next_payload_id
+from prism4.local_files import ROLE_SPEC, next_artifact_id, next_payload_id
+
+
+def _sequenced(directory: Path, label: str) -> Path:
+    """按序号定位工件文件，不绑定中文标题。"""
+    matches = [
+        path
+        for path in directory.glob("*.md")
+        if path.name == f"{label}.md" or path.name.startswith(f"{label}_")
+    ]
+    assert len(matches) == 1, matches
+    return matches[0]
 
 
 def _store() -> ReferenceStore:
@@ -63,8 +75,8 @@ def test_roundtrip_preserves_topics_artifacts_and_payloads(tmp_path: Path) -> No
 
     # 序号在前；Intent / Brief 落成单文件，子 Topic 进入 children/
     assert (tmp_path / "intent.md").is_file()
-    assert (tmp_path / "findings" / "f01_首个发现.md").is_file()
-    assert (tmp_path / "clarifications" / "c01_载体建议.md").is_file()
+    assert _sequenced(tmp_path / "findings", "f01").is_file()
+    assert _sequenced(tmp_path / "clarifications", "c01").is_file()
     assert (tmp_path / "topic.md").is_file()
     assert (tmp_path / "children" / "child" / "topic.md").is_file()
 
@@ -141,6 +153,7 @@ def test_indexes_are_generated_as_projections(tmp_path: Path) -> None:
     assert "发现链索引" in finding_index
     assert "f01" in finding_index and "首个发现" in finding_index
     assert "不是事实源" in finding_index
+    assert "演进" in finding_index
 
     decision_index = (tmp_path / "decisions" / "decision.index.md").read_text(encoding="utf-8")
     assert "决策链索引" in decision_index
@@ -277,11 +290,11 @@ def test_removed_artifacts_are_pruned(tmp_path: Path) -> None:
     )
     adapter = LocalFileStoreAdapter(tmp_path)
     adapter.save(store)
-    assert (tmp_path / "findings" / "f01_旧发现.md").is_file()
+    assert _sequenced(tmp_path / "findings", "f01").is_file()
 
     adapter.save(_store())
 
-    assert not (tmp_path / "findings" / "f01_旧发现.md").exists()
+    assert list((tmp_path / "findings").glob("f01*.md")) == []
 
 
 def test_prune_after_load_keeps_files_unknown_at_load_time(tmp_path: Path) -> None:
@@ -309,7 +322,7 @@ def test_prune_after_load_keeps_files_unknown_at_load_time(tmp_path: Path) -> No
     adapter.save(loaded)
 
     assert peer.is_file()
-    assert (tmp_path / "findings" / "f01_已知.md").is_file()
+    assert _sequenced(tmp_path / "findings", "f01").is_file()
 
 
 def test_prune_after_load_still_removes_dropped_known_files(tmp_path: Path) -> None:
@@ -330,7 +343,7 @@ def test_prune_after_load_still_removes_dropped_known_files(tmp_path: Path) -> N
     del loaded.artifacts["finding:f01"]
     adapter.save(loaded)
 
-    assert not (tmp_path / "findings" / "f01_将被删除.md").exists()
+    assert list((tmp_path / "findings").glob("f01*.md")) == []
 
 
 def _write_finding_via_update(root: str, title: str) -> str:
@@ -401,8 +414,8 @@ def test_payloads_with_same_slug_but_different_types_do_not_collide(
     adapter.save(store)
 
     # 序号保证唯一，即使标题相同
-    assert (tmp_path / "clarifications" / "c01_载体.md").is_file()
-    assert (tmp_path / "clarifications" / "c02_载体.md").is_file()
+    assert _sequenced(tmp_path / "clarifications", "c01").is_file()
+    assert _sequenced(tmp_path / "clarifications", "c02").is_file()
     assert len(adapter.load().payloads) == 2
 
 
@@ -452,10 +465,10 @@ def test_child_findings_stay_at_store_root(tmp_path: Path) -> None:
     )
     LocalFileStoreAdapter(tmp_path).save(store)
 
-    assert (tmp_path / "findings" / "f01_子问题发现.md").is_file()
+    finding = _sequenced(tmp_path / "findings", "f01")
+    assert finding.is_file()
     assert not (tmp_path / "children" / "child" / "findings").exists()
-    text = (tmp_path / "findings" / "f01_子问题发现.md").read_text(encoding="utf-8")
-    assert 'topic: "topic:demo.child"' in text
+    assert 'topic: "topic:demo.child"' in finding.read_text(encoding="utf-8")
 
 
 def test_superseded_intent_is_written_to_archive(tmp_path: Path) -> None:
@@ -486,7 +499,7 @@ def test_superseded_intent_is_written_to_archive(tmp_path: Path) -> None:
 
     assert (tmp_path / "intent.md").is_file()
     assert "现行 Intent" in (tmp_path / "intent.md").read_text(encoding="utf-8")
-    archived = tmp_path / "archive" / "i01_旧边界.md"
+    archived = _sequenced(tmp_path / "archive", "i01")
     assert archived.is_file()
 
     reloaded = adapter.load()
@@ -548,3 +561,7 @@ def test_legacy_decisions_directory_loads(tmp_path: Path) -> None:
     loaded = LocalFileStoreAdapter(tmp_path).load()
     assert loaded.artifacts["decision:d01"].title == "决策"
     assert loaded.artifacts["plan:p01"].title == "计划"
+
+
+def test_role_spec_covers_every_core_artifact_role() -> None:
+    assert set(ROLE_SPEC) == set(CORE_ARTIFACT_ROLES)

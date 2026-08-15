@@ -10,6 +10,80 @@ from prism4 import (
 )
 
 
+def test_project_brief_projects_intent_goal_and_acceptance():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="intent:i01",
+            topic_id=topic.id,
+            role="intent",
+            title="当前边界",
+            body="\n".join(
+                [
+                    "## 北极星",
+                    "",
+                    "- Artifact 承载状态。",
+                    "",
+                    "## 完成条件",
+                    "",
+                    "- Core 语义独立于 Adapter。",
+                    "",
+                    "## 当前落点",
+                    "",
+                    "正在 dogfood 阅读面。",
+                ]
+            ),
+            metadata={"evolution": "durable"},
+        )
+    )
+    store.add_artifact(
+        Artifact(
+            id="plan:p01",
+            topic_id=topic.id,
+            role="plan",
+            title="当前推进",
+            body="\n".join(
+                [
+                    "## 步骤",
+                    "",
+                    "1. 写出 Brief 投影",
+                    "2. 归档假待办",
+                ]
+            ),
+            metadata={"evolution": "operative"},
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    assert "- Artifact 承载状态。" in brief.body
+    assert "- Core 语义独立于 Adapter。" in brief.body
+    assert "正在 dogfood 阅读面" in brief.body
+    assert "`plan:p01` 当前推进" in brief.body
+    assert "1. 写出 Brief 投影" in brief.body
+
+
+def test_project_brief_includes_child_topic_artifacts():
+    store = ReferenceStore()
+    parent = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_topic(Topic(id="topic:demo.child", title="子问题", parent_id=parent.id))
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo.child",
+            role="findings",
+            title="子问题发现",
+            body="观察。",
+            metadata={"evolution": "historical"},
+        )
+    )
+
+    brief = project_brief(store, parent.id)
+
+    assert "`finding:f01` 子问题发现" in brief.body
+
+
 def test_project_brief_requires_existing_topic():
     with pytest.raises(PrismProtocolError, match="主题不存在"):
         project_brief(ReferenceStore(), "topic:missing")
@@ -33,6 +107,9 @@ def test_project_brief_does_not_copy_existing_brief_as_source():
     assert brief.id == "brief:next"
     assert "旧 Brief" not in brief.body
     assert "过期的投影文本" not in brief.body
+    assert "## 目标" in brief.body
+    assert "## 验收" in brief.body
+    assert "## 进度" in brief.body
 
 
 def test_project_brief_separates_active_from_superseded():
@@ -62,8 +139,12 @@ def test_project_brief_separates_active_from_superseded():
 
     brief = project_brief(store, topic.id)
 
-    active_section = brief.body.split("## 当前有效工件")[1].split("##")[0]
-    assert "当前边界" in active_section
-    assert "旧边界" not in active_section
-    assert "已被取代" in brief.body
+    goal_section = brief.body.split("## 目标")[1].split("##")[0]
+    digested_section = brief.body.split("## 已消化")[1].split("##")[0]
+    assert "当前边界" in goal_section
+    assert "旧边界" not in goal_section
+    assert "旧边界" in digested_section
+    assert "## 验收" in brief.body
+    assert "## 已承诺" in brief.body
+    assert "## 进度" in brief.body
     assert "决策链索引" in brief.body
