@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 from shutil import copytree
 
-from prism4 import JsonReferenceStoreAdapter, MarkdownReferenceStoreAdapter
+from prism4 import JsonReferenceStoreAdapter, LocalFileStoreAdapter
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -245,7 +245,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert record.returncode == 0, record.stderr
     assert "artifact:decision.dev-process" in record.stdout
 
-    store = MarkdownReferenceStoreAdapter(root).load()
+    store = LocalFileStoreAdapter(root).load()
     assert "topic:prism-4-dev-process" in store.topics
     assert any(
         artifact.role == "intent"
@@ -255,14 +255,17 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert store.artifacts["artifact:plan.dev-process"].role == "plan"
     assert store.artifacts["artifact:decision.dev-process"].role == "decision"
     assert store.artifacts["artifact:decision.dev-process"].metadata["authority"] == "authoritative"
-    assert any(
-        invocation.capability_id == "prism:plan" for invocation in store.invocations.values()
+    # Invocation is a protocol concept, but this adapter does not persist it.
+    assert store.invocations == {}
+    assert store.artifacts["artifact:plan.dev-process"].metadata["capability"] == "prism:plan"
+    assert (
+        store.artifacts["artifact:decision.dev-process"].metadata["capability"]
+        == "prism:record-decision"
     )
-    assert any(
-        invocation.capability_id == "prism:record-decision"
-        for invocation in store.invocations.values()
-    )
-    # New topics use the Markdown-first representation: bodies live in .md files
+    # Every unit of state is a readable Markdown document; no index file exists.
     assert (root / "plans" / "dev-process.md").is_file()
     assert (root / "decisions" / "dev-process.md").is_file()
-    assert "技能说明使用中文" not in (root / "prism4-state.json").read_text(encoding="utf-8")
+    assert not (root / "prism4-state.json").exists()
+    assert "技能说明使用中文" in (root / "decisions" / "dev-process.md").read_text(
+        encoding="utf-8"
+    )

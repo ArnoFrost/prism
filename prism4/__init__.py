@@ -26,7 +26,7 @@ from .core import (
 )
 from .reference import ReferenceStore
 from .local_json import JsonReferenceStoreAdapter
-from .local_markdown import MarkdownReferenceStoreAdapter
+from .local_files import LocalFileStoreAdapter
 from .projection import project_brief
 
 __all__ = [
@@ -38,7 +38,7 @@ __all__ = [
     "CapabilitySpec",
     "Invocation",
     "JsonReferenceStoreAdapter",
-    "MarkdownReferenceStoreAdapter",
+    "LocalFileStoreAdapter",
     "PrismProtocolError",
     "ReferenceStore",
     "Relation",

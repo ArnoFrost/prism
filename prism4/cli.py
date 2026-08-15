@@ -20,7 +20,7 @@ if __package__ in (None, ""):
 from prism4 import (  # noqa: E402
     Artifact,
     JsonReferenceStoreAdapter,
-    MarkdownReferenceStoreAdapter,
+    LocalFileStoreAdapter,
     PrismProtocolError,
     ReferenceStore,
     SemanticPayload,
@@ -31,6 +31,7 @@ from prism4 import (  # noqa: E402
     record_decision_operation,
     review_capability,
 )
+from prism4.core import utc_now_iso  # noqa: E402
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -203,7 +204,11 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
                 role="intent",
                 title=f"{topic.title} Intent",
                 body=args.intent,
-                metadata={"authority": "authoritative", "evolution": "supersedable"},
+                metadata={
+                    "authority": "authoritative",
+                    "evolution": "supersedable",
+                    "created_at": utc_now_iso(),
+                },
             )
         )
     adapter.save(store)
@@ -257,7 +262,12 @@ def cmd_capability_review(args: argparse.Namespace) -> int:
         role="findings",
         title=args.title,
         body=args.body,
-        metadata={"authority": "advisory", "evolution": "historical"},
+        metadata={
+            "authority": "advisory",
+            "evolution": "historical",
+            "capability": "prism:review",
+            "created_at": utc_now_iso(),
+        },
     )
     invocation = store.invoke(review_capability(), inputs=inputs, outputs=(findings,))
     adapter.save(store)
@@ -284,7 +294,11 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
                 id=args.patch_id or make_payload_id("proposed-patch"),
                 type="proposed-patch",
                 body=args.proposed_patch,
-                metadata={"question": args.question},
+                metadata={
+                    "question": args.question,
+                    "capability": "prism:clarify",
+                    "created_at": utc_now_iso(),
+                },
             )
         )
     if args.decision_candidate:
@@ -293,7 +307,11 @@ def cmd_capability_clarify(args: argparse.Namespace) -> int:
                 id=args.candidate_id or make_payload_id("decision-candidate"),
                 type="decision-candidate",
                 body=args.decision_candidate,
-                metadata={"question": args.question},
+                metadata={
+                    "question": args.question,
+                    "capability": "prism:clarify",
+                    "created_at": utc_now_iso(),
+                },
             )
         )
     invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
@@ -318,7 +336,12 @@ def cmd_capability_plan(args: argparse.Namespace) -> int:
         role="plan",
         title=args.title,
         body=args.body,
-        metadata={"authority": "advisory", "evolution": "regenerable"},
+        metadata={
+            "authority": "advisory",
+            "evolution": "regenerable",
+            "capability": "prism:plan",
+            "created_at": utc_now_iso(),
+        },
     )
     invocation = store.invoke(plan_capability(), inputs=inputs, outputs=(plan_artifact,))
     adapter.save(store)
@@ -349,6 +372,8 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
             "authority": "authoritative",
             "evolution": "committed",
             "authority_required": args.authority,
+            "capability": "prism:record-decision",
+            "created_at": utc_now_iso(),
         },
     )
     invocation = store.invoke(
@@ -385,24 +410,25 @@ def load_or_empty(adapter) -> ReferenceStore:
 def open_adapter(root: Path):
     """Pick the reference adapter that matches the on-disk representation.
 
-    New topics default to the Markdown-first representation. Existing stores
-    keep whichever adapter wrote them, so legacy single-file JSON dogfood
-    state stays readable.
+    New topics use plain Markdown documents with no index file. A legacy
+    single-file JSON state keeps its own adapter so earlier dogfood evidence
+    stays readable.
     """
-    state_path = Path(root) / STATE_FILENAME
-    if state_path.is_file():
+    root = Path(root)
+    legacy_state = root / STATE_FILENAME
+    if legacy_state.is_file():
         try:
-            adapter_id = json.loads(state_path.read_text(encoding="utf-8")).get(
+            adapter_id = json.loads(legacy_state.read_text(encoding="utf-8")).get(
                 "adapter"
             )
         except (OSError, json.JSONDecodeError) as error:
-            raise PrismProtocolError(f"cannot read reference index: {state_path}") from error
+            raise PrismProtocolError(
+                f"cannot read reference index: {legacy_state}"
+            ) from error
         if adapter_id == "prism4.reference-json":
             return JsonReferenceStoreAdapter(root)
-        if adapter_id == "prism4.reference-markdown":
-            return MarkdownReferenceStoreAdapter(root)
         raise PrismProtocolError(f"unsupported adapter: {adapter_id}")
-    return MarkdownReferenceStoreAdapter(root)
+    return LocalFileStoreAdapter(root)
 
 
 def resolve_root(root: str | None) -> Path:
@@ -411,8 +437,7 @@ def resolve_root(root: str | None) -> Path:
 
     cwd = Path.cwd()
     for base in (cwd, *cwd.parents):
-        direct = base / STATE_FILENAME
-        if direct.is_file():
+        if is_store_root(base):
             return base
         discovered = discover_bridged_state(base)
         if discovered is not None:
@@ -420,30 +445,48 @@ def resolve_root(root: str | None) -> Path:
     return cwd
 
 
+def is_store_root(candidate: Path) -> bool:
+    """A store root either holds Markdown topic documents or a legacy index."""
+    return (candidate / "topics").is_dir() or (candidate / STATE_FILENAME).is_file()
+
+
 def discover_bridged_state(base: Path) -> Path | None:
     """Find a 4.0 state directory under a workspace bridge.
 
     The physical layout under a bridge belongs to the Host / Adapter, not to
     the protocol, so this only does a bounded-depth search instead of assuming
-    a fixed `topics/<topic>/` nesting. When several candidates exist, the most
-    recently touched one wins; that is a local discovery heuristic, not a
-    protocol rule.
+    a fixed nesting. When several candidates exist, the most recently touched
+    one wins; that is a local discovery heuristic, not a protocol rule.
     """
-    relative_patterns = (
-        STATE_FILENAME,
-        f"*/{STATE_FILENAME}",
-        f"*/*/{STATE_FILENAME}",
-    )
-    candidates: list[Path] = []
+    candidates: list[tuple[float, Path]] = []
     for bridge in sorted(base.glob("workspace.*.local")):
         if not bridge.is_dir():
             continue
-        for pattern in relative_patterns:
-            candidates.extend(path for path in bridge.glob(pattern) if path.is_file())
+        for depth in ("", "*/", "*/*/"):
+            for marker in (f"{depth}topics", f"{depth}{STATE_FILENAME}"):
+                for hit in bridge.glob(marker):
+                    # `topics/` directly under a bridge is the workspace's own
+                    # topic collection, not a 4.0 store root.
+                    if hit.name == "topics" and hit.parent == bridge:
+                        continue
+                    if hit.name == "topics" and not hit.is_dir():
+                        continue
+                    if hit.name == STATE_FILENAME and not hit.is_file():
+                        continue
+                    root = hit.parent
+                    candidates.append((_recency(root), root))
     if not candidates:
         return None
-    newest = max(candidates, key=lambda path: path.stat().st_mtime)
-    return newest.parent
+    return max(candidates, key=lambda item: item[0])[1]
+
+
+def _recency(root: Path) -> float:
+    """Newest mtime among the documents a store root owns."""
+    newest = root.stat().st_mtime
+    for pattern in ("topics/*.md", "*/*.md", STATE_FILENAME):
+        for path in root.glob(pattern):
+            newest = max(newest, path.stat().st_mtime)
+    return newest
 
 
 def topic_artifacts(
