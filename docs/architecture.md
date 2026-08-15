@@ -108,6 +108,21 @@ Prism 4.0 的默认分发面不是固定 workflow，而是围绕协议原语组�
 
 `bin/relink` 默认等价于 `bin/relink --skill-profile prism4`。旧 3.x 能力面需要显式 `--skill-profile legacy` 或 `--skill-profile all`。
 
+能力按需组合，不预设固定顺序。Review 产出 Findings 后弱衔接（告知洞察与是否要 Clarify），不自动调用其他能力。
+
+```mermaid
+flowchart LR
+  T["Topic"] --> A["Artifact"]
+  RV["Review"] --> FN["Findings"]
+  CL["Clarify"] --> CD["候选"]
+  DC["Decision"]
+  BR["Brief 投影"]
+  FN --> A
+  DC --> A
+  BR -.-> A
+  CL -. "按需" .-> DC
+```
+
 ## Legacy Workflow 按需闭环
 
 Prism 3.x Workflow 是一组基于 AI Skill 的认知熵治理能力。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮判断事件，clarify 是任意阶段的对话 sidecar**。这些能力按熵源进入，不构成必须完整执行的固定管线。4.0-canary 保留本节作为历史兼容说明，不作为默认入口。
@@ -338,7 +353,8 @@ prism/
 
 | 面 | 入口 |
 |----|------|
-| 当前 3.2 治理叙事与实验边界 | [prism-3.2.md](./prism-3.2.md) |
+| 当前 4.0 语义与 dogfood | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) · [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) |
+| 当前 3.x legacy 治理叙事 | [prism-3.2.md](./prism-3.2.md) |
 | v3.0 GA 历史成立锚点 | [prism-3.0.md](./prism-3.0.md) |
 | 文档分类与读序 | [docs/README.md](./README.md) |
 | 发行（`prism --version`） | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |

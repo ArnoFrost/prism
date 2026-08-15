@@ -34,23 +34,28 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 |---|---|---|
 | **一句话** | 轻量认知熵管理框架 | 治具优先的长程 Agent 控制面 |
 | **管什么** | 边界、注意力、决策链、跨会话恢复 | 完成合同、证据验证、关口、执行审计 |
-| **核心工件** | `scope` / `focus` / `decision` / `review` | `scope`（合同）/ `handover` / `evidence` / `gate` |
+| **核心工件** | `Intent` / `Brief` / `Findings` / `Decision` / `Plan` | `scope`（合同）/ `handover` / `evidence` / `gate` |
 | **典型场景** | 专项推进、评审收敛、多人/多 Agent 协作状态 | 数十步工程任务、自动化迭代、断点恢复 |
 | **立场** | 降低“忘了为什么、重复争论、读不懂下一步” | 降低“Agent 自称完成、无检查点漂移、状态只在上下文里” |
 
 ```mermaid
 flowchart TB
-  subgraph governance ["认知治理层 · Prism"]
-    I["intake：接住输入"] --> S["scope：稳定边界"]
-    S --> F["focus：暴露当前工作集"]
-    C["clarify：按需澄清"] -. "候选交接" .-> I
-    R["review：多视角判断"] --> DR["decision：授权事实"]
-    DR --> S
-    E["execute：单游标执行"] --> F
+  subgraph governance ["认知治理层 · Prism 4.0"]
+    T["Topic：协作边界"]
+    A["Artifact：承载状态"]
+    RV["Review"] --> FN["Findings"]
+    CL["Clarify"] --> CD["候选 payload"]
+    DC["Decision：固化承诺"]
+    BR["Brief：当前切片投影"]
+    T --> A
+    FN --> A
+    DC --> A
+    BR -.-> A
+    CL -. "按需 sidecar" .-> DC
   end
   subgraph harness ["执行控制层 · FrostAtlas"]
-    O[observe] --> HD[decide] --> A[act]
-    A --> V[verify] --> G[gate]
+    O[observe] --> HD[decide] --> A2[act]
+    A2 --> V[verify] --> G[gate]
   end
   governance -->|"定义做什么、验收什么"| harness
   harness -->|"证据与关口回流"| governance
@@ -60,7 +65,7 @@ flowchart TB
 
 | 你想… | 优先看 |
 |--------|--------|
-| 治理 topic 状态、评审与决策 | 本仓库 + [skill-taxonomy](docs/skill-taxonomy.md) |
+| 治理 topic 状态、评审与决策 | 本仓库 [4.0 Skills](#prism-40-skills) + [alignment](docs/prism-4-refoundation-alignment.md) |
 | 治理 Agent 多轮执行与完成判定 | [FrostAtlas README](https://github.com/ArnoFrost/FrostAtlas) |
 | 从 v2 迁到 v3 focus 入口 | [workspace-v3-upgrade](docs/workspace-v3-upgrade.md) |
 
@@ -165,10 +170,11 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 |----------|------|
 | **安装（人类 · GitHub）** | [SETUP_GITHUB.md](SETUP_GITHUB.md) |
 | **安装（Agent）** | [SETUP_AGENT.md](SETUP_AGENT.md) |
+| **4.0 协议与技能怎么理解** | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) · 上文 [Prism 4.0 Skills](#prism-40-skills) |
 | **init 后日常 / 生命周期** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
-| **4.0 skill 怎么选** | 上文 [Prism 4.0 Skills](#prism-40-skills) · [docs/prism-4-dogfood-plan.md](docs/prism-4-dogfood-plan.md) |
+| **4.0 dogfood 怎么走** | [docs/prism-4-dogfood-plan.md](docs/prism-4-dogfood-plan.md) |
 | 文档怎么分类、先读什么 | [docs/README.md](docs/README.md) |
-| Prism 当前如何形成按需治理闭环 | [docs/prism-3.2.md](docs/prism-3.2.md) |
+| Prism 3.x 如何形成按需治理闭环 | [docs/prism-3.2.md](docs/prism-3.2.md) |
 | Prism 3.2 controlled pilot 怎么试 | [docs/3.2-pilot.md](docs/3.2-pilot.md) |
 | Prism 3.0 的历史成立锚点 | [docs/prism-3.0.md](docs/prism-3.0.md) |
 | 已有 workspace 如何渐进接入 v3 | [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) |
