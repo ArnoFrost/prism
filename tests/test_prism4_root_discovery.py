@@ -9,10 +9,9 @@ from prism4 import JsonReferenceStoreAdapter, LocalFileStoreAdapter
 
 
 def _write_files_store(directory: Path) -> Path:
-    """Create the index-free layout: a topics/ directory of Markdown documents."""
-    topics = directory / "topics"
-    topics.mkdir(parents=True, exist_ok=True)
-    target = topics / "demo.md"
+    """Create the current layout: topic.md at the store root."""
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / "topic.md"
     target.write_text(
         '---\nid: "topic:demo"\ntitle: "Demo"\n---\n# Demo\n',
         encoding="utf-8",

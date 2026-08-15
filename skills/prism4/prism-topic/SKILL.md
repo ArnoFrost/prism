@@ -12,11 +12,12 @@ user_invocable: true
 ---
 # Prism Topic — Topic 边界管理
 
-仅用于由 `prism4-state.json` 承载的 Prism 4.0 Topic。
+仅用于由 `topic.md`（或旧的 `prism4-state.json`）承载的 Prism 4.0 Topic。
 
 ## 规则
 
 - Topic 是持久的协作边界。不要为 4.0 创建 `Task` 层级；用子 Topic 表达耐久子问题，用 Plan Item 表达普通执行步骤。
+- 子 Topic 落在 `children/<slug>/`，内聚 topic / intent / plans / references；findings 与 decisions 冒泡回父根。
 - 优先使用规范 CLI：
 
 ```bash

@@ -8,15 +8,20 @@
 目录布局::
 
     <root>/
-      topics/<主题>.md
-      intent/i01_<标题>.md
-      brief/brief.md
+      topic.md
+      intent.md                          当前权威 Intent（历史件在 archive/）
+      brief.md
       findings/f01_<标题>.md
       findings/finding.index.md          发现链索引（投影，自动重建）
       decisions/d01_<标题>.md
       decisions/decision.index.md        决策链索引（投影，自动重建）
-      clarifications/c01_<标题>.md
+      clarifications/c01_<标题>.md       尚未晋升的候选
       plans/p01_<标题>.md
+      children/<slug>/topic.md           子 Topic 执行内聚
+      children/<slug>/intent.md
+      children/<slug>/plans/
+      references/                        非工件，不受适配器管理
+      archive/                           历史件，不受 prune 管理
 
 设计要点：
 
@@ -58,18 +63,27 @@ LOCK_FILENAME = ".prism4.lock"
 
 T = TypeVar("T")
 
-TOPIC_DIRECTORY = "topics"
+TOPIC_FILENAME = "topic.md"
+INTENT_FILENAME = "intent.md"
+CHILDREN_DIRECTORY = "children"
 CLARIFICATION_DIRECTORY = "clarifications"
+ARCHIVE_DIRECTORY = "archive"
+LEGACY_TOPIC_DIRECTORY = "topics"
 
-# Artifact role -> 目录名
+# 治理目录只在 store 根；intent / brief 是单文件。
 ROLE_TO_DIRECTORY = {
+    "findings": "findings",
+    "decision": "decisions",
+    "plan": "plans",
+}
+DIRECTORY_TO_ROLE = {value: key for key, value in ROLE_TO_DIRECTORY.items()}
+LEGACY_ROLE_TO_DIRECTORY = {
     "intent": "intent",
     "brief": "brief",
     "findings": "findings",
     "decision": "decisions",
     "plan": "plans",
 }
-DIRECTORY_TO_ROLE = {value: key for key, value in ROLE_TO_DIRECTORY.items()}
 
 # Artifact role -> id 命名空间与序号前缀。brief 是单一投影，不参与编号。
 ROLE_ID_NAMESPACE = {
@@ -118,7 +132,7 @@ class LocalFileStoreAdapter:
     @property
     def path(self) -> Path:
         """存在性探针：调用方用它判断"这里有没有 store"。"""
-        return self.root / TOPIC_DIRECTORY
+        return self.root / TOPIC_FILENAME
 
     def update(self, mutator: Callable[[ReferenceStore], T]) -> T:
         """在排他锁内 load → 变更 → save。
@@ -143,14 +157,33 @@ class LocalFileStoreAdapter:
 
         expected: set[Path] = set()
         for topic in store.topics.values():
-            target = self.root / _topic_path(topic)
+            target = self.root / _topic_path(topic, store)
             _write_document(target, _topic_frontmatter(topic), _topic_body(topic))
             expected.add(target)
 
         relations_by_source = _group_relations(store.relations)
+        superseded = {
+            relation.target_ref
+            for relation in store.relations
+            if relation.kind == "supersedes"
+        }
 
         for artifact in store.artifacts.values():
-            target = self.root / _artifact_path(artifact)
+            if artifact.role == "intent" and artifact.id in superseded:
+                target = (
+                    self.root
+                    / ARCHIVE_DIRECTORY
+                    / _sequenced_filename(artifact.id, artifact.title)
+                )
+                _write_document(
+                    target,
+                    _artifact_frontmatter(
+                        artifact, relations_by_source.get(artifact.id, {})
+                    ),
+                    artifact.body,
+                )
+                continue
+            target = self.root / _artifact_path(artifact, store)
             _write_document(
                 target,
                 _artifact_frontmatter(artifact, relations_by_source.get(artifact.id, {})),
@@ -171,6 +204,16 @@ class LocalFileStoreAdapter:
         self._prune(expected)
         self._known_owned = self._owned_markdown()
         return self.root
+
+    def archive_payload(self, payload: SemanticPayload) -> Path:
+        """把已晋升的澄清写到 archive/。该目录不受 prune 管理。"""
+        target = self.root / ARCHIVE_DIRECTORY / _payload_filename(payload)
+        _write_document(
+            target,
+            _payload_frontmatter(payload, {}),
+            payload.body,
+        )
+        return target
 
     def _write_indexes(self, store: ReferenceStore) -> set[Path]:
         """重建导航索引。索引是投影，每次保存都从工件重算。"""
@@ -209,16 +252,38 @@ class LocalFileStoreAdapter:
 
     def _owned_markdown(self) -> set[Path]:
         owned: set[Path] = set()
+        self._collect_layout_docs(self.root, owned, store_root=True)
         for directory in (
-            TOPIC_DIRECTORY,
+            LEGACY_TOPIC_DIRECTORY,
+            *LEGACY_ROLE_TO_DIRECTORY.values(),
             CLARIFICATION_DIRECTORY,
-            *ROLE_TO_DIRECTORY.values(),
         ):
             base = self.root / directory
-            if not base.is_dir():
-                continue
-            owned.update(base.glob("*.md"))
+            if base.is_dir():
+                owned.update(base.glob("*.md"))
         return owned
+
+    def _collect_layout_docs(
+        self, base: Path, owned: set[Path], *, store_root: bool
+    ) -> None:
+        for name in (TOPIC_FILENAME, INTENT_FILENAME, BRIEF_FILENAME):
+            path = base / name
+            if path.is_file():
+                owned.add(path)
+        directories = (
+            (CLARIFICATION_DIRECTORY, "findings", "decisions", "plans")
+            if store_root
+            else ("plans",)
+        )
+        for directory in directories:
+            folder = base / directory
+            if folder.is_dir():
+                owned.update(folder.glob("*.md"))
+        children = base / CHILDREN_DIRECTORY
+        if children.is_dir():
+            for child in children.iterdir():
+                if child.is_dir():
+                    self._collect_layout_docs(child, owned, store_root=False)
 
     @contextmanager
     def _exclusive(self):
@@ -243,12 +308,51 @@ class LocalFileStoreAdapter:
     # ── 读取 ────────────────────────────────────────────────────────────
 
     def load(self) -> ReferenceStore:
-        topic_dir = self.root / TOPIC_DIRECTORY
-        if not topic_dir.is_dir():
-            raise PrismProtocolError(f"主题文档不存在：{topic_dir}")
+        if (self.root / TOPIC_FILENAME).is_file():
+            return self._load_current()
+        topic_dir = self.root / LEGACY_TOPIC_DIRECTORY
+        if topic_dir.is_dir():
+            return self._load_legacy(topic_dir)
+        raise PrismProtocolError(f"主题文档不存在：{self.root / TOPIC_FILENAME}")
 
+    def _load_or_empty(self) -> ReferenceStore:
+        if (self.root / TOPIC_FILENAME).is_file() or (
+            self.root / LEGACY_TOPIC_DIRECTORY
+        ).is_dir():
+            return self.load()
+        self._known_owned = set()
+        return ReferenceStore()
+
+    def _load_current(self) -> ReferenceStore:
         store = ReferenceStore()
+        pending = [
+            _topic_from_document(document)
+            for document in _iter_topic_documents(self.root)
+        ]
+        for topic in _ordered_by_parent(pending):
+            store.add_topic(topic)
 
+        deferred_relations: list[Relation] = []
+        for document, role in _iter_artifact_documents(self.root, store):
+            artifact, relations = _artifact_from_document(document, role)
+            store.add_artifact(artifact)
+            deferred_relations.extend(relations)
+
+        clarify_dir = self.root / CLARIFICATION_DIRECTORY
+        if clarify_dir.is_dir():
+            for document in sorted(clarify_dir.glob("*.md")):
+                if document.name.endswith(INDEX_SUFFIX):
+                    continue
+                payload, relations = _payload_from_document(document)
+                store.add_payload(payload)
+                deferred_relations.extend(relations)
+
+        self._add_relations(store, deferred_relations)
+        self._known_owned = self._owned_markdown()
+        return store
+
+    def _load_legacy(self, topic_dir: Path) -> ReferenceStore:
+        store = ReferenceStore()
         pending = [
             _topic_from_document(document)
             for document in sorted(topic_dir.glob("*.md"))
@@ -258,14 +362,13 @@ class LocalFileStoreAdapter:
             store.add_topic(topic)
 
         deferred_relations: list[Relation] = []
-
-        for directory, role in DIRECTORY_TO_ROLE.items():
+        for role, directory in LEGACY_ROLE_TO_DIRECTORY.items():
             base = self.root / directory
             if not base.is_dir():
                 continue
             for document in sorted(base.glob("*.md")):
                 if document.name.endswith(INDEX_SUFFIX):
-                    continue  # 索引是投影，不是工件
+                    continue
                 artifact, relations = _artifact_from_document(document, role)
                 store.add_artifact(artifact)
                 deferred_relations.extend(relations)
@@ -279,17 +382,15 @@ class LocalFileStoreAdapter:
                 store.add_payload(payload)
                 deferred_relations.extend(relations)
 
-        for relation in deferred_relations:
-            store.add_relation(relation)
+        self._add_relations(store, deferred_relations)
         self._known_owned = self._owned_markdown()
         return store
 
-    def _load_or_empty(self) -> ReferenceStore:
-        topic_dir = self.root / TOPIC_DIRECTORY
-        if not topic_dir.is_dir():
-            self._known_owned = set()
-            return ReferenceStore()
-        return self.load()
+    def _add_relations(
+        self, store: ReferenceStore, deferred_relations: list[Relation]
+    ) -> None:
+        for relation in deferred_relations:
+            store.add_relation(relation)
 
 
 # ── 序号分配 ────────────────────────────────────────────────────────────
@@ -738,11 +839,92 @@ def _short_time(value: Any) -> str:
 # ── 路径 ────────────────────────────────────────────────────────────────
 
 
-def _topic_path(topic: Topic) -> str:
-    return f"{TOPIC_DIRECTORY}/{_slug(topic.id, 'topic')}.md"
+def _iter_topic_documents(root: Path) -> list[Path]:
+    documents: list[Path] = []
+    topic_file = root / TOPIC_FILENAME
+    if topic_file.is_file():
+        documents.append(topic_file)
+    children = root / CHILDREN_DIRECTORY
+    if children.is_dir():
+        for child in sorted(children.iterdir()):
+            if child.is_dir():
+                documents.extend(_iter_topic_documents(child))
+    return documents
 
 
-def _artifact_path(artifact: Artifact) -> str:
+def _iter_artifact_documents(
+    root: Path, store: ReferenceStore
+) -> list[tuple[Path, str]]:
+    found: list[tuple[Path, str]] = []
+    for topic in store.topics.values():
+        prefix = _topic_dir_prefix(topic, store)
+        base = root / prefix if prefix else root
+        intent = base / INTENT_FILENAME
+        if intent.is_file():
+            found.append((intent, "intent"))
+        brief = base / BRIEF_FILENAME
+        if brief.is_file():
+            found.append((brief, "brief"))
+        plans = base / ROLE_TO_DIRECTORY["plan"]
+        if plans.is_dir():
+            for document in sorted(plans.glob("*.md")):
+                if not document.name.endswith(INDEX_SUFFIX):
+                    found.append((document, "plan"))
+    for directory, role in DIRECTORY_TO_ROLE.items():
+        if role == "plan":
+            continue
+        folder = root / directory
+        if not folder.is_dir():
+            continue
+        for document in sorted(folder.glob("*.md")):
+            if document.name.endswith(INDEX_SUFFIX):
+                continue
+            found.append((document, role))
+    return found
+
+
+def _topic_path(topic: Topic, store: ReferenceStore) -> str:
+    prefix = _topic_dir_prefix(topic, store)
+    return f"{prefix}{TOPIC_FILENAME}" if prefix else TOPIC_FILENAME
+
+
+def _topic_dir_prefix(topic: Topic, store: ReferenceStore) -> str:
+    if not topic.parent_id:
+        return ""
+    slugs: list[str] = []
+    current = topic
+    while current.parent_id:
+        slugs.append(_child_slug(current))
+        parent = store.topics.get(current.parent_id)
+        if parent is None:
+            break
+        current = parent
+    slugs.reverse()
+    parts: list[str] = []
+    for slug in slugs:
+        parts.extend([CHILDREN_DIRECTORY, slug])
+    return "/".join(parts) + "/"
+
+
+def _child_slug(topic: Topic) -> str:
+    ident = _local_part(topic.id)
+    if topic.parent_id:
+        parent_local = _local_part(topic.parent_id)
+        dotted = f"{parent_local}."
+        if ident.startswith(dotted):
+            ident = ident[len(dotted) :]
+    return ident.replace(".", "-") or "item"
+
+
+def _artifact_path(artifact: Artifact, store: ReferenceStore) -> str:
+    topic = store.topics.get(artifact.topic_id)
+    prefix = _topic_dir_prefix(topic, store) if topic is not None else ""
+    if artifact.role == "brief":
+        return f"{prefix}{BRIEF_FILENAME}"
+    if artifact.role == "intent":
+        return f"{prefix}{INTENT_FILENAME}"
+    if artifact.role == "plan":
+        return f"{prefix}{ROLE_TO_DIRECTORY['plan']}/{_artifact_filename(artifact)}"
     directory = ROLE_TO_DIRECTORY.get(artifact.role)
     if directory is None:
         raise PrismProtocolError(f"未知的核心工件角色：{artifact.role}")

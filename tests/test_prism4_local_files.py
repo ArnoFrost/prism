@@ -61,11 +61,12 @@ def test_roundtrip_preserves_topics_artifacts_and_payloads(tmp_path: Path) -> No
     adapter = LocalFileStoreAdapter(tmp_path)
     adapter.save(store)
 
-    # 序号在前，中文标题可读
-    assert (tmp_path / "intent" / "i01_协议地基.md").is_file()
+    # 序号在前；Intent / Brief 落成单文件，子 Topic 进入 children/
+    assert (tmp_path / "intent.md").is_file()
     assert (tmp_path / "findings" / "f01_首个发现.md").is_file()
     assert (tmp_path / "clarifications" / "c01_载体建议.md").is_file()
-    assert (tmp_path / "topics" / "demo.md").is_file()
+    assert (tmp_path / "topic.md").is_file()
+    assert (tmp_path / "children" / "child" / "topic.md").is_file()
 
     reloaded = adapter.load()
 
@@ -184,7 +185,7 @@ def test_no_machine_index_file_is_written(tmp_path: Path) -> None:
     LocalFileStoreAdapter(tmp_path).save(store)
 
     assert not (tmp_path / "prism4-state.json").exists()
-    assert (tmp_path / "brief" / "brief.md").is_file()
+    assert (tmp_path / "brief.md").is_file()
 
 
 def test_invocations_are_not_persisted_but_semantics_are(tmp_path: Path) -> None:
@@ -256,7 +257,7 @@ def test_save_is_idempotent(tmp_path: Path) -> None:
 
     adapter = LocalFileStoreAdapter(tmp_path)
     adapter.save(store)
-    document = tmp_path / "intent" / "i01_地基.md"
+    document = tmp_path / "intent.md"
     first = document.read_text(encoding="utf-8")
     adapter.save(adapter.load())
 
@@ -436,3 +437,114 @@ def test_orphan_child_topic_is_reported(tmp_path: Path) -> None:
 
     with pytest.raises(PrismProtocolError, match="父级缺失或成环"):
         LocalFileStoreAdapter(tmp_path).load()
+
+
+def test_child_findings_stay_at_store_root(tmp_path: Path) -> None:
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo.child",
+            role="findings",
+            title="子问题发现",
+            body="归属写在 frontmatter。",
+        )
+    )
+    LocalFileStoreAdapter(tmp_path).save(store)
+
+    assert (tmp_path / "findings" / "f01_子问题发现.md").is_file()
+    assert not (tmp_path / "children" / "child" / "findings").exists()
+    text = (tmp_path / "findings" / "f01_子问题发现.md").read_text(encoding="utf-8")
+    assert 'topic: "topic:demo.child"' in text
+
+
+def test_superseded_intent_is_written_to_archive(tmp_path: Path) -> None:
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="intent:i01",
+            topic_id="topic:demo",
+            role="intent",
+            title="旧边界",
+            body="已被取代。",
+        )
+    )
+    store.add_artifact(
+        Artifact(
+            id="intent:i02",
+            topic_id="topic:demo",
+            role="intent",
+            title="当前边界",
+            body="现行 Intent。",
+        )
+    )
+    store.add_relation(
+        Relation(source_ref="intent:i02", kind="supersedes", target_ref="intent:i01")
+    )
+    adapter = LocalFileStoreAdapter(tmp_path)
+    adapter.save(store)
+
+    assert (tmp_path / "intent.md").is_file()
+    assert "现行 Intent" in (tmp_path / "intent.md").read_text(encoding="utf-8")
+    archived = tmp_path / "archive" / "i01_旧边界.md"
+    assert archived.is_file()
+
+    reloaded = adapter.load()
+    assert "intent:i02" in reloaded.artifacts
+    assert "intent:i01" not in reloaded.artifacts
+    assert any(
+        relation.kind == "supersedes" and relation.target_ref == "intent:i01"
+        for relation in reloaded.relations
+    )
+
+
+def test_legacy_topics_directory_still_loads(tmp_path: Path) -> None:
+    topics = tmp_path / "topics"
+    topics.mkdir()
+    (topics / "demo.md").write_text(
+        '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
+        encoding="utf-8",
+    )
+    intent_dir = tmp_path / "intent"
+    intent_dir.mkdir()
+    (intent_dir / "i01_地基.md").write_text(
+        '---\nid: "intent:i01"\nrole: "intent"\ntitle: "地基"\n'
+        'topic: "topic:demo"\n---\n\n正文。\n',
+        encoding="utf-8",
+    )
+
+    adapter = LocalFileStoreAdapter(tmp_path)
+    loaded = adapter.load()
+    assert "topic:demo" in loaded.topics
+    assert loaded.artifacts["intent:i01"].title == "地基"
+
+    adapter.save(loaded)
+    assert (tmp_path / "topic.md").is_file()
+    assert (tmp_path / "intent.md").is_file()
+
+
+def test_legacy_decisions_directory_loads(tmp_path: Path) -> None:
+    topics = tmp_path / "topics"
+    topics.mkdir()
+    (topics / "demo.md").write_text(
+        '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
+        encoding="utf-8",
+    )
+    decisions = tmp_path / "decisions"
+    decisions.mkdir()
+    (decisions / "d01_决策.md").write_text(
+        '---\nid: "decision:d01"\nrole: "decision"\ntitle: "决策"\n'
+        'topic: "topic:demo"\n---\n\n已确认。\n',
+        encoding="utf-8",
+    )
+    plans = tmp_path / "plans"
+    plans.mkdir()
+    (plans / "p01_计划.md").write_text(
+        '---\nid: "plan:p01"\nrole: "plan"\ntitle: "计划"\n'
+        'topic: "topic:demo"\n---\n\n计划正文。\n',
+        encoding="utf-8",
+    )
+
+    loaded = LocalFileStoreAdapter(tmp_path).load()
+    assert loaded.artifacts["decision:d01"].title == "决策"
+    assert loaded.artifacts["plan:p01"].title == "计划"

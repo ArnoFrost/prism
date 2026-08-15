@@ -419,6 +419,12 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
             inputs=inputs,
             outputs=(decision_artifact,),
         )
+        if args.candidate:
+            payload = store.payloads[args.candidate]
+            archive = getattr(adapter, "archive_payload", None)
+            if archive is not None:
+                archive(payload)
+            del store.payloads[args.candidate]
         return decision_artifact.id, invocation.id
 
     decision_id, invocation_id = adapter.update(mutate)
@@ -486,8 +492,11 @@ def resolve_root(root: str | None) -> Path:
 
 
 def is_store_root(candidate: Path) -> bool:
-    """A store root either holds Markdown topic documents or a legacy index."""
-    return (candidate / "topics").is_dir() or (candidate / STATE_FILENAME).is_file()
+    """A store root holds topic.md, a legacy topics/*.md layout, or a JSON index."""
+    if (candidate / "topic.md").is_file() or (candidate / STATE_FILENAME).is_file():
+        return True
+    legacy = candidate / "topics"
+    return legacy.is_dir() and any(legacy.glob("*.md"))
 
 
 def discover_bridged_state(base: Path) -> Path | None:
@@ -503,18 +512,23 @@ def discover_bridged_state(base: Path) -> Path | None:
         if not bridge.is_dir():
             continue
         for depth in ("", "*/", "*/*/"):
-            for marker in (f"{depth}topics", f"{depth}{STATE_FILENAME}"):
+            for marker in (f"{depth}topic.md", f"{depth}{STATE_FILENAME}"):
                 for hit in bridge.glob(marker):
-                    # `topics/` directly under a bridge is the workspace's own
-                    # topic collection, not a 4.0 store root.
-                    if hit.name == "topics" and hit.parent == bridge:
-                        continue
-                    if hit.name == "topics" and not hit.is_dir():
-                        continue
                     if hit.name == STATE_FILENAME and not hit.is_file():
+                        continue
+                    if hit.name == "topic.md" and not hit.is_file():
                         continue
                     root = hit.parent
                     candidates.append((_recency(root), root))
+            for hit in bridge.glob(f"{depth}topics"):
+                # `topics/` directly under a bridge is the workspace's own
+                # topic collection, not a 4.0 store root.
+                if hit.parent == bridge:
+                    continue
+                if not hit.is_dir() or not any(hit.glob("*.md")):
+                    continue
+                root = hit.parent
+                candidates.append((_recency(root), root))
     if not candidates:
         return None
     return max(candidates, key=lambda item: item[0])[1]
@@ -523,7 +537,7 @@ def discover_bridged_state(base: Path) -> Path | None:
 def _recency(root: Path) -> float:
     """Newest mtime among the documents a store root owns."""
     newest = root.stat().st_mtime
-    for pattern in ("topics/*.md", "*/*.md", STATE_FILENAME):
+    for pattern in ("topic.md", "*/*.md", "children/*/*.md", "topics/*.md", STATE_FILENAME):
         for path in root.glob(pattern):
             newest = max(newest, path.stat().st_mtime)
     return newest

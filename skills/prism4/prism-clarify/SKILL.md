@@ -30,8 +30,8 @@ prism capability run clarify <topic_id> --root <topic_dir> --question "<question
 
 ## 工件格式
 
-澄清落在 `clarifications/`，序号由适配器分配（`c01`、`c02`……）。正文用中文，
-遵循固定章节：
+未晋升的澄清落在 `clarifications/`，序号由适配器分配（`c01`、`c02`……）。
+正文用中文，遵循固定章节：
 
 ```markdown
 ## 阻塞问题
@@ -54,6 +54,10 @@ prism capability run clarify <topic_id> --root <topic_dir> --question "<question
 
 传 `--title` 会用于文件名与索引显示；缺省时取 `--question`。写入后
 `decisions/decision.index.md` 的澄清链会自动重建。
+
+授权写成 Decision 之后：全文并入对应 `dXX` 的「澄清过程」，原 `cXX` 进入
+`archive/`。`prism decision record ... --candidate <id>` 会完成归档。
+尚未晋升的候选继续留在 `clarifications/`。
 
 澄清产物是 semantic payload，**不是 Artifact Role**。序号与索引只解决可读性，
 不构成把它晋升为 Core 概念的理由。

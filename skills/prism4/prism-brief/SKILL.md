@@ -34,9 +34,12 @@ Topic 内有两份人类可读索引，都是从工件再生成的投影：
 | 索引 | 位置 | 内容 |
 |------|------|------|
 | 发现链 | `findings/finding.index.md` | fXX 时序表：标题、来源能力、时间、权威性 |
-| 决策链 | `decisions/decision.index.md` | 澄清链（cXX）+ 决策链（dXX）两张表，含取代关系 |
+| 决策链 | `decisions/decision.index.md` | 澄清链（未晋升的 cXX）+ 决策链（dXX） |
 
-序号越大越新。需要快速定位最近发生了什么时，先读索引再读具体工件。
+Topic 根是 `topic.md`，当前 Intent 是 `intent.md`，Brief 是 `brief.md`。
+子 Topic 在 `children/<slug>/`。序号越大越新。需要快速定位最近发生了什么时，
+先读索引再读具体工件。已授权的澄清读对应 `dXX` 的「澄清过程」，不要再去
+`clarifications/` 找全文副本。
 
 ## 输出
 
