@@ -170,6 +170,7 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
 
     store = JsonReferenceStoreAdapter(root).load()
     assert store.artifacts["finding:f01"].role == "findings"
+    assert store.artifacts["finding:f01"].metadata["evolution"] == "supersedable"
     assert store.payloads["clarify:c01"].type == "proposed-patch"
     assert any(invocation.capability_id == "prism:review" for invocation in store.invocations.values())
     assert any(invocation.capability_id == "prism:clarify" for invocation in store.invocations.values())
@@ -269,3 +270,64 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert len(decisions) == 1 and decisions[0].is_file()
     assert not (root / "prism4-state.json").exists()
     assert "技能说明使用中文" in decisions[0].read_text(encoding="utf-8")
+
+
+def test_bin_prism_brief_save_overwrites_existing(tmp_path):
+    root = tmp_path / "state"
+    root.mkdir()
+    created = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "topic",
+            "new",
+            "topic:demo",
+            "--title",
+            "示例",
+            "--intent",
+            "保持 Core 很薄。",
+            "--root",
+            str(root),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert created.returncode == 0, created.stderr
+
+    first = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "brief",
+            "project",
+            "topic:demo",
+            "--root",
+            str(root),
+            "--save",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert first.returncode == 0, first.stderr
+    assert "brief:current" in first.stdout
+
+    second = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "brief",
+            "project",
+            "topic:demo",
+            "--root",
+            str(root),
+            "--save",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert second.returncode == 0, second.stderr
+    assert "brief:current" in second.stdout
+    assert (root / "brief.md").is_file()

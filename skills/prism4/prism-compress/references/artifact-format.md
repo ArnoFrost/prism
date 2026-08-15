@@ -56,6 +56,8 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 
 ## 验收
 
+## 合同验收
+
 ## 已承诺
 
 ## 进度
@@ -69,13 +71,14 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 
 | 章节 | 来源 | 不含 |
 |------|------|------|
-| 目标 | 当前 Intent 的北极星 / 当前落点 | 被取代 Intent |
-| 验收 | 当前 Intent 的完成条件 | 愿望清单 |
+| 目标 | 当前 Plan「目标」+ Intent「当前落点」 | 被取代 Intent；北极星整段口号 |
+| 验收 | 当前 Plan「验证」 | Intent 完成条件冒充本轮验收 |
+| 合同验收 | 当前 Intent「完成条件」 | 本轮愿望清单 |
 | 已承诺 | `evolution` 非 `historical`、未被取代的 Decision | 历史决策全文 |
-| 进度 | 当前有效 Plan | `historical` 的旧 Plan |
+| 进度 | 当前有效 Plan（含已完成步骤） | `historical` 的旧 Plan |
 | 未决 | 未晋升澄清 + 仍有效 Findings | 已消化 Findings |
 | 已消化 | 被取代或 `historical` 的工件 id | 当成待办 |
-| 下一步 | 索引入口；必要时指向 `/prism-compress` | 新的授权 |
+| 下一步 | Plan 未完成步骤；阻塞时指向 Clarify | 计数统计；新的授权 |
 
 ## Plan — `plans/pXX_*.md`
 

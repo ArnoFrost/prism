@@ -5,7 +5,7 @@ description_zh: "Prism 4.0 Review 能力：多视角独立审视 + 总分总收�
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-02
+  version: dev-03
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -44,8 +44,13 @@ user_invocable: true
 
 ## 输出
 
-- 先给最强 Findings 及其对下一步的影响；事实与建议分开。
-- 结尾给出候选行动建议（含 owner / priority 提示），但不代表授权。
+Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排承诺**。不要引入 Status / Next 技能来补这个缺口。必须按这个顺序说完：
+
+1. 最强 Findings；事实与建议分开。
+2. 核心洞察（最多三条）：这轮到底看见了什么。
+3. 建议怎么做（候选，含 owner / priority），不代表授权。
+4. 交接：哪些可直接做；哪些被一个人类取舍阻塞。若阻塞，明确提醒「下一步适合 `/prism-clarify`」，并准备那一个问题。若当前 Plan 已过期，提醒刷新 Plan / Brief。
+5. 然后停。不自动调用 Clarify、不自动写 Decision、不把 Findings 当成已批准的下一轮计划。
 
 ## 工件格式
 
@@ -80,8 +85,9 @@ user_invocable: true
 
 ## 裁决边界
 
-- Findings 不自动授权。用户裁决后的承诺固化走 `decision record`（由 Decision Semantics 承担），不强制衔接。
-- Review 产出 Findings 后即停止；后续动作由用户选择。
+- Findings 不自动授权。用户裁决后的承诺固化走 `decision record`（由 Decision Semantics 承担）。
+- 能力只承诺输入输出，不承诺自己在流程中的位置。弱衔接是对人类说清「看见了什么 / 建议做什么 / 是否要 Clarify」，不是 3.x 的 Review → Clarify → Scope 固定管线。
+- 不自动调用其他能力。被取舍阻塞时只提醒，等用户点头再 Clarify。
 
 ## 落盘
 

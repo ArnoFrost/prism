@@ -277,7 +277,7 @@ def cmd_capability_review(args: argparse.Namespace) -> int:
             body=args.body,
             metadata={
                 "authority": "advisory",
-                "evolution": "historical",
+                "evolution": "supersedable",
                 "capability": "prism:review",
                 "created_at": utc_now_iso(),
             },

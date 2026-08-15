@@ -27,8 +27,8 @@ def project_brief(
     """从当前 store 状态投影一份 Brief。
 
     Brief 是用于上下文恢复的工件，不是事实源。本函数只读取现状并返回一个新的
-    Brief 工件，不修改任何权威工件。章节对齐阅读面：目标 / 验收 / 已承诺 /
-    进度 / 未决 / 已消化 / 下一步。
+    Brief 工件，不修改任何权威工件。章节对齐阅读面：目标 / 验收 / 合同验收 /
+    已承诺 / 进度 / 未决 / 已消化 / 下一步。
     """
 
     if topic_id not in store.topics:
@@ -65,11 +65,15 @@ def project_brief(
         "",
         "## 目标",
         "",
-        *_goal_lines(intent),
+        *_goal_lines(intent, plans),
         "",
         "## 验收",
         "",
-        *_acceptance_lines(intent),
+        *_acceptance_lines(plans),
+        "",
+        "## 合同验收",
+        "",
+        *_contract_lines(intent),
         "",
         "## 已承诺",
         "",
@@ -89,10 +93,7 @@ def project_brief(
         "",
         "## 下一步",
         "",
-        f"- 决策 {len(decisions)} 条有效 · 发现 {len(findings)} 条未消化 · 计划 {len(plans)} 条当前",
-        "- 决策链索引：`decisions/decision.index.md`",
-        "- 发现链索引：`findings/finding.index.md`",
-        "- 阅读面漂移或假待办堆积时，用 `/prism-compress` 低频对齐，不要实时压缩",
+        *_next_lines(plans, pending, findings),
     ]
 
     return Artifact(
@@ -159,20 +160,30 @@ def _as_bullets(text: str, fallback: str) -> list[str]:
     return [fallback] if fallback else []
 
 
-def _goal_lines(intent: Artifact | None) -> list[str]:
-    if intent is None:
-        return ["- 暂无当前 Intent。"]
-    lines = _as_bullets(_section(intent.body, "北极星"), "")
-    if not lines:
+def _goal_lines(intent: Artifact | None, plans: list[Artifact]) -> list[str]:
+    lines: list[str] = []
+    for plan in plans:
+        lines.extend(_as_bullets(_section(plan.body, "目标"), ""))
+    if not lines and intent is not None:
         lines = [f"- {intent.title or intent.id}"]
-    landing = _section(intent.body, "当前落点")
-    if landing:
-        compact = " ".join(line.strip() for line in landing.splitlines() if line.strip())
-        lines.append(f"- 当前落点：{compact}")
-    return lines
+    if intent is not None:
+        landing = _section(intent.body, "当前落点")
+        if landing:
+            compact = " ".join(
+                line.strip() for line in landing.splitlines() if line.strip()
+            )
+            lines.append(f"- 当前落点：{compact}")
+    return lines or ["- 暂无当前目标。"]
 
 
-def _acceptance_lines(intent: Artifact | None) -> list[str]:
+def _acceptance_lines(plans: list[Artifact]) -> list[str]:
+    lines: list[str] = []
+    for plan in plans:
+        lines.extend(_as_bullets(_section(plan.body, "验证"), ""))
+    return lines or ["- 见当前 Plan「验证」。"]
+
+
+def _contract_lines(intent: Artifact | None) -> list[str]:
     if intent is None:
         return ["- 见 Intent。"]
     return _as_bullets(_section(intent.body, "完成条件"), "- 见 Intent。")
@@ -197,6 +208,38 @@ def _progress_lines(plans: list[Artifact]) -> list[str]:
                 for line in steps.splitlines()
                 if line.strip().startswith(("1.", "2.", "3.", "4.", "5.", "6.", "- "))
             )
+    return lines
+
+
+def _is_open_step(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if not stripped[:1].isdigit() and not stripped.startswith("- "):
+        return False
+    if "~~" in stripped or "已完成" in stripped:
+        return False
+    return True
+
+
+def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> list[str]:
+    lines: list[str] = []
+    for plan in plans:
+        for raw in _section(plan.body, "步骤").splitlines():
+            if _is_open_step(raw):
+                lines.append(f"- {raw.strip()}")
+    if pending:
+        lines.append("- 有未晋升澄清，适合 `/prism-clarify`")
+    elif findings:
+        lines.append("- 有仍有效 Findings；若被取舍阻塞用 `/prism-clarify`，否则按 Plan 推进")
+    if not lines:
+        lines.append("- 当前无未完成 Plan 步骤。阅读面漂移时用 `/prism-compress`")
+    lines.extend(
+        [
+            "- 决策链索引：`decisions/decision.index.md`",
+            "- 发现链索引：`findings/finding.index.md`",
+        ]
+    )
     return lines
 
 

@@ -10,7 +10,7 @@ from prism4 import (
 )
 
 
-def test_project_brief_projects_intent_goal_and_acceptance():
+def test_project_brief_projects_plan_slice_not_intent_slogan():
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))
     store.add_artifact(
@@ -45,23 +45,48 @@ def test_project_brief_projects_intent_goal_and_acceptance():
             title="当前推进",
             body="\n".join(
                 [
+                    "## 目标",
+                    "",
+                    "把阅读面改成本轮切片。",
+                    "",
                     "## 步骤",
                     "",
-                    "1. 写出 Brief 投影",
+                    "1. ~~写出 Brief 投影~~（已完成）",
                     "2. 归档假待办",
+                    "",
+                    "## 验证",
+                    "",
+                    "- Brief 目标来自当前 Plan。",
                 ]
             ),
             metadata={"evolution": "operative"},
         )
     )
+    store.add_artifact(
+        Artifact(
+            id="finding:f13",
+            topic_id=topic.id,
+            role="findings",
+            title="结构治理中长评估",
+            body="缺口。",
+            metadata={"evolution": "supersedable"},
+        )
+    )
 
     brief = project_brief(store, topic.id)
+    goal = brief.body.split("## 目标")[1].split("##")[0]
+    acceptance = brief.body.split("## 验收")[1].split("##")[0]
+    contract = brief.body.split("## 合同验收")[1].split("##")[0]
+    nxt = brief.body.split("## 下一步")[1]
 
-    assert "- Artifact 承载状态。" in brief.body
-    assert "- Core 语义独立于 Adapter。" in brief.body
-    assert "正在 dogfood 阅读面" in brief.body
-    assert "`plan:p01` 当前推进" in brief.body
-    assert "1. 写出 Brief 投影" in brief.body
+    assert "把阅读面改成本轮切片。" in goal
+    assert "正在 dogfood 阅读面" in goal
+    assert "Artifact 承载状态。" not in goal
+    assert "Brief 目标来自当前 Plan。" in acceptance
+    assert "Core 语义独立于 Adapter。" in contract
+    assert "2. 归档假待办" in nxt
+    assert "写出 Brief 投影" not in nxt
+    assert "`finding:f13` 结构治理中长评估" in brief.body.split("## 未决")[1].split("##")[0]
 
 
 def test_project_brief_includes_child_topic_artifacts():
@@ -109,6 +134,7 @@ def test_project_brief_does_not_copy_existing_brief_as_source():
     assert "过期的投影文本" not in brief.body
     assert "## 目标" in brief.body
     assert "## 验收" in brief.body
+    assert "## 合同验收" in brief.body
     assert "## 进度" in brief.body
 
 
