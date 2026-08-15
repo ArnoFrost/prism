@@ -1,13 +1,15 @@
 ---
-status: draft
+status: current
 target: Prism 4.0
 type: alignment
 created: 2026-08-14
+updated: 2026-08-15
 ---
 
-# Prism 4.0 Re-foundation Alignment
+# Prism 4.0 语义地基
 
-> 多方校准草案。本文用于对齐 Prism 4.0 的概念边界、术语、能力抽象与迁移方向；不是实现计划，不是正式决策记录，也不要求立即改代码。
+> 当前 4.0 语义 SSOT：什么算 Core、术语怎么用、3.x 概念如何迁移。不是实现计划，不是施工笔记。
+> Re-foundation 设计已经结束；下文开放问题不在本轮重开。文件名仍含 `refoundation`，以免打断既有链接。
 
 ## 1. 背景
 
@@ -727,6 +729,8 @@ Prism 4.0 MVP 只有在以下条件成立时才算完成：
 - 替换 runtime、storage、model、UI 或 CLI，不要求重新定义 Prism。
 
 ## 18. 待多方校准问题
+
+> 063 门面收口不重开下列问题。当前语义以 §3–§7 与 §19 为准；它们不是默认读序上的悬念。
 
 1. `Intent` 是否是替代 3.x `scope` 的最佳通用词？
 2. `Brief` 是否足够准确表达当前切片，并替代 3.x `focus`？

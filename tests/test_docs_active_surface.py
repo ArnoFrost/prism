@@ -83,10 +83,24 @@ def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() ->
 def test_active_docs_use_nested_public_narrative() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    alignment = (ROOT / "docs" / "prism-4-refoundation-alignment.md").read_text(
+        encoding="utf-8"
+    )
+    docs_index = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+    l1, _, _ = docs_index.partition("## A —")
+
     assert "Protocol Core" in agents and "Protocol Core" in architecture
     assert "Minimal Reference Installation" in architecture
     assert "## 核心规则" in agents
     assert "无侵入优先" in agents
     assert "需要旧 3.x topic 兼容" in agents
+    assert "### 4.0 术语" in agents
+    assert "14 活跃术语" not in agents
+    assert "[AGENTS.md](AGENTS.md)" in readme
+    assert "人与 AI 共同维护清晰的协作状态" in readme
+    assert "# Prism 4.0 语义地基" in alignment
+    assert "AGENTS.md" in l1
+    assert "prism-4-architecture-guide" not in l1
     assert architecture.index("## 公开叙事") < architecture.index("## Legacy Compatibility")
     assert architecture.index("## 4.0 Semantic Skills") < architecture.index("## Legacy Compatibility")

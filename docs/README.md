@@ -8,13 +8,13 @@
 
 ## 建议读序（L1 使用者）
 
-1. 仓库根 [README](../README.md) — **`./setup.sh init`** + 4.0 工具入口  
-2. [SETUP_GITHUB.md](../SETUP_GITHUB.md) — 人类安装；[SETUP_AGENT.md](../SETUP_AGENT.md) — Agent  
-3. [onboarding.md](./onboarding.md) — init 后：`setup.sh` · **`prism update` / `doctor`** · E2E  
-4. [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) — 4.0 语义地基
-5. [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) — 架构图与表达口径
+1. 仓库根 [README](../README.md) — 4.0 愿景 + **`./setup.sh init`**
+2. 仓库根 [AGENTS.md](../AGENTS.md) — 协作契约与 4.0 术语
+3. [SETUP_GITHUB.md](../SETUP_GITHUB.md) / [SETUP_AGENT.md](../SETUP_AGENT.md) — 安装
+4. [onboarding.md](./onboarding.md) — init 后日常命令
+5. [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) — 语义地基（Core 边界）
 
-3.x 升级、pilot、施工笔记不在本表。见下方 B 区施工笔记与 C 区。
+架构图口径与施工笔记不在 L1。见下方 B 区。3.x 升级、pilot 见 C 区。
 
 贡献者与协议修订 → [contributing.md](./contributing.md)（L3+）。
 
@@ -44,7 +44,7 @@
 
 | 文档 | 用途 |
 |------|------|
-| [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) | 4.0 Core 语义、概念边界与 3.x 迁移口径 |
+| [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) | 4.0 语义地基：Core 边界与术语 |
 | [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) | 本机施工笔记，非默认世界观 |
 | [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) | 4.0 架构图设计指导 |
 | [architecture.md](./architecture.md) | 分发/所有权视图、当前 skill 面；3.x 闭环见 C |
