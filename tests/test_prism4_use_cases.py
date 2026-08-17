@@ -1,0 +1,101 @@
+"""In-memory use-case tests. No subprocess, no Markdown."""
+
+from prism4.core import Artifact, PrismProtocolError, SemanticPayload, Topic
+from prism4.local_files import next_artifact_id, next_payload_id
+from prism4.reference import ReferenceStore
+from prism4.use_cases import (
+    create_topic,
+    persist_brief,
+    record_clarify,
+    record_decision,
+    record_review,
+)
+
+
+def _topic_store() -> ReferenceStore:
+    store = ReferenceStore()
+    create_topic(
+        store,
+        topic_id="topic:demo",
+        title="Demo",
+        intent_body="Keep the core thin.",
+        next_artifact_id=next_artifact_id,
+    )
+    return store
+
+
+def test_record_review_sets_advisory_findings_and_intent_brief_plan_inputs():
+    store = _topic_store()
+    finding_id, invocation_id = record_review(
+        store,
+        topic_id="topic:demo",
+        body="CLI was owning application semantics.",
+        next_artifact_id=next_artifact_id,
+    )
+    findings = store.artifacts[finding_id]
+    assert findings.role == "findings"
+    assert findings.metadata["authority"] == "advisory"
+    assert findings.metadata["evolution"] == "supersedable"
+    invocation = store.invocations[invocation_id]
+    input_roles = {
+        store.artifacts[ref].role
+        for ref in invocation.input_refs
+        if ref in store.artifacts
+    }
+    assert input_roles <= {"intent", "brief", "plan"}
+    assert "intent" in input_roles
+
+
+def test_record_clarify_increments_payload_ids_without_explicit_ids():
+    store = _topic_store()
+    ids, _invocation_id = record_clarify(
+        store,
+        topic_id="topic:demo",
+        question="Which verb?",
+        proposed_patch="Use record.",
+        decision_candidate="Freeze record for persist.",
+        next_payload_id=next_payload_id,
+    )
+    assert ids == ["clarify:c01", "clarify:c02"]
+    assert store.payloads["clarify:c01"].type == "proposed-patch"
+    assert store.payloads["clarify:c02"].type == "decision-candidate"
+
+
+def test_persist_brief_rejects_non_brief_id_collision():
+    store = _topic_store()
+    store.add_artifact(
+        Artifact(
+            id="brief:current",
+            topic_id="topic:demo",
+            role="intent",
+            body="not a brief",
+        )
+    )
+    try:
+        persist_brief(store, "topic:demo")
+    except PrismProtocolError as error:
+        assert "不能覆盖非 Brief 工件" in str(error)
+    else:
+        raise AssertionError("expected PrismProtocolError")
+
+
+def test_record_decision_consumes_candidate_without_archiving():
+    store = _topic_store()
+    payload = SemanticPayload(
+        id="clarify:c01",
+        type="decision-candidate",
+        body="Use record uniformly.",
+        metadata={"question": "verb?"},
+    )
+    store.add_payload(payload)
+    decision_id, _invocation_id, consumed = record_decision(
+        store,
+        topic_id="topic:demo",
+        body="Authorize record for persist.",
+        candidate_id="clarify:c01",
+        next_artifact_id=next_artifact_id,
+    )
+    assert store.artifacts[decision_id].role == "decision"
+    assert "clarify:c01" not in store.payloads
+    assert consumed is payload
+    assert consumed.id == "clarify:c01"
