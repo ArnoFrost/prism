@@ -237,7 +237,7 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 工具入口可配合同名 Skill 使用，形成 "脚本 + 自然语言" 的双通道能力。
 
-旧 `workspace-init` / `workflow-*` 源码仍在 `skills/workflow/` 与 `skills/workspace/`，默认不分发。3.x 术语只认 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)，不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。CodeBuddy 的 3.x tidy hook 见 `skills/workflow/shared/hooks/`。
+旧 `workspace-init` / `workflow-*` 源码仍在 `skills/workflow/` 与 `skills/workspace/`，默认不分发。3.x 术语只认 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)，不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。3.x topic 动词走 `prism legacy …`（默认 `prism sniff` 等已硬拒绝）。`doctor` / `relink` / `update` / `dist` / `sync` 仍可直接调用。CodeBuddy 的 3.x tidy hook 见 `skills/workflow/shared/hooks/`。
 
 ---
 

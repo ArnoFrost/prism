@@ -51,8 +51,9 @@ class TestBinPrismShell:
         result = subprocess.run([BIN_PRISM, "--help"], capture_output=True, text=True, timeout=5)
         assert result.returncode == 0
         assert "Prism — 统一 CLI 入口" in result.stdout
-        assert "sniff" in result.stdout
-        assert "validate" in result.stdout
+        assert "legacy" in result.stdout
+        assert "sniff" not in result.stdout
+        assert "validate" not in result.stdout
 
     def test_shell_version(self):
         """`prism --version` stdout 必须等于 SDK VERSION 文件内容（023/d01 D3 · scope T3.a）。"""
@@ -326,7 +327,7 @@ class TestSniffKindDispatch:
     def test_default_is_review(self, tmp_path):
         project_dir = build_project_with_workspace(tmp_path)
         result = subprocess.run(
-            [BIN_PRISM, "sniff", project_dir, "--topic", "test"],
+            [BIN_PRISM, "legacy", "sniff", project_dir, "--topic", "test"],
             capture_output=True, text=True, timeout=10,
         )
         assert result.returncode == 0
@@ -338,7 +339,7 @@ class TestSniffKindDispatch:
     def test_kind_intake_outputs_next_topic_number(self, tmp_path):
         project_dir = build_project_with_workspace(tmp_path)
         result = subprocess.run(
-            [BIN_PRISM, "sniff", project_dir, "--topic", "test", "--kind", "intake"],
+            [BIN_PRISM, "legacy", "sniff", project_dir, "--topic", "test", "--kind", "intake"],
             capture_output=True, text=True, timeout=10,
         )
         assert result.returncode == 0
@@ -350,7 +351,7 @@ class TestSniffKindDispatch:
 
     def test_unknown_kind_rejected(self):
         result = subprocess.run(
-            [BIN_PRISM, "sniff", SDK_ROOT, "--kind", "bogus"],
+            [BIN_PRISM, "legacy", "sniff", SDK_ROOT, "--kind", "bogus"],
             capture_output=True, text=True, timeout=5,
         )
         assert result.returncode != 0
@@ -366,7 +367,7 @@ class TestWorkspaceBridgeEntrypoints:
         workspace_dir = os.path.join(project_dir, "workspace.test.local")
 
         result = subprocess.run(
-            [BIN_PRISM, "sniff", workspace_dir, "--topic", "test"],
+            [BIN_PRISM, "legacy", "sniff", workspace_dir, "--topic", "test"],
             capture_output=True, text=True, timeout=10,
         )
 
@@ -382,7 +383,7 @@ class TestWorkspaceBridgeEntrypoints:
         topic_dir = os.path.join(workspace_dir, "topics", "001_test")
 
         result = subprocess.run(
-            [BIN_PRISM, "sniff", topic_dir, "--topic", "test"],
+            [BIN_PRISM, "legacy", "sniff", topic_dir, "--topic", "test"],
             capture_output=True, text=True, timeout=10,
         )
 
@@ -397,7 +398,7 @@ class TestWorkspaceBridgeEntrypoints:
 
         for entrypoint in (project_dir, workspace_dir):
             result = subprocess.run(
-                [BIN_PRISM, "status", entrypoint, "--format", "json"],
+                [BIN_PRISM, "legacy", "status", entrypoint, "--format", "json"],
                 capture_output=True, text=True, timeout=10,
             )
 
@@ -421,7 +422,7 @@ class TestJsonFlagOrderCompat:
 
     def _run(self, *argv) -> subprocess.CompletedProcess:
         return subprocess.run(
-            [BIN_PRISM, *argv],
+            [BIN_PRISM, "legacy", *argv],
             capture_output=True, text=True, timeout=10,
         )
 
@@ -516,7 +517,7 @@ class TestFinalizeDecisionFlag:
         if env_extra:
             env.update(env_extra)
         return subprocess.run(
-            [BIN_PRISM, *args],
+            [BIN_PRISM, "legacy", *args],
             capture_output=True, text=True, timeout=15, env=env,
         )
 
@@ -527,7 +528,7 @@ class TestFinalizeDecisionFlag:
         env = os.environ.copy()
         env.pop("PRISM_NO_INTERACTIVE", None)
         result = subprocess.run(
-            [BIN_PRISM, "finalize", str(topic), "--dry-run"],
+            [BIN_PRISM, "legacy", "finalize", str(topic), "--dry-run"],
             capture_output=True, text=True, timeout=15, env=env,
         )
         assert result.returncode in (0, 1), (

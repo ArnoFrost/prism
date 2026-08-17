@@ -1,7 +1,7 @@
 ---
 name: workflow-archive
 description: |
-  Topic 生命周期治理 — archive 移入 archive/ 释放注意力；reactivate 拉回 topics/ 继续跟踪。preview-first，移目录须用户确认。Use when: 归档 topic、prism archive、prism reactivate、尘封专项、workflow-archive
+  Topic 生命周期治理 — archive 移入 archive/ 释放注意力；reactivate 拉回 topics/ 继续跟踪。preview-first，移目录须用户确认。Use when: 归档 topic、prism legacy archive、prism legacy reactivate、尘封专项、workflow-archive
 description_zh: "Topic Attention Lifecycle — archive/reactivate 双向；preview-first，移目录须用户确认。"
 license: MIT
 metadata:
@@ -27,7 +27,7 @@ user_invocable: true
 # Topic Attention Lifecycle (Workflow Archive)
 
 > 定位：SDK **dev experimental** 生命周期治理 — **注意力熵**。
-> 脚本：`archive.py` · `reactivate.py`；verb：`prism archive` · `prism reactivate`。
+> 脚本：`archive.py` · `reactivate.py`；verb：`prism legacy archive` · `prism legacy reactivate`。
 
 ## 0. Attention Lifecycle
 
@@ -77,8 +77,8 @@ Phase 0  --dry-run → Phase 1 就绪检查 → Gate A 确认 → Phase 2 execut
 | **manual** | 手工 | 手工 | 仅移目录 |
 
 ```bash
-bin/prism archive <workspace_path> <topic_dirname> --dry-run
-bin/prism archive <workspace_path> <topic_dirname>   # Gate A 后
+bin/prism legacy archive <workspace_path> <topic_dirname> --dry-run
+bin/prism legacy archive <workspace_path> <topic_dirname>   # Gate A 后
 ```
 
 dry-run 应确认 **布局**、**目标绝对路径**、index 预期（narrative 时含活跃区 checklist）。
@@ -124,8 +124,8 @@ Phase R0  --dry-run → Phase R1 冲突检查 → Gate R「继续跟踪」→ Ph
 ```
 
 ```bash
-bin/prism reactivate <workspace_path> <topic_dirname> --dry-run
-bin/prism reactivate <workspace_path> <topic_dirname>   # Gate R 后
+bin/prism legacy reactivate <workspace_path> <topic_dirname> --dry-run
+bin/prism legacy reactivate <workspace_path> <topic_dirname>   # Gate R 后
 ```
 
 | 步骤 | 动作 |
@@ -144,7 +144,7 @@ bin/prism reactivate <workspace_path> <topic_dirname>   # Gate R 后
 
 | 依赖 | 来源 | 不可用时 |
 |------|------|----------|
-| `prism archive` / `prism reactivate` verb | prism SDK（`bin/prism`） | CLI 缺失时停在 preview，报「CLI 未就位」，不手工移目录 |
+| `prism legacy archive` / `prism legacy reactivate` verb | prism SDK（`bin/prism`） | CLI 缺失时停在 preview，报「CLI 未就位」，不手工移目录 |
 | `archive_layout`（布局探测 / index 风格） | SDK 内部 | 随 CLI；不可解析时按 flat 默认并提示 |
 | references：`archive-maintainer.md` | 本 skill `references/`（随 bundle） | 缺失时按 §3/§8 Happy Path 兜底 |
 

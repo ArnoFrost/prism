@@ -210,21 +210,22 @@ flowchart LR
 
 | 能力 | 当前入口 | 说明 |
 |------|---------|------|
-| CLI 命令面自描述 | `prism --json manifest` | 导出 verb registry（stability / schema_compliant / description），作为机器可见真源 |
-| Workflow 收尾串联 | `prism finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；旧 `pipeline` alias 自 v2.0 起已物理移除（v1.1.x deprecated 期已结束） |
+| CLI 命令面自描述 | `prism legacy --json manifest` | 导出 verb registry（stability / schema_compliant / description），作为机器可见真源 |
+| Workflow 收尾串联 | `prism legacy finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；旧 `pipeline` alias 自 v2.0 起已物理移除（v1.1.x deprecated 期已结束） |
 | 正式决策落盘 | `prism decision record` | 在用户明确授权与可审计治理事件双门后，原子写入 dXX / decision.index / decision_artifact；不判断价值、不改 scope、不选择 next |
-| 痕迹义务抽检 | `prism validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；默认 lenient，frontmatter `trace_strict` / `PRISM_TRACE_VALIDATE` / CLI flag 可显式启用 strict |
-| 工件机械对齐 | `prism tidy` | 对齐 focus 入口、rXX decision 镜像、既有 review.index、frontmatter 等 topic 工件；README 仅存量兜底 |
-| 健康巡检 | `prism status` | 扫描活跃 topic 状态，输出 workspace 健康快照 |
-| 摘要采集 | `prism digest` | 为协作者摘要 / 状态同步采集 topic 工件 |
+| 痕迹义务抽检 | `prism legacy validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；默认 lenient |
+| 工件机械对齐 | `prism legacy tidy` | 对齐 focus 入口、rXX decision 镜像、既有 review.index、frontmatter 等 topic 工件；README 仅存量兜底 |
+| 健康巡检 | `prism legacy status` | 扫描活跃 topic 状态，输出 workspace 健康快照 |
+| 摘要采集 | `prism legacy digest` | 为协作者摘要 / 状态同步采集 topic 工件 |
 | 发布/体检治理 | `bin/doctor` | `--scope cli/release`、`--rollback`、`--output` 让 CLI 寻址和 release health 可检查、可回滚、可落盘 |
-| 多仓状态嗅探 | `prism sync` | 统一观察 SDK / Skills / Env 的 Git 状态（历史豁免命令） |
+| 多仓状态嗅探 | `prism sync` | 统一观察 SDK / Skills / Env 的 Git 状态 |
 
 这意味着 3.x legacy 面已经从“散落脚本”收敛为：
 
 - `bin/`：仓库/环境级治理入口
-- `prism <verb>`：workspace/topic 级工作流入口
-- `manifest` / `doctor` / `sync`：系统自省与治理入口
+- `prism legacy <verb>`：workspace/topic 级 3.x 工作流入口
+- `manifest`：3.x 命令面自省，走 `prism legacy --json manifest`
+- `doctor` / `sync`：系统自省与治理入口，仍在默认 `prism` 表面
 
 ### 3.x Legacy 能力边界
 
@@ -235,7 +236,7 @@ flowchart LR
 
 ### 痕迹义务家族封顶政策（v2.0 起永久生效）
 
-`prism validate-trace` 扫描的痕迹义务家族（trace obligation families）在 v2.0 起 **永久封顶为 4 族**：
+`prism legacy validate-trace` 扫描的痕迹义务家族（trace obligation families）在 v2.0 起 **永久封顶为 4 族**：
 
 | 族 | 落点 | 用途 |
 |---|---|---|

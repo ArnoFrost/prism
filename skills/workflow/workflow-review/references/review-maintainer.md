@@ -168,7 +168,7 @@ prism/skills/                         ← SDK 仓库内置
 
 ### 4.8 编号契约（next_review_number / source）
 
-`prism sniff` 返回 `next_review_number` + `next_review_source`，**review 与 review-lite 共享同一编号池**：
+`prism legacy sniff` 返回 `next_review_number` + `next_review_source`，**review 与 review-lite 共享同一编号池**：
 
 | `next_review_source` | 含义 | 处理策略 |
 |---------------------|------|---------|

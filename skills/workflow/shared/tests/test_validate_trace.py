@@ -564,7 +564,7 @@ class TestFieldNamingSSOT:
 class TestCliIntegration:
     def _run(self, *args) -> subprocess.CompletedProcess:
         return subprocess.run(
-            [str(BIN_PRISM), "validate-trace", *args],
+            [str(BIN_PRISM), "legacy", "validate-trace", *args],
             capture_output=True, text=True, timeout=10,
         )
 

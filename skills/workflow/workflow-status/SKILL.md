@@ -67,7 +67,7 @@ Phase 3  建议（生成 next_actions[]；只建议，不执行）
 优先使用 Prism 统一 CLI 定位 workspace 并输出报告：
 
 ```bash
-prism status <project_dir> --format markdown
+prism legacy status <project_dir> --format markdown
 ```
 
 底层脚本仅作为 CLI 不可用时的维护者 / 调试 fallback：

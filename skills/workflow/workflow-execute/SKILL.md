@@ -104,7 +104,7 @@ execution_preflight:
    记录 target/fingerprint、V 回链、变更路径、命令与结果。
 2. **focus**：scope/task 合同未变时，按 [focus-derive-spec](references/focus-derive-spec.md) rewrite 聚焦区；出现语义 delta 时不改，handoff workflow-scope。
 3. **task.index/scope**：首版不直接写；生命周期或合同变化交 workflow-scope。
-4. **机械校验**：调用现有 `prism tidy ... --topic ... --fix`、`prism validate`、`prism validate-trace` / scope conservation；不复制实现。
+4. **机械校验**：调用现有 `prism legacy tidy ... --topic ... --fix`、`prism legacy validate`、`prism legacy validate-trace` / scope conservation；不复制实现。
 
 ### Phase 5 — Report
 
@@ -163,7 +163,7 @@ execution_result:
 - topic-focus 在项目修改前调用 shared `execute_alignment.inspect_flat_evidence()`；
   已有完整同 fingerprint 证据时禁止重复项目修改，只补 focus/校验。验证通过后调用
   `align_topic_focus()`，由其原子执行 verify-first → focus-second。
-- 复用 `workflow-tidy` 与 Prism validators；decision 后完整收尾才使用 `prism finalize`。
+- 复用 `workflow-tidy` 与 Prism validators；decision 后完整收尾才使用 `prism legacy finalize`。
 - 不依赖 CodeBuddy/Cursor 等单一 IDE hook；核心闭环由 skill 自身完成。
 
 ## 6. Few-shot

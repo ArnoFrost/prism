@@ -28,7 +28,7 @@ public_gate:
 | **不是什么** | 不改 what；不 auto-fix scope/focus 语义；**不补 decision.index** |
 | **读什么** | Happy path 仅本文件；grandfather 规则条件 cite [topic-format-spec](../shared/topic-format-spec.md) |
 | **写什么** | JSON diff 预览；`--fix` 时修改安全项 + 输出摘要 |
-| **结束建议** | 语义项提示用户确认；可串联 `prism finalize` |
+| **结束建议** | 语义项提示用户确认；可串联 `prism legacy finalize` |
 
 ---
 
@@ -74,13 +74,13 @@ Phase 3  执行（--fix 时应用安全 auto-fix + 摘要）
 
 ```bash
 # 扫描所有活跃 topic（默认 dry-run）
-prism tidy <project_dir>
+prism legacy tidy <project_dir>
 
 # 扫描并自动修复
-prism tidy <project_dir> --fix
+prism legacy tidy <project_dir> --fix
 
 # 只扫描指定 topic
-prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
+prism legacy tidy <project_dir> --topic 011_prism-generalization-fieldtest
 ```
 
 > CLI fallback 与目录结构见 [tidy-maintainer.md](references/tidy-maintainer.md)。
@@ -124,7 +124,7 @@ prism tidy <project_dir> --topic 011_prism-generalization-fieldtest
 |------|------|
 | **status** | 健康巡检 report-first；发现 index 漂移 → 建议 tidy `--fix` |
 | **compact** | 上下文压实；发现指针/索引机械错误 → 建议 tidy，不自行 fix |
-| **finalize** | `bin/prism finalize` 可在 decision 后串联 tidy |
+| **finalize** | `bin/prism legacy finalize` 可在 decision 后串联 tidy |
 
 ## 8. Maintainer
 

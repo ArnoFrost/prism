@@ -182,7 +182,7 @@ class TestFinalizeCliIntegration:
             pytest.skip("bin/prism not found")
 
         proc = subprocess.run(
-            [str(BIN_PRISM), "finalize", str(topic), "--dry-run", "--json"],
+            [str(BIN_PRISM), "legacy", "finalize", str(topic), "--dry-run", "--json"],
             capture_output=True, text=True, timeout=30,
         )
         # 拿不到 0 不一定是 bug，可能是 validate 报错；重点是 JSON 格式正确
@@ -205,7 +205,7 @@ class TestFinalizeCliIntegration:
             pytest.skip("bin/prism not found")
 
         proc = subprocess.run(
-            [str(BIN_PRISM), "finalize", str(topic), "--dry-run",
+            [str(BIN_PRISM), "legacy", "finalize", str(topic), "--dry-run",
              "--no-trace-validate", "--json"],
             capture_output=True, text=True, timeout=30,
         )
@@ -233,7 +233,7 @@ class TestFinalizeCliIntegration:
             pytest.skip("bin/prism not found")
 
         proc = subprocess.run(
-            [str(BIN_PRISM), "finalize", str(topic), "--dry-run", "--json"],
+            [str(BIN_PRISM), "legacy", "finalize", str(topic), "--dry-run", "--json"],
             capture_output=True, text=True, timeout=30,
         )
         envelope = json.loads(proc.stdout)

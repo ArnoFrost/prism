@@ -9,7 +9,8 @@
 # 全局选项:
 #   --version, -V                显示版本后退出
 #   --json                       4.0 record 成功：{ok, ids}（不是 3.x outer schema）
-#                                放在 verb 前时，3.x verb 仍走 legacy envelope
+#                                运维动词（doctor/relink/update/dist/sync）放在 verb 前时走 3.x envelope
+#                                3.x topic 动词必须 prism legacy --json <verb>
 #
 # 可用子命令:
 #   topic probe     机械探测当前目录是否已桥接 Workspace
@@ -24,14 +25,13 @@
 #   plan record       持久化 Plan
 #   decision record   记录被授权的 Decision
 #   legacy ...      委托旧 3.x CLI adapter
+#   doctor / relink / update / dist / sync
+#                   运维入口，仍在默认表面
 #
 # record = persist semantic output；不等于授权。
 #
-# 旧 3.x verb:
-#   sniff / validate / validate-trace / archive / reactivate / migrate / sync
-#   relink / doctor / update / dist / finalize / tidy / status
-#   digest / manifest
-#   （3.x decision 已升级为 4.0 `decision record`；旧用法走 `prism legacy decision ...`）
+# 3.x topic 动词请用 prism legacy …
+#   （3.x decision 走 `prism legacy decision ...`；4.0 用 `decision record`）
 #
 # 退出码: 透传子命令的退出码
 #

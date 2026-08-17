@@ -52,31 +52,40 @@ SDK_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = SDK_ROOT / "VERSION"
 STATE_FILENAME = "prism4-state.json"
 LEGACY_CLI = SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "prism_cli.py"
-LEGACY_VERBS = {
-    "archive",
-    "digest",
-    "dist",
-    "doctor",
-    "finalize",
-    "manifest",
-    "migrate",
-    "reactivate",
-    "relink",
-    "sniff",
-    "status",
-    "sync",
-    "tidy",
-    "update",
-    "validate",
-    "validate-trace",
-}
+SURFACE_LEGACY_VERBS = frozenset({"doctor", "relink", "update", "dist", "sync"})
+RETIRED_TOPIC_VERBS = frozenset(
+    {
+        "archive",
+        "digest",
+        "finalize",
+        "manifest",
+        "migrate",
+        "reactivate",
+        "sniff",
+        "status",
+        "tidy",
+        "validate",
+        "validate-trace",
+    }
+)
+LEGACY_VERBS = SURFACE_LEGACY_VERBS | RETIRED_TOPIC_VERBS
+
+
+def reject_retired_topic_verb(verb: str) -> int:
+    print(
+        f"error: `{verb}` 已退出默认 prism。请使用: prism legacy {verb} …",
+        file=sys.stderr,
+    )
+    return 2
 
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     json_output = False
     if args and args[0] == "--json":
-        if len(args) >= 2 and args[1] in LEGACY_VERBS:
+        if len(args) >= 2 and args[1] in RETIRED_TOPIC_VERBS:
+            return reject_retired_topic_verb(args[1])
+        if len(args) >= 2 and args[1] in SURFACE_LEGACY_VERBS:
             return run_legacy(args)
         json_output = True
         args = args[1:]
@@ -85,7 +94,9 @@ def main(argv: list[str] | None = None) -> int:
             print("error: legacy requires arguments", file=sys.stderr)
             return 2
         return run_legacy(args[1:])
-    if args and args[0] in LEGACY_VERBS:
+    if args and args[0] in RETIRED_TOPIC_VERBS:
+        return reject_retired_topic_verb(args[0])
+    if args and args[0] in SURFACE_LEGACY_VERBS:
         return run_legacy(args)
 
     parser = build_parser()

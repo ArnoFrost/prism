@@ -55,7 +55,7 @@ public_gate:
 ```
 Phase 0  探测（workspace + topic 定位）
   ↓
-Phase 1  采集（运行 prism digest，底层 collect.py 提取结构化数据）
+Phase 1  采集（运行 prism legacy digest，底层 collect.py 提取结构化数据）
   ↓
 Phase 2  生成（Agent 消费 JSON + 用户补充上下文，生成摘要）
   ↓
@@ -67,7 +67,7 @@ Phase 3  落盘（覆写 topic 根目录的 digest.md）
 确认目标 topic，并优先使用 Prism 统一 CLI 采集 topic 工件：
 
 ```bash
-prism digest <project_dir> --topic <topic_dirname>
+prism legacy digest <project_dir> --topic <topic_dirname>
 ```
 
 底层脚本仅作为 CLI 不可用时的维护者 / 调试 fallback：
@@ -80,7 +80,7 @@ uv run python {skill_dir}/scripts/collect.py <project_dir> --topic <topic_dirnam
 
 ### Phase 1：采集
 
-`prism digest` 输出 JSON（底层由 `collect.py` 实现），包含：
+`prism legacy digest` 输出 JSON（底层由 `collect.py` 实现），包含：
 
 | 字段 | 来源 | 用途 |
 |------|------|------|
@@ -171,7 +171,7 @@ workflow/workflow-digest/
 
 对应 evals 三类（`evals/cases.yaml`），示范「快照非 SSOT」边界：
 
-- **正常触发**：用户「帮我给产品同步下这个专项进度」→ `prism digest` 采集 scope/focus/reviews/decisions，生成 < 40 行、说人话的摘要，覆写 topic 根 `digest.md`。
+- **正常触发**：用户「帮我给产品同步下这个专项进度」→ `prism legacy digest` 采集 scope/focus/reviews/decisions，生成 < 40 行、说人话的摘要，覆写 topic 根 `digest.md`。
 - **边界（无输入上下文）**：用户只给 topic 不给沟通目的 → 按工件如实生成状态快照，卡点为空就写「无卡点」，不凑数、不臆测协作诉求。
 - **错误（缺 topic / 缺依赖）**：未指定且多活跃 topic / shared 依赖缺失 → 先澄清目标 topic 或清晰报错（exit 2），不抛裸栈、不改写 scope/focus 等 SSOT 工件。
 

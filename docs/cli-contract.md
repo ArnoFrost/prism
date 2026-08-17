@@ -2,7 +2,7 @@
 
 > **定位**：本文是 **3.x legacy CLI adapter** 的稳定性合同与守门表，服务 `prism legacy ...`、历史 topic 与 `skills/workflow/shared/tests` 回归。它不是 4.0 世界观，也不是 4.0 Interaction Contract。
 >
-> 4.0-canary：`bin/prism` 的 bash 壳 exec 的是 `prism4/cli.py`。4.0 当前能力面以 `prism --help`、[bin/README.md](../bin/README.md) 与 `prism4/cli.py` 为准。不要把本文的 `sniff / validate / finalize / status` 表、或 §4 的 outer envelope，误读为 4.0 默认入口。
+> 4.0-canary：`bin/prism` 的 bash 壳 exec 的是 `prism4/cli.py`。3.x topic 动词（sniff / validate / finalize 等）**已硬拒绝**无前缀调用，必须 `prism legacy <verb>`。`doctor` / `relink` / `update` / `dist` 仍可直接调用。4.0 当前能力面以 `prism --help`、[bin/README.md](../bin/README.md) 与 `prism4/cli.py` 为准。不要把本文 §5.2 的 verb 名表误读为 4.0 默认入口。
 >
 > 4.0 record 成功时的 JSON 是 `{ok, ids}`，**不是** `{ok, command, version, data, warnings, errors}`。
 >
@@ -19,7 +19,7 @@ Prism 的命令面分两层，职责正交：
 | 层 | 入口 | 承载动作 | 典型示例 |
 |----|------|---------|---------|
 | **`bin/`** | 直接可执行脚本 | 内部适配与维护者调试面：仓库/环境级动作、底层实现 | `bin/setup`、`bin/doctor`、`bin/relink`、`bin/setenv`、`bin/validate-skills` |
-| **`prism <verb>`** | `bin/prism` 统一入口（bash 壳 → **4.0** `prism4/cli.py`；其中 3.x verb 再 subprocess 到 `prism_cli.py`） | 4.0 日常：topic / record / brief。3.x 日常（本文范围）：workspace/topic 治理 facade | 4.0：`prism review record`。3.x：`prism legacy validate`；canary 下 `prism validate` 仍可能透明代理 |
+| **`prism <verb>`** | `bin/prism` 统一入口（bash 壳 → **4.0** `prism4/cli.py`；3.x topic 动词必须 `prism legacy <verb>` 再 subprocess 到 `prism_cli.py`） | 4.0 日常：topic / record / brief。3.x 日常（本文范围）：workspace/topic 治理 facade | 4.0：`prism review record`。3.x：`prism legacy validate`。`doctor` / `relink` / `update` / `dist` 仍可无前缀 |
 
 ### Agent 执行入口优先级
 
@@ -27,10 +27,10 @@ Prism 的命令面分两层，职责正交：
 
 | 优先级 | 入口 | 使用场景 | 文档写法 |
 |--------|------|----------|----------|
-| 1 | `prism <verb>` | Agent / 人类执行日常主流程 | 直接写 `prism sniff` / `prism finalize` / `prism dist` 等首选命令 |
+| 1 | `prism legacy <verb>` | 3.x topic 治理（默认 `prism sniff` 等已硬拒绝） | 写 `prism legacy sniff` / `prism legacy finalize`；`prism dist` / `prism doctor` 仍可无前缀 |
 | 2 | `uv run python <script>` | 维护者直调、调试底层脚本、或 `bin/prism` 不可用时的 fallback | 必须显式标注为“底层脚本 / fallback / 调试入口” |
 
-因此，**3.x workflow** 技能说明必须遵循以下优先级。4.0 semantic skills 写 `prism review record` 等，不要把本节的 `prism sniff` 抄进 4.0 技能。
+因此，**3.x workflow** 技能说明必须写 `prism legacy <topic-verb>`。4.0 semantic skills 写 `prism review record` 等，不要把本节的 `prism sniff` 抄进 4.0 技能。默认 `prism sniff` 会 exit 2。
 
 ### 分层边界（判断树）
 
@@ -64,7 +64,7 @@ Prism 的命令面分两层，职责正交：
 
 ### 2.1 稳定性分级
 
-每个 verb / bin 命令在 `prism --json manifest`（1.1+）或本文档 §6 清单中标注稳定性：
+每个 verb / bin 命令在 `prism legacy --json manifest`（1.1+）或本文档 §6 清单中标注稳定性：
 
 | 级别 | 含义 | 变更策略 |
 |------|------|---------|
@@ -156,17 +156,17 @@ outer `warnings[]` / `errors[]` 的每一项结构：
 
 | 协议 | 入口 | 形态 | 用途 |
 |------|------|------|------|
-| **3.x envelope** | `prism --json <legacy-verb>` 或 `prism legacy <verb> --json` | `{ok, command, version, data, warnings, errors}` | 仅 3.x verb；可消费 `data`。完整定义见 [cli-json-schema.json](./cli-json-schema.json) |
+| **3.x envelope** | `prism legacy --json <verb>` 或 `prism legacy <verb> --json` | `{ok, command, version, data, warnings, errors}` | 仅 3.x verb；可消费 `data`。完整定义见 [cli-json-schema.json](./cli-json-schema.json) |
 | **4.0 record JSON** | `prism review/clarify/plan/decision record … --json` | `{ok, ids}` | 4.0 落盘成功。无 `data` / `command` / `errors`。错误仍是 stderr 文本 |
 | **flat JSON** | `bin/doctor --json` | 直接业务字段 | 仓库/环境级体检 |
 
-`prism --json sniff` 仍走 envelope，因为 `sniff` 是 legacy verb。不要据此推断 `prism --json review record` 也是 envelope。
+默认 `prism sniff` / `prism --json sniff` 已硬拒绝（exit 2）。3.x envelope 走 `prism legacy sniff --json` 或 `prism legacy --json sniff`。不要据此推断 `prism --json review record` 也是 envelope。`prism --json sync` 仍走 envelope，因为 `sync` 留在默认表面。
 
 #### 消费者使用规则（必读）
 
 ```python
 # ❌ 错误（典型误用实例）：把 envelope 当 flat
-proc = subprocess.run(["bin/prism", "sniff", "."], ...)
+proc = subprocess.run(["bin/prism", "legacy", "sniff", "."], ...)
 data = json.loads(proc.stdout)
 print(data["workspace"])    # ← KeyError，业务字段实际在 data["data"]["workspace"]
 
@@ -185,7 +185,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 
 | 你想做什么 | 用什么命令 | 协议 |
 |------------|-----------|------|
-| 探测 3.x topic / 校验产物 / 工件对齐 | `prism --json sniff` 等 legacy verb | envelope |
+| 探测 3.x topic / 校验产物 / 工件对齐 | `prism legacy --json sniff` 等 | envelope |
 | 4.0 record 落盘 | `prism review record … --json` | `{ok, ids}` |
 | 仓库/环境/IDE 级体检（含 doctor / setup / relink） | `bin/<command> --json` 等 | flat（按命令文档） |
 
@@ -218,7 +218,7 @@ print(doctor["errors"], doctor["warnings"])    # 直接读，无包裹
 ### 5.2 `prism <verb>` 一览
 
 > `JSON` 列：✅ = 已迁移到 outer schema（`--json` 合规）；⬜ = 未迁移，沿用旧 payload（024 或后续 minor 收敛）
-> **本表由 `prism --json manifest` 反向守（见 `tests/test_cli_contract_sync.py`），任何人工修改需同步 `VERB_REGISTRY`。**
+> **本表由 `prism legacy --json manifest` 反向守（见 `tests/test_cli_contract_sync.py`），任何人工修改需同步 `VERB_REGISTRY`。**
 
 | Verb | 稳定性 | JSON | 用途 |
 |------|-------|------|------|

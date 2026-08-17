@@ -226,7 +226,7 @@ class TestCliJsonOutput:
             pytest.skip("bin/prism not found")
         with tempfile.TemporaryDirectory() as tmpdir:
             proc = subprocess.run(
-                [str(bin_prism), "sniff", tmpdir, "--topic", "x", "--json"],
+                [str(bin_prism), "legacy", "sniff", tmpdir, "--topic", "x", "--json"],
                 capture_output=True, text=True, timeout=15,
             )
             assert proc.returncode == 0, proc.stderr

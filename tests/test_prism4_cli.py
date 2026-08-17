@@ -41,8 +41,14 @@ def test_bin_prism_points_to_v4_help_surface():
     assert "review" in result.stdout
     assert "clarify" in result.stdout
     assert "legacy" in result.stdout
-    assert "sniff" in result.stdout
-    assert "validate" in result.stdout
+    assert "prism legacy" in result.stdout
+    assert "doctor" in result.stdout
+    assert "relink" in result.stdout
+    assert "sync" in result.stdout
+    assert "host attach" in result.stdout
+    assert "sniff" not in result.stdout
+    assert "finalize" not in result.stdout
+    assert "manifest" not in result.stdout
 
 
 def test_bin_prism_topic_list_reads_dogfood_state():
@@ -510,3 +516,76 @@ def test_clarify_rejects_two_stdin_options(tmp_path):
     )
     assert result.returncode == 2
     assert "only one option can read stdin" in result.stderr
+
+
+def test_retired_topic_verb_is_hard_rejected() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "sniff", str(SDK_ROOT)],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 2
+    assert "prism legacy sniff" in result.stderr
+    assert result.stdout == ""
+
+
+def test_retired_topic_verb_json_prefix_is_hard_rejected() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "--json", "sniff", str(SDK_ROOT)],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 2
+    assert "prism legacy sniff" in result.stderr
+
+
+def test_legacy_prefix_still_runs_retired_verb() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "legacy", "sniff", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 0, result.stderr
+    assert "usage:" in result.stdout.lower()
+
+
+def test_surface_legacy_verbs_remain_on_default_prism() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "doctor", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 0, result.stderr
+    assert "doctor" in result.stdout.lower() or "用法" in result.stdout
+
+
+def test_sync_remains_on_default_prism() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "sync", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 0, result.stderr
+    assert "sync" in result.stdout.lower() or "用法" in result.stdout
+
+
+def test_manifest_is_hard_rejected() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "manifest"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 2
+    assert "prism legacy manifest" in result.stderr

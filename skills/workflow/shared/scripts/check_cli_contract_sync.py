@@ -78,7 +78,7 @@ def parse_md_table(md_path: Path | str = CONTRACT_MD) -> list[dict]:
 
 
 def get_manifest_data(bin_prism: Path | str = BIN_PRISM) -> list[dict]:
-    """调 `bin/prism --json manifest` 拿权威 verb 清单。
+    """调 `bin/prism legacy --json manifest` 拿权威 verb 清单。
 
     返回：[{verb, stability, schema_compliant, description}, ...]（按 VERB_REGISTRY 注册顺序）
     """
@@ -87,12 +87,12 @@ def get_manifest_data(bin_prism: Path | str = BIN_PRISM) -> list[dict]:
         raise FileNotFoundError(f"bin/prism 不存在: {bin_prism}")
 
     result = subprocess.run(
-        [str(bin_prism), "--json", "manifest"],
+        [str(bin_prism), "legacy", "--json", "manifest"],
         capture_output=True, text=True, timeout=10,
     )
     if result.returncode != 0:
         raise RuntimeError(
-            f"`prism --json manifest` 非零退出: rc={result.returncode}\n"
+            f"`prism legacy --json manifest` 非零退出: rc={result.returncode}\n"
             f"stderr={result.stderr}"
         )
 

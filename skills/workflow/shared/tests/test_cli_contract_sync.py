@@ -36,7 +36,7 @@ class TestManifestCommand:
 
     def test_manifest_outputs_outer_schema(self):
         result = subprocess.run(
-            [str(BIN_PRISM), "--json", "manifest"],
+            [str(BIN_PRISM), "legacy", "--json", "manifest"],
             capture_output=True, text=True, timeout=10,
         )
         assert result.returncode == 0
@@ -49,7 +49,7 @@ class TestManifestCommand:
 
     def test_manifest_data_structure(self):
         result = subprocess.run(
-            [str(BIN_PRISM), "--json", "manifest"],
+            [str(BIN_PRISM), "legacy", "--json", "manifest"],
             capture_output=True, text=True, timeout=10,
         )
         envelope = json.loads(result.stdout)
@@ -64,7 +64,7 @@ class TestManifestCommand:
     def test_manifest_verb_item_fields(self):
         """每条 verb 必须含 4 个字段，类型严格。"""
         result = subprocess.run(
-            [str(BIN_PRISM), "--json", "manifest"],
+            [str(BIN_PRISM), "legacy", "--json", "manifest"],
             capture_output=True, text=True, timeout=10,
         )
         envelope = json.loads(result.stdout)
@@ -78,7 +78,7 @@ class TestManifestCommand:
     def test_manifest_contains_core_verbs(self):
         """注册表不能漏掉当前 v2.0 核心 verb（030/AP-71 后 pipeline 已物理移除，validate-trace 已并入正式表）。"""
         result = subprocess.run(
-            [str(BIN_PRISM), "--json", "manifest"],
+            [str(BIN_PRISM), "legacy", "--json", "manifest"],
             capture_output=True, text=True, timeout=10,
         )
         envelope = json.loads(result.stdout)
@@ -93,7 +93,7 @@ class TestManifestCommand:
     def test_schema_compliant_includes_m1_m2_verbs(self):
         """schema_compliant=True 的 verb 至少覆盖 M1/M2 迁移的 sniff / validate / manifest 三条。"""
         result = subprocess.run(
-            [str(BIN_PRISM), "--json", "manifest"],
+            [str(BIN_PRISM), "legacy", "--json", "manifest"],
             capture_output=True, text=True, timeout=10,
         )
         envelope = json.loads(result.stdout)

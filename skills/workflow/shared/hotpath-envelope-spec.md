@@ -39,10 +39,10 @@ hotpath_envelope:
 
 | envelope 面 | 首选来源 | fallback |
 |-------------|----------|----------|
-| topic route / format / review 编号 | `prism sniff --kind review|intake` | 手动读取 scope/focus/reviews |
-| workspace health / lazy skeleton | `prism status` | `workflow-status/scripts/status.py` |
-| product format | `validate_product.py` / `prism validate` | 手动格式检查 |
-| trace / structures 守恒 | `validate_trace.py` / `prism validate-trace` | 手动核对 trace family |
+| topic route / format / review 编号 | `prism legacy sniff --kind review|intake` | 手动读取 scope/focus/reviews |
+| workspace health / lazy skeleton | `prism legacy status` | `workflow-status/scripts/status.py` |
+| product format | `validate_product.py` / `prism legacy validate` | 手动格式检查 |
+| trace / structures 守恒 | `validate_trace.py` / `prism legacy validate-trace` | 手动核对 trace family |
 | context pack | `context_pack.py` | 按 `context-pack-spec.md` 手动读取 |
 
 ## 边界

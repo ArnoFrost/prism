@@ -4,7 +4,7 @@
 
 ## CLI fallback
 
-`prism tidy` 不可用时：
+`prism legacy tidy` 不可用时：
 
 ```bash
 uv run python {skill_dir}/scripts/tidy.py <project_dir> [--fix] [--topic <topic_dirname>]
@@ -38,4 +38,4 @@ workflow/workflow-tidy/
 |------|----------------|
 | **review** | review 落盘后，tidy 同步 review.index / grandfather README |
 | **scope** | tidy 不改 scope，只报告 scope checkbox 状态 |
-| **archive** | tidy 可作为归档前预检；整 topic 归档用 `prism archive` |
+| **archive** | tidy 可作为归档前预检；整 topic 归档用 `prism legacy archive` |

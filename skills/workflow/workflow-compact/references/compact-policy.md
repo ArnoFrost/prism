@@ -77,5 +77,5 @@ compact 是否有价值，不看“文件多不多”，而看是否降低：
 ## Archive 边界
 
 - workspace `archive/` 只用于整个 topic 结束后的生命周期归档
-- compact 不调用 `prism archive`
+- compact 不调用 `prism legacy archive`
 - topic 内冷存优先使用 `.compact_backups/`、`snapshots/` 或经用户确认的 `_archive/`

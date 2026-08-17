@@ -6,7 +6,7 @@
 
 | 路径 | 说明 |
 |------|------|
-| **主路径** | `prism sniff <project_dir> --kind review --topic <主题>` |
+| **主路径** | `prism legacy sniff <project_dir> --kind review --topic <主题>` |
 | **fallback** | `uv run python {skill_dir}/scripts/sniff.py` — 仅维护 / 调试；happy path 不引导 |
 
 编号契约：`next_review_source = none` → 边界澄清门见 [askquestion-fallback.md §4.3.2](../../shared/references/askquestion-fallback.md)。

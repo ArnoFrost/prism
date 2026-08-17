@@ -69,9 +69,9 @@ def _assert_outer_shape(envelope, expected_command, expected_ok=True):
 
 
 def _run_prism(*args, cwd=None, timeout=10):
-    """wrapper：跑 bin/prism 并返回 (rc, stdout, stderr)。"""
+    """wrapper：跑 bin/prism legacy … 并返回 (rc, stdout, stderr)。"""
     result = subprocess.run(
-        [BIN_PRISM, *args],
+        [BIN_PRISM, "legacy", *args],
         capture_output=True, text=True, timeout=timeout,
         cwd=cwd,
     )

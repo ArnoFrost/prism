@@ -23,7 +23,7 @@ public_gate:
 |------|------|
 | **是什么** | 把混沌输入收成新的 3.0 topic；显式 append/migrate/upgrade 时才触碰已有 topic |
 | **不是什么** | 不定正式 scope，不刷新真实 focus，不做 review，不替代 human decision |
-| **读什么** | `prism sniff` 输出；Phase 1-2 必读 `intake-routing-spec.md`、`intake-templates.md`、`vocabulary.md` |
+| **读什么** | `prism legacy sniff` 输出；Phase 1-2 必读 `intake-routing-spec.md`、`intake-templates.md`、`vocabulary.md` |
 | **写什么** | 默认写 `references/intake.md` + `scope.md` + `focus.md` + workspace `index.md`；`--full-scaffold` 兼容生成 README/decision.index/review.index |
 | **结束建议** | → `workflow-scope` 收敛正式合同 |
 
@@ -72,7 +72,7 @@ public_gate:
 
 ```text
 Phase 0  Sniff
-  prism sniff --kind intake <project_dir> --topic <描述关键词>
+  prism legacy sniff --kind intake <project_dir> --topic <描述关键词>
 Phase 1  Intake
   提取关键词 / 任务类型 / tag / topic-name 候选
 Phase 2  Route

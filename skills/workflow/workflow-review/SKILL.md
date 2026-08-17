@@ -23,7 +23,7 @@ public_gate:
 |------|------|
 | **是什么** | topic 内正式多视角评审：Align → Explore → Merge → Gate 4 |
 | **不是什么** | 不直接改 scope/focus、不隐式生成 decision、不替代人类裁决、不是日常小改默认入口 |
-| **读什么** | 必读 [governance-boundaries.md](references/governance-boundaries.md)；`prism sniff` / hotpath envelope；`review-templates.md`；full 时按需读 parallel / merge / trace / decision gate |
+| **读什么** | 必读 [governance-boundaries.md](references/governance-boundaries.md)；`prism legacy sniff` / hotpath envelope；`review-templates.md`；full 时按需读 parallel / merge / trace / decision gate |
 | **写什么** | `reviews/rXX_描述.md`；条件 `reviews/raw/`；Accept/Reject/Defer 后调用 `prism decision record` 写 dXX 主链 |
 | **结束建议** | 先输出 pending synthesis；用户明确 Accept / Reject / Defer 后再决策落盘 |
 
@@ -50,7 +50,7 @@ public_gate:
 ## 2. Hot Path
 
 ```text
-Phase 1 Align   — prism sniff / envelope → route, rXX, format, references, validators
+Phase 1 Align   — prism legacy sniff / envelope → route, rXX, format, references, validators
 Phase 2 Explore — full: 弹性并发 agent / 多角色独立调研；quick: 合法串行 fallback
 Phase 3 Merge   — 去重仲裁、分歧解释、结论、建议、reviews/rXX pending synthesis
 Phase 4 Gate 4  — 先解释判断/OQ/追问/建议；用户裁决后才调用 `prism decision record` + finalize
@@ -58,7 +58,7 @@ Phase 4 Gate 4  — 先解释判断/OQ/追问/建议；用户裁决后才调用 
 
 Align 最小动作：
 
-1. `prism sniff <target> --kind review --topic <主题>`；不可用时手动组装等价 envelope。
+1. `prism legacy sniff <target> --kind review --topic <主题>`；不可用时手动组装等价 envelope。
 2. 读取 `review-templates.md`；`format=ofm` 时读取 `review-ofm.md`。
 3. topic / milestone / 方法论评审按 [context-pack-spec.md](references/context-pack-spec.md) 装配 full 或等价输入包；缺上下文不得输出全局判断。
 4. 输出 route、mode、角色/agent 数量、loaded references、pre/post validators。

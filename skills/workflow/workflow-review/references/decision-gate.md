@@ -91,9 +91,9 @@ Other 选项**仅限**纯文本反思 / 方案修订意图回收。如果同一 
 
 | 选择 | 后续动作 |
 |------|---------|
-| `accept` | 调用 `prism decision record --source review --review-ref rXX` 写 accepted dXX 主链；仅将本次 Decision 明确接受范围转为 action / scope 变更 / 执行目标；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；若影响 scope 再调 `/workflow-scope` |
-| `reject` | 调用 Decision record 写 rejected dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；按用户意图重启 review 或调 scope |
-| `defer` | 调用 Decision record 写 deferred dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism finalize`；不修改 scope/focus |
+| `accept` | 调用 `prism decision record --source review --review-ref rXX` 写 accepted dXX 主链；仅将本次 Decision 明确接受范围转为 action / scope 变更 / 执行目标；对齐 rXX decision 镜像与既有 review.index 后 `prism legacy finalize`；若影响 scope 再调 `/workflow-scope` |
+| `reject` | 调用 Decision record 写 rejected dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism legacy finalize`；按用户意图重启 review 或调 scope |
+| `defer` | 调用 Decision record 写 deferred dXX 主链；对齐 rXX decision 镜像与既有 review.index 后 `prism legacy finalize`；不修改 scope/focus |
 | `type_something` (Other) | **不写 dXX.md**。把用户自由文本作为"方案修订意图"原样回收 → 让用户继续描述方向 / 回答 OQ / 调整建议，之后重新 Gate 4。**禁止**把含糊文本解释为 Accept |
 
 > **事务顺序**：review 落盘为 pending synthesis → 决策前只读 validators → Gate 4 → `prism decision record` 原子写 dXX + decision.index + decision_artifact → 对齐 rXX decision_ref 与既有 review.index 镜像 → write-mode finalize。禁止 Gate 4 前 finalize。
@@ -120,4 +120,4 @@ Gate 4 产生 Accept/Reject/Defer 并写 dXX 后，必须在 dXX 中输出 `deci
 - 解析失败 / 超时 / 用户取消时**禁止写入** `decisions/dXX.md`
 - text_fallback 命中 Accept/Reject/Defer 后必须立即调用 Decision record，再对齐 rXX decision 镜像与既有 review.index；Other 不写
 
-⛔ 决策门不可跳过。错选 + 串联 `prism finalize` 会固化错误共识，回溯成本高。
+⛔ 决策门不可跳过。错选 + 串联 `prism legacy finalize` 会固化错误共识，回溯成本高。

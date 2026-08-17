@@ -7,13 +7,13 @@
 ### archive
 
 ```bash
-bin/prism archive <workspace_path> <topic_dirname> [--dry-run]
+bin/prism legacy archive <workspace_path> <topic_dirname> [--dry-run]
 ```
 
 ### reactivate
 
 ```bash
-bin/prism reactivate <workspace_path> <topic_dirname> [--dry-run]
+bin/prism legacy reactivate <workspace_path> <topic_dirname> [--dry-run]
 ```
 
 ### fallback

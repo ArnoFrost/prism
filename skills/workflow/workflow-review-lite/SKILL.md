@@ -75,7 +75,7 @@ Phase 4  Gate 4 — AskQuestion → `prism decision record`（Accept/Reject/Defe
 
 ### Phase 1 Align
 
-1. `prism sniff <project_dir> --kind review --topic <主题>` → `format` / `output_dir` / `next_review_number`
+1. `prism legacy sniff <project_dir> --kind review --topic <主题>` → `format` / `output_dir` / `next_review_number`
 2. **READ** `review-templates.md` → 命名规则
 3. 若 `format=ofm` → **READ** `review-ofm.md`
 4. 基于 `topic_affinity.suggestion` + sniff `output_dir` / `reviews_dir` 确定落点；显式输出路由结论
@@ -121,9 +121,9 @@ Phase 4  Gate 4 — AskQuestion → `prism decision record`（Accept/Reject/Defe
 
 | 选择 | 后续动作 |
 |------|----------|
-| `accept` | 调用 `prism decision record --source review` 写 accepted dXX 主链 → `prism finalize`；影响 scope 再调 `/workflow-scope` |
-| `reject` | 调用 `prism decision record --source review` 写 rejected dXX 主链 → `prism finalize`；重启评审或调 scope |
-| `defer` | 调用 `prism decision record --source review` 写 deferred dXX 主链 → `prism finalize`；不改 scope/focus |
+| `accept` | 调用 `prism decision record --source review` 写 accepted dXX 主链 → `prism legacy finalize`；影响 scope 再调 `/workflow-scope` |
+| `reject` | 调用 `prism decision record --source review` 写 rejected dXX 主链 → `prism legacy finalize`；重启评审或调 scope |
+| `defer` | 调用 `prism decision record --source review` 写 deferred dXX 主链 → `prism legacy finalize`；不改 scope/focus |
 | `type_something` | **不写 dXX**；回收修订意图；**禁止**把含糊文本当 Accept |
 
 `decision_artifact` yaml 必填（`review_kind: review-lite`）— 字段表见 [trace-artifacts-spec.md §decision_artifact](references/trace-artifacts-spec.md)。

@@ -148,7 +148,8 @@ bin/doctor --scope <name>         # 只跑指定范围
 ```bash
 prism --help                       # 列出所有子命令
 prism --version                    # 版本信息
-prism --json <legacy-verb> ...     # 3.x outer schema（见 docs/cli-json-schema.json）
+prism --json topic … / record …   # 4.0 成功输出 {ok, ids}
+prism legacy --json <3.x-verb> …  # 3.x outer schema（见 docs/cli-json-schema.json）
 prism topic new <topic_id> --title "<标题>" --intent "<意图>"
 prism topic list
 prism artifact show <artifact_id>
@@ -168,7 +169,7 @@ prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 - 落盘：`prism review/clarify/plan/decision record`（persist ≠ authorize）
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
-- 3.x：`prism legacy ...`。canary 下部分 3.x verb 仍可无前缀进入——这是产品入口，不是 4.0 合同。3.x envelope 见 [docs/cli-contract.md](../docs/cli-contract.md)。
+- 3.x：`prism legacy ...`。topic 动词（sniff / validate / finalize 等）已硬拒绝无前缀调用。`doctor` / `relink` / `update` / `dist` 仍在默认表面。3.x envelope 见 [docs/cli-contract.md](../docs/cli-contract.md)。
 
 当前 4.0 命令面可分为四类：
 

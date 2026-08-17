@@ -41,7 +41,7 @@ apply requires explicit user authorization（须过 Gate A → Gate B backup）
 | 准备执行有损或可能误整理的压实动作 | Gate A 确认范围 → Gate B 备份 → 再 apply |
 | 只是给协作者/产品看当前状态 | 使用 `workflow-digest`，不要用 compact |
 | 只是检查健康度或下一步 | 使用 `workflow-status`，不要用 compact |
-| 整个 topic 已结束要移入 workspace archive | 使用 `workflow-archive` / `prism archive`，不要用 compact |
+| 整个 topic 已结束要移入 workspace archive | 使用 `workflow-archive` / `prism legacy archive`，不要用 compact |
 
 ## 2. 核心边界
 
@@ -94,7 +94,7 @@ Phase 5  记录 compact_result：备份路径、改动文件、恢复方式、�
 | **protected-readonly** | protected 文件只读：scope/focus/decision/review/index 及其引用闭包 |
 | **no-scope-focus-write** | 不勾 scope V，不 rewrite focus 语义；需要合同变更转 `workflow-scope` |
 | **suggest-tidy-not-fix** | pointer / frontmatter 漂移只建议 `workflow-tidy` |
-| **no-archive** | compact 不调用 `prism archive` / `prism reactivate` |
+| **no-archive** | compact 不调用 `prism legacy archive` / `prism legacy reactivate` |
 | **no-trace-family** | 使用 dXX / manifest / README 指针记录，不新增 trace family |
 
 ## 6. 输出契约

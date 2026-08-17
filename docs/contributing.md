@@ -111,8 +111,8 @@ audience: maintainer
 
 ```bash
 uv run pytest
-./bin/prism validate "<topic-dir>"
-./bin/prism finalize "<topic-dir>"
+./bin/prism legacy validate "<topic-dir>"
+./bin/prism legacy finalize "<topic-dir>"
 ```
 
 跨仓库改动分别在各自仓库提交。不要把 SDK 改动和外部 Skills 改动混进同一个 Git 仓库提交。
