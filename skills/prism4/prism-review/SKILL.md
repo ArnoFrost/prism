@@ -94,7 +94,7 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘：
 
 ```bash
-prism capability run review <topic_id> --root <topic_dir> --body "<finding body>"
+prism review record <topic_id> --root <topic_dir> --body "<finding body>"
 ```
 
 ## 边界

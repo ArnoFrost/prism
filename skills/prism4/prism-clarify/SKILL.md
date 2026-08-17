@@ -21,8 +21,8 @@ user_invocable: true
 - 仅在用户要求、或当前工作需要持久化 4.0 痕迹时才落盘：
 
 ```bash
-prism capability run clarify <topic_id> --root <topic_dir> --question "<question>" --proposed-patch "<patch>"
-prism capability run clarify <topic_id> --root <topic_dir> --question "<question>" --decision-candidate "<candidate>"
+prism clarify record <topic_id> --root <topic_dir> --question "<question>" --proposed-patch "<patch>"
+prism clarify record <topic_id> --root <topic_dir> --question "<question>" --decision-candidate "<candidate>"
 ```
 
 - 已提交的 Decision 需要明确的授权。除非授权边界清晰，否则不要把答案、建议或候选 payload 当作 Decision。

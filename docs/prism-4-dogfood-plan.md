@@ -351,9 +351,9 @@ Possible first verbs:
 ```text
 prism topic new
 prism artifact show
-prism capability run review
-prism capability run clarify
-prism capability run plan
+prism review record
+prism clarify record
+prism plan record
 prism decision record
 ```
 

@@ -95,7 +95,7 @@ compress_plan:
 落盘优先走适配器，避免手改索引：
 
 ```bash
-prism capability run plan <topic_id> --root <topic_dir> --title "..." --body "..."
+prism plan record <topic_id> --root <topic_dir> --title "..." --body "..."
 prism brief project <topic_id> --root <topic_dir> --save
 ```
 

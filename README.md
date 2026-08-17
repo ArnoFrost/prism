@@ -92,8 +92,8 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 |--------|------|
 | 创建或定位协作边界 | `/prism-topic` · `prism topic ...` |
 | 恢复当前上下文切片 | `/prism-brief` · `prism brief project ...` |
-| 审视现状并留下 Findings | `/prism-review` · `prism capability run review ...` |
-| 澄清一个阻塞取舍 | `/prism-clarify` · `prism capability run clarify ...` |
+| 审视现状并留下 Findings | `/prism-review` · `prism review record ...` |
+| 澄清一个阻塞取舍 | `/prism-clarify` · `prism clarify record ...` |
 | 对齐阅读面并同步进度 | `/prism-compress`（低频；先 preview） |
 
 `bin/relink` 默认分发 `skills/prism4/*`。旧 `workflow-*` 只在显式 `--skill-profile legacy` 时出现。
@@ -150,8 +150,10 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 | `prism host attach` | 登记项目并桥接 `workspace.{code}.local`（不调用 3.x init） |
 | `prism artifact show` | 查看 4.0 Artifact / Payload 正文 |
 | `prism brief project` | 从当前状态投影 Brief，用于 context recovery |
-| `prism capability run review` | 运行 Review 能力，产出 Findings |
-| `prism capability run clarify` | 运行 Clarify 能力，产出澄清 payload |
+| `prism review record` | 持久化 Review 结果为 Findings（advisory；不等于授权） |
+| `prism clarify record` | 持久化 Clarify payload（候选，不是 Decision） |
+| `prism plan record` | 持久化 Plan |
+| `prism decision record` | 记录被授权的 Decision |
 | `prism legacy ...` | 显式委托旧 3.x CLI adapter |
 | `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
@@ -176,7 +178,7 @@ prism --help
 
 - **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
-- **experimental 标记**：标注为 experimental 的 verb（当前含 4.0 `topic / artifact / brief / capability` 与部分 facade）可能在下一个 minor 改名或改参数
+- **experimental 标记**：标注为 experimental 的 verb（当前含 4.0 `topic / artifact / brief / review / clarify / plan / decision` 与部分 facade）可能在下一个 minor 改名或改参数
 - **历史 breaking change**：`prism pipeline` 已物理移除；旧调用方请改用 `prism legacy finalize`
 - **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 

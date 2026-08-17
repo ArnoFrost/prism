@@ -55,12 +55,12 @@ setup.sh init → prism --version 验收 → relink / 桥接
 |----|------|--------|
 | **仓库根** | `./setup.sh` | 人类 init / check / update |
 | **`bin/`** | `bin/setup` · `bin/doctor` · `bin/relink` | 底层脚本 / CI / 调试 |
-| **`prism <verb>`** | `prism topic` · `prism brief` · `prism capability` · `prism update` · `prism doctor` | **日常首选** |
+| **`prism <verb>`** | `prism topic` · `prism brief` · `prism review record` · `prism update` · `prism doctor` | **日常首选** |
 
 **判断口诀**：
 
 - 动 **本机环境 / 软链 / 全仓 skill** → `prism relink` 或 `./setup.sh relink`
-- 动 **4.0 Topic / Brief / Findings / Clarify payload** → `prism topic` · `prism brief` · `prism capability run ...` 或 `/prism-*`
+- 动 **4.0 Topic / Brief / Findings / Clarify payload** → `prism topic` · `prism brief` · `prism review record` / `prism clarify record` 或 `/prism-*`
 - 动 **旧 3.x topic 的 reviews / decisions / scope** → `prism legacy ...` 或显式 legacy workflow
 
 ---
@@ -102,8 +102,8 @@ prism doctor --scope config --fix    # 非破坏性（如补全局 gitignore）
 prism --version
 prism topic list
 prism brief project <topic_id>
-prism capability run review <topic_id> --body "..."
-prism capability run clarify <topic_id> --question "..." --proposed-patch "..."
+prism review record <topic_id> --body "..."
+prism clarify record <topic_id> --question "..." --proposed-patch "..."
 ```
 
 Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。

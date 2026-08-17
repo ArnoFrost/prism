@@ -153,8 +153,10 @@ prism topic new <topic_id> --title "<标题>" --intent "<意图>"
 prism topic list
 prism artifact show <artifact_id>
 prism brief project <topic_id>
-prism capability run review <topic_id> --body "<审视输入>"
-prism capability run clarify <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
+prism review record <topic_id> --body "<审视输入>"
+prism clarify record <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
+prism plan record <topic_id> --body "<行动结构>"
+prism decision record <topic_id> --body "<决策>"
 prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 ```
 
@@ -164,7 +166,7 @@ prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 
 - **Topic**：`topic new / topic list`
 - **Artifact / Projection**：`artifact show / brief project`
-- **Capability**：`capability run review / capability run clarify`
+- **Record**：`review record` / `clarify record` / `plan record` / `decision record`（persist semantic output；不等于授权）
 - **Legacy adapter**：`legacy ...`
 
 旧 3.x verb（`sniff / validate / validate-trace / archive / reactivate / migrate / sync / decision / finalize / tidy / status / digest / manifest`）仍由 `skills/workflow/shared/scripts/prism_cli.py` 提供，但需要通过 `prism legacy ...` 显式调用。`prism pipeline` 已物理移除；旧调用方请改用 `prism legacy finalize`。

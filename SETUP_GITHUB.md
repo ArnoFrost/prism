@@ -79,7 +79,7 @@ prism doctor --scope config --quick
 
 - **环境 / 软链** → `prism relink` · `prism doctor` · `./setup.sh check`
 - **升级** → `prism update`（或分步 pull + doctor + relink）
-- **4.0 Topic** → `prism topic` · `prism brief` · `prism capability run ...` · `/prism-*`
+- **4.0 Topic** → `prism topic` · `prism brief` · `prism review record` · `/prism-*`
 - **旧 3.x topic** → `prism legacy ...`
 
 ```bash

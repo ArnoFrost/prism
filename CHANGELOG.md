@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changed
+
+- **4.0 record 表面** — 日常入口改为 `prism review/clarify/plan/decision record`（persist semantic output，不等于授权）。旧 `capability run` 仍作 hidden alias。
+
 ## [4.0-canary] — 2026-08-14
 
 > **Prism 4.0 re-foundation canary** — 本机 dogfood 分支切到破坏性重构目标：Core 从 3.x workflow 结构中剥离为轻量协作协议，`prism` 默认进入 4.0 reference adapter，旧 3.x verb 经 legacy adapter 过渡。

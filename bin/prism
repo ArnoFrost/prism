@@ -18,11 +18,13 @@
 #   host attach     登记项目并桥接 workspace.{code}.local（不调用 3.x init）
 #   artifact show   查看 4.0 Artifact / Payload 正文
 #   brief project   从当前状态投影 Brief
-#   capability run review   运行 4.0 Review → Findings
-#   capability run clarify  运行 4.0 Clarify → semantic payloads
-#   capability run plan     运行 4.0 Plan → Plan 工件
-#   decision record         记录被授权的 Decision
+#   review record     持久化 Review 结果 → Findings（advisory；不等于授权）
+#   clarify record    持久化 Clarify 结果 → semantic payloads（候选，不是 Decision）
+#   plan record       持久化 Plan
+#   decision record   记录被授权的 Decision
 #   legacy ...      委托旧 3.x CLI adapter
+#
+# record = persist semantic output；不等于授权。
 #
 # 旧 3.x verb:
 #   sniff / validate / validate-trace / archive / reactivate / migrate / sync

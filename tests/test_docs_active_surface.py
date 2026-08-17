@@ -52,7 +52,7 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     skills_readme = (ROOT / "skills" / "README.md").read_text(encoding="utf-8")
 
     assert "/prism-topic" in readme and "prism topic list" in readme
-    assert "/prism-brief" in onboarding and "prism capability run review" in onboarding
+    assert "/prism-brief" in onboarding and "prism review record" in onboarding
     assert "prism4/cli.py" in bin_readme and "prism legacy <3.x verb>" in bin_readme
     assert "4.0 semantic skill surface" in skills_readme
     assert "默认分发" in skills_readme and "skills/prism4" in skills_readme

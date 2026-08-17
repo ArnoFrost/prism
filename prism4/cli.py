@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Prism 4.0 reference CLI adapter.
 
-The CLI adapts local commands to the protocol package. It does not define the
-protocol semantics themselves.
+The CLI adapts local commands to the protocol package. It parses, dispatches,
+and prints. It does not define protocol semantics.
+
+record persists semantic output; it does not authorize.
 """
 
 from __future__ import annotations
@@ -18,20 +20,11 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from prism4 import (  # noqa: E402
-    Artifact,
     JsonReferenceStoreAdapter,
     LocalFileStoreAdapter,
     PrismProtocolError,
-    ReferenceStore,
-    SemanticPayload,
-    Topic,
-    clarify_capability,
-    plan_capability,
     project_brief,
-    record_decision_operation,
-    review_capability,
 )
-from prism4.core import utc_now_iso  # noqa: E402
 from prism4.host import (  # noqa: E402
     allocate_topic_dir,
     attach_workspace,
@@ -43,6 +36,14 @@ from prism4.host import (  # noqa: E402
     list_bridged_topic_stores,
     probe_workspace,
     unbridged_guidance,
+)
+from prism4.use_cases import (  # noqa: E402
+    create_topic,
+    persist_brief,
+    record_clarify,
+    record_decision,
+    record_plan,
+    record_review,
 )
 
 
@@ -91,10 +92,81 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
 
+RECORD_MEANING = (
+    "record = persist semantic output. record != authorize. "
+    "Review record writes advisory Findings; "
+    "Decision record writes an authorized Decision."
+)
+
+
+def emit_record(*parts: object) -> None:
+    """Print recorded identifiers. invocation ids are diagnostic compatibility."""
+    for part in parts:
+        if part is None:
+            continue
+        if isinstance(part, (list, tuple)):
+            emit_record(*part)
+            continue
+        print(part)
+
+
+def configure_review_record(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("topic_id")
+    parser.add_argument("--body", required=True, help="finding body")
+    parser.add_argument("--id", dest="artifact_id")
+    parser.add_argument("--title", default="评审发现")
+    add_root_arg(parser)
+    parser.set_defaults(func=cmd_review_record)
+
+
+def configure_clarify_record(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("topic_id")
+    parser.add_argument("--question", required=True, help="阻塞问题或歧义点")
+    parser.add_argument("--title", help="澄清标题（用于文件名与索引；缺省时取问题）")
+    parser.add_argument("--proposed-patch")
+    parser.add_argument("--decision-candidate")
+    parser.add_argument("--patch-id")
+    parser.add_argument("--candidate-id")
+    add_root_arg(parser)
+    parser.set_defaults(func=cmd_clarify_record)
+
+
+def configure_plan_record(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("topic_id")
+    parser.add_argument("--body", required=True, help="plan body")
+    parser.add_argument("--id", dest="artifact_id")
+    parser.add_argument("--title", default="行动结构")
+    add_root_arg(parser)
+    parser.set_defaults(func=cmd_plan_record)
+
+
+def add_noun_record(
+    subparsers: argparse._SubParsersAction,
+    noun: str,
+    *,
+    noun_help: str,
+    record_help: str,
+    configure,
+) -> None:
+    parser = subparsers.add_parser(noun, help=noun_help)
+    nested = parser.add_subparsers(dest=f"{noun}_verb", required=True)
+    record = nested.add_parser(
+        "record",
+        help=record_help,
+        description=RECORD_MEANING,
+    )
+    configure(record)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="prism",
-        description="Prism 4.0 reference CLI adapter",
+        description=(
+            "Prism 4.0 reference CLI adapter. "
+            "record persists semantic output; it does not authorize."
+        ),
+        epilog=RECORD_MEANING,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", "-V", action="store_true", help="show SDK version")
 
@@ -136,41 +208,46 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(brief_project)
     brief_project.set_defaults(func=cmd_brief_project)
 
-    capability = subparsers.add_parser("capability", help="run 4.0 capabilities")
+    add_noun_record(
+        subparsers,
+        "review",
+        noun_help="record Review Findings (advisory)",
+        record_help="persist Findings; does not authorize",
+        configure=configure_review_record,
+    )
+    add_noun_record(
+        subparsers,
+        "clarify",
+        noun_help="record Clarify payloads (candidates, not Decisions)",
+        record_help="persist semantic output; does not authorize",
+        configure=configure_clarify_record,
+    )
+    add_noun_record(
+        subparsers,
+        "plan",
+        noun_help="record a Plan (advisory / regenerable)",
+        record_help="persist semantic output; does not authorize",
+        configure=configure_plan_record,
+    )
+
+    capability = subparsers.add_parser("capability", help=argparse.SUPPRESS)
     capability_sub = capability.add_subparsers(dest="capability_verb", required=True)
-    capability_run = capability_sub.add_parser("run", help="run a reference capability")
+    capability_run = capability_sub.add_parser("run", help=argparse.SUPPRESS)
     capability_run_sub = capability_run.add_subparsers(dest="capability_id", required=True)
-
-    review = capability_run_sub.add_parser("review", help="produce Findings")
-    review.add_argument("topic_id")
-    review.add_argument("--body", required=True, help="finding body")
-    review.add_argument("--id", dest="artifact_id")
-    review.add_argument("--title", default="评审发现")
-    add_root_arg(review)
-    review.set_defaults(func=cmd_capability_review)
-
-    clarify = capability_run_sub.add_parser("clarify", help="produce clarify payloads")
-    clarify.add_argument("topic_id")
-    clarify.add_argument("--question", required=True, help="阻塞问题或歧义点")
-    clarify.add_argument("--title", help="澄清标题（用于文件名与索引；缺省时取问题）")
-    clarify.add_argument("--proposed-patch")
-    clarify.add_argument("--decision-candidate")
-    clarify.add_argument("--patch-id")
-    clarify.add_argument("--candidate-id")
-    add_root_arg(clarify)
-    clarify.set_defaults(func=cmd_capability_clarify)
-
-    plan = capability_run_sub.add_parser("plan", help="generate an optional action structure")
-    plan.add_argument("topic_id")
-    plan.add_argument("--body", required=True, help="plan body")
-    plan.add_argument("--id", dest="artifact_id")
-    plan.add_argument("--title", default="行动结构")
-    add_root_arg(plan)
-    plan.set_defaults(func=cmd_capability_plan)
+    hidden_review = capability_run_sub.add_parser("review", help=argparse.SUPPRESS)
+    configure_review_record(hidden_review)
+    hidden_clarify = capability_run_sub.add_parser("clarify", help=argparse.SUPPRESS)
+    configure_clarify_record(hidden_clarify)
+    hidden_plan = capability_run_sub.add_parser("plan", help=argparse.SUPPRESS)
+    configure_plan_record(hidden_plan)
 
     decision = subparsers.add_parser("decision", help="record authorized Decisions")
     decision_sub = decision.add_subparsers(dest="decision_verb", required=True)
-    decision_record = decision_sub.add_parser("record", help="record a Decision artifact")
+    decision_record = decision_sub.add_parser(
+        "record",
+        help="persist an authorized Decision",
+        description=RECORD_MEANING,
+    )
     decision_record.add_argument("topic_id")
     decision_record.add_argument("--body", required=True, help="decision body")
     decision_record.add_argument("--candidate", help="decision-candidate payload ref as input")
@@ -251,26 +328,15 @@ def cmd_default(args: argparse.Namespace) -> int:
 def cmd_topic_new(args: argparse.Namespace) -> int:
     adapter = open_adapter(topic_new_root(args))
 
-    def mutate(store: ReferenceStore) -> str:
-        topic = store.add_topic(
-            Topic(id=args.topic_id, title=args.title, parent_id=args.parent_id)
+    def mutate(store):
+        return create_topic(
+            store,
+            topic_id=args.topic_id,
+            title=args.title,
+            parent_id=args.parent_id,
+            intent_body=args.intent,
+            next_artifact_id=adapter.next_artifact_id,
         )
-        if args.intent:
-            store.add_artifact(
-                Artifact(
-                    id=adapter.next_artifact_id(store, "intent"),
-                    topic_id=topic.id,
-                    role="intent",
-                    title=f"{topic.title} Intent",
-                    body=args.intent,
-                    metadata={
-                        "authority": "authoritative",
-                        "evolution": "supersedable",
-                        "created_at": utc_now_iso(),
-                    },
-                )
-            )
-        return topic.id
 
     print(adapter.update(mutate))
     print(adapter.root)
@@ -310,15 +376,10 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
     if args.save:
 
-        def mutate(store: ReferenceStore) -> str:
-            brief = project_brief(store, args.topic_id, artifact_id=args.artifact_id)
-            existing = store.artifacts.get(brief.id)
-            if existing is not None:
-                if existing.role != "brief":
-                    raise PrismProtocolError(f"不能覆盖非 Brief 工件：{brief.id}")
-                del store.artifacts[brief.id]
-            store.add_artifact(brief)
-            return brief.id
+        def mutate(store):
+            return persist_brief(
+                store, args.topic_id, artifact_id=args.artifact_id
+            )
 
         print(adapter.update(mutate))
         return 0
@@ -328,178 +389,83 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_capability_review(args: argparse.Namespace) -> int:
+def cmd_review_record(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
 
-    def mutate(store: ReferenceStore) -> tuple[str, str]:
-        if args.topic_id not in store.topics:
-            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
-        inputs = topic_artifacts(store, args.topic_id, roles=("intent", "brief", "plan"))
-        findings = Artifact(
-            id=args.artifact_id or adapter.next_artifact_id(store, "findings"),
+    def mutate(store):
+        return record_review(
+            store,
             topic_id=args.topic_id,
-            role="findings",
-            title=args.title,
             body=args.body,
-            metadata={
-                "authority": "advisory",
-                "evolution": "supersedable",
-                "capability": "prism:review",
-                "created_at": utc_now_iso(),
-            },
+            title=args.title,
+            artifact_id=args.artifact_id,
+            next_artifact_id=adapter.next_artifact_id,
         )
-        invocation = store.invoke(
-            review_capability(), inputs=inputs, outputs=(findings,)
-        )
-        return findings.id, invocation.id
 
-    findings_id, invocation_id = adapter.update(mutate)
-    print(findings_id)
-    print(invocation_id)
+    emit_record(adapter.update(mutate))
     return 0
 
 
-def cmd_capability_clarify(args: argparse.Namespace) -> int:
-    if not args.proposed_patch and not args.decision_candidate:
-        raise PrismProtocolError(
-            "clarify requires --proposed-patch and/or --decision-candidate"
-        )
+def cmd_clarify_record(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
 
-    def mutate(store: ReferenceStore) -> tuple[list[str], str]:
-        if args.topic_id not in store.topics:
-            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
-
-        inputs = topic_artifacts(
-            store, args.topic_id, roles=("intent", "brief", "findings")
+    def mutate(store):
+        return record_clarify(
+            store,
+            topic_id=args.topic_id,
+            question=args.question,
+            proposed_patch=args.proposed_patch,
+            decision_candidate=args.decision_candidate,
+            title=args.title,
+            patch_id=args.patch_id,
+            candidate_id=args.candidate_id,
+            next_payload_id=adapter.next_payload_id,
         )
-        outputs: list[SemanticPayload] = []
-        reserved: list[str] = []
 
-        def allocate(explicit: str | None) -> str:
-            """澄清可以一次产出多个 payload，逐个递增序号而不是共用一个。"""
-            if explicit:
-                reserved.append(explicit)
-                return explicit
-            taken = {payload.id for payload in store.payloads.values()} | set(reserved)
-            candidate = adapter.next_payload_id(store)
-            while candidate in taken:
-                number = int(candidate.rsplit("c", 1)[1]) + 1
-                candidate = f"clarify:c{number:02d}"
-            reserved.append(candidate)
-            return candidate
-
-        clarify_metadata = {
-            "title": args.title or args.question,
-            "question": args.question,
-            "capability": "prism:clarify",
-            "created_at": utc_now_iso(),
-        }
-
-        if args.proposed_patch:
-            outputs.append(
-                SemanticPayload(
-                    id=allocate(args.patch_id),
-                    type="proposed-patch",
-                    body=args.proposed_patch,
-                    metadata=dict(clarify_metadata),
-                )
-            )
-        if args.decision_candidate:
-            outputs.append(
-                SemanticPayload(
-                    id=allocate(args.candidate_id),
-                    type="decision-candidate",
-                    body=args.decision_candidate,
-                    metadata=dict(clarify_metadata),
-                )
-            )
-        invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
-        return [output.id for output in outputs], invocation.id
-
-    output_ids, invocation_id = adapter.update(mutate)
-    for output_id in output_ids:
-        print(output_id)
-    print(invocation_id)
+    emit_record(adapter.update(mutate))
     return 0
 
 
-def cmd_capability_plan(args: argparse.Namespace) -> int:
+def cmd_plan_record(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
 
-    def mutate(store: ReferenceStore) -> tuple[str, str]:
-        if args.topic_id not in store.topics:
-            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
-        inputs = topic_artifacts(
-            store, args.topic_id, roles=("intent", "brief", "findings", "decision")
-        )
-        plan_artifact = Artifact(
-            id=args.artifact_id or adapter.next_artifact_id(store, "plan"),
+    def mutate(store):
+        return record_plan(
+            store,
             topic_id=args.topic_id,
-            role="plan",
-            title=args.title,
             body=args.body,
-            metadata={
-                "authority": "advisory",
-                "evolution": "regenerable",
-                "capability": "prism:plan",
-                "created_at": utc_now_iso(),
-            },
+            title=args.title,
+            artifact_id=args.artifact_id,
+            next_artifact_id=adapter.next_artifact_id,
         )
-        invocation = store.invoke(
-            plan_capability(), inputs=inputs, outputs=(plan_artifact,)
-        )
-        return plan_artifact.id, invocation.id
 
-    plan_id, invocation_id = adapter.update(mutate)
-    print(plan_id)
-    print(invocation_id)
+    emit_record(adapter.update(mutate))
     return 0
 
 
 def cmd_decision_record(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
 
-    def mutate(store: ReferenceStore) -> tuple[str, str]:
-        if args.topic_id not in store.topics:
-            raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
-
-        inputs: list = topic_artifacts(store, args.topic_id, roles=("intent", "findings"))
-        if args.candidate:
-            if args.candidate not in store.payloads:
-                raise PrismProtocolError(f"payload does not exist: {args.candidate}")
-            inputs.append(store.payloads[args.candidate])
-
-        decision_artifact = Artifact(
-            id=args.artifact_id or adapter.next_artifact_id(store, "decision"),
+    def mutate(store):
+        decision_id, invocation_id, consumed = record_decision(
+            store,
             topic_id=args.topic_id,
-            role="decision",
-            title=args.title,
             body=args.body,
-            metadata={
-                "authority": "authoritative",
-                "evolution": "committed",
-                "authority_required": args.authority,
-                "capability": "prism:record-decision",
-                "created_at": utc_now_iso(),
-            },
+            title=args.title,
+            authority=args.authority,
+            artifact_id=args.artifact_id,
+            candidate_id=args.candidate,
+            next_artifact_id=adapter.next_artifact_id,
         )
-        invocation = store.invoke(
-            record_decision_operation(authority_required=args.authority),
-            inputs=inputs,
-            outputs=(decision_artifact,),
-        )
-        if args.candidate:
-            payload = store.payloads[args.candidate]
+        # W1 transitional exception: semantic consumption already happened
+        # in record_decision; this only persists the Markdown archive/.
+        if consumed is not None:
             archive = getattr(adapter, "archive_payload", None)
             if archive is not None:
-                archive(payload)
-            del store.payloads[args.candidate]
-        return decision_artifact.id, invocation.id
+                archive(consumed)
+        return decision_id, invocation_id
 
-    decision_id, invocation_id = adapter.update(mutate)
-    print(decision_id)
-    print(invocation_id)
+    emit_record(adapter.update(mutate))
     return 0
 
 
@@ -585,12 +551,6 @@ def find_store_containing(bridge: Path, topic_id: str) -> Path | None:
     return None
 
 
-def load_or_empty(adapter) -> ReferenceStore:
-    if adapter.path.exists():
-        return adapter.load()
-    return ReferenceStore()
-
-
 def open_adapter(root: Path):
     """Pick the reference adapter that matches the on-disk representation.
 
@@ -671,19 +631,6 @@ def _recency(root: Path) -> float:
         for path in root.glob(pattern):
             newest = max(newest, path.stat().st_mtime)
     return newest
-
-
-def topic_artifacts(
-    store: ReferenceStore,
-    topic_id: str,
-    *,
-    roles: tuple[str, ...],
-) -> list[Artifact]:
-    return [
-        artifact
-        for artifact in store.artifacts.values()
-        if artifact.topic_id == topic_id and artifact.role in roles
-    ]
 
 
 def read_version() -> str:

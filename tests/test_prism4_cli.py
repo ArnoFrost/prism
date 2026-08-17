@@ -31,7 +31,8 @@ def test_bin_prism_points_to_v4_help_surface():
     assert "host attach" in result.stdout
     assert "topic new" in result.stdout
     assert "artifact show" in result.stdout
-    assert "capability" in result.stdout
+    assert "review" in result.stdout
+    assert "clarify" in result.stdout
     assert "legacy" in result.stdout
     assert "sniff" in result.stdout
     assert "validate" in result.stdout
@@ -177,6 +178,55 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
     assert any(invocation.capability_id == "prism:clarify" for invocation in store.invocations.values())
 
 
+def test_bin_prism_review_record_is_the_public_surface(tmp_path):
+    root = tmp_path / "state"
+    copytree(DOGFOOD_ROOT, root)
+
+    help_result = subprocess.run(
+        [str(BIN_PRISM), "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert help_result.returncode == 0
+    assert "review" in help_result.stdout
+    assert "不等于授权" in help_result.stdout
+    assert "capability run" not in help_result.stdout
+
+    review = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "review",
+            "record",
+            "topic:prism-4-refoundation",
+            "--root",
+            str(root),
+            "--id",
+            "finding:f02",
+            "--body",
+            "record persists Findings without authorizing them.",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert review.returncode == 0, review.stderr
+    assert "finding:f02" in review.stdout
+
+    record_help = subprocess.run(
+        [str(BIN_PRISM), "review", "record", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert record_help.returncode == 0
+    assert "persist semantic output" in record_help.stdout
+    assert "record != authorize" in record_help.stdout
+
+
 def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     root = tmp_path / "state"
     root.mkdir()
@@ -205,9 +255,8 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     plan = subprocess.run(
         [
             str(BIN_PRISM),
-            "capability",
-            "run",
             "plan",
+            "record",
             "topic:prism-4-dev-process",
             "--root",
             str(root),

@@ -46,7 +46,7 @@ skills/
 | `prism-clarify` | `/prism-clarify` | 一个阻塞问题 / 候选修正 | Clarification payload |
 | `prism-compress` | `/prism-compress` | 膨胀或漂移的 Topic 阅读面 | 对齐后的 Plan / archive / Brief |
 
-这些 skill 使用 `bin/prism` 的 4.0 reference adapter：`topic`、`artifact`、`brief` 与 `capability run ...`。它们不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
+这些 skill 使用 `bin/prism` 的 4.0 reference adapter：`topic`、`artifact`、`brief`、`review record`、`clarify record`、`plan record` 与 `decision record`。它们不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
 
 ## Legacy Workflow（v3.x，显式 profile 才分发）
 
