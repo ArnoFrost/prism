@@ -589,3 +589,50 @@ def test_manifest_is_hard_rejected() -> None:
     )
     assert result.returncode == 2
     assert "prism legacy manifest" in result.stderr
+
+
+def test_json_help_uses_bash_surface() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "--json", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 0
+    assert "host attach" in result.stdout
+    assert "capability" not in result.stdout
+    assert "sniff" not in result.stdout
+
+
+def test_argparse_root_help_hides_capability() -> None:
+    from prism4.cli import build_parser
+
+    help_text = build_parser().format_help()
+    assert "capability" not in help_text
+    assert "{topic,artifact,brief,review,clarify,plan,decision,host,legacy}" in help_text
+
+
+def test_bare_decision_hints_legacy_and_record() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "decision"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 2
+    assert "prism decision record" in result.stderr
+    assert "prism legacy decision" in result.stderr
+
+
+def test_decision_record_help_still_reaches_argparse() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "decision", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 0
+    assert "record" in result.stdout.lower()

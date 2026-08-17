@@ -1,6 +1,8 @@
 # Prism v1.x → v2.0 Migration Guide
 
 > 本文是从 v1.x 升级到 v2.0 的唯一迁移入口。它只覆盖用户可感知变化、破坏性变化与可执行替换步骤；历史治理过程不在本文展开。
+>
+> **4.0-canary 读法**：下面历史表保留 v2.0 当时的命令名。作为**当前可执行命令**时，`prism finalize` / `prism validate-trace` / `prism --json manifest` 必须写成 `prism legacy …`。默认无前缀调用会被硬拒绝。
 
 ## 先看结论
 
@@ -28,7 +30,7 @@
 3. 需要严格治理时，使用 `--trace-strict` 显式开启。
 4. 可用 `--trace-lenient` 显式保持宽松模式。
 5. 可用 `--no-trace-validate` 跳过痕迹抽检。
-6. `prism validate-trace` 可单独运行，便于 CI 或维护者检查。
+6. `prism legacy validate-trace` 可单独运行，便于 CI 或维护者检查。
 7. 痕迹义务家族永久封顶为 4 族，不再新增第五类用户可见块。
 8. README 首屏弱化治理路径，默认用户不需要理解 review / decision 历史链路。
 9. core contract 不要求外部 Skills 仓库存在。
@@ -36,7 +38,7 @@
 11. 3.0 对外分发入口统一为 experimental `prism dist`；Skills / Env / Vault backend 均为可选部署。
 12. `AGENTS.md` 成为标准协作契约文件名。
 13. `AGENTS.local.md` 和 `workspace.*.local` 继续保持本地状态，不入仓库。
-14. `bin/doctor` / `prism --json manifest` 等自省能力保留，便于维护者确认升级结果。
+14. `bin/doctor` / `prism legacy --json manifest` 等自省能力保留，便于维护者确认升级结果。
 
 ## 命令替换脚本
 
@@ -71,10 +73,10 @@ rg -n "prism pipeline" .
 
 - `prism --version` 输出 `v2.0.0` 或更新版本。
 - `prism --help` 不再列出 `pipeline`。
-- `prism finalize <topic>` 能正常运行。
+- `prism legacy finalize <topic>` 能正常运行。
 - `bin/setup --check --non-interactive` 或 `./setup.sh check` 通过。
 - `bin/relink --dry-run` 无意外 destructive 变更。
-- 如果启用 strict 治理，`prism validate-trace <topic> --json` 无 errors。
+- 如果启用 strict 治理，`prism legacy validate-trace <topic> --json` 无 errors。
 
 ## 回滚口径
 

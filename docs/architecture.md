@@ -134,7 +134,7 @@ v3.0 把上层目标写成**长期人机协作中的轻量认知熵管理**。�
 | 注意力熵 | 什么都重要、当前工作集膨胀 | `focus` |
 | 结构熵 | 长期问题切片失控、目录变杂物间 | `task` / `structures` |
 | 方向熵 | 不知道下一步该做什么 | `status` + `next_actions[]`（handoff-only） |
-| 注意力熵 | 已结束 topic 仍占活跃注意力 | `archive` / `prism reactivate` |
+| 注意力熵 | 已结束 topic 仍占活跃注意力 | `archive` / `prism legacy reactivate` |
 | 上下文熵 | 跨会话、跨设备恢复成本高 | digest / compact preview→apply（按需） |
 
 OpenSpec 更像 planning layer；3.x Prism workflow 更像 cognitive governance layer。二者可以串联。4.0 默认面用 Topic / Artifact / Capability / Decision，不再用这张熵源表定义「Prism 是什么」。

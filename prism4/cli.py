@@ -69,11 +69,24 @@ RETIRED_TOPIC_VERBS = frozenset(
     }
 )
 LEGACY_VERBS = SURFACE_LEGACY_VERBS | RETIRED_TOPIC_VERBS
+FOUR_OH_DECISION_VERBS = frozenset({"record"})
 
 
 def reject_retired_topic_verb(verb: str) -> int:
     print(
         f"error: `{verb}` 已退出默认 prism。请使用: prism legacy {verb} …",
+        file=sys.stderr,
+    )
+    return 2
+
+
+def hint_decision_noun_collision() -> int:
+    print(
+        "error: `prism decision` 是 4.0 入口，请使用: prism decision record …",
+        file=sys.stderr,
+    )
+    print(
+        "      3.x decision 请使用: prism legacy decision …",
         file=sys.stderr,
     )
     return 2
@@ -98,6 +111,10 @@ def main(argv: list[str] | None = None) -> int:
         return reject_retired_topic_verb(args[0])
     if args and args[0] in SURFACE_LEGACY_VERBS:
         return run_legacy(args)
+    if args and args[0] == "decision":
+        rest = args[1:]
+        if not rest or rest[0] not in FOUR_OH_DECISION_VERBS | {"--help", "-h"}:
+            return hint_decision_noun_collision()
 
     parser = build_parser()
     parsed = parser.parse_args(args)
@@ -260,12 +277,19 @@ def build_parser() -> argparse.ArgumentParser:
             "Prism 4.0 reference CLI adapter. "
             "record persists semantic output; it does not authorize."
         ),
-        epilog=RECORD_MEANING,
+        epilog=(
+            f"{RECORD_MEANING}\n\n"
+            "Full product surface including doctor/relink/update/dist/sync: prism --help. "
+            "3.x topic verbs: prism legacy …"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", "-V", action="store_true", help="show SDK version")
 
-    subparsers = parser.add_subparsers(dest="verb")
+    subparsers = parser.add_subparsers(
+        dest="verb",
+        metavar="{topic,artifact,brief,review,clarify,plan,decision,host,legacy}",
+    )
 
     topic = subparsers.add_parser("topic", help="manage 4.0 topics")
     topic_sub = topic.add_subparsers(dest="topic_verb", required=True)
@@ -344,6 +368,11 @@ def build_parser() -> argparse.ArgumentParser:
         "plan", help=argparse.SUPPRESS, parents=[json_parent]
     )
     configure_plan_record(hidden_plan)
+    subparsers._choices_actions = [
+        action
+        for action in subparsers._choices_actions
+        if action.help is not argparse.SUPPRESS
+    ]
 
     decision = subparsers.add_parser("decision", help="record authorized Decisions")
     decision_sub = decision.add_subparsers(dest="decision_verb", required=True)

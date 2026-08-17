@@ -5,6 +5,8 @@
 
 > [!NOTE]
 > v3.0 在 2.0 的“治理路径可选、默认路径变轻”基础上继续推进：`focus` 成为 topic 单入口，`task` 作为按需递归分解原语，并把 Prism 的上层叙事收敛为“长期人机协作中的认知熵治理”。当前定位见 [prism-3.0.md](./prism-3.0.md)，完整架构口径见 [architecture.md](./architecture.md)。
+>
+> **4.0-canary**：文中若把 3.x topic 动词写成当前可执行命令，请改用 `prism legacy …`。`prism sync` 仍在默认表面。
 
 ---
 
@@ -57,7 +59,7 @@ v2.0 的关键转向是承认：**大多数用户不需要治理框架**。
 
 Prism 仍然能描述自己、检查自己、治理自己：
 
-- `prism --json manifest`：导出当前 verb registry
+- `prism legacy --json manifest`：导出当前 verb registry
 - `prism sync`：观察 SDK / Skills / Env 三仓状态
 - `bin/doctor`：体检、回滚、输出 release health JSON
 

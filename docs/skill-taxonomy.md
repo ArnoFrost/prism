@@ -55,7 +55,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 | `workspace-init` | Maintenance / Lifecycle | 接入熵 | 项目路径、Prism 配置 | workspace 骨架、桥接、注册 | 按需 | public / stable |
 | `workflow-tidy` | Maintenance / Lifecycle | 工件熵 | topic 工件、索引、frontmatter | 机械对齐后的索引/元数据 | 辅助 | public / stable |
 | `workflow-compact` | Maintenance / Lifecycle | 上下文熵 | 膨胀 topic | 默认 `compact_plan` preview；授权后 backup→apply | 低频 | dev / experimental |
-| `workflow-archive` | Maintenance / Lifecycle | 注意力熵 | 已结束 / 尘封 topic | preview→移入 `archive/`；`prism reactivate` 可拉回 | 低频 | dev / experimental |
+| `workflow-archive` | Maintenance / Lifecycle | 注意力熵 | 已结束 / 尘封 topic | preview→移入 `archive/`；`prism legacy reactivate` 可拉回 | 低频 | dev / experimental |
 | `workflow-review-lite` | Compatibility | 历史轻量分析熵 | 旧 topic / 显式兼容调用 | 单视角评审发现与建议 | retired-with-compat | internal / stable |
 
 ---
@@ -110,7 +110,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 
 ### topic 已结束，想释放注意力
 
-用 `workflow-archive` 或 `prism archive` preview。需要继续跟踪时用 `prism reactivate` 拉回 `topics/`。
+用 `workflow-archive` 或 `prism legacy archive` preview。需要继续跟踪时用 `prism legacy reactivate` 拉回 `topics/`。
 
 ---
 

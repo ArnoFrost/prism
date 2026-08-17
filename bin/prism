@@ -84,15 +84,29 @@ _run_python() {
   exit 127
 }
 
+_print_shell_help() {
+  awk 'NR==1 { next } /^$/ { exit } { sub(/^# ?/, ""); print }' "$0"
+}
+
 # ── --help/-h: 从文件头注释提取 ─────────
 if [[ "$1" == "--help" || "$1" == "-h" || -z "$1" ]]; then
-  awk 'NR==1 { next } /^$/ { exit } { sub(/^# ?/, ""); print }' "$0"
+  _print_shell_help
   # 无参数时附加可用性检查（用户自检入口）
   if [[ -z "$1" ]]; then
     echo ""
     echo "未指定子命令。运行 'prism --help' 查看完整用法。"
     exit 1
   fi
+  exit 0
+fi
+
+# `prism --json --help` 与 `prism help` 也走壳帮助，避免掉进 argparse 的另一张地图
+if [[ "$1" == "--json" && ( "${2:-}" == "--help" || "${2:-}" == "-h" ) ]]; then
+  _print_shell_help
+  exit 0
+fi
+if [[ "$1" == "help" ]]; then
+  _print_shell_help
   exit 0
 fi
 

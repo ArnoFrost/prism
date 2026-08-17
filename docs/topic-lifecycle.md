@@ -119,7 +119,7 @@ structures/task-N_slug/
 
 归档不是压缩，也不是删除。归档只是把 topic 从热区移出。
 
-**两种布局**（由 `archive_layout` / README 约定，`bin/prism archive` 自动选择）：
+**两种布局**（由 `archive_layout` / README 约定，`prism legacy archive` 自动选择）：
 
 ```text
 # SDK 默认（flat）

@@ -51,7 +51,7 @@ v3.0 将 core contract 收敛为 SDK + `uv`。Protocol + Workspace 仍是逻辑�
 
 3.0 GA formal 能力面包含 `workspace-init`、`workflow-intake`、`workflow-scope`、`workflow-review`、`workflow-review-lite`、`workflow-tidy`、`workflow-status` 与 `workflow-digest`，其 catalog 状态为 **public / stable**。
 
-`workflow-compact` 与 `workflow-archive` 为 **dev experimental** 低频维护技能：不列入 3.0 GA formal 能力面。compact **默认 preview**（writes=0）；仅在用户显式授权且通过 backup Gate 后才 apply。archive / `prism reactivate` 走 preview-first 生命周期门，不替代 review 决策链。
+`workflow-compact` 与 `workflow-archive` 为 **dev experimental** 低频维护技能：不列入 3.0 GA formal 能力面。compact **默认 preview**（writes=0）；仅在用户显式授权且通过 backup Gate 后才 apply。archive / `prism legacy reactivate` 走 preview-first 生命周期门，不替代 review 决策链。
 
 ---
 
