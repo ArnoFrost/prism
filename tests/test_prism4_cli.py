@@ -4,6 +4,12 @@ import subprocess
 from pathlib import Path
 from shutil import copytree
 
+"""CLI interaction tests: parse, stdout, exit, stdin, @file, JSON, aliases.
+
+Application policy and Adapter persistence contracts live in
+test_prism4_use_cases.py and test_prism4_local_files.py.
+"""
+
 from prism4 import JsonReferenceStoreAdapter, LocalFileStoreAdapter
 
 
@@ -172,11 +178,8 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
     assert "clarify:c01" in clarify.stdout
 
     store = JsonReferenceStoreAdapter(root).load()
-    assert store.artifacts["finding:f01"].role == "findings"
-    assert store.artifacts["finding:f01"].metadata["evolution"] == "supersedable"
-    assert store.payloads["clarify:c01"].type == "proposed-patch"
-    assert any(invocation.capability_id == "prism:review" for invocation in store.invocations.values())
-    assert any(invocation.capability_id == "prism:clarify" for invocation in store.invocations.values())
+    assert "finding:f01" in store.artifacts
+    assert "clarify:c01" in store.payloads
 
 
 def test_bin_prism_review_record_is_the_public_surface(tmp_path):
@@ -299,22 +302,8 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
 
     store = LocalFileStoreAdapter(root).load()
     assert "topic:prism-4-dev-process" in store.topics
-    assert any(
-        artifact.role == "intent"
-        and artifact.topic_id == "topic:prism-4-dev-process"
-        for artifact in store.artifacts.values()
-    )
-    assert store.artifacts["plan:p01"].role == "plan"
-    assert store.artifacts["decision:d01"].role == "decision"
-    assert store.artifacts["decision:d01"].metadata["authority"] == "authoritative"
-    # Invocation is a protocol concept, but this adapter does not persist it.
-    assert store.invocations == {}
-    assert store.artifacts["plan:p01"].metadata["capability"] == "prism:plan"
-    assert (
-        store.artifacts["decision:d01"].metadata["capability"]
-        == "prism:record-decision"
-    )
-    # Every unit of state is a readable Markdown document; no index file exists.
+    assert "plan:p01" in store.artifacts
+    assert "decision:d01" in store.artifacts
     plans = list((root / "plans").glob("p01*.md"))
     decisions = list((root / "decisions").glob("d01*.md"))
     assert len(plans) == 1 and plans[0].is_file()

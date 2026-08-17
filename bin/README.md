@@ -163,6 +163,13 @@ prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 
 `bin/prism` 是 bash 壳，exec `prism4/cli.py`。寻址问题走 `bin/doctor --scope cli --fix`（写 rc 锚点 + 建 `~/.local/bin/prism` symlink）。
 
+4.0 Interaction Contract（薄；不是 3.x envelope）：
+
+- 落盘：`prism review/clarify/plan/decision record`（persist ≠ authorize）
+- 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
+- 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
+- 3.x：`prism legacy ...`。canary 下部分 3.x verb 仍可无前缀进入——这是产品入口，不是 4.0 合同。3.x envelope 见 [docs/cli-contract.md](../docs/cli-contract.md)。
+
 当前 4.0 命令面可分为四类：
 
 - **Topic**：`topic new / topic list`

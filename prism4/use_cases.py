@@ -130,7 +130,7 @@ def record_clarify(
 ) -> tuple[list[str], str]:
     if not proposed_patch and not decision_candidate:
         raise PrismProtocolError(
-            "clarify requires --proposed-patch and/or --decision-candidate"
+            "clarify requires proposed_patch and/or decision_candidate"
         )
     if topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {topic_id}")

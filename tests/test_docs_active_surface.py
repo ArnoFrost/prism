@@ -54,6 +54,10 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     assert "/prism-topic" in readme and "prism topic list" in readme
     assert "/prism-brief" in onboarding and "prism review record" in onboarding
     assert "prism4/cli.py" in bin_readme and "prism legacy <3.x verb>" in bin_readme
+    assert "{ok, ids}" in bin_readme
+    contract = (ROOT / "docs" / "cli-contract.md").read_text(encoding="utf-8")
+    assert contract.startswith("# Legacy CLI Contract")
+    assert "所有 `prism` verb" not in contract
     assert "4.0 semantic skill surface" in skills_readme
     assert "默认分发" in skills_readme and "skills/prism4" in skills_readme
 
