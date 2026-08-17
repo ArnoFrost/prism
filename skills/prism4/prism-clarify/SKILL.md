@@ -23,6 +23,7 @@ user_invocable: true
 ```bash
 prism clarify record <topic_id> --root <topic_dir> --question "<question>" --proposed-patch "<patch>"
 prism clarify record <topic_id> --root <topic_dir> --question "<question>" --decision-candidate "<candidate>"
+# 长文本可用 '-'（stdin，同一命令只能一处）或 '@path'。
 ```
 
 - 已提交的 Decision 需要明确的授权。除非授权边界清晰，否则不要把答案、建议或候选 payload 当作 Decision。

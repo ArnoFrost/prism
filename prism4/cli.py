@@ -74,8 +74,12 @@ LEGACY_VERBS = {
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
-    if len(args) >= 2 and args[0] == "--json" and args[1] in LEGACY_VERBS:
-        return run_legacy(args)
+    json_output = False
+    if args and args[0] == "--json":
+        if len(args) >= 2 and args[1] in LEGACY_VERBS:
+            return run_legacy(args)
+        json_output = True
+        args = args[1:]
     if args and args[0] == "legacy":
         if len(args) == 1:
             print("error: legacy requires arguments", file=sys.stderr)
@@ -86,6 +90,8 @@ def main(argv: list[str] | None = None) -> int:
 
     parser = build_parser()
     parsed = parser.parse_args(args)
+    if json_output:
+        parsed.json = True
     try:
         return parsed.func(parsed)
     except PrismProtocolError as error:
@@ -100,20 +106,84 @@ RECORD_MEANING = (
 )
 
 
-def emit_record(*parts: object) -> None:
-    """Print recorded identifiers. invocation ids are diagnostic compatibility."""
+TEXT_OPTION_NAMES = ("body", "proposed_patch", "decision_candidate")
+
+
+def flatten_record_ids(*parts: object) -> list[str]:
+    ids: list[str] = []
     for part in parts:
         if part is None:
             continue
         if isinstance(part, (list, tuple)):
-            emit_record(*part)
+            ids.extend(flatten_record_ids(*part))
             continue
-        print(part)
+        ids.append(str(part))
+    return ids
+
+
+def emit_record(*parts: object, json_output: bool = False) -> None:
+    """Print recorded identifiers. invocation ids are diagnostic compatibility."""
+    ids = flatten_record_ids(*parts)
+    if json_output:
+        print(json.dumps({"ok": True, "ids": ids}, ensure_ascii=False))
+        return
+    for item in ids:
+        print(item)
+
+
+def expand_text_value(value: str) -> tuple[str, bool]:
+    """Resolve `-` (stdin) or `@path` (file). Returns (text, from_stdin)."""
+    if value == "-":
+        text = sys.stdin.read()
+        if not text.strip():
+            raise PrismProtocolError("stdin was empty")
+        return text, True
+    if value.startswith("@") and len(value) > 1:
+        path = Path(value[1:]).expanduser()
+        try:
+            return path.read_text(encoding="utf-8"), False
+        except OSError as error:
+            raise PrismProtocolError(f"cannot read {path}") from error
+    return value, False
+
+
+def expand_text_options(args: argparse.Namespace) -> None:
+    stdin_fields = [
+        name
+        for name in TEXT_OPTION_NAMES
+        if getattr(args, name, None) == "-"
+    ]
+    if len(stdin_fields) > 1:
+        raise PrismProtocolError("only one option can read stdin via '-'")
+    for name in TEXT_OPTION_NAMES:
+        value = getattr(args, name, None)
+        if not value:
+            continue
+        expanded, _from_stdin = expand_text_value(value)
+        setattr(args, name, expanded)
+
+
+def wants_json(args: argparse.Namespace) -> bool:
+    return bool(getattr(args, "json", False))
+
+
+def json_flag_parent() -> argparse.ArgumentParser:
+    parent = argparse.ArgumentParser(add_help=False)
+    parent.add_argument(
+        "--json",
+        action="store_true",
+        help="on 4.0 record success, print {ok, ids}; not the 3.x outer schema",
+    )
+    return parent
 
 
 def configure_review_record(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("topic_id")
-    parser.add_argument("--body", required=True, help="finding body")
+    parser.add_argument(
+        "--body",
+        required=True,
+        help="finding body; '-' reads stdin, '@path' reads a file",
+    )
     parser.add_argument("--id", dest="artifact_id")
     parser.add_argument("--title", default="评审发现")
     add_root_arg(parser)
@@ -124,8 +194,14 @@ def configure_clarify_record(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("topic_id")
     parser.add_argument("--question", required=True, help="阻塞问题或歧义点")
     parser.add_argument("--title", help="澄清标题（用于文件名与索引；缺省时取问题）")
-    parser.add_argument("--proposed-patch")
-    parser.add_argument("--decision-candidate")
+    parser.add_argument(
+        "--proposed-patch",
+        help="proposed-patch body; '-' reads stdin, '@path' reads a file",
+    )
+    parser.add_argument(
+        "--decision-candidate",
+        help="decision-candidate body; '-' reads stdin, '@path' reads a file",
+    )
     parser.add_argument("--patch-id")
     parser.add_argument("--candidate-id")
     add_root_arg(parser)
@@ -134,7 +210,11 @@ def configure_clarify_record(parser: argparse.ArgumentParser) -> None:
 
 def configure_plan_record(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("topic_id")
-    parser.add_argument("--body", required=True, help="plan body")
+    parser.add_argument(
+        "--body",
+        required=True,
+        help="plan body; '-' reads stdin, '@path' reads a file",
+    )
     parser.add_argument("--id", dest="artifact_id")
     parser.add_argument("--title", default="行动结构")
     add_root_arg(parser)
@@ -148,6 +228,7 @@ def add_noun_record(
     noun_help: str,
     record_help: str,
     configure,
+    json_parent: argparse.ArgumentParser,
 ) -> None:
     parser = subparsers.add_parser(noun, help=noun_help)
     nested = parser.add_subparsers(dest=f"{noun}_verb", required=True)
@@ -155,11 +236,13 @@ def add_noun_record(
         "record",
         help=record_help,
         description=RECORD_MEANING,
+        parents=[json_parent],
     )
     configure(record)
 
 
 def build_parser() -> argparse.ArgumentParser:
+    json_parent = json_flag_parent()
     parser = argparse.ArgumentParser(
         prog="prism",
         description=(
@@ -215,6 +298,7 @@ def build_parser() -> argparse.ArgumentParser:
         noun_help="record Review Findings (advisory)",
         record_help="persist Findings; does not authorize",
         configure=configure_review_record,
+        json_parent=json_parent,
     )
     add_noun_record(
         subparsers,
@@ -222,6 +306,7 @@ def build_parser() -> argparse.ArgumentParser:
         noun_help="record Clarify payloads (candidates, not Decisions)",
         record_help="persist semantic output; does not authorize",
         configure=configure_clarify_record,
+        json_parent=json_parent,
     )
     add_noun_record(
         subparsers,
@@ -229,17 +314,24 @@ def build_parser() -> argparse.ArgumentParser:
         noun_help="record a Plan (advisory / regenerable)",
         record_help="persist semantic output; does not authorize",
         configure=configure_plan_record,
+        json_parent=json_parent,
     )
 
     capability = subparsers.add_parser("capability", help=argparse.SUPPRESS)
     capability_sub = capability.add_subparsers(dest="capability_verb", required=True)
     capability_run = capability_sub.add_parser("run", help=argparse.SUPPRESS)
     capability_run_sub = capability_run.add_subparsers(dest="capability_id", required=True)
-    hidden_review = capability_run_sub.add_parser("review", help=argparse.SUPPRESS)
+    hidden_review = capability_run_sub.add_parser(
+        "review", help=argparse.SUPPRESS, parents=[json_parent]
+    )
     configure_review_record(hidden_review)
-    hidden_clarify = capability_run_sub.add_parser("clarify", help=argparse.SUPPRESS)
+    hidden_clarify = capability_run_sub.add_parser(
+        "clarify", help=argparse.SUPPRESS, parents=[json_parent]
+    )
     configure_clarify_record(hidden_clarify)
-    hidden_plan = capability_run_sub.add_parser("plan", help=argparse.SUPPRESS)
+    hidden_plan = capability_run_sub.add_parser(
+        "plan", help=argparse.SUPPRESS, parents=[json_parent]
+    )
     configure_plan_record(hidden_plan)
 
     decision = subparsers.add_parser("decision", help="record authorized Decisions")
@@ -248,9 +340,14 @@ def build_parser() -> argparse.ArgumentParser:
         "record",
         help="persist an authorized Decision",
         description=RECORD_MEANING,
+        parents=[json_parent],
     )
     decision_record.add_argument("topic_id")
-    decision_record.add_argument("--body", required=True, help="decision body")
+    decision_record.add_argument(
+        "--body",
+        required=True,
+        help="decision body; '-' reads stdin, '@path' reads a file",
+    )
     decision_record.add_argument("--candidate", help="decision-candidate payload ref as input")
     decision_record.add_argument(
         "--authority",
@@ -391,6 +488,7 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
 
 
 def cmd_review_record(args: argparse.Namespace) -> int:
+    expand_text_options(args)
     adapter = open_adapter(resolve_root(args.root))
 
     def mutate(store):
@@ -403,11 +501,12 @@ def cmd_review_record(args: argparse.Namespace) -> int:
             next_artifact_id=adapter.next_artifact_id,
         )
 
-    emit_record(adapter.update(mutate))
+    emit_record(adapter.update(mutate), json_output=wants_json(args))
     return 0
 
 
 def cmd_clarify_record(args: argparse.Namespace) -> int:
+    expand_text_options(args)
     adapter = open_adapter(resolve_root(args.root))
 
     def mutate(store):
@@ -423,11 +522,12 @@ def cmd_clarify_record(args: argparse.Namespace) -> int:
             next_payload_id=adapter.next_payload_id,
         )
 
-    emit_record(adapter.update(mutate))
+    emit_record(adapter.update(mutate), json_output=wants_json(args))
     return 0
 
 
 def cmd_plan_record(args: argparse.Namespace) -> int:
+    expand_text_options(args)
     adapter = open_adapter(resolve_root(args.root))
 
     def mutate(store):
@@ -440,11 +540,12 @@ def cmd_plan_record(args: argparse.Namespace) -> int:
             next_artifact_id=adapter.next_artifact_id,
         )
 
-    emit_record(adapter.update(mutate))
+    emit_record(adapter.update(mutate), json_output=wants_json(args))
     return 0
 
 
 def cmd_decision_record(args: argparse.Namespace) -> int:
+    expand_text_options(args)
     adapter = open_adapter(resolve_root(args.root))
 
     def mutate(store):
@@ -466,7 +567,7 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
                 archive(consumed)
         return decision_id, invocation_id
 
-    emit_record(adapter.update(mutate))
+    emit_record(adapter.update(mutate), json_output=wants_json(args))
     return 0
 
 

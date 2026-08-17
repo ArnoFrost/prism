@@ -96,6 +96,7 @@ compress_plan:
 
 ```bash
 prism plan record <topic_id> --root <topic_dir> --title "..." --body "..."
+# 长 Plan 正文：--body - 或 --body @path
 prism brief project <topic_id> --root <topic_dir> --save
 ```
 

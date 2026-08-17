@@ -162,7 +162,7 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 
 旧 3.x `sniff / validate / finalize / status / digest / decision record` 等 verb 仍可通过 `prism legacy ...` 使用；它们服务历史 topic 与 legacy workflow，不是 4.0 默认入口。需要旧 `workflow-*` 技能面时显式 `bin/relink --skill-profile legacy`。痕迹义务家族（`task_probe` 等）同属 legacy，默认 lenient，不是硬入口。
 
-详见 [bin/README.md](bin/README.md)。
+详见 [bin/README.md](bin/README.md)。长文本用 `--body -`（stdin）或 `--body @path`；4.0 record 的 `--json` 只输出 `{ok, ids}`，不是 3.x outer schema。
 
 如需查看当前 4.0 CLI 能力面，优先运行：
 

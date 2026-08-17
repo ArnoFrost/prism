@@ -8,8 +8,8 @@
 #
 # 全局选项:
 #   --version, -V                显示版本后退出
-#   --json                       以 outer schema 输出 JSON（见 docs/cli-json-schema.json）
-#                                4.0 reference adapter 暂未承诺完整 JSON outer schema
+#   --json                       4.0 record 成功：{ok, ids}（不是 3.x outer schema）
+#                                放在 verb 前时，3.x verb 仍走 legacy envelope
 #
 # 可用子命令:
 #   topic probe     机械探测当前目录是否已桥接 Workspace
@@ -19,6 +19,7 @@
 #   artifact show   查看 4.0 Artifact / Payload 正文
 #   brief project   从当前状态投影 Brief
 #   review record     持久化 Review 结果 → Findings（advisory；不等于授权）
+#                     --body - 读 stdin；--body @path 读文件；--json 输出 {ok, ids}
 #   clarify record    持久化 Clarify 结果 → semantic payloads（候选，不是 Decision）
 #   plan record       持久化 Plan
 #   decision record   记录被授权的 Decision

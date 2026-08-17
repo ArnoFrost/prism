@@ -148,12 +148,13 @@ bin/doctor --scope <name>         # 只跑指定范围
 ```bash
 prism --help                       # 列出所有子命令
 prism --version                    # 版本信息
-prism --json <verb> ...            # 统一 outer schema 输出（见 docs/cli-json-schema.json）
+prism --json <legacy-verb> ...     # 3.x outer schema（见 docs/cli-json-schema.json）
 prism topic new <topic_id> --title "<标题>" --intent "<意图>"
 prism topic list
 prism artifact show <artifact_id>
 prism brief project <topic_id>
 prism review record <topic_id> --body "<审视输入>"
+prism review record <topic_id> --body - --json   # stdin；成功输出 {ok, ids}
 prism clarify record <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
 prism plan record <topic_id> --body "<行动结构>"
 prism decision record <topic_id> --body "<决策>"

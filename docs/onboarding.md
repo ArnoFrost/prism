@@ -103,6 +103,7 @@ prism --version
 prism topic list
 prism brief project <topic_id>
 prism review record <topic_id> --body "..."
+# 或：--body - 读 stdin；--json 输出 {ok, ids}
 prism clarify record <topic_id> --question "..." --proposed-patch "..."
 ```
 

@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -381,3 +382,142 @@ def test_bin_prism_brief_save_overwrites_existing(tmp_path):
     assert second.returncode == 0, second.stderr
     assert "brief:current" in second.stdout
     assert (root / "brief.md").is_file()
+
+
+def test_review_record_reads_body_from_stdin_and_file(tmp_path):
+    root = tmp_path / "state"
+    copytree(DOGFOOD_ROOT, root)
+    body_file = tmp_path / "finding.md"
+    body_file.write_text("Findings from a file.\n", encoding="utf-8")
+
+    from_file = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "review",
+            "record",
+            "topic:prism-4-refoundation",
+            "--root",
+            str(root),
+            "--id",
+            "finding:f-file",
+            "--body",
+            f"@{body_file}",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert from_file.returncode == 0, from_file.stderr
+    assert "finding:f-file" in from_file.stdout
+
+    from_stdin = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "review",
+            "record",
+            "topic:prism-4-refoundation",
+            "--root",
+            str(root),
+            "--id",
+            "finding:f-stdin",
+            "--body",
+            "-",
+        ],
+        input="Findings from stdin.\n",
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert from_stdin.returncode == 0, from_stdin.stderr
+    assert "finding:f-stdin" in from_stdin.stdout
+
+    store = JsonReferenceStoreAdapter(root).load()
+    assert store.artifacts["finding:f-file"].body == "Findings from a file.\n"
+    assert store.artifacts["finding:f-stdin"].body == "Findings from stdin.\n"
+
+
+def test_review_record_json_is_small_ok_ids_not_legacy_envelope(tmp_path):
+    root = tmp_path / "state"
+    copytree(DOGFOOD_ROOT, root)
+
+    trailing = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "review",
+            "record",
+            "topic:prism-4-refoundation",
+            "--root",
+            str(root),
+            "--id",
+            "finding:f-json",
+            "--body",
+            "Small JSON only.",
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert trailing.returncode == 0, trailing.stderr
+    payload = json.loads(trailing.stdout)
+    assert set(payload) == {"ok", "ids"}
+    assert payload["ok"] is True
+    assert payload["ids"][0] == "finding:f-json"
+    assert "data" not in payload
+    assert "command" not in payload
+    assert "errors" not in payload
+
+    leading = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "--json",
+            "review",
+            "record",
+            "topic:prism-4-refoundation",
+            "--root",
+            str(root),
+            "--id",
+            "finding:f-json-lead",
+            "--body",
+            "Leading --json flag.",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert leading.returncode == 0, leading.stderr
+    lead_payload = json.loads(leading.stdout)
+    assert lead_payload["ok"] is True
+    assert lead_payload["ids"][0] == "finding:f-json-lead"
+
+
+def test_clarify_rejects_two_stdin_options(tmp_path):
+    root = tmp_path / "state"
+    copytree(DOGFOOD_ROOT, root)
+    result = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "clarify",
+            "record",
+            "topic:prism-4-refoundation",
+            "--root",
+            str(root),
+            "--question",
+            "Which field owns stdin?",
+            "--proposed-patch",
+            "-",
+            "--decision-candidate",
+            "-",
+        ],
+        input="cannot split this",
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert result.returncode == 2
+    assert "only one option can read stdin" in result.stderr

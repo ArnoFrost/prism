@@ -95,6 +95,7 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 
 ```bash
 prism review record <topic_id> --root <topic_dir> --body "<finding body>"
+# 长文本：--body - 读 stdin，或 --body @path 读文件。机器输出：加 --json 得到 {ok, ids}。
 ```
 
 ## 边界
