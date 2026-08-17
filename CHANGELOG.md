@@ -3,7 +3,8 @@
 ### Changed
 
 - **4.0 record 表面** — 日常入口改为 `prism review/clarify/plan/decision record`（persist semantic output，不等于授权）。旧 `capability run` 仍作 hidden alias。
-- **Host 边界** — Topic 发现收回 `host.py`；`host attach` 经 subprocess 查询 3.x `workspace_resolve.py`，不再进程内 import sniff。
+- **Host 运行时独立** — `host attach` 与 `bin/relink` 经 subprocess 调用自包含的 `bin/workspace_resolve.py`，运行时不再依赖 `skills/workflow/**`。resolver 缺失或失败时 fail-closed，禁止 bash 猜测 named/map yaml。
+- **Host 边界** — Topic 发现收回 `host.py`；配置查询不再进程内 import sniff。
 - **4.0 机器面** — `--body -` / `@path` 读长文本；record `--json` 输出 `{ok, ids}`，不使用 3.x outer schema。
 - **CLI 收尾** — use-case 测试钉住 Plan / Decision authority，并不再依赖 Markdown 序号函数；`docs/cli-contract.md` 明确为 3.x Legacy CLI Contract。
 

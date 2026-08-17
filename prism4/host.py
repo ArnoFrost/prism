@@ -11,6 +11,8 @@ live `workspace.{code}.local` bridge.
 
 It does not call `workspace-init` or `workflow-intake`, and it does not
 write 3.x `scope.md` / `focus.md` / `task` / `wave` files.
+
+Config queries go through `bin/workspace_resolve.py` in a child process.
 """
 
 from __future__ import annotations
@@ -366,19 +368,19 @@ def format_attach_result(result: AttachResult) -> str:
     return "\n".join(lines)
 
 
-_LEGACY_RESOLVE = (
-    SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "workspace_resolve.py"
-)
+def _config_resolve_cli() -> Path:
+    return SDK_ROOT / "bin" / "workspace_resolve.py"
 
 
 def _legacy_config_query(config_path: Path) -> dict:
-    """Ask 3.x sniff in a child process. Host does not import sniff_workspace."""
-    if not _LEGACY_RESOLVE.is_file():
-        raise PrismProtocolError(f"找不到 legacy 配置查询：{_LEGACY_RESOLVE}")
+    """Ask bin/workspace_resolve.py in a child process. Host does not import sniff."""
+    resolver = _config_resolve_cli()
+    if not resolver.is_file():
+        raise PrismProtocolError(f"找不到配置查询：{resolver}")
     completed = subprocess.run(
         [
             sys.executable,
-            str(_LEGACY_RESOLVE),
+            str(resolver),
             "--config",
             str(config_path),
             "--json",

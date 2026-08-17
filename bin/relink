@@ -103,7 +103,7 @@ yaml_get() {
   (grep "^${1}:" "$CONFIG" 2>/dev/null || true) | tail -1 | sed "s/^${1}: *//"
 }
 
-RESOLVER="$PRISM_DIR/skills/workflow/shared/scripts/workspace_resolve.py"
+RESOLVER="$PRISM_DIR/bin/workspace_resolve.py"
 _run_resolver() {
   if [[ ! -f "$RESOLVER" ]]; then
     return 1
@@ -171,13 +171,17 @@ else
   ENV_PATH=""
 fi
 
-if [[ -f "$RESOLVER" ]]; then
-  if ! _load_resolved_config; then
-    echo -e "${RED}✗ shared config resolver 失败；拒绝使用 Shell 猜测配置${NC}" >&2
+if [[ "$SKIP_WORKSPACE" != true ]]; then
+  if [[ ! -f "$RESOLVER" ]]; then
+    echo -e "${RED}✗ workspace resolver 不存在，拒绝猜测 prism.local.yaml${NC}" >&2
+    echo -e "  ${DIM}${RESOLVER}${NC}" >&2
     exit 1
   fi
-elif [[ "$SKIP_WORKSPACE" != true && ( -z "$VAULT_PATH" || -z "$WS_SUBDIR" ) ]]; then
-  _load_default_workspace_from_export || true
+  if ! _load_resolved_config; then
+    echo -e "${RED}✗ workspace resolver 失败；拒绝使用 Shell 猜测配置${NC}" >&2
+    echo -e "  ${DIM}${RESOLVER}${NC}" >&2
+    exit 1
+  fi
 fi
 
 # ── 必填字段校验（fail-fast）──────────
@@ -475,16 +479,18 @@ fi
 
 # 2. 刷新项目软链接（多 workspace：按 CODE 解析 instance_path）
 echo -e "\n${CYAN}[项目软链接]${NC}"
-_relink_projects=false
 if $SKIP_WORKSPACE; then
   log_skip "已跳过 Workspace backend 项目软链接"
-elif [[ -f "$RESOLVER" ]]; then
+elif [[ ! -f "$RESOLVER" ]]; then
+  echo -e "${RED}✗ workspace resolver 不存在，拒绝猜测 prism.local.yaml${NC}" >&2
+  echo -e "  ${DIM}${RESOLVER}${NC}" >&2
+  exit 1
+else
   if ! _resolver_out=$(_run_resolver_tsv); then
-    echo -e "${RED}✗ shared config resolver 失败；拒绝回退到 flat-only parser${NC}" >&2
+    echo -e "${RED}✗ workspace resolver 失败；拒绝使用 Shell 猜测配置${NC}" >&2
     echo -e "  ${DIM}${RESOLVER}${NC}" >&2
     exit 1
   fi
-  _relink_projects=true
   while IFS=$'\t' read -r code local_path ws_target workspace_id; do
       [[ -z "$code" ]] && continue
       if [[ -n "$TARGET_PROJECT" && "$code" != "$TARGET_PROJECT" ]]; then
@@ -522,62 +528,6 @@ elif [[ -f "$RESOLVER" ]]; then
         _relink_writeback_path "${ws_target}/project.yaml" "$DEVICE_ID" "$local_path"
       fi
     done <<< "$_resolver_out"
-fi
-
-if ! $SKIP_WORKSPACE && ! $_relink_projects; then
-in_projects=false
-while IFS= read -r line; do
-  if [[ "$line" == "projects:" ]]; then
-    in_projects=true
-    continue
-  fi
-
-  if $in_projects; then
-    if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
-      code="${BASH_REMATCH[1]}"
-      local_path="${BASH_REMATCH[2]}"
-      code_lower=$(echo "$code" | tr '[:upper:]' '[:lower:]')
-
-      if [[ -n "$TARGET_PROJECT" && "$code" != "$TARGET_PROJECT" ]]; then
-        continue
-      fi
-
-      echo -e "  ${CYAN}${code}${NC} (${local_path})"
-
-      ws_target="${WS_ROOT}/${code}"
-      ws_link="${local_path}/workspace.${code_lower}.local"
-      ensure_link "$ws_link" "$ws_target" "    workspace.${code_lower}.local"
-
-      agents_target="${WS_ROOT}/${code}/AGENTS.md"
-      legacy_target="${WS_ROOT}/${code}/AGENT.md"
-      if [[ -f "$legacy_target" && -f "$agents_target" ]]; then
-        log_warn "    ${code}: vault 内同时存在 AGENT.md 与 AGENTS.md，请手动确认后保留 AGENTS.md"
-      elif [[ -f "$legacy_target" && ! -f "$agents_target" ]]; then
-        if $CHECK_ONLY; then
-          log_warn "    ${code}: vault 内仍是老命名 AGENT.md（v1.1.4+ 应已迁移；运行 bin/relink 自动 mv）"
-        elif $DRY_RUN; then
-          log_fix "    ${code}: 将 mv ${legacy_target} → ${agents_target}"
-        else
-          if mv "$legacy_target" "$agents_target" 2>/dev/null; then
-            log_fix "    ${code}: 自动迁移 AGENT.md → AGENTS.md（vault 内）"
-          else
-            log_err "    ${code}: AGENT.md → AGENTS.md mv 失败（iCloud 占位符？请手动处理）"
-          fi
-        fi
-      fi
-      if [[ -f "$agents_target" ]]; then
-        ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"
-      fi
-
-      if [[ -n "$DEVICE_ID" && -d "$ws_target" ]] && ! $CHECK_ONLY && ! $DRY_RUN; then
-        _relink_writeback_path "${ws_target}/project.yaml" "$DEVICE_ID" "$local_path"
-      fi
-
-    elif [[ ! "$line" =~ ^[[:space:]] ]]; then
-      break
-    fi
-  fi
-done < "$CONFIG"
 fi
 
 # 3. 探测可用 IDE 平台目录

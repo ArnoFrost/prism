@@ -30,6 +30,7 @@ def _sdk_fixture(tmp_path: Path, *, include_relink: bool = False) -> tuple[Path,
     _copy(SDK_ROOT / "bin" / "setenv", sdk / "bin" / "setenv")
     if include_relink:
         _copy(SDK_ROOT / "bin" / "relink", sdk / "bin" / "relink")
+        _copy(SDK_ROOT / "bin" / "workspace_resolve.py", sdk / "bin" / "workspace_resolve.py")
 
     for name in (
         "doctor_config_check.py",
@@ -142,7 +143,7 @@ def test_relink_named_config_uses_shared_resolver(tmp_path: Path) -> None:
 def test_relink_resolver_failure_is_fail_closed(tmp_path: Path) -> None:
     sdk, env = _sdk_fixture(tmp_path, include_relink=True)
     (sdk / "prism.local.yaml").write_text(_named_config(sdk, tmp_path), encoding="utf-8")
-    resolver = sdk / "skills" / "workflow" / "shared" / "scripts" / "workspace_resolve.py"
+    resolver = sdk / "bin" / "workspace_resolve.py"
     resolver.write_text("raise SystemExit(9)\n", encoding="utf-8")
 
     result = subprocess.run(
@@ -155,5 +156,5 @@ def test_relink_resolver_failure_is_fail_closed(tmp_path: Path) -> None:
     )
 
     assert result.returncode == 1
-    assert "shared config resolver 失败" in result.stderr
+    assert "workspace resolver 失败" in result.stderr
     assert "拒绝" in result.stderr

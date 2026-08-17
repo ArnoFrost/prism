@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -17,20 +19,87 @@ from prism4.host import (
     probe_workspace,
 )
 from prism4.local_files import LocalFileStoreAdapter
+import prism4.host as host_mod
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
 BIN_PRISM = SDK_ROOT / "bin" / "prism"
-SHARED = SDK_ROOT / "skills" / "workflow" / "shared"
-if str(SHARED) not in sys.path:
-    sys.path.insert(0, str(SHARED))
-import sniff_workspace  # noqa: E402
+RESOLVE_CLI = SDK_ROOT / "bin" / "workspace_resolve.py"
+OLD_RESOLVER = Path("skills/workflow/shared/scripts/workspace_resolve.py")
 
 
 def _env() -> dict[str, str]:
     env = os.environ.copy()
     env["PRISM_FALLBACK_QUIET"] = "1"
     return env
+
+
+def _query_config(config: Path, *, resolver: Path | None = None) -> dict:
+    cli = resolver or RESOLVE_CLI
+    completed = subprocess.run(
+        [sys.executable, str(cli), "--config", str(config), "--json"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert completed.returncode == 0, completed.stderr + completed.stdout
+    payload = json.loads(completed.stdout)
+    assert isinstance(payload, dict)
+    return payload
+
+
+def _isolated_sdk(tmp_path: Path, *, with_resolver: bool) -> Path:
+    sdk = tmp_path / "sdk"
+    (sdk / "bin").mkdir(parents=True)
+    shutil.copy(SDK_ROOT / "bin" / "relink", sdk / "bin" / "relink")
+    (sdk / "bin" / "relink").chmod(0o755)
+    if with_resolver:
+        assert RESOLVE_CLI.is_file(), "bin/workspace_resolve.py is required"
+        shutil.copy(RESOLVE_CLI, sdk / "bin" / "workspace_resolve.py")
+    venv_python = sdk / ".venv" / "bin" / "python3"
+    venv_python.parent.mkdir(parents=True)
+    venv_python.symlink_to(Path(sys.executable))
+    assert not (sdk / OLD_RESOLVER).exists()
+    return sdk
+
+
+def _isolated_named(
+    sdk: Path, tmp_path: Path
+) -> tuple[Path, Path, Path, Path, Path, Path]:
+    """Named/map yaml plus decoy top-level roots that bash yaml_get would trust."""
+    work_root = tmp_path / "work-store"
+    personal_root = tmp_path / "personal-store"
+    decoy_root = tmp_path / "decoy-store"
+    project = tmp_path / "fresh"
+    existing = tmp_path / "existing-prism"
+    (work_root / "Workspace").mkdir(parents=True)
+    (personal_root / "Prism").mkdir(parents=True)
+    (decoy_root / "Workspace").mkdir(parents=True)
+    project.mkdir()
+    existing.mkdir()
+    config = sdk / "prism.local.yaml"
+    config.write_text(
+        (
+            "device_id: TEST\n"
+            f"sdk_path: {sdk}\n"
+            f"workspace_root: {decoy_root}\n"
+            "workspace_subdir: Workspace\n"
+            "default_workspace: personal\n"
+            "workspaces:\n"
+            "  work:\n"
+            f"    workspace_root: {work_root}\n"
+            "    workspace_subdir: Workspace\n"
+            "  personal:\n"
+            f"    workspace_root: {personal_root}\n"
+            "    workspace_subdir: Prism\n"
+            "projects:\n"
+            "  PRISM:\n"
+            f"    path: {existing}\n"
+            "    workspace: personal\n"
+        ),
+        encoding="utf-8",
+    )
+    return config, work_root, personal_root, decoy_root, project, existing
 
 
 def _run(args: list[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -122,15 +191,12 @@ def test_attach_appends_map_entry_without_touching_existing_bindings(
     assert f"  DEMO:\n    path: {project}\n    workspace: personal\n" in after
     assert before.split("projects:")[0] == after.split("projects:")[0]
 
-    parsed = sniff_workspace.parse_prism_local_yaml(str(config))
-    prism = sniff_workspace.resolve_project_binding(parsed, "PRISM", str(config))
-    demo = sniff_workspace.resolve_project_binding(parsed, "DEMO", str(config))
-    assert prism is not None
-    assert prism["path"] == str(existing_project)
-    assert prism["workspace_id"] == "personal"
-    assert demo is not None
-    assert demo["path"] == str(project)
-    assert demo["instance_path"] == str(personal_root / "Prism" / "DEMO")
+    payload = _query_config(config)
+    by_code = {item["code"]: item for item in payload["projects"]}
+    assert by_code["PRISM"]["path"] == str(existing_project)
+    assert by_code["PRISM"]["workspace_id"] == "personal"
+    assert by_code["DEMO"]["path"] == str(project)
+    assert by_code["DEMO"]["instance_path"] == str(personal_root / "Prism" / "DEMO")
 
     instance = personal_root / "Prism" / "DEMO"
     assert (instance / "topics").is_dir()
@@ -168,9 +234,11 @@ def test_attach_flat_yaml_keeps_string_bindings(tmp_path: Path) -> None:
         skip_relink=True,
     )
 
-    parsed = sniff_workspace.parse_prism_local_yaml(str(config))
-    assert parsed["projects"]["OLD"] == str(old_project)
-    assert parsed["projects"]["DEMO"] == str(project)
+    payload = _query_config(config)
+    assert payload["projects_style"] == "flat"
+    by_code = {item["code"]: item for item in payload["projects"]}
+    assert by_code["OLD"]["path"] == str(old_project)
+    assert by_code["DEMO"]["path"] == str(project)
     assert (storage / "Sub" / "DEMO" / "topics").is_dir()
 
 
@@ -376,10 +444,94 @@ def test_cli_relink_override_is_invoked_with_project_flag(tmp_path: Path) -> Non
     assert log.read_text(encoding="utf-8").strip().endswith("--project DEMO")
 
 
-def test_host_does_not_import_sniff_workspace() -> None:
-    text = (SDK_ROOT / "prism4" / "host.py").read_text(encoding="utf-8")
-    assert "\nimport sniff_workspace" not in text
-    assert "sys.path.insert" not in text
+def test_host_runtime_does_not_reference_workflow_resolver() -> None:
+    host = (SDK_ROOT / "prism4" / "host.py").read_text(encoding="utf-8")
+    relink = (SDK_ROOT / "bin" / "relink").read_text(encoding="utf-8")
+    forbidden = "skills/workflow/shared/scripts/workspace_resolve.py"
+    assert forbidden not in host
+    assert forbidden not in relink
+    assert "import sniff_workspace" not in host
+    assert 'SDK_ROOT / "bin" / "workspace_resolve.py"' in host
+    assert 'RESOLVER="$PRISM_DIR/bin/workspace_resolve.py"' in relink
+    assert RESOLVE_CLI.is_file()
+
+
+def test_workspace_resolve_named_map_binding(tmp_path: Path) -> None:
+    config, _, personal_root, existing_project = _named_config(tmp_path)
+    payload = _query_config(config)
+    assert payload["projects_style"] == "map"
+    assert payload["default_workspace"] == "personal"
+    prism = next(item for item in payload["projects"] if item["code"] == "PRISM")
+    assert prism["path"] == str(existing_project)
+    assert prism["workspace_id"] == "personal"
+    assert prism["instance_path"] == str(personal_root / "Prism" / "PRISM")
+    assert payload["workspaces"]["personal"]["prism_workspace_root"] == str(
+        personal_root / "Prism"
+    )
+
+
+def test_attach_without_workflow_resolver_runs_real_relink(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sdk = _isolated_sdk(tmp_path, with_resolver=True)
+    config, _, personal_root, decoy_root, project, _ = _isolated_named(sdk, tmp_path)
+    home = tmp_path / "empty-home"
+    home.mkdir()
+    monkeypatch.setattr(host_mod, "SDK_ROOT", sdk)
+    monkeypatch.setenv("HOME", str(home))
+
+    result = attach_workspace(
+        code="DEMO",
+        project_path=project,
+        config_path=config,
+        skip_relink=False,
+        relink_bin=sdk / "bin" / "relink",
+    )
+
+    instance = personal_root / "Prism" / "DEMO"
+    bridge = project / "workspace.demo.local"
+    assert result.relink == "ran"
+    assert result.registered == "created"
+    assert bridge.is_symlink()
+    assert bridge.resolve() == instance.resolve()
+    assert not (project / "workspace.path.local").exists()
+    assert not (project / "workspace.workspace.local").exists()
+    assert not (sdk / OLD_RESOLVER).exists()
+    decoy_bridge = decoy_root / "Workspace" / "DEMO"
+    if decoy_bridge.exists():
+        assert bridge.resolve() != decoy_bridge.resolve()
+
+
+def test_relink_missing_resolver_is_fail_closed(tmp_path: Path) -> None:
+    sdk = _isolated_sdk(tmp_path, with_resolver=False)
+    _, _, personal_root, _, project, _ = _isolated_named(sdk, tmp_path)
+    instance = personal_root / "Prism" / "DEMO"
+    (instance / "topics").mkdir(parents=True)
+    (instance / "AGENTS.md").write_text("# DEMO\n", encoding="utf-8")
+    bridge = project / "workspace.demo.local"
+    bridge.symlink_to(instance)
+
+    home = tmp_path / "empty-home"
+    home.mkdir()
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["PATH"] = "/usr/bin:/bin"
+    env.pop("PRISM_DIR", None)
+
+    result = subprocess.run(
+        [str(sdk / "bin" / "relink"), "--project", "DEMO"],
+        cwd=str(sdk),
+        capture_output=True,
+        text=True,
+        timeout=20,
+        env=env,
+    )
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "猜测" in combined
+    assert bridge.resolve() == instance.resolve()
+    assert not (project / "workspace.path.local").exists()
+    assert not (project / "workspace.workspace.local").exists()
 
 
 def test_legacy_cli_surface_still_delegates() -> None:
