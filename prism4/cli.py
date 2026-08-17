@@ -30,6 +30,7 @@ from prism4.host import (  # noqa: E402
     attach_workspace,
     dangling_bridge_guidance,
     discover_workspace_bridge,
+    discover_bridged_state,
     format_attach_result,
     format_workspace_probe,
     is_store_root,
@@ -587,50 +588,6 @@ def resolve_root(root: str | None) -> Path:
         if discovered is not None:
             return discovered
     return cwd
-
-
-def discover_bridged_state(base: Path) -> Path | None:
-    """Find a 4.0 state directory under a workspace bridge.
-
-    The physical layout under a bridge belongs to the Host / Adapter, not to
-    the protocol, so this only does a bounded-depth search instead of assuming
-    a fixed nesting. When several candidates exist, the most recently touched
-    one wins; that is a local discovery heuristic, not a protocol rule.
-    """
-    candidates: list[tuple[float, Path]] = []
-    for bridge in sorted(base.glob("workspace.*.local")):
-        if not bridge.is_dir():
-            continue
-        for depth in ("", "*/", "*/*/"):
-            for marker in (f"{depth}topic.md", f"{depth}{STATE_FILENAME}"):
-                for hit in bridge.glob(marker):
-                    if hit.name == STATE_FILENAME and not hit.is_file():
-                        continue
-                    if hit.name == "topic.md" and not hit.is_file():
-                        continue
-                    root = hit.parent
-                    candidates.append((_recency(root), root))
-            for hit in bridge.glob(f"{depth}topics"):
-                # `topics/` directly under a bridge is the workspace's own
-                # topic collection, not a 4.0 store root.
-                if hit.parent == bridge:
-                    continue
-                if not hit.is_dir() or not any(hit.glob("*.md")):
-                    continue
-                root = hit.parent
-                candidates.append((_recency(root), root))
-    if not candidates:
-        return None
-    return max(candidates, key=lambda item: item[0])[1]
-
-
-def _recency(root: Path) -> float:
-    """Newest mtime among the documents a store root owns."""
-    newest = root.stat().st_mtime
-    for pattern in ("topic.md", "*/*.md", "children/*/*.md", "topics/*.md", STATE_FILENAME):
-        for path in root.glob(pattern):
-            newest = max(newest, path.stat().st_mtime)
-    return newest
 
 
 def read_version() -> str:

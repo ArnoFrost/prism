@@ -28,6 +28,17 @@ def _load(config: Path) -> tuple[dict | None, str]:
     return parsed, path
 
 
+def _projects_style(parsed: dict | None) -> str:
+    if not parsed:
+        return "map"
+    if parsed.get("workspaces"):
+        return "map"
+    projects = parsed.get("projects") or {}
+    if any(isinstance(value, dict) for value in projects.values()):
+        return "map"
+    return "flat"
+
+
 def _resolve(config: Path) -> dict | None:
     return sniff_workspace.resolve_prism_config(str(config))
 
@@ -114,6 +125,7 @@ def main() -> None:
         "default_workspace": default_ws,
         "workspaces": workspaces,
         "projects": bindings,
+        "projects_style": _projects_style(parsed),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
 

@@ -376,6 +376,12 @@ def test_cli_relink_override_is_invoked_with_project_flag(tmp_path: Path) -> Non
     assert log.read_text(encoding="utf-8").strip().endswith("--project DEMO")
 
 
+def test_host_does_not_import_sniff_workspace() -> None:
+    text = (SDK_ROOT / "prism4" / "host.py").read_text(encoding="utf-8")
+    assert "\nimport sniff_workspace" not in text
+    assert "sys.path.insert" not in text
+
+
 def test_legacy_cli_surface_still_delegates() -> None:
     result = subprocess.run(
         [str(BIN_PRISM), "legacy", "--help"],

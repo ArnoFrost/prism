@@ -15,6 +15,7 @@ write 3.x `scope.md` / `focus.md` / `task` / `wave` files.
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -149,6 +150,55 @@ def list_bridged_topic_stores(bridge: Path) -> list[Path]:
     return stores
 
 
+def discover_bridged_state(base: Path) -> Path | None:
+    """Find a 4.0 store under a workspace bridge.
+
+    The physical layout under a bridge belongs to the Host, not the
+    protocol. Bounded-depth search; when several candidates exist, the
+    most recently touched one wins. That is a local discovery heuristic.
+    """
+    candidates: list[tuple[float, Path]] = []
+    for bridge in sorted(Path(base).glob("workspace.*.local")):
+        if not bridge.is_dir():
+            continue
+        for depth in ("", "*/", "*/*/"):
+            for marker in (f"{depth}{TOPIC_FILENAME}", f"{depth}{STATE_FILENAME}"):
+                for hit in bridge.glob(marker):
+                    if hit.name == STATE_FILENAME and not hit.is_file():
+                        continue
+                    if hit.name == TOPIC_FILENAME and not hit.is_file():
+                        continue
+                    root = hit.parent
+                    candidates.append((_store_recency(root), root))
+            for hit in bridge.glob(f"{depth}topics"):
+                # `topics/` directly under a bridge is the workspace's own
+                # topic collection, not a 4.0 store root.
+                if hit.parent == bridge:
+                    continue
+                if not hit.is_dir() or not any(hit.glob("*.md")):
+                    continue
+                root = hit.parent
+                candidates.append((_store_recency(root), root))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: item[0])[1]
+
+
+def _store_recency(root: Path) -> float:
+    """Newest mtime among the documents a store root owns."""
+    newest = root.stat().st_mtime
+    for pattern in (
+        TOPIC_FILENAME,
+        "*/*.md",
+        "children/*/*.md",
+        "topics/*.md",
+        STATE_FILENAME,
+    ):
+        for path in root.glob(pattern):
+            newest = max(newest, path.stat().st_mtime)
+    return newest
+
+
 def allocate_topic_dir(bridge: Path, topic_id: str) -> Path:
     slug = topic_dir_slug(topic_id)
     number = next_topic_number(bridge)
@@ -219,13 +269,10 @@ def attach_workspace(
             f"找不到 prism.local.yaml：{config_path}。先运行 bin/setenv --init。"
         )
 
-    sniff = _load_sniff()
-    parsed = sniff.parse_prism_local_yaml(str(config_path))
-    if not parsed:
-        raise PrismProtocolError(f"无法解析配置：{config_path}")
+    query = _legacy_config_query(config_path)
 
-    workspace_id = _resolve_workspace_id(parsed, workspace_id)
-    existing = sniff.resolve_project_binding(parsed, code, str(config_path))
+    workspace_id = _resolve_workspace_id(query, workspace_id)
+    existing = _binding_for(query, code)
     registered = "exists"
     writes = 0
     if existing:
@@ -236,14 +283,14 @@ def attach_workspace(
         instance_path = Path(existing["instance_path"])
         workspace_id = existing["workspace_id"]
     else:
-        instance_path = _instance_path_for(sniff, parsed, config_path, code, workspace_id)
+        instance_path = _instance_path_for(query, code, workspace_id)
         if not dry_run:
             _append_project_entry(
                 config_path,
                 code=code,
                 project_path=project_path,
                 workspace_id=workspace_id,
-                style=_projects_style(parsed),
+                style=str(query.get("projects_style") or "map"),
             )
             writes += 1
         registered = "created"
@@ -319,18 +366,51 @@ def format_attach_result(result: AttachResult) -> str:
     return "\n".join(lines)
 
 
-def _load_sniff():
-    shared = SDK_ROOT / "skills" / "workflow" / "shared"
-    if str(shared) not in sys.path:
-        sys.path.insert(0, str(shared))
-    import sniff_workspace  # type: ignore[import-not-found]
-
-    return sniff_workspace
+_LEGACY_RESOLVE = (
+    SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "workspace_resolve.py"
+)
 
 
-def _resolve_workspace_id(parsed: dict, requested: str | None) -> str | None:
-    default = parsed.get("default_workspace") or "work"
-    workspaces = parsed.get("workspaces") or {}
+def _legacy_config_query(config_path: Path) -> dict:
+    """Ask 3.x sniff in a child process. Host does not import sniff_workspace."""
+    if not _LEGACY_RESOLVE.is_file():
+        raise PrismProtocolError(f"找不到 legacy 配置查询：{_LEGACY_RESOLVE}")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(_LEGACY_RESOLVE),
+            "--config",
+            str(config_path),
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(SDK_ROOT),
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "").strip()
+        raise PrismProtocolError(
+            f"无法解析配置：{config_path}" + (f"（{detail}）" if detail else "")
+        )
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError as error:
+        raise PrismProtocolError(f"无法解析配置：{config_path}") from error
+    if not isinstance(payload, dict):
+        raise PrismProtocolError(f"无法解析配置：{config_path}")
+    return payload
+
+
+def _binding_for(query: dict, code: str) -> dict | None:
+    for item in query.get("projects") or []:
+        if isinstance(item, dict) and item.get("code") == code:
+            return item
+    return None
+
+
+def _resolve_workspace_id(query: dict, requested: str | None) -> str | None:
+    default = query.get("default_workspace") or "work"
+    workspaces = query.get("workspaces") or {}
     if requested:
         if workspaces and requested not in workspaces:
             names = ", ".join(sorted(workspaces))
@@ -343,19 +423,8 @@ def _resolve_workspace_id(parsed: dict, requested: str | None) -> str | None:
     return None
 
 
-def _projects_style(parsed: dict) -> str:
-    if parsed.get("workspaces"):
-        return "map"
-    projects = parsed.get("projects") or {}
-    if any(isinstance(value, dict) for value in projects.values()):
-        return "map"
-    return "flat"
-
-
-def _instance_path_for(
-    sniff, parsed: dict, config_path: Path, code: str, workspace_id: str | None
-) -> Path:
-    workspaces = sniff.parse_workspaces(parsed, str(config_path))
+def _instance_path_for(query: dict, code: str, workspace_id: str | None) -> Path:
+    workspaces = query.get("workspaces") or {}
     if workspace_id:
         ws = workspaces.get(workspace_id)
         if not ws or not ws.get("prism_workspace_root"):

@@ -4,7 +4,8 @@ import json
 import os
 from pathlib import Path
 
-from prism4.cli import discover_bridged_state, is_store_root, open_adapter, resolve_root
+from prism4.cli import open_adapter, resolve_root
+from prism4.host import discover_bridged_state, is_store_root
 from prism4 import JsonReferenceStoreAdapter, LocalFileStoreAdapter
 
 
