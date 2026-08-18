@@ -10,216 +10,273 @@
 [![Stage](https://img.shields.io/badge/stage-4.0--canary-blue)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
-[快速开始](#快速开始) · [4.0 Skills](#prism-40-skills) · [生命周期](#生命周期总览) · [读什么](#读什么) · [工具入口](#工具入口) · [Contributing](#contributing)
+[快速开始](#快速开始) · [为什么选择 Prism](#为什么选择-prism) · [核心概念](#核心概念) · [日常使用](#日常使用) · [项目状态](#项目状态与稳定性) · [贡献](#contributing--support)
 
 </div>
 
-Prism 4.0 是一层轻量协作协议。**Protocol Core** 只有 Topic / Artifact / Capability / Invocation / Decision Semantics。它本地优先、无侵入：共享规则通过软链接折射进工作区，不接管目录，不污染版本历史。
+Prism 4.0 is a local-first collaboration protocol for humans and AI agents.
 
-> 共享规则，本地状态，清晰边界。
+它解决的问题很具体：在多轮 AI 协作里，目标、上下文、判断、计划和授权很容易散落在聊天记录、临时 Markdown、Issue、代码注释和个人记忆里。Prism 用一层轻量协议保存共享协作状态，让人和 Agent 都能知道当前问题边界、已有发现、哪些只是建议、哪些已经成为承诺。
 
-| 你要… | 看 |
-|--------|----|
-| 愿景与协作契约 | [AGENTS.md](AGENTS.md) |
-| 语义边界（什么算 Core） | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
-| 安装并跑起来 | 下文 [快速开始](#快速开始) · SDK + `uv` |
+Prism Protocol revolves around **Topic / Artifact / Capability / Invocation**, with **Decision Semantics** governing authorization and commitment. Reference Experience 提供 CLI、Markdown/local adapter、`prism-*` skills 和 Workspace bridge；它们让协议跑起来，但不把实现细节提升为 Core。
 
-**当前发行**：4.0-canary。默认技能面是 `/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。`prism` 进入 4.0 reference adapter。3.x 实现已从本分支剔除（终态见 git tag `legacy-3x-final`；旧 topic 只读）。
+适合：
 
-**发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）
+- 长期和 AI 一起推进代码、文档、工具或架构治理的人。
+- 想把“AI 建议”和“人类授权”分清楚的维护者。
+- 希望本地状态可追踪，但不想让项目仓库被协作痕迹接管的使用者。
+
+不是什么：
+
+- 不是任务调度器。
+- 不是 Agent 编排平台。
+- 不是知识库替代品。
+- 不是重型运行时。
+
+**当前发行**：4.0-canary。`prism` 默认进入 4.0 reference adapter；部分 4.0 verb 仍标记为 experimental。3.x 实现已从本分支剔除，终态见 git tag `legacy-3x-final`；旧 topic 在本分支只读。
 
 ---
 
-## 快速上手
+## 快速开始
 
-**30 秒跑通第一环**：
+最小参考安装 = SDK + `uv`。Python 基线为 3.11+。
 
 ```bash
-# 1. 安装（clone + 一键 init）
+# 1. 安装 Prism SDK
 git clone https://github.com/ArnoFrost/prism.git ~/prism
-cd ~/prism && ./setup.sh init
-prism --version
+cd ~/prism
+./setup.sh init
 
-# 2. 进入你的项目，桥接 Workspace
+# 2. 验收当前安装
+prism --version
+./setup.sh check
+
+# 3. 进入你的项目并桥接 Workspace
 cd ~/your-project
 prism host attach --code MYPROJ
+prism topic probe
 
-# 3. 创建第一个 Topic，开始协作
-prism topic new topic:my-first --title "我的第一个专项" --intent "要解决的问题"
+# 4. 创建第一个协作边界
+prism topic new topic:my-first --title "My first Prism topic" --intent "What we are trying to resolve"
 ```
 
-之后：Agent 里 `/prism-topic` 起新边界，`/prism-brief` 恢复上下文，`/prism-review` 留 Findings，`/prism-clarify` 解阻塞。完整阶段表见 **[生命周期总览](#生命周期总览)**。
+成功信号：
 
-| 入口 | 读者 |
-|------|------|
-| 本节快速上手 | 首次安装 |
-| [docs/onboarding.md](docs/onboarding.md) | init **之后**日常 / update / doctor |
-| [SETUP.md](SETUP.md) | 旧安装链接兼容入口 |
+- `prism --version` 输出当前 [`VERSION`](VERSION)。
+- `./setup.sh check` 完成本机安装检查。
+- `prism topic probe` 显示 `bridged: yes`。
+- `prism topic list` 能看到你创建的 4.0 Topic。
 
-### Agent 引导
+到这里，Prism 已经挂到你的项目上，并创建了一个可在后续 Agent 会话中复用的协作问题边界。
+
+失败后先看 [docs/onboarding.md](docs/onboarding.md)，或运行：
+
+```bash
+prism doctor --scope config --quick
+```
+
+Agent 引导可直接使用：
 
 > 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并用 `prism --version` 与 `./setup.sh check` 完成验收。
 
 ---
 
-## 生命周期总览
+## 会创建什么
 
-从 clone 到长期维护：
+Prism 的默认接入方式是本地优先、软链接桥接，不要求改造你的项目结构。
 
-```text
-./setup.sh init → prism --version 验收 → relink / 桥接
-              → /prism-topic（先 probe）→ update / doctor / relink 维护
-```
+| 位置 | 会发生什么 | 是否应提交到业务项目仓库 |
+|------|------------|----------------------|
+| `~/prism` | Prism SDK、协议文档、参考 CLI、默认 4.0 skills | 否；它是独立 SDK 仓库 |
+| `prism.local.yaml` | 本机路径配置，由 `bin/setenv` / `setup.sh` 管理 | 否 |
+| 默认 Workspace backend | 存放项目级协作状态；默认本地目录 | 否，除非你显式选择 Git backend |
+| `workspace.{code}.local` | 业务项目里的 Workspace 软链接 | 否 |
+| `AGENTS.local.md` | 可选用户级上下文 | 否 |
 
-| 阶段 | 命令 | 做什么 |
-|------|------|--------|
-| **init** | `./setup.sh init` | 配置 + relink + CLI + uv |
-| **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
-| **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 软链 |
-| **接入** | `prism relink` · `/prism-topic` | 已有仓库挂 workspace，或创建 4.0 Topic |
-| **topic** | `prism topic list` · `/prism-topic` | 4.0 协作边界（见下节） |
-| **升级** | `prism update` · `./setup.sh update` | pull → doctor ci → relink --no-workspace |
-| **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope 体检 |
+`.local` 后缀表示本地个人状态。Prism 建议用全局 gitignore 覆盖 `workspace.*.local`、`AGENTS.local.md`、`prism.local.yaml`，避免把协作状态误提交到业务仓库。
+
+外部 Skills、Env、Vault/Git backend 都是可选部署；缺失不阻断最小参考安装。
 
 ---
 
-## Prism 4.0 Skills
+## 为什么选择 Prism
 
-默认技能围绕协议原语，按需组合，没有固定管线。Findings 不授权；Clarify payload 只是候选；Decision 才固化承诺。Brief 可再生成，不是事实源。
+README 里的每个优势都应能被机制或命令验证。
 
-| 你想… | 入口 |
-|--------|------|
-| 创建或定位协作边界 | `/prism-topic` · `prism topic ...` |
-| 恢复当前上下文切片 | `/prism-brief` · `prism brief project ...` |
-| 审视现状并留下 Findings | `/prism-review` · `prism review record ...` |
-| 澄清一个阻塞取舍 | `/prism-clarify` · `prism clarify record ...` |
-| 对齐阅读面并同步进度 | `/prism-compress`（低频；先 preview） |
+| 优势 | 机制 | 收益 | 验证入口 |
+|------|------|------|----------|
+| 本地优先 | 默认 local backend + `workspace.{code}.local` bridge | 协作状态留在用户控制范围内 | [快速开始](#快速开始) |
+| 无侵入接入 | 软链接 + `.local` 约定 + 全局 gitignore | 不接管业务仓库目录结构 | [会创建什么](#会创建什么) |
+| Small protocol surface | Topic / Artifact / Capability / Invocation + Decision Semantics | 不绑定某个 Agent harness 或文件格式 | [核心概念](#核心概念) |
+| 能力可组合 | `/prism-*` skills 按需使用 | 不预设固定治理管线 | [日常使用](#日常使用) |
+| 授权边界清楚 | Findings / Plan 是 advisory；Decision authorizes | AI 建议不等于已批准变更 | [核心概念](#核心概念) |
+| Brief 可再生成 | Brief 是 context recovery projection | 跨会话恢复更轻，不把切片当事实源 | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
+| 部署可选 | Skills、Env、Vault/Git backend 都在 Core 外 | SDK + `uv` 即可跑通 | [docs/architecture.md](docs/architecture.md) |
+| 发布可验收 | pytest + release gate + docs guard | 版本提升时能检查叙事和元数据漂移 | [docs/testing-contract.md](docs/testing-contract.md) |
 
-`bin/relink` 分发 `skills/prism4/*`（唯一技能面）。
-
-最小能跑 = SDK + `uv`（Minimal Reference Installation）。Skills、Env、Vault 都是可选部署。
-
----
-
-## 读什么
-
-先读两份主线，再按需下钻。完整分类见 **[docs/README.md](docs/README.md)**。
-
-| 你想了解 | 入口 |
-|----------|------|
-| **4.0 愿景与协作契约** | [AGENTS.md](AGENTS.md) |
-| **安装与验收** | 上文 [快速开始](#快速开始) · [docs/onboarding.md](docs/onboarding.md) |
-| **语义边界与术语** | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
-| **init 后日常** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
-| **分发与参考实现怎么放** | [docs/architecture.md](docs/architecture.md) |
-
-旧 3.x 文档、施工笔记和 zip 包不定义 4.0，见 [docs/README.md](docs/README.md) 的 C/D 区与 `prism dist`（maintenance-only）。
-
-`bin/relink` 把当前 skill profile 分发到 IDE（Cursor · Claude Code · CodeBuddy · Codex）。
+Prism 当前不宣称自动闭环、成熟稳定的生产承诺、Agent 编排、任务调度、知识库替代或企业级安全合规。
 
 ---
 
-## 工具入口
+## 核心概念
 
-Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为首次 bootstrap。`bin/` 是 CLI 内部适配与维护者调试面，不作为新增用户能力的首选入口。
+Protocol Core 保持很小：
 
-### `bin/` — 内部适配 / 维护者工具
+| 概念 | 一句话 |
+|------|--------|
+| Topic | 持久的协作问题边界 |
+| Artifact | 承载状态的可引用单元 |
+| Capability | 加工状态的语义能力 |
+| Invocation | 一次调用留下的来源、因果和关系记录 |
+| Decision Semantics | 管理授权、承诺和 authority transition 的规则 |
 
+常见 Artifact roles：
 
-| 命令                     | 职责                                                                               |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| `bin/setup`            | 一键初始化 / 健康检查 / 重配置检测（仓库→配置→relink→IDE→报告，`--check` 仅检查，`--non-interactive` 脚本调用） |
-| `bin/doctor`           | 统一体检入口（`--scope env/skill/cli/config/release`，`--fix` 非破坏性自动修复）             |
-| `bin/setenv`           | 管理 `prism.local.yaml` 配置                                                         |
-| `bin/relink`           | 刷新项目/Skills IDE 软链接；默认分发 4.0 semantic skills                                          |
-| `bin/create-skill`     | 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`）                                     |
-| `bin/validate-skills`  | 扫描全量 skill frontmatter 合规性                                                       |
-| `bin/clean`            | relink 逆操作（清理软链）+ 归档技能管理（`--add/--restore/--list`）                                                 |
+| Role | 作用 | Authority |
+|------|------|-----------|
+| Intent | 当前目标、边界和完成条件 | authoritative until superseded |
+| Brief | 当前上下文恢复切片 | projection，可再生成 |
+| Findings | 事实、证据、风险、缺口和建议 | advisory |
+| Plan | 候选执行安排 | advisory，除非被 Decision 授权 |
+| Decision | 关键选择与承诺 | authorizes |
 
+`supersedes` 表示一个 Artifact 被后续 Artifact 取代；`authorizes` 表示 Decision 对某个 Artifact 形成授权关系。它们是关系，不是新的 lifecycle DSL。
 
-### `prism <verb>` — 4.0 reference CLI
+更多语义边界见 [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md)。
 
+---
 
-| 命令               | 职责                                                |
-| ---------------- | ------------------------------------------------- |
-| `prism topic probe` | 机械探测当前目录是否已桥接 Workspace |
-| `prism topic new` | 创建 4.0 Topic 边界 |
-| `prism topic list` | 列出 4.0 Topic |
-| `prism host attach` | 登记项目并桥接 `workspace.{code}.local`（不调用 3.x init） |
-| `prism artifact show` | 查看 4.0 Artifact / Payload 正文 |
-| `prism brief project` | 从当前状态投影 Brief，用于 context recovery |
-| `prism review record` | 持久化 Review 结果为 Findings（advisory；不等于授权） |
-| `prism clarify record` | 持久化 Clarify payload（候选，不是 Decision） |
-| `prism plan record` | 持久化 Plan |
-| `prism decision record` | 记录被授权的 Decision |
-| `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
-| `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
-| `prism update`   | 拉取 SDK 并执行核心 doctor + 代码层 relink（experimental；Vault/Workspace 可选） |
-| `prism dist`     | 分发统一 facade（experimental）；mini/full 仅 legacy maintenance-only |
+## 日常使用
 
-旧 3.x verb（`sniff / validate / finalize / status / digest` 等）已随分支剔除；旧 topic 只读，要操作请切 3.x 分支或 `legacy-3x-final` tag。
+日常优先使用 `prism <verb>`。`./setup.sh` 保留为首次 bootstrap 和本机维护入口；`bin/` 是内部适配与维护者调试面。
 
-详见 [bin/README.md](bin/README.md)。长文本用 `--body -`（stdin）或 `--body @path`；4.0 record 的 `--json` 只输出 `{ok, ids}`，不是 3.x outer schema。
+| 你想做什么 | 入口 |
+|------------|------|
+| 查看当前项目是否已桥接 | `prism topic probe` |
+| 创建或列出 Topic | `prism topic new` · `prism topic list` |
+| 查看 Artifact 正文 | `prism artifact show` |
+| 生成上下文恢复切片 | `prism brief project` · `/prism-brief` |
+| 留下审视结果 | `prism review record` · `/prism-review` |
+| 澄清一个阻塞歧义 | `prism clarify record` · `/prism-clarify` |
+| 记录候选 Plan | `prism plan record` |
+| 记录已授权 Decision | `prism decision record` |
+| 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
 
-Relation 写入保持在现有 record surfaces 上，不新增 lifecycle DSL：
+Use what the situation needs:
 
-```bash
-prism review record ... --supersedes finding:f01
-prism plan record ... --supersedes plan:p01
-prism decision record ... --authorizes plan:p02
-prism decision record ... --supersedes decision:d01
-```
+| Skill | 用途 |
+|-------|------|
+| `/prism-topic` | 创建或定位协作边界 |
+| `/prism-brief` | 恢复当前上下文切片 |
+| `/prism-review` | 审视现状并输出 Findings |
+| `/prism-clarify` | 只澄清一个阻塞取舍 |
+| `/prism-compress` | 低频对齐阅读面并再生成 Brief |
 
-`supersedes` 只表达被后续工件取代；`authorizes` 只表达 Decision 对某个 Artifact 的授权关系。Reference creates provenance；acceptance creates authority。
+这些 skills 是能力菜单，不是顺序管线。Review 不自动进入 Clarify，Plan 不自动获得授权，Decision 才记录承诺。
 
-如需查看当前 4.0 CLI 能力面，优先运行：
+完整 CLI 面看：
 
 ```bash
 prism --help
 ```
 
----
-
-## CLI 稳定性承诺
-
-`bin/` 与 `prism <verb>` 遵循稳定性承诺：
-
-- **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
-- **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
-- **experimental 标记**：标注为 experimental 的 verb（当前含 4.0 `topic / artifact / brief / review / clarify / plan / decision` 与部分 facade）可能在下一个 minor 改名或改参数
-- **历史 breaking change**：`prism pipeline` 已物理移除；3.x 实现整体剔除见 [docs/migration.md](docs/migration.md)
-
-> 3.x 时代的完整命令面契约已归档：[docs/historical/cli-contract.md](docs/historical/cli-contract.md)。4.0 当前命令面以 `prism --help` 为准。
+维护者命令详见 [bin/README.md](bin/README.md)。
 
 ---
 
-## 为什么叫 Prism
+## 架构速览
 
-棱镜本身不发光，它只负责折射光线。
+Prism 不是 CLI 本身。CLI、skills、Markdown/local adapter 和 Workspace bridge 是让协议可用的 reference experience。
 
-Prism 在 AI 协作里的角色也是如此——共享规则保留在上游，本地上下文保留在个人工作区，两者通过轻量协议与软链接完成折射融合。
+```text
+Human / Agent
+      |
+Reference Experience
+CLI · Skills · Local Adapter · Workspace Bridge
+      |
+-----------------------------------------------
+Prism Protocol
+Topic · Artifact · Capability · Invocation
+Decision Semantics governs authorization
+```
 
-<img src="docs/assets/v4/prism-refraction.jpg" alt="共享规则经 Prism 折射为本地工作区状态" width="720">
+边界规则：
 
-两条演进原则：
+- Protocol Core 回答“哪些协作语义稳定”。
+- Reference Experience 回答“这些语义如何在本机跑起来”。
+- Workspace state 是项目级协作状态，不回写 SDK 仓库。
+- Skills、Env、Vault/Git backend 都是可选扩展。
 
-- **去伪存真**：叙事历史（文档、CHANGELOG）保留；可执行历史（旧实现、shim、fallback）剔除。
-- **分支即兼容边界**：旧版本由 git 分支 / tag 承接（3.x 终态见 `legacy-3x-final`），当前分支只承载当前版本。
+深入说明见 [docs/architecture.md](docs/architecture.md)。
 
 ---
 
-## Contributing
+## 项目状态与稳定性
 
-欢迎提交 Issue 和 Pull Request。
+| 项 | 当前口径 |
+|----|----------|
+| Release | [`4.0-canary`](VERSION) |
+| Package version | `4.0.0.dev0`（PEP 440） |
+| Python | 3.11+ |
+| License | [MIT](LICENSE) |
+| 当前命令面 | `prism --help` |
+| 3.x 终态 | git tag `legacy-3x-final`；本分支只读 |
 
+CLI 稳定性摘要：
+
+- 新增命令、可选参数和 JSON 字段可在 minor 版本落地。
+- 破坏性改名/删除遵循双 minor 保留窗口，除非已经处于 experimental 或历史迁移边界。
+- 4.0 的 `topic / artifact / brief / review / clarify / plan / decision` 等 reference verbs 仍处于 experimental。
+
+发行与版本同步规则见 [docs/release-process.md](docs/release-process.md)；历史变化见 [CHANGELOG.md](CHANGELOG.md)。
+
+---
+
+## 质量与发布
+
+常用本地门禁：
+
+```bash
+uv run python bin/release_gate.py --json
+uv run pytest
+./setup.sh check
+```
+
+相关入口：
+
+| 你要确认 | 入口 |
+|----------|------|
+| 测试分层与新增测试原则 | [docs/testing-contract.md](docs/testing-contract.md) |
+| 版本提升 checklist | [docs/release-process.md](docs/release-process.md) |
+| CI 实际执行内容 | [.github/workflows/ci.yml](.github/workflows/ci.yml) |
+| init 后日常与 E2E 验收 | [docs/onboarding.md](docs/onboarding.md) |
+
+---
+
+## 文档导航
+
+先读两份主线，再按需下钻。完整分类见 [docs/README.md](docs/README.md)。
+
+| 你想了解 | 入口 |
+|----------|------|
+| 协作契约与项目边界 | [AGENTS.md](AGENTS.md) |
+| init 后日常 | [docs/onboarding.md](docs/onboarding.md) |
+| 4.0 语义地基 | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
+| 分发与参考实现 | [docs/architecture.md](docs/architecture.md) |
+| 3.x 迁移与历史 | [docs/migration.md](docs/migration.md) · [docs/historical/](docs/historical/) |
+
+---
+
+## Contributing & Support
+
+欢迎提交 Issue 和 Pull Request：
+
+- GitHub Issues：[github.com/ArnoFrost/prism/issues](https://github.com/ArnoFrost/prism/issues)
+- SDK 层贡献请读 [docs/contributing.md](docs/contributing.md)
 - Skills 贡献请提交到 [prism-skills](https://github.com/ArnoFrost/prism-skills)
-- SDK 层变更请遵循 [AGENTS.md](AGENTS.md) 中定义的协作契约
 - Commit 信息使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范
 
-**注意**: 
-
-- GitHub 用户请提交 PR 到 [github.com/ArnoFrost/prism](https://github.com/ArnoFrost/prism)
-- 内部分支与司内 MR 流程不在 `main` 公开 README 中维护；请以内部安装文档为准。
+`SECURITY.md`、`SUPPORT.md`、`CODE_OF_CONDUCT.md` 和 Issue / PR templates 是否新增，仍待维护者单独裁决；当前 README 只描述已存在的公开入口。
 
 ## License
 

@@ -186,6 +186,48 @@ def test_retired_setup_guides_are_not_public_entrypoints() -> None:
         assert "SETUP_AGENT.md" not in text
 
 
+def test_readme_open_source_doorway_contract() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    required_sections = [
+        "## 快速开始",
+        "## 会创建什么",
+        "## 为什么选择 Prism",
+        "## 核心概念",
+        "## 日常使用",
+        "## 架构速览",
+        "## 项目状态与稳定性",
+        "## 质量与发布",
+        "## Contributing & Support",
+    ]
+    for section in required_sections:
+        assert section in readme
+
+    assert "Topic / Artifact / Capability / Invocation" in readme
+    assert "with **Decision Semantics** governing authorization" in readme
+    assert "五个 Core 原语" not in readme
+    assert "Small protocol surface" in readme
+    assert "不是顺序管线" in readme
+    assert "What Gets Created" not in readme
+    assert "会创建什么" in readme
+    assert "uv run python bin/release_gate.py --json" in readme
+    assert "SECURITY.md" in readme
+
+    forbidden_patterns = [
+        "Topic\n↓",
+        "Brief\n↓",
+        "Review\n↓",
+        "Clarify\n↓",
+        "Step 1",
+        "production ready",
+        "enterprise grade",
+        "全自动治理",
+        "多 Agent 编排",
+    ]
+    for phrase in forbidden_patterns:
+        assert phrase not in readme
+
+
 def test_current_skill_schema_examples_use_prism4_surface() -> None:
     """Schema/template examples should teach the current prism4 skill surface, not 3.x workflow."""
     surfaces = [
