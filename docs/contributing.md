@@ -9,7 +9,7 @@
 | L1 使用者 | 只安装和使用 Prism | `README.md` / [SETUP_GITHUB.md](../SETUP_GITHUB.md) | 不修改仓库 |
 | L2 项目接入者 | 为某个工作仓库接入 Workspace | `prism host attach` / `/prism-topic` / `AGENTS.local.md` | 本地 `.local` 状态 |
 | L3 贡献者 | 修改 SDK、Skills、文档或发布流程 | 本文 · [docs/README.md](./README.md) | 共享仓库内的代码与文档 |
-| L4 维护者 | 处理发布、协议修订、破坏性变更 | [docs/README.md](./README.md) · `docs/architecture.md` · `docs/cli-contract.md` | 协议、版本、CI、分发 |
+| L4 维护者 | 处理发布、协议修订、破坏性变更 | [docs/README.md](./README.md) · `docs/architecture.md` · `bin/README.md` | 协议、版本、CI、分发 |
 
 ## 仓库边界
 
@@ -55,7 +55,7 @@ SDK 层应当只表达**通用结论 / 规则 / 防护目标**，例如：
 | `防 F-meta-1 复发` | `防止 subagent 输出契约失效` |
 | `用户 14:25 反思 §2 分级 validate` | `首次合格优于多次 resume 补救（Harness 心流原则）` |
 
-**实操约束**：每次修改 SDK 层文件时（特别是 `skills/workflow/workflow-*/SKILL.md` / `shared/scripts/*` / `bin/*`），顺手 grep 当次 diff 中是否含 workspace 痕迹关键词；若有，改写为通用句或删除。
+**实操约束**：每次修改 SDK 层文件时（特别是 `skills/prism4/*/SKILL.md` / `bin/*` / `docs/*`），顺手 grep 当次 diff 中是否含 workspace 痕迹关键词；若有，改写为通用句或删除。
 
 > 公共发行视角下，外部读者看到 `r01 F-P0-2` 没有任何可解释性，反而是污染。
 
@@ -100,7 +100,7 @@ audience: maintainer
 ## 代码变更要求
 
 - 小改动优先跟随现有模块，不引入新抽象。
-- CLI 行为变更需要同步 `docs/cli-contract.md` 和测试。
+- CLI 行为变更需要同步 `bin/README.md`、相关迁移文档和测试；3.x 历史契约只在 `docs/historical/cli-contract.md` 中维护。
 - 分发 facade / adapter 变更先同步 SDK `prism dist` 契约和测试；legacy packer 行为变更再同步可选 `prism-dist` 兼容实现。
 - 破坏性变化必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
 - 涉及默认用户面的治理扫描变更，需要跑对应扫描器或测试。
@@ -111,8 +111,8 @@ audience: maintainer
 
 ```bash
 uv run pytest
-./bin/prism legacy validate "<topic-dir>"
-./bin/prism legacy finalize "<topic-dir>"
+./bin/prism sniff "<topic-dir>"          # 预期 hard reject，并指向 legacy-3x-final
+./bin/prism manifest                    # 预期 hard reject，并指向 legacy-3x-final
 ```
 
 跨仓库改动分别在各自仓库提交。不要把 SDK 改动和外部 Skills 改动混进同一个 Git 仓库提交。

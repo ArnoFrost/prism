@@ -1,6 +1,7 @@
 # Prism Distribution Whitelist
-# 控制 prism-dist 打包时包含哪些 skills
+# 控制当前 SDK 分发时包含哪些 skills
 # 策略与机制分离：修改此文件即可调整分发范围，无需改脚本
+# 3.x mini/full profile 已随 prism-4 分支移出当前 schema；可执行终态见 git tag legacy-3x-final。
 
 version: "4.0.0"
 
@@ -15,43 +16,10 @@ profiles:
       - prism-compress
     include_shared: false
 
-  mini:
-    description: "legacy mini 轻量分发 — 3.x workflow/workspace 完整闭环，不要求外部 Skills"
-    skills:
-      - workspace-init             # [core] 项目初始化（含迁移）
-      - workflow-intake            # [core] 入料路由
-      - workflow-scope             # [core] 合同收敛
-      - workflow-execute           # [core] 单游标执行闭环
-      - workflow-review            # [core] 多角色评审
-      - workflow-review-lite       # [compat] retired：仅显式调用与旧产物兼容
-      - workflow-tidy              # [core] 工件对齐
-      - workflow-digest            # [core] 状态摘要
-      - workflow-status            # [core] 健康状态
-    include_shared: false
-
-  full:
-    description: "legacy full — 3.x mini core + 外部 common / devops 扩展"
-    skills:
-      - workspace-init             # [core] 项目初始化（含迁移）
-      - workflow-intake            # [core] 入料路由
-      - workflow-scope             # [core] 合同收敛
-      - workflow-execute           # [core] 单游标执行闭环
-      - workflow-review            # [core] 多角色评审
-      - workflow-review-lite       # [compat] retired：仅显式调用与旧产物兼容
-      - workflow-tidy              # [core] 工件对齐
-      - workflow-digest            # [core] 状态摘要
-      - workflow-status            # [core] 健康状态
-      - commit                     # [common]
-      - digest                     # [common]
-      - humanizer                  # [common]
-      - learnnote                  # [common]
-    include_shared: true
-
 # 永远排除（dev 工具 + 个人固化版）
 always_exclude:
   - prism-dist                     # [dev] 分发工具自身不入包
   - prism-push                     # [dev] 维护者工具
   - prism-pull                     # [dev] 维护者工具
   - prism-review-arno              # [personal]
-  # - prism-workspace-init-arno    # [deprecated] 个人固化版已弃用
   - cursor-insights                # [dev] 内部分析工具

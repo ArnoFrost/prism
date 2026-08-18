@@ -102,7 +102,7 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 本轮整理或实施可能误伤什么。
 ```
 
-frontmatter：`authority: "operative"`，当前件 `evolution: "operative"`，过期件 `"historical"`。
+frontmatter：当前件 `authority: "advisory"`、`evolution: "regenerable"`；过期件 `evolution: "historical"`。Plan 可以描述当前采用的行动结构，但执行授权来自 Intent、Decision 或人类明确指示，不由 Plan 自身产生。
 
 ## Findings — `findings/fXX_*.md`
 

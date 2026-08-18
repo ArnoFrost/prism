@@ -19,7 +19,7 @@ frontmatter:
   required:
     name: "string, lowercase + hyphens; MUST equal parent directory basename (distribution id)"
     description: "string, includes 'Use when:' trigger phrases"
-    description_zh: "string, CodeBuddy IDE list label (required for SDK builtin workflow/workspace)"
+    description_zh: "string, CodeBuddy IDE list label (required for SDK builtin prism4 skills)"
   recommended_order:
     - name
     - description
@@ -36,12 +36,12 @@ naming:
   rule: "basename(skill_dir) === frontmatter.name === relink link name"
   sdk_builtin:
     layout: "skills/{category}/{skill-id}/SKILL.md"
-    skill_id: "{category}-{slug} — e.g. workflow-archive, workspace-init"
-    anti_pattern: "skills/workflow/archive/ + name: workflow-archive（父目录与 name 不一致，Codex 等会报错）"
+    skill_id: "{category}-{slug} — e.g. prism-review, prism-topic"
+    anti_pattern: "skills/prism4/review/ + name: prism-review（父目录与 name 不一致，Codex 等会报错）"
   external_skills:
     layout: "~/prism-skills/{skill-id}/SKILL.md"
     skill_id: "flat top-level directory name"
-  slash_command: "/{skill-id} — 与 name 同形，如 /workflow-archive"
+  slash_command: "/{skill-id} — 与 name 同形，如 /prism-review"
   optional:
     visibility: "enum: internal | public — SSOT 在 skills-catalog.yaml，缺省 = internal"
     stability: "enum: experimental | stable — SSOT 在 skills-catalog.yaml，缺省 = experimental"
@@ -91,21 +91,19 @@ loading:
 
 # Skill categories in Prism
 categories:
-  workflow:
-    description: "Workflow-oriented skills for structured task collaboration"
+  prism4:
+    description: "Prism 4.0 semantic skills for Topic / Brief / Review / Clarify / Compress"
     examples:
-      - workspace-init
-      - workflow-intake
-      - workflow-review
-  migration:
-    description: "Path and workspace migration"
-    examples:
-      - workspace-init
+      - prism-topic
+      - prism-brief
+      - prism-review
+      - prism-clarify
+      - prism-compress
   utility:
     description: "General-purpose tools"
     examples:
       - commit
-      - digest
+      - humanizer
 
 # Distribution model (三正交分离)
 distribution:

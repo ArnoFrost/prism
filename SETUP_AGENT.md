@@ -49,11 +49,11 @@ clone 口径（GitHub 公开 `main`）：
 
 | 分发面 | 人类手册 | clone 命令 |
 |--------|----------|------------|
-| GitHub 公开 | [SETUP_GITHUB.md](SETUP_GITHUB.md) | `git clone git@github.com:ArnoFrost/prism.git ~/prism` |
+| GitHub 公开 | [SETUP_GITHUB.md](SETUP_GITHUB.md) | `git clone https://github.com/ArnoFrost/prism.git ~/prism` |
 
 ```bash
 if [ ! -d ~/prism/.git ]; then
-  git clone git@github.com:ArnoFrost/prism.git ~/prism
+  git clone https://github.com/ArnoFrost/prism.git ~/prism
 fi
 ```
 
@@ -191,7 +191,7 @@ echo "=== Probe Done ==="
 
 ```
 prism-skills 仓库未找到。这是可选的个人工具仓库，不影响核心工作流。
-  如需个人工具和 git 同步能力: git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
+  如需个人工具和 git 同步能力: git clone https://github.com/ArnoFrost/prism-skills.git ~/prism-skills
 （跳过也完全没问题，SDK 内置了全部工作流技能）
 ```
 
@@ -509,5 +509,5 @@ bin/relink                        # 刷新软链接排除它
 - 协作契约：[AGENTS.md](AGENTS.md)
 - 项目说明：[README.md](README.md)
 - 日常运维与 E2E 验收：[docs/onboarding.md](docs/onboarding.md)
-- CLI 分层：[docs/cli-contract.md](docs/cli-contract.md)
+- CLI 分层：[bin/README.md](bin/README.md)；3.x 历史契约见 [docs/historical/cli-contract.md](docs/historical/cli-contract.md)
 - 首屏能力闭环：`setenv → relink → prism topic probe → /prism-topic`

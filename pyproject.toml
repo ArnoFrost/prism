@@ -1,7 +1,16 @@
 [project]
 name = "prism"
 version = "4.0.0.dev0"
+description = "A local-first collaboration protocol for humans and AI agents."
+readme = "README.md"
 requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [{name = "ArnoFrost"}]
+
+[project.urls]
+Homepage = "https://github.com/ArnoFrost/prism"
+Documentation = "https://github.com/ArnoFrost/prism#readme"
+Issues = "https://github.com/ArnoFrost/prism/issues"
 
 [dependency-groups]
 dev = ["pytest>=8.0"]

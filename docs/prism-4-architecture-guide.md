@@ -245,6 +245,16 @@ Relation = semantic relation among artifacts, decisions, and/or invocations.
 Graph = emergent view formed by invocation records and relations.
 ```
 
+Adapter fidelity:
+
+```text
+In-memory / JSON reference store -> can expose a full Invocation graph.
+Local Markdown files -> persist artifact-level relations and provenance projection.
+Brief / index files -> projections, never graph facts.
+```
+
+The local file adapter may choose not to persist raw Invocation records. That does not remove Invocation from the protocol; it means this adapter exposes a weaker graph view through artifact frontmatter, relations, indexes, and CLI record ids.
+
 Invocation conceptually identifies:
 
 ```text
@@ -270,12 +280,12 @@ flowchart LR
 
   B0 --> R1
   I0 --> R1
-  R1 --> F1
-  F1 --> C1
-  C1 --> U1
-  C1 --> DC1
-  DC1 --> RD1
-  RD1 --> D1
+  F1 -->|"derived-from"| R1
+  F1 -->|"input-to"| C1
+  U1 -->|"derived-from"| C1
+  DC1 -->|"derived-from"| C1
+  DC1 -->|"input-to"| RD1
+  D1 -->|"derived-from"| RD1
   D1 -->|"authorizes patch"| I0
   I0 --> P1
   D1 --> P1
@@ -306,6 +316,8 @@ references
 ```
 
 This is a minimal starter set, not a closed enum. Add relations only when dogfood shows that a stable semantic relation cannot be represented clearly with the starter set.
+
+Canonical relation direction is `source --relation--> target`; for example, `finding:f01 --derived-from--> invocation:...` and `decision:d01 --authorizes--> plan:p01`. Diagrams may still draw input/output flow for readability, but relation arrows should be labeled when direction matters.
 
 ## 8. Diagram Style Guidance
 

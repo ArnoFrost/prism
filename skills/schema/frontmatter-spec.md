@@ -21,9 +21,9 @@
 
 ```yaml
 ---
-name: workflow-example
+name: prism-example
 description: |
-  单行或多行能力描述。Use when: 触发词1、触发词2、workflow-example
+  单行或多行能力描述。Use when: 触发词1、触发词2、prism-example
 description_zh: "中文简述（IDE 列表）"
 license: MIT
 metadata:
@@ -50,7 +50,7 @@ user_invocable: true
 
 - `user_invocable: True`（YAML 布尔请用小写 `true`）
 - `visibility` 写在 `name` 之前（治理字段后移）
-- `skills/workflow/foo/` + `name: workflow-foo`（目录与 name 不一致）
+- `skills/prism4/foo/` + `name: prism-foo`（目录与 name 不一致）
 - SKILL 写 `visibility: internal` 但 catalog 登记 `dev`（漂移）
 
 ## 校验

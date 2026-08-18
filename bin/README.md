@@ -25,7 +25,7 @@ Prism 的可执行工具入口。每个脚本可配合同名 Skill 使用，形�
 | `create-skill` | 从模板创建新 skill 骨架 | — | ✅ 可用 |
 | `validate-skills` | 扫描全量 skill frontmatter 合规性 | — | ✅ 可用 |
 | `clean` | relink 的逆操作，清理软链接和配置 | — | ✅ 可用 |
-| `prism` | 4.0 reference CLI + legacy adapter（含 relink / doctor / update facade） | prism-* | ✅ 可用 |
+| `prism` | 4.0 reference CLI；3.x verb 硬拒绝并指向 `legacy-3x-final`（含 relink / doctor / update facade） | prism-* | ✅ 可用 |
 
 > **`prism doctor --json`** 为 flat passthrough（非 outer envelope）；底层仍走 `bin/doctor`。
 
@@ -142,7 +142,7 @@ bin/doctor --scope <name>         # 只跑指定范围
 
 `--rollback` 当前用于 CLI 寻址层回滚：删除 `--fix` 写入的 rc anchor 和 `~/.local/bin/prism` symlink。`--output` 适合生成 release health JSON 或给其他工具链消费。
 
-### prism — 4.0 reference CLI + legacy adapter
+### prism — 4.0 reference CLI
 
 ```bash
 prism --help                       # 列出所有子命令
@@ -173,7 +173,7 @@ prism decision record <topic_id> --body "<决策>"
 - **Topic**：`topic new / topic list`
 - **Artifact / Projection**：`artifact show / brief project`
 - **Record**：`review record` / `clarify record` / `plan record` / `decision record`（persist semantic output；不等于授权）
-- **Legacy adapter**：`legacy ...`
+- **Retired 3.x surface**：旧 verb 只返回剔除提示，不提供兼容 adapter
 
 旧 3.x verb（`sniff / validate / finalize / tidy / status / sync / manifest` 等）已随 `skills/workflow/` 一并剔除，不再由本分支提供。
 
@@ -183,7 +183,7 @@ prism decision record <topic_id> --body "<决策>"
 prism --help
 ```
 
-4.0 当前命令面以 `prism --help` 为准。3.x legacy 命令面契约、稳定性分级、破坏性变更策略见 [docs/cli-contract.md](../docs/cli-contract.md)。outer schema 见 [docs/cli-json-schema.json](../docs/cli-json-schema.json)。
+4.0 当前命令面以 `prism --help` 为准。3.x legacy 命令面契约、稳定性分级、破坏性变更策略见 [historical/cli-contract.md](../docs/historical/cli-contract.md)。outer schema 见 [historical/cli-json-schema.json](../docs/historical/cli-json-schema.json)。
 
 ## 配置文件
 

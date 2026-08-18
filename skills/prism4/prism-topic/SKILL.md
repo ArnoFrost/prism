@@ -22,7 +22,7 @@ Workspace 关联是 Host 行为，不是 Topic 语义。项目初始化（`./set
 - 子 Topic 落在 `children/<slug>/`，内聚 topic / intent / plans / references；findings 与 decisions 冒泡回父根。
 - **先机械探测，再创建。** 不要靠模型判断「这里像不像工作区」。
 - 不要为 4.0 Topic 调用 `workspace-init` 或 `workflow-intake`，也不要创建 `scope.md`、`focus.md`、`task.index.md`、`wave`、`reviews/` 或 `decisions/`。
-- 若请求的工作属于旧 3.x workspace，停下并说明本技能仅用于 4.0；legacy 处理应显式使用 `prism legacy ...` 或旧 workflow 技能。
+- 若请求的工作属于旧 3.x workspace，停下并说明本技能仅用于 4.0；写入式 legacy 处理需要切到 3.x 分支或 `legacy-3x-final` tag。
 
 ## 工作流
 

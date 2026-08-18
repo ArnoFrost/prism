@@ -5,14 +5,14 @@
 #   bin/create-skill --name my-skill                     在 prism-skills 创建
 #   bin/create-skill --name my-skill --layer skills      同上（显式指定）
 #   bin/create-skill --name my-skill --layer env         在 ArnoDotFiles/skills/ 创建
-#   bin/create-skill --name wf-new --layer sdk --category workflow  在 SDK 内置创建
+#   bin/create-skill --name prism-new --layer sdk --category prism4  在 SDK 内置创建
 #   bin/create-skill --name my-skill --desc "一句话描述"  自定义描述
 #   bin/create-skill --name my-skill --no-relink         跳过自动 relink
 #
 # 选项:
 #   --name NAME         技能名称（必填，小写+连字符）
 #   --layer LAYER       目标层：sdk / skills / env（默认 skills）
-#   --category CAT      SDK 层分类目录（--layer sdk 时必填，如 workflow / workspace）
+#   --category CAT      SDK 层分类目录（--layer sdk 时必填，如 prism4）
 #   --desc DESC         技能描述（可选，默认占位文本）
 #   --no-relink         创建后不自动执行 relink
 #   --dry-run           预览要创建的文件，不实际写入
@@ -87,7 +87,7 @@ esac
 
 # SDK 层必须指定 category
 if [[ "$LAYER" == "sdk" && -z "$CATEGORY" ]]; then
-  echo -e "${RED}✗ --layer sdk 必须同时指定 --category（如 workflow / workspace）${NC}" >&2
+  echo -e "${RED}✗ --layer sdk 必须同时指定 --category（如 prism4）${NC}" >&2
   exit 1
 fi
 

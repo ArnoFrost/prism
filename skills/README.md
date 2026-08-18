@@ -85,7 +85,7 @@ iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 ## 治理与 SSOT
 
 - 人类文档分类与读序：[docs/README.md](../docs/README.md)
-- CLI 契约：[docs/cli-contract.md](../docs/cli-contract.md) · 4.0 语义地基：[docs/prism-4-refoundation-alignment.md](../docs/prism-4-refoundation-alignment.md)
+- CLI 入口：[bin/README.md](../bin/README.md) · 4.0 语义地基：[docs/prism-4-refoundation-alignment.md](../docs/prism-4-refoundation-alignment.md)
 - **SDK 内置技能**：`schema/skills-catalog.yaml` 是 `visibility` / `stability` 的权威值；`SKILL.md` 可省略 C 层字段（validate 从 catalog 继承），写明则必须与 catalog 一致（见 `frontmatter-spec.md`）
 - **外部 prism-skills**：未入 catalog 者须在 `SKILL.md` 写明 `visibility` + `stability`（默认 `internal` + `experimental`）
 - 只有通过审计并满足 `public_gate` 的技能，才可标记为 `visibility=public`

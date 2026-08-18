@@ -48,8 +48,8 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          # 本仓 SDK 是脚本集合，无 uv.lock / pyproject.toml；显式置空避免 v3 的
-          # "No file matched [**/uv.lock]" fail（v5+ 仅 warn，但仍主动消除噪声）
+          # 本仓存在 uv.lock / pyproject.toml；当前仍显式置空，避免跨平台 cache
+          # key 与本地-only 工作区状态耦合。依赖安装由 uv run / dependency-groups 负责。
           cache-dependency-glob: ""
 
       - name: Install Python via uv
@@ -85,7 +85,7 @@ jobs:
             --head "$PR_HEAD_SHA" \
             --json | tee release-gate.json
 
-      - name: Validate workflow skills
+      - name: Validate skills
         run: |
           bin/validate-skills --json | tee validate-skills.json
 

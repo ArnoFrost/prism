@@ -114,3 +114,86 @@ def test_live_surface_has_no_workspace_roadmap_references() -> None:
         text = path.read_text(encoding="utf-8", errors="ignore")
         match = pattern.search(text)
         assert match is None, f"路书编号污染 {path}: {match.group(0)!r}"
+
+
+def test_open_source_surface_has_no_private_or_retired_entrypoints() -> None:
+    """Public setup/docs must not drift back to private paths or removed 3.x entrypoints."""
+    surfaces = [
+        ROOT / "README.md",
+        ROOT / "SETUP_GITHUB.md",
+        ROOT / "SETUP_AGENT.md",
+        ROOT / "bin" / "README.md",
+        ROOT / "docs" / "migration.md",
+        ROOT / "docs" / "contributing.md",
+        ROOT / "docs" / "prism-4-open-source-readiness-review.md",
+        ROOT / "skills" / "README.md",
+        ROOT / "skills" / "templates" / "SKILL.template.md",
+    ]
+    forbidden = [
+        "git@github.com:ArnoFrost/prism.git",
+        "git@github.com:ArnoFrost/prism-skills.git",
+        "/Users/arno",
+        "TVKMM",
+        "tvkmm",
+        "docs/cli-contract.md",
+        "docs/cli-json-schema.json",
+        "legacy adapter",
+    ]
+
+    for path in surfaces:
+        text = path.read_text(encoding="utf-8")
+        for phrase in forbidden:
+            assert phrase not in text, f"{phrase!r} leaked into {path}"
+
+
+def test_current_skill_schema_examples_use_prism4_surface() -> None:
+    """Schema/template examples should teach the current prism4 skill surface, not 3.x workflow."""
+    surfaces = [
+        ROOT / "skills" / "schema" / "skill.schema.yaml",
+        ROOT / "skills" / "schema" / "frontmatter-spec.md",
+        ROOT / "skills" / "schema" / "dist-whitelist.yaml",
+        ROOT / "bin" / "create-skill",
+    ]
+    forbidden = [
+        "workflow-archive",
+        "workspace-init",
+        "skills/workflow",
+        "workflow/workspace 完整",
+    ]
+
+    for path in surfaces:
+        text = path.read_text(encoding="utf-8")
+        for phrase in forbidden:
+            assert phrase not in text, f"{phrase!r} leaked into {path}"
+
+
+def test_plan_format_matches_reference_record_plan_semantics() -> None:
+    artifact_format = (
+        ROOT
+        / "skills"
+        / "prism4"
+        / "prism-compress"
+        / "references"
+        / "artifact-format.md"
+    ).read_text(encoding="utf-8")
+    use_cases = (ROOT / "prism4" / "use_cases.py").read_text(encoding="utf-8")
+
+    assert 'authority: "advisory"' in artifact_format
+    assert 'evolution: "regenerable"' in artifact_format
+    assert '"authority": "advisory"' in use_cases
+    assert '"evolution": "regenerable"' in use_cases
+    assert 'authority: "operative"' not in artifact_format
+
+
+def test_open_source_readiness_review_is_indexed_and_actionable() -> None:
+    docs_index = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+    review = (
+        ROOT / "docs" / "prism-4-open-source-readiness-review.md"
+    ).read_text(encoding="utf-8")
+
+    assert "prism-4-open-source-readiness-review.md" in docs_index
+    assert "综合评分：**7.9 / 10**" in review
+    assert "## 4.0 组织图" in review
+    assert "## 迁移前硬伤清单" in review
+    assert "## 下一轮高 ROI" in review
+    assert "请先读 docs/migration.md" in review

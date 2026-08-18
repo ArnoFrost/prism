@@ -36,7 +36,7 @@ Prism 4.0 是一层轻量协作协议。**Protocol Core** 只有 Topic / Artifac
 
 ```bash
 # 1. 安装（clone + 一键 init）
-git clone git@github.com:ArnoFrost/prism.git ~/prism
+git clone https://github.com/ArnoFrost/prism.git ~/prism
 cd ~/prism && ./setup.sh init
 prism --version
 
@@ -58,7 +58,7 @@ prism topic new topic:my-first --title "我的第一个专项" --intent "要解�
 
 ### Agent 引导
 
-> 帮我 clone `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并读 `SETUP_AGENT.md` 完成验收。
+> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并读 `SETUP_AGENT.md` 完成验收。
 
 ---
 

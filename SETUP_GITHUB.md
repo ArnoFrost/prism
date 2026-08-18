@@ -5,7 +5,7 @@
 ## 1. 克隆并 init
 
 ```bash
-git clone git@github.com:ArnoFrost/prism.git ~/prism
+git clone https://github.com/ArnoFrost/prism.git ~/prism
 cd ~/prism
 
 # 一键 init（推荐；默认本地 Workspace backend）
@@ -17,7 +17,7 @@ prism --version
 可选：外部 Skills 扩展
 
 ```bash
-git clone git@github.com:ArnoFrost/prism-skills.git ~/prism-skills
+git clone https://github.com/ArnoFrost/prism-skills.git ~/prism-skills
 # 重新 init 时传入 PRISM_SKILLS_PATH="$HOME/prism-skills"
 ```
 
@@ -80,7 +80,7 @@ prism doctor --scope config --quick
 - **环境 / 软链** → `prism relink` · `prism doctor` · `./setup.sh check`
 - **升级** → `prism update`（或分步 pull + doctor + relink）
 - **4.0 Topic** → `prism topic` · `prism brief` · `prism review record` · `/prism-*`
-- **旧 3.x topic** → `prism legacy ...`
+- **旧 3.x topic** → 本分支只读；需要写入维护时切到 3.x 分支或 `legacy-3x-final` tag
 
 ```bash
 prism --version
@@ -101,4 +101,4 @@ prism update                      # 或分步 pull + doctor + relink
 ## 参考
 
 - Agent 协议：[SETUP_AGENT.md](SETUP_AGENT.md)
-- Vault 跨设备同步：[docs/onboarding.md](docs/onboarding.md) · Vault `047_vault-git-migration/migration-guide.md`
+- Workspace backend / Vault 可选部署：[docs/onboarding.md](docs/onboarding.md)

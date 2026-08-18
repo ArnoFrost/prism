@@ -63,7 +63,7 @@ Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`；3.x 实现�
 
 | 位置 | 含义 | 必需 | 放什么 |
 |------|------|:----:|--------|
-| **SDK 仓库** | 协议文本 + schema + 4.0 semantic skills + legacy 源码 + bin | 是 | 参考实现与默认技能面 |
+| **SDK 仓库** | 协议文本 + schema + 4.0 semantic skills + bin | 是 | 参考实现与默认技能面 |
 | **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills 扩展 |
 | **Workspace backend**（默认本地，可选 Vault/Git） | 项目状态 | 是（逻辑实例） | Workspace 实例 |
 
@@ -153,25 +153,7 @@ OpenSpec 更像 planning layer；3.x Prism workflow 更像 cognitive governance 
 
 3.x 的 workflow 能力面（intake / scope / focus / task / wave、reviews/rXX、决策双门、痕迹义务抽检等）及其 `prism legacy` CLI 已随 prism-4 分支物理剔除。本分支不再保留其实现细节文档；叙事与契约归档在 [historical/](./historical/)（`prism-3.2.md`、`topic-lifecycle.md`、`skill-taxonomy.md`、`cli-contract.md`），可执行终态见 git tag `legacy-3x-final`。
 
-### 痕迹义务家族封顶政策（v2.0 起永久生效）
-
-3.x 时代 `validate-trace` 扫描的痕迹义务家族（trace obligation families）自 v2.0 起**永久封顶为 4 族**（本政策随 3.x 一并归档，4.0 无此概念）：
-
-| 族 | 落点 | 用途 |
-|---|---|---|
-| `task_probe` | `reviews/rXX_*.md`（mode=full） | Task 工具并行调用探针 — 真并行 vs fallback 可观察痕迹 |
-| `merge_artifact` | `reviews/rXX_*.md`（mode=full） | Merge Step 4 痕迹 — raw 文件落盘可审计 |
-| `decision_artifact` | `decisions/dXX_*.md` | Gate 4 决策痕迹 — accept/reject/defer/other + 落盘状态可审计 |
-| `intake_gate_out` | `intake.md` | Intake Gate Out 痕迹 — 防止 intake.md 膨胀 + 骨架文件缺失 |
-
-**封顶约束（硬性，受守门测试保护）**：
-
-- 不再新增第 5 族（`len(TRACE_FAMILIES) == 4` 由 `tests/test_trace_families_capped.py` 锚定；任何新增族必须先重开 Protocol 修订该测试，门槛刻意做高）
-- 新场景必须通过两条路径之一实现：**① 扩展 `phase` / `applies_to` 字段语义；② 在现有族的 `required_fields` 内加新键**
-- 文档侧禁止新增"加 X 族 / 第 5 族"语义；规范文件（SKILL.md / docs / scope）模板均不得引入此类描述
-- **不影响** `validate-trace` 是 lenient 还是 strict 模式 — 封顶只约束族数量；模式优先级链（CLI flag > ENV > frontmatter > 默认）保持不变
-
-设计动因：早期治理实践证明每新增一族都会带来"模板 / 测试 / SKILL 描述 / agent 训练"的 4 处复制扩散，4 族已经覆盖核心评审 / 决策 / 入料 / 合并四个关键 phase；继续扩张族会导致治理通胀（governance inflation）。
+3.x 的 trace obligation / `validate-trace` 政策随 3.x 一并归档，4.0 不沿用该治理面。需要追溯旧策略时读 [`historical/cli-contract.md`](./historical/cli-contract.md) 与 [`historical/prism-3.2.md`](./historical/prism-3.2.md)；不要把它复制回 4.0 活文档或 skill。
 
 ---
 
@@ -191,16 +173,18 @@ prism/
 │   ├── setenv                       # 配置管理 + 环境变量导出
 │   ├── relink                       # 软链接刷新（内置 + 外部技能）
 │   ├── clean                        # 归档技能管理（--add/--restore/--list）
-│   ├── rename-artifacts             # 产物批量重命名
 │   ├── prism-local-schema.yaml
 │   └── README.md
-├── prism4/                          # 4.0 reference adapter（protocol / storage / CLI）
+├── prism4/                          # 4.0 reference adapter（protocol / storage / CLI / host）
 │   ├── cli.py
 │   ├── core.py
+│   ├── host.py
+│   ├── local_files.py
 │   ├── local_json.py
 │   ├── projection.py
+│   ├── use_cases.py
 │   └── reference.py
-├── skills/                          # 技能层（4.0 semantic skills + 3.x legacy source）
+├── skills/                          # 技能层（4.0 semantic skills + schema/templates）
 │   ├── schema/
 │   │   ├── skill.schema.yaml
 │   │   ├── frontmatter-spec.md      # frontmatter 分层与书写顺序 SSOT
@@ -214,28 +198,11 @@ prism/
 │   │   ├── prism-review/
 │   │   ├── prism-clarify/
 │   │   └── prism-compress/
-│   ├── workflow/                    # 3.x legacy workflow（目录名 = name）
-│   │   ├── workflow-intake/
-│   │   ├── workflow-execute/      # dev experimental
-│   │   ├── workflow-review/
-│   │   ├── workflow-review-lite/
-│   │   ├── workflow-scope/
-│   │   ├── workflow-tidy/
-│   │   ├── workflow-digest/
-│   │   ├── workflow-status/
-│   │   ├── workflow-compact/      # dev experimental
-│   │   ├── workflow-archive/      # dev experimental
-│   │   └── shared/                # sniff_lib + scripts + references（非 skill）
-│   └── workspace/                   # 3.x legacy workspace skill
-│       └── workspace-init/
-└── workspace/                       # 工作区定义层
-    ├── schema/
-    │   └── workspace.schema.yaml
-    └── templates/
-        ├── project.yaml
-        ├── project-index.md
-        ├── project-readme.md
-        └── AGENTS.md
+│   └── README.md
+├── tests/                           # 4.0 reference adapter / docs / setup guards
+├── dogfood/                         # 早期 4.0 reference-json 样例
+├── pyproject.toml
+└── uv.lock
 ```
 
 <details>
@@ -253,14 +220,14 @@ prism/
 
 ## 设计原则
 
-> 完整版设计哲学（含反模式、边界、明确不做）见 Vault `docs/当下/Prism设计哲学.md`。以下为架构层面的精简版。
+以下是公开仓库内自包含的架构原则；更细的个人笔记不作为开源读者必读依赖。
 
 1. **术语清晰** — 使用系统职责名词而非历史实现名词
 2. **状态与逻辑分离** — Workspace 承载状态，其余层负责可复用逻辑
 3. **默认无侵入** — 不接管目录结构，`.local` 模式由全局 gitignore 统一覆盖
 4. **本地优先** — 工作流、笔记与状态保持本地化、可组合、可迁移
-5. **向后兼容** — Skills / DotFiles / AI-TASK 均可脱离 Prism 独立运行
-6. **渐进迁移** — `ai-task.local` 与 `workspace.{code}.local` 共存，按节奏切换
+5. **可选依赖可脱离** — 外部 Skills、Env、Vault/Git backend 均可独立存在
+6. **渐进迁移** — 旧桥接与 `workspace.{code}.local` 可共存，按节奏切换
 7. **SDK 与 Skill 边界** — SDK 负责准备与桥接，Skill 负责协作动作
 8. **只有高频且能独立成故事的能力，才值得成为首屏 Skill**
 

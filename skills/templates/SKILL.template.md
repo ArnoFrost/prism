@@ -52,8 +52,8 @@ public_gate:
 ## 参考（cite 不复制）
 
 - SDK 文档导航：[docs/README.md](../../docs/README.md)
-- 术语 SSOT：`skills/workflow/shared/vocabulary.md`（经 `bin/relink` 分发到 `references/vocabulary.md`）
-- CLI 契约：[docs/cli-contract.md](../../docs/cli-contract.md)
+- 4.0 语义地基：[docs/prism-4-refoundation-alignment.md](../../docs/prism-4-refoundation-alignment.md)
+- CLI 入口：[bin/README.md](../../bin/README.md)
 
 ## 约束
 

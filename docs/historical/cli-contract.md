@@ -2,6 +2,8 @@
 
 > **定位**：本文是 **3.x legacy CLI adapter** 的稳定性合同与守门表，服务 `prism legacy ...`、历史 topic 与 `skills/workflow/shared/tests` 回归。它不是 4.0 世界观，也不是 4.0 Interaction Contract。
 >
+> **当前 prism-4 分支读法**：本文是历史快照；`prism legacy ...` 与旧 3.x verb 在当前分支均 hard reject，并指向 git tag `legacy-3x-final`。需要实际运行 3.x 能力时切到该 tag 或旧发行分支。
+>
 > 4.0-canary：`bin/prism` 的 bash 壳 exec 的是 `prism4/cli.py`。3.x topic 动词（sniff / validate / finalize 等）**已硬拒绝**无前缀调用，必须 `prism legacy <verb>`。`doctor` / `relink` / `update` / `dist` 仍可直接调用。4.0 当前能力面以 `prism --help`、[bin/README.md](../bin/README.md) 与 `prism4/cli.py` 为准。不要把本文 §5.2 的 verb 名表误读为 4.0 默认入口。
 >
 > 4.0 record 成功时的 JSON 是 `{ok, ids}`，**不是** `{ok, command, version, data, warnings, errors}`。
