@@ -78,7 +78,9 @@ def test_roundtrip_preserves_topics_artifacts_and_payloads(tmp_path: Path) -> No
     assert _sequenced(tmp_path / "findings", "f01").is_file()
     assert _sequenced(tmp_path / "clarifications", "c01").is_file()
     assert (tmp_path / "topic.md").is_file()
+    assert (tmp_path / "references").is_dir()
     assert (tmp_path / "children" / "child" / "topic.md").is_file()
+    assert (tmp_path / "children" / "child" / "references").is_dir()
 
     reloaded = adapter.load()
 
@@ -93,6 +95,23 @@ def test_roundtrip_preserves_topics_artifacts_and_payloads(tmp_path: Path) -> No
     assert payload.type == "proposed-patch"
     assert payload.metadata["title"] == "载体建议"
     assert payload.metadata["question"] == "要不要改？"
+
+
+def test_manual_references_are_preserved_but_not_loaded_as_artifacts(
+    tmp_path: Path,
+) -> None:
+    adapter = LocalFileStoreAdapter(tmp_path)
+    adapter.save(_store())
+    reference = tmp_path / "references" / "investigation.md"
+    reference.write_text("# Investigation\n", encoding="utf-8")
+
+    adapter.update(lambda store: store)
+
+    assert reference.read_text(encoding="utf-8") == "# Investigation\n"
+    reloaded = adapter.load()
+    assert all(
+        artifact.title != "Investigation" for artifact in reloaded.artifacts.values()
+    )
 
 
 def test_sequence_ids_increase_with_existing_artifacts(tmp_path: Path) -> None:

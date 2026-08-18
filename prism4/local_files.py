@@ -20,7 +20,7 @@
       children/<slug>/topic.md           子 Topic 执行内聚
       children/<slug>/intent.md
       children/<slug>/plans/
-      references/                        非工件，不受适配器管理
+      references/                        预留参考材料区；非工件，不受适配器管理
       archive/                           历史件，不受 prune 管理
 
 设计要点：
@@ -66,6 +66,7 @@ T = TypeVar("T")
 TOPIC_FILENAME = "topic.md"
 INTENT_FILENAME = "intent.md"
 CHILDREN_DIRECTORY = "children"
+REFERENCES_DIRECTORY = "references"
 CLARIFICATION_DIRECTORY = "clarifications"
 ARCHIVE_DIRECTORY = "archive"
 LEGACY_TOPIC_DIRECTORY = "topics"
@@ -160,6 +161,8 @@ class LocalFileStoreAdapter:
 
         expected: set[Path] = set()
         for topic in store.topics.values():
+            topic_root = self.root / _topic_dir_prefix(topic, store)
+            (topic_root / REFERENCES_DIRECTORY).mkdir(parents=True, exist_ok=True)
             target = self.root / _topic_path(topic, store)
             _write_document(target, _topic_frontmatter(topic), _topic_body(topic))
             expected.add(target)

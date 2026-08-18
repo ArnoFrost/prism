@@ -122,6 +122,18 @@ legacy_dirs: N (numbered dirs not recognized as 4.0 stores)
 
 不批量迁移。3.x topic 目录由原样保留，在 prism-4 分支**只读**（4.0 adapter 可读）；`workflow-*` 操作能力随分支剔除。4.0 Topic 是新的协作边界，不为旧 topic 补写 4.0 工件。
 
+## 旧调研 / temp 资产
+
+4.0 Topic 骨架会预留空 `references/`。它是 Reference Experience 的支持材料区，不是 Core Artifact；默认不自动投影进 Brief，也不自动把旧 `temp/` 或旧 topic 的调研文件搬进去。
+
+迁移期遇到仍有价值的调研、排查、gap analysis 或外部证据时，按需三选一：
+
+- 复制到某个新的 4.0 Topic 的 `references/`，并在 Intent 或 Findings 中写“核心依据 / References”小段，标明相对路径、来源、用途和可信度。
+- 如果材料本身已构成独立协作问题，创建新的 4.0 Topic 承载。
+- 如果暂时没有归属，保留在 `temp/`，显式标记为 orphan/backlog，不静默迁移。
+
+不要把旧调研资产自动提升为 Decision 或 Findings；只有经过当前回合 Review/Decision 承接后，才记录为对应工件。
+
 ## 回滚口径
 
 4.0 以 Git 分支承载：切回 3.x 发行线分支或 `legacy-3x-final` tag 即可恢复完整 3.x。本地 Workspace 状态（`workspace.*.local` 指向的实例）不因分支切换被改写。

@@ -163,6 +163,7 @@ def test_topic_new_under_bridge_creates_sibling_store(tmp_path: Path) -> None:
     assert str(store_root) in created.stdout
     assert (store_root / "topic.md").is_file()
     assert (store_root / "intent.md").is_file()
+    assert (store_root / "references").is_dir()
     assert not (project / "topic.md").exists()
 
     listed = _run(["topic", "list"], cwd=project)
@@ -202,6 +203,8 @@ def test_topic_new_parent_stays_inside_existing_store(tmp_path: Path) -> None:
     )
     assert child.returncode == 0, child.stderr
     assert (parent_root / "children").is_dir()
+    assert (parent_root / "references").is_dir()
+    assert (parent_root / "children" / "child" / "references").is_dir()
     assert not (workspace / "topics" / "002_loop-demo-child").exists()
 
 
@@ -222,3 +225,4 @@ def test_explicit_root_still_creates_an_isolated_store(tmp_path: Path) -> None:
     )
     assert result.returncode == 0, result.stderr
     assert (root / "topic.md").is_file()
+    assert (root / "references").is_dir()

@@ -19,6 +19,7 @@ Workspace 关联是 Host 行为，不是 Topic 语义。项目初始化（`./set
 ## 规则
 
 - Topic 是持久的协作边界。不要为 4.0 创建 `Task` 层级；用子 Topic 表达耐久子问题，用 Plan Item 表达普通执行步骤。
+- `topic new` 会预留空 `references/`，用于人工或 Agent 放置调研、证据、外部材料；它不是 Core Artifact，默认不进入 Brief 投影。
 - 子 Topic 落在 `children/<slug>/`，内聚 topic / intent / plans / references；findings 与 decisions 冒泡回父根。
 - **先机械探测，再创建。** 不要靠模型判断「这里像不像工作区」。
 - 不要为 4.0 Topic 调用 `workspace-init` 或 `workflow-intake`，也不要创建 `scope.md`、`focus.md`、`task.index.md`、`wave`、`reviews/` 或 `decisions/`。
@@ -30,7 +31,7 @@ Workspace 关联是 Host 行为，不是 Topic 语义。项目初始化（`./set
 1. prism topic probe
 2. 未桥接 → 停下，运行 prism host attach --code CODE（不要 workspace-init）
 3. 已桥接 → prism topic new <id> --title "..." [--intent "..."]
-4. 报告 Topic id、根路径、下一步有用的动作
+4. 报告 Topic id、根路径、`references/` 预留位，以及下一步有用的动作
 ```
 
 ### 1. 机械探测
