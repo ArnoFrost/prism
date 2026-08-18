@@ -211,7 +211,17 @@ def test_readme_open_source_doorway_contract() -> None:
     assert "What Gets Created" not in readme
     assert "会创建什么" in readme
     assert "uv run python bin/release_gate.py --json" in readme
-    assert "SECURITY.md" in readme
+    assert "docs/assets/v4/prism-core-boundary.png" in readme
+    assert "docs/assets/v4/prism-structure-boundary.png" in readme
+    assert (ROOT / "docs" / "assets" / "v4" / "prism-core-boundary.png").exists()
+    assert (ROOT / "docs" / "assets" / "v4" / "prism-structure-boundary.png").exists()
+    assert "authoritative / committed" in readme
+    assert "authority transition" not in readme
+    assert "README 里的每个优势" not in readme
+    assert "Decision authorizes" not in readme
+    assert "SECURITY.md" not in readme
+    assert "SUPPORT.md" not in readme
+    assert "CODE_OF_CONDUCT.md" not in readme
 
     forbidden_patterns = [
         "Topic\n↓",
@@ -223,6 +233,10 @@ def test_readme_open_source_doorway_contract() -> None:
         "enterprise grade",
         "全自动治理",
         "多 Agent 编排",
+        "最小参考安装 = SDK",
+        "安装 Prism SDK",
+        "SDK + `uv` 即可跑通",
+        "SDK 层贡献",
     ]
     for phrase in forbidden_patterns:
         assert phrase not in readme

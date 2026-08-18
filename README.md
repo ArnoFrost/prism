@@ -39,10 +39,10 @@ Prism Protocol revolves around **Topic / Artifact / Capability / Invocation**, w
 
 ## 快速开始
 
-最小参考安装 = SDK + `uv`。Python 基线为 3.11+。
+Reference implementation 需要 Python 3.11+ 和 `uv`。
 
 ```bash
-# 1. 安装 Prism SDK
+# 1. 获取 Prism repository
 git clone https://github.com/ArnoFrost/prism.git ~/prism
 cd ~/prism
 ./setup.sh init
@@ -87,7 +87,7 @@ Prism 的默认接入方式是本地优先、软链接桥接，不要求改造�
 
 | 位置 | 会发生什么 | 是否应提交到业务项目仓库 |
 |------|------------|----------------------|
-| `~/prism` | Prism SDK、协议文档、参考 CLI、默认 4.0 skills | 否；它是独立 SDK 仓库 |
+| `~/prism` | Prism repository：协议文档、参考 CLI、默认 4.0 skills | 否；它是独立仓库 |
 | `prism.local.yaml` | 本机路径配置，由 `bin/setenv` / `setup.sh` 管理 | 否 |
 | 默认 Workspace backend | 存放项目级协作状态；默认本地目录 | 否，除非你显式选择 Git backend |
 | `workspace.{code}.local` | 业务项目里的 Workspace 软链接 | 否 |
@@ -95,13 +95,11 @@ Prism 的默认接入方式是本地优先、软链接桥接，不要求改造�
 
 `.local` 后缀表示本地个人状态。Prism 建议用全局 gitignore 覆盖 `workspace.*.local`、`AGENTS.local.md`、`prism.local.yaml`，避免把协作状态误提交到业务仓库。
 
-外部 Skills、Env、Vault/Git backend 都是可选部署；缺失不阻断最小参考安装。
+外部 Skills、Env、Vault/Git backend 都是可选部署；缺失不阻断最小参考体验。
 
 ---
 
 ## 为什么选择 Prism
-
-README 里的每个优势都应能被机制或命令验证。
 
 | 优势 | 机制 | 收益 | 验证入口 |
 |------|------|------|----------|
@@ -109,9 +107,9 @@ README 里的每个优势都应能被机制或命令验证。
 | 无侵入接入 | 软链接 + `.local` 约定 + 全局 gitignore | 不接管业务仓库目录结构 | [会创建什么](#会创建什么) |
 | Small protocol surface | Topic / Artifact / Capability / Invocation + Decision Semantics | 不绑定某个 Agent harness 或文件格式 | [核心概念](#核心概念) |
 | 能力可组合 | `/prism-*` skills 按需使用 | 不预设固定治理管线 | [日常使用](#日常使用) |
-| 授权边界清楚 | Findings / Plan 是 advisory；Decision authorizes | AI 建议不等于已批准变更 | [核心概念](#核心概念) |
+| 授权边界清楚 | Findings / Plan 是 advisory；Decision records authorized commitment | AI 建议不等于已批准变更 | [核心概念](#核心概念) |
 | Brief 可再生成 | Brief 是 context recovery projection | 跨会话恢复更轻，不把切片当事实源 | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
-| 部署可选 | Skills、Env、Vault/Git backend 都在 Core 外 | SDK + `uv` 即可跑通 | [docs/architecture.md](docs/architecture.md) |
+| 部署可选 | Skills、Env、Vault/Git backend 都在 Core 外 | Prism repository + `uv` 即可跑通 | [docs/architecture.md](docs/architecture.md) |
 | 发布可验收 | pytest + release gate + docs guard | 版本提升时能检查叙事和元数据漂移 | [docs/testing-contract.md](docs/testing-contract.md) |
 
 Prism 当前不宣称自动闭环、成熟稳定的生产承诺、Agent 编排、任务调度、知识库替代或企业级安全合规。
@@ -128,7 +126,7 @@ Protocol Core 保持很小：
 | Artifact | 承载状态的可引用单元 |
 | Capability | 加工状态的语义能力 |
 | Invocation | 一次调用留下的来源、因果和关系记录 |
-| Decision Semantics | 管理授权、承诺和 authority transition 的规则 |
+| Decision Semantics | 管理 authority、commitment、supersession 和 affected artifacts 的规则 |
 
 常见 Artifact roles：
 
@@ -138,9 +136,9 @@ Protocol Core 保持很小：
 | Brief | 当前上下文恢复切片 | projection，可再生成 |
 | Findings | 事实、证据、风险、缺口和建议 | advisory |
 | Plan | 候选执行安排 | advisory，除非被 Decision 授权 |
-| Decision | 关键选择与承诺 | authorizes |
+| Decision | 已授权的关键选择与承诺 | authoritative / committed |
 
-`supersedes` 表示一个 Artifact 被后续 Artifact 取代；`authorizes` 表示 Decision 对某个 Artifact 形成授权关系。它们是关系，不是新的 lifecycle DSL。
+`supersedes` 表示一个 Artifact 被后续 Artifact 取代；`authorizes` 表示 Decision 可对某个 Artifact 形成授权关系。它们是关系，不是新的 lifecycle DSL。
 
 更多语义边界见 [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md)。
 
@@ -188,6 +186,10 @@ prism --help
 
 Prism 不是 CLI 本身。CLI、skills、Markdown/local adapter 和 Workspace bridge 是让协议可用的 reference experience。
 
+<img src="docs/assets/v4/prism-core-boundary.png" alt="Prism architecture boundary: humans and AI agents use the reference experience, which runs the Prism Protocol without becoming the Core" width="720">
+
+这张图只表达一个边界：Reference Experience 让协议可用，但不定义协议本身。Decision Semantics 也不是另一个 runtime object；它治理授权与承诺规则。
+
 ```text
 Human / Agent
       |
@@ -204,8 +206,12 @@ Decision Semantics governs authorization
 
 - Protocol Core 回答“哪些协作语义稳定”。
 - Reference Experience 回答“这些语义如何在本机跑起来”。
-- Workspace state 是项目级协作状态，不回写 SDK 仓库。
+- Workspace state 是项目级协作状态，不回写 Prism repository。
 - Skills、Env、Vault/Git backend 都是可选扩展。
+
+更完整的结构边界图：
+
+<img src="docs/assets/v4/prism-structure-boundary.png" alt="Prism detailed structure boundary: human and AI collaboration, reference implementation, protocol core and project workspace state" width="720">
 
 深入说明见 [docs/architecture.md](docs/architecture.md)。
 
@@ -272,11 +278,9 @@ uv run pytest
 欢迎提交 Issue 和 Pull Request：
 
 - GitHub Issues：[github.com/ArnoFrost/prism/issues](https://github.com/ArnoFrost/prism/issues)
-- SDK 层贡献请读 [docs/contributing.md](docs/contributing.md)
+- Prism repository 贡献请读 [docs/contributing.md](docs/contributing.md)
 - Skills 贡献请提交到 [prism-skills](https://github.com/ArnoFrost/prism-skills)
 - Commit 信息使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范
-
-`SECURITY.md`、`SUPPORT.md`、`CODE_OF_CONDUCT.md` 和 Issue / PR templates 是否新增，仍待维护者单独裁决；当前 README 只描述已存在的公开入口。
 
 ## License
 
