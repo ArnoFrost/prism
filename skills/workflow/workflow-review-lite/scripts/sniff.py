@@ -1,1 +1,0 @@
-../../workflow-review/scripts/sniff.py

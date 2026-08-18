@@ -12,7 +12,6 @@
 #   scope 说明:
 #     env       setup --check 的环境完整性
 #     skill     validate-skills 的 frontmatter 合规
-#     sync      prism_sync_sniff 的远端同步
 #     cli       doctor_cli 的 prism 寻址体检
 #     config    prism.local.yaml 必填字段 + 路径可达性
 #     release   聚合以上全部（1.0 发布就绪闸门）
@@ -47,7 +46,6 @@ OUTPUT=""
 # 各阶段计数
 ERR_ENV=0;    WARN_ENV=0
 ERR_SKILL=0;  WARN_SKILL=0; FIX_SKILL=0
-ERR_SYNC=0;   WARN_SYNC=0
 ERR_CLI=0;    WARN_CLI=0;   FIX_CLI=0
 ERR_CONFIG=0; WARN_CONFIG=0; FIX_CONFIG=0
 ERR_CI_HEALTH=0; WARN_CI_HEALTH=0
@@ -73,9 +71,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ── 判定 scope 是否激活某阶段 ────────
-# release scope 聚合全部 5 个阶段（env/skill/sync/cli/config）；
+# release scope 聚合全部 4 个阶段（env/skill/cli/config）；
 # ci scope 聚合 skill + ci_health（自包含：bin/* +x、bin/prism --version 可启动），
-#   跳过 env（依赖 prism.local.yaml）/ sync（远端访问）/ cli（依赖 ~/.local/bin / PATH 锚点）
+#   跳过 env（依赖 prism.local.yaml）/ cli（依赖 ~/.local/bin / PATH 锚点）
 #   / config（依赖 vault_path 等本机字段）—— CI runner 无 prism.local.yaml 也能跑通；
 # 普通 scope 只激活同名阶段
 _in_scope() {
@@ -311,82 +309,6 @@ _stage_skill() {
   fi
 }
 
-# ── Stage 3: 同步状态 (sniff --fetch) ──
-_stage_sync() {
-  _in_scope sync || return 0
-  $QUICK && { ! $JSON && echo -e "\n${CYAN}[同步]${NC} ${DIM}(--quick 跳过，远程访问耗时)${NC}"; return 0; }
-
-  ! $JSON && echo -e "\n${CYAN}[同步]${NC}"
-  local sniff_script="$PRISM_DIR/skills/workflow/shared/scripts/prism_sync_sniff.py"
-  if [[ ! -f "$sniff_script" ]]; then
-    ! $JSON && echo -e "  ${YELLOW}⚠${NC} sniff 脚本不存在: $sniff_script"
-    WARN_SYNC=$((WARN_SYNC + 1))
-    return 0
-  fi
-
-  local out
-  out=$(run_python "$sniff_script" --all --fetch 2>&1 || true)
-  # 用 python 解析同步状态（stdin 管道，避免 heredoc 转义问题）
-  local report
-  report=$(echo "$out" | run_python -c '
-import json, sys
-raw = sys.stdin.read()
-try:
-    d = json.loads(raw)
-except Exception:
-    print("parse_error")
-    sys.exit(0)
-repos = d.get("repos", {})
-err = 0
-warn = 0
-lines = []
-for name, info in repos.items():
-    if not info.get("exists"):
-        lines.append(f"✗ {name}: 不存在")
-        err += 1
-        continue
-    ahead = info.get("ahead", 0)
-    behind = info.get("behind", 0)
-    dirty = info.get("dirty", False)
-    if ahead > 0 and behind > 0:
-        lines.append(f"⚠ {name}: ahead={ahead} behind={behind}（分叉，需 pull --rebase）")
-        warn += 1
-    elif behind > 0:
-        lines.append(f"⚠ {name}: behind={behind}（远程有更新）")
-        warn += 1
-    elif ahead > 0:
-        lines.append(f"⚠ {name}: ahead={ahead}（有待推送 commit）")
-        warn += 1
-    elif dirty:
-        lines.append(f"⚠ {name}: 有未提交变更")
-        warn += 1
-    else:
-        lines.append(f"✓ {name}: 已同步")
-print(json.dumps({"err": err, "warn": warn, "lines": lines}, ensure_ascii=False))
-' 2>/dev/null || echo "parse_error")
-
-  if [[ "$report" == "parse_error" || -z "$report" ]]; then
-    ! $JSON && echo -e "  ${YELLOW}⚠${NC} sniff 输出解析失败"
-    WARN_SYNC=1
-    return 0
-  fi
-
-  ERR_SYNC=$(echo "$report" | run_python -c 'import json,sys;print(json.loads(sys.stdin.read())["err"])' 2>/dev/null || echo 0)
-  WARN_SYNC=$(echo "$report" | run_python -c 'import json,sys;print(json.loads(sys.stdin.read())["warn"])' 2>/dev/null || echo 0)
-  ERR_SYNC=${ERR_SYNC:-0}
-  WARN_SYNC=${WARN_SYNC:-0}
-
-  if ! $JSON; then
-    echo "$report" | run_python -c '
-import json, sys
-d = json.loads(sys.stdin.read())
-for l in d["lines"]:
-    print(f"  {l}")
-' 2>/dev/null || true
-    echo -e "  ${DIM}→ ${ERR_SYNC} 错误, ${WARN_SYNC} 警告${NC}"
-  fi
-}
-
 # ── Stage 4: CLI 寻址 (doctor_cli.py) ──
 _stage_cli() {
   _in_scope cli || return 0
@@ -469,12 +391,8 @@ _stage_config() {
     return 0
   fi
 
-  # 配置完整性 — doctor_config_check.py（含多 workspace）
-  local config_check="$PRISM_DIR/skills/workflow/shared/scripts/doctor_config_check.py"
+  # 配置完整性 — 内联顶层键 parser（自包含，不依赖外部脚本）
   local report
-  if [[ -f "$config_check" ]]; then
-    report=$(run_python "$config_check" "$config_path" 2>/dev/null || echo "parse_error")
-  else
   report=$(run_python - "$config_path" <<'PYEOF' 2>/dev/null || echo "parse_error"
 import json, os, re, shutil, sys
 
@@ -591,7 +509,6 @@ if err == 0 and warn == 0:
 print(json.dumps({"err": err, "warn": warn, "lines": lines}, ensure_ascii=False))
 PYEOF
 )
-  fi
 
   if [[ "$report" == "parse_error" || -z "$report" ]]; then
     ! $JSON && echo -e "  ${YELLOW}⚠${NC} 配置解析失败"
@@ -681,13 +598,12 @@ fi
 
 _stage_env
 _stage_skill
-_stage_sync
 _stage_cli
 _stage_config
 _stage_ci_health
 
-TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_SYNC + ERR_CLI + ERR_CONFIG + ERR_CI_HEALTH))
-TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_SYNC + WARN_CLI + WARN_CONFIG + WARN_CI_HEALTH))
+TOTAL_ERR=$((ERR_ENV + ERR_SKILL + ERR_CLI + ERR_CONFIG + ERR_CI_HEALTH))
+TOTAL_WARN=$((WARN_ENV + WARN_SKILL + WARN_CLI + WARN_CONFIG + WARN_CI_HEALTH))
 TOTAL_FIX=$((FIX_SKILL + FIX_CLI + FIX_CONFIG))
 
 # ── 输出总结 ─────────────────────────
@@ -699,14 +615,14 @@ if $JSON; then
   fi
   TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   cat <<EOF
-{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","scope":"${SCOPE:-all}","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG},"ci_health":{"errors":$ERR_CI_HEALTH,"warnings":$WARN_CI_HEALTH}}
+{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","scope":"${SCOPE:-all}","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG},"ci_health":{"errors":$ERR_CI_HEALTH,"warnings":$WARN_CI_HEALTH}}
 EOF
   # --output 模式：将结果写入文件
   if [[ -n "$OUTPUT" ]]; then
     mkdir -p "$(dirname "$OUTPUT")"
     # 重新生成 JSON 写入文件（避免 stdout pipe 问题）
     cat > "$OUTPUT" <<EOF2
-{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","scope":"${SCOPE:-all}","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"sync":{"errors":$ERR_SYNC,"warnings":$WARN_SYNC},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG},"ci_health":{"errors":$ERR_CI_HEALTH,"warnings":$WARN_CI_HEALTH}}
+{"version":"$SDK_VERSION","timestamp":"$TIMESTAMP","sdk_root":"$PRISM_DIR","scope":"${SCOPE:-all}","errors":$TOTAL_ERR,"warnings":$TOTAL_WARN,"fixed":$TOTAL_FIX,"env":{"errors":$ERR_ENV,"warnings":$WARN_ENV},"skill":{"errors":$ERR_SKILL,"warnings":$WARN_SKILL,"fixed":$FIX_SKILL},"cli":{"errors":$ERR_CLI,"warnings":$WARN_CLI,"fixed":$FIX_CLI},"config":{"errors":$ERR_CONFIG,"warnings":$WARN_CONFIG,"fixed":$FIX_CONFIG},"ci_health":{"errors":$ERR_CI_HEALTH,"warnings":$WARN_CI_HEALTH}}
 EOF2
   fi
 else

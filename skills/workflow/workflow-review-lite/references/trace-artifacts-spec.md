@@ -1,1 +1,0 @@
-../../shared/trace-artifacts-spec.md

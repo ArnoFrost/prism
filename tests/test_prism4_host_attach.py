@@ -534,7 +534,7 @@ def test_relink_missing_resolver_is_fail_closed(tmp_path: Path) -> None:
     assert not (project / "workspace.workspace.local").exists()
 
 
-def test_legacy_cli_surface_still_delegates() -> None:
+def test_legacy_cli_surface_is_retired() -> None:
     result = subprocess.run(
         [str(BIN_PRISM), "legacy", "--help"],
         capture_output=True,
@@ -542,5 +542,5 @@ def test_legacy_cli_surface_still_delegates() -> None:
         timeout=10,
         env=_env(),
     )
-    assert result.returncode == 0
-    assert "usage:" in result.stdout.lower() or "用法" in result.stdout
+    assert result.returncode == 2
+    assert "已从 prism-4 分支剔除" in result.stderr

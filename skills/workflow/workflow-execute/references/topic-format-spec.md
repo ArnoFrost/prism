@@ -1,1 +1,0 @@
-../../shared/topic-format-spec.md

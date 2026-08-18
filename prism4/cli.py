@@ -51,19 +51,21 @@ from prism4.use_cases import (  # noqa: E402
 SDK_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = SDK_ROOT / "VERSION"
 STATE_FILENAME = "prism4-state.json"
-LEGACY_CLI = SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "prism_cli.py"
 SURFACE_BIN_VERBS = frozenset({"doctor", "relink", "update", "dist"})
-SURFACE_LEGACY_VERBS = frozenset({"sync"})
-RETIRED_TOPIC_VERBS = frozenset(
+# 3.x 实现（含 sync 与 legacy adapter 本身）已随 prism-4 分支剔除；
+# 终态由 git tag legacy-3x-final 保管。
+RETIRED_3X_VERBS = frozenset(
     {
         "archive",
         "digest",
         "finalize",
+        "legacy",
         "manifest",
         "migrate",
         "reactivate",
         "sniff",
         "status",
+        "sync",
         "tidy",
         "validate",
         "validate-trace",
@@ -72,9 +74,13 @@ RETIRED_TOPIC_VERBS = frozenset(
 FOUR_OH_DECISION_VERBS = frozenset({"record"})
 
 
-def reject_retired_topic_verb(verb: str) -> int:
+def reject_retired_3x_verb(verb: str) -> int:
     print(
-        f"error: `{verb}` 已退出默认 prism。请使用: prism legacy {verb} …",
+        f"error: `{verb}` 属于 3.x 实现，已从 prism-4 分支剔除。",
+        file=sys.stderr,
+    )
+    print(
+        "      3.x 终态由 git tag `legacy-3x-final` 保管；4.0 命令面见 prism --help。",
         file=sys.stderr,
     )
     return 2
@@ -85,10 +91,6 @@ def hint_decision_noun_collision() -> int:
         "error: `prism decision` 是 4.0 入口，请使用: prism decision record …",
         file=sys.stderr,
     )
-    print(
-        "      3.x decision 请使用: prism legacy decision …",
-        file=sys.stderr,
-    )
     return 2
 
 
@@ -96,25 +98,16 @@ def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     json_output = False
     if args and args[0] == "--json":
-        if len(args) >= 2 and args[1] in RETIRED_TOPIC_VERBS:
-            return reject_retired_topic_verb(args[1])
+        if len(args) >= 2 and args[1] in RETIRED_3X_VERBS:
+            return reject_retired_3x_verb(args[1])
         if len(args) >= 2 and args[1] in SURFACE_BIN_VERBS:
             return run_product_bin(args[1], args)
-        if len(args) >= 2 and args[1] in SURFACE_LEGACY_VERBS:
-            return run_legacy(args)
         json_output = True
         args = args[1:]
-    if args and args[0] == "legacy":
-        if len(args) == 1:
-            print("error: legacy requires arguments", file=sys.stderr)
-            return 2
-        return run_legacy(args[1:])
-    if args and args[0] in RETIRED_TOPIC_VERBS:
-        return reject_retired_topic_verb(args[0])
+    if args and args[0] in RETIRED_3X_VERBS:
+        return reject_retired_3x_verb(args[0])
     if args and args[0] in SURFACE_BIN_VERBS:
         return run_product_bin(args[0], args)
-    if args and args[0] in SURFACE_LEGACY_VERBS:
-        return run_legacy(args)
     if args and args[0] == "decision":
         rest = args[1:]
         if not rest or rest[0] not in FOUR_OH_DECISION_VERBS | {"--help", "-h"}:
@@ -283,8 +276,8 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             f"{RECORD_MEANING}\n\n"
-            "Full product surface including doctor/relink/update/dist/sync: prism --help. "
-            "3.x topic verbs: prism legacy …"
+            "Full product surface including doctor/relink/update/dist: prism --help. "
+            "3.x 实现已从 prism-4 分支剔除（git tag legacy-3x-final）。"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -292,7 +285,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(
         dest="verb",
-        metavar="{topic,artifact,brief,review,clarify,plan,decision,host,legacy}",
+        metavar="{topic,artifact,brief,review,clarify,plan,decision,host}",
     )
 
     topic = subparsers.add_parser("topic", help="manage 4.0 topics")
@@ -442,10 +435,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="relink executable; defaults to SDK bin/relink",
     )
     host_attach.set_defaults(func=cmd_host_attach)
-
-    legacy = subparsers.add_parser("legacy", help="delegate to the Prism 3.x CLI adapter")
-    legacy.add_argument("args", nargs=argparse.REMAINDER)
-    legacy.set_defaults(func=cmd_legacy)
 
     parser.set_defaults(func=cmd_default)
     return parser
@@ -627,20 +616,6 @@ def cmd_host_attach(args: argparse.Namespace) -> int:
     )
     print(format_attach_result(result))
     return 0
-
-
-def cmd_legacy(args: argparse.Namespace) -> int:
-    if not args.args:
-        print("error: legacy requires arguments", file=sys.stderr)
-        return 2
-    return run_legacy(args.args)
-
-
-def run_legacy(args: list[str]) -> int:
-    if not LEGACY_CLI.exists():
-        print(f"error: legacy CLI not found: {LEGACY_CLI}", file=sys.stderr)
-        return 127
-    return subprocess.call([sys.executable, str(LEGACY_CLI), *args])
 
 
 def run_product_bin(verb: str, args: list[str]) -> int:

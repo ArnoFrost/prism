@@ -1,4 +1,0 @@
-interface:
-  display_name: "Workflow Execute"
-  short_description: "执行单一 Prism 任务游标并同步代码、验证证据与 Workspace 工件"
-  default_prompt: "Use $workflow-execute to continue one authorized Prism task/wave and keep code, verification, and workspace artifacts aligned."

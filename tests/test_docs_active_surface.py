@@ -24,27 +24,6 @@ def test_retired_visuals_are_absent_and_unreferenced() -> None:
         )
 
 
-def test_legacy_workspace_templates_are_labeled_legacy() -> None:
-    agents = (ROOT / "workspace" / "templates" / "AGENTS.md").read_text(
-        encoding="utf-8"
-    )
-    project = (ROOT / "workspace" / "templates" / "project-readme.md").read_text(
-        encoding="utf-8"
-    )
-    focus = (ROOT / "workspace" / "templates" / "topic-focus.md").read_text(
-        encoding="utf-8"
-    )
-
-    assert "3.x legacy template" in agents
-    assert "3.x legacy template" in project
-    assert "/prism-topic" in agents and "/prism-clarify" in agents
-    assert "/workflow-review-lite" not in agents
-    assert "minimal topic 默认骨架" in project
-    assert "intake → scope → review → decision" not in project
-    assert "[decision.index.md]" not in focus
-    assert "[review.index.md]" not in focus
-
-
 def test_active_docs_advertise_prism4_default_surface() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     onboarding = (ROOT / "docs" / "onboarding.md").read_text(encoding="utf-8")

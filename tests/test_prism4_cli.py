@@ -41,15 +41,16 @@ def test_bin_prism_points_to_v4_help_surface():
     assert "artifact show" in result.stdout
     assert "review" in result.stdout
     assert "clarify" in result.stdout
-    assert "legacy" in result.stdout
-    assert "prism legacy" in result.stdout
     assert "doctor" in result.stdout
     assert "relink" in result.stdout
-    assert "sync" in result.stdout
+    assert "update" in result.stdout
+    assert "dist" in result.stdout
     assert "host attach" in result.stdout
     assert "sniff" not in result.stdout
     assert "finalize" not in result.stdout
     assert "manifest" not in result.stdout
+    assert "sync" not in result.stdout
+    assert "prism legacy" not in result.stdout
 
 
 def test_bin_prism_topic_list_reads_dogfood_state():
@@ -121,7 +122,7 @@ def test_bin_prism_discovers_workspace_v4_topic_from_repo_root():
     assert "topic:prism-4-refoundation" in result.stdout
 
 
-def test_bin_prism_can_delegate_legacy_version_flag():
+def test_bin_prism_legacy_prefix_is_retired():
     result = subprocess.run(
         [str(BIN_PRISM), "legacy", "--version"],
         capture_output=True,
@@ -130,8 +131,9 @@ def test_bin_prism_can_delegate_legacy_version_flag():
         env=_env(),
     )
 
-    assert result.returncode == 0
-    assert result.stdout.strip()
+    assert result.returncode == 2
+    assert "已从 prism-4 分支剔除" in result.stderr
+    assert "legacy-3x-final" in result.stderr
 
 
 def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
@@ -528,7 +530,7 @@ def test_retired_topic_verb_is_hard_rejected() -> None:
         env=_env(),
     )
     assert result.returncode == 2
-    assert "prism legacy sniff" in result.stderr
+    assert "已从 prism-4 分支剔除" in result.stderr
     assert result.stdout == ""
 
 
@@ -541,10 +543,10 @@ def test_retired_topic_verb_json_prefix_is_hard_rejected() -> None:
         env=_env(),
     )
     assert result.returncode == 2
-    assert "prism legacy sniff" in result.stderr
+    assert "已从 prism-4 分支剔除" in result.stderr
 
 
-def test_legacy_prefix_still_runs_retired_verb() -> None:
+def test_legacy_prefix_is_retired_regardless_of_args() -> None:
     result = subprocess.run(
         [str(BIN_PRISM), "legacy", "sniff", "--help"],
         capture_output=True,
@@ -552,8 +554,8 @@ def test_legacy_prefix_still_runs_retired_verb() -> None:
         timeout=10,
         env=_env(),
     )
-    assert result.returncode == 0, result.stderr
-    assert "usage:" in result.stdout.lower()
+    assert result.returncode == 2
+    assert "已从 prism-4 分支剔除" in result.stderr
 
 
 def test_surface_legacy_verbs_remain_on_default_prism() -> None:
@@ -568,7 +570,7 @@ def test_surface_legacy_verbs_remain_on_default_prism() -> None:
     assert "doctor" in result.stdout.lower() or "用法" in result.stdout
 
 
-def test_sync_remains_on_default_prism() -> None:
+def test_sync_is_retired_with_the_legacy_tree() -> None:
     result = subprocess.run(
         [str(BIN_PRISM), "sync", "--help"],
         capture_output=True,
@@ -576,8 +578,8 @@ def test_sync_remains_on_default_prism() -> None:
         timeout=10,
         env=_env(),
     )
-    assert result.returncode == 0, result.stderr
-    assert "sync" in result.stdout.lower() or "用法" in result.stdout
+    assert result.returncode == 2
+    assert "已从 prism-4 分支剔除" in result.stderr
 
 
 def test_manifest_is_hard_rejected() -> None:
@@ -589,7 +591,7 @@ def test_manifest_is_hard_rejected() -> None:
         env=_env(),
     )
     assert result.returncode == 2
-    assert "prism legacy manifest" in result.stderr
+    assert "已从 prism-4 分支剔除" in result.stderr
 
 
 def test_json_help_uses_bash_surface() -> None:
@@ -611,7 +613,7 @@ def test_argparse_root_help_hides_capability() -> None:
 
     help_text = build_parser().format_help()
     assert "capability" not in help_text
-    assert "{topic,artifact,brief,review,clarify,plan,decision,host,legacy}" in help_text
+    assert "{topic,artifact,brief,review,clarify,plan,decision,host}" in help_text
 
 
 def test_bare_decision_hints_legacy_and_record() -> None:
@@ -624,7 +626,7 @@ def test_bare_decision_hints_legacy_and_record() -> None:
     )
     assert result.returncode == 2
     assert "prism decision record" in result.stderr
-    assert "prism legacy decision" in result.stderr
+    assert "prism legacy decision" not in result.stderr
 
 
 def test_decision_record_help_still_reaches_argparse() -> None:

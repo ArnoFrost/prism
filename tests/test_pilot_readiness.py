@@ -59,7 +59,6 @@ def test_pilot_entry_is_discoverable_from_public_docs() -> None:
 def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:
     catalog = _read(CATALOG)
     assert "Prism 4.0 canary skills" in catalog
-    assert "Prism 3.x legacy public/stable skills" in catalog
     for skill_id in (
         "prism-topic",
         "prism-brief",
@@ -71,10 +70,7 @@ def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:
         assert "visibility: dev" in entry
         assert "stability: experimental" in entry
     for skill_id in ("workflow-intake", "workflow-scope", "workflow-tidy"):
-        entry = _catalog_entry(skill_id)
-        assert "workflow pipeline" not in entry
-        assert "plan derivation" not in entry
-        assert "review.index" not in entry
+        assert f"  - id: {skill_id}" not in catalog
 
 
 def test_release_and_taxonomy_use_current_pilot_language() -> None:

@@ -38,6 +38,33 @@ yaml_get() {
   (grep "^${key}:" "$CONFIG" 2>/dev/null || true) | sed "s/^${key}: *//"
 }
 
+# 多 workspace 格式解析 — 委托 065 的自包含 resolver（--config-tsv 为 bash 入口设计）
+_resolve_config() {
+  local resolver="$PRISM_DIR/bin/workspace_resolve.py"
+  [[ -f "$resolver" ]] || return 1
+  local runner
+  if command -v uv >/dev/null 2>&1; then runner=(uv run python)
+  elif command -v python3 >/dev/null 2>&1; then runner=(python3)
+  else return 1
+  fi
+  "${runner[@]}" "$resolver" --config "$CONFIG" --config-tsv 2>/dev/null
+}
+
+# 填充 VAULT / WS_SUB / WS_ROOT / DEFAULT_WS（成功返回 0）
+_load_workspace_fields() {
+  VAULT=""; WS_SUB=""; WS_ROOT=""; DEFAULT_WS=""
+  local line k v
+  while IFS=$'\t' read -r k v; do
+    case "$k" in
+      VAULT_PATH) VAULT="$v" ;;
+      WS_SUBDIR) WS_SUB="$v" ;;
+      WS_ROOT) WS_ROOT="$v" ;;
+      DEFAULT_WORKSPACE) DEFAULT_WS="$v" ;;
+    esac
+  done < <(_resolve_config) || return 1
+  [[ -n "$VAULT" ]]
+}
+
 show_config() {
   if [[ ! -f "$CONFIG" ]]; then
     echo -e "${RED}✗ prism.local.yaml 不存在，运行 bin/setenv --init 初始化${NC}"
@@ -47,9 +74,13 @@ show_config() {
   local sdk skills vault ws_sub
   sdk=$(yaml_get sdk_path)
   skills=$(yaml_get skills_path)
-  vault=$(yaml_get workspace_root)
-  [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
-  ws_sub=$(yaml_get workspace_subdir)
+  if _load_workspace_fields; then
+    vault="$VAULT"; ws_sub="$WS_SUB"
+  else
+    vault=$(yaml_get workspace_root)
+    [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
+    ws_sub=$(yaml_get workspace_subdir)
+  fi
 
   local device_id
   device_id=$(yaml_get device_id)
@@ -98,32 +129,15 @@ show_config() {
   fi
   echo ""
 
-  if command -v uv >/dev/null 2>&1; then
-    local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
-    if [[ -f "$wg_script" ]]; then
-      echo -e "  ${CYAN}Workspace Git（可选）:${NC}"
-      uv run python "$wg_script" --summary 2>/dev/null | sed 's/^/  /'
-      echo ""
-    fi
-  fi
 
   echo -e "  ${CYAN}注册项目:${NC}"
-  local in_projects=false
-  while IFS= read -r line; do
-    if [[ "$line" == "projects:" ]]; then
-      in_projects=true
-      continue
-    fi
-    if $in_projects; then
-      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
-        local code="${BASH_REMATCH[1]}"
-        local path="${BASH_REMATCH[2]}"
-        echo -e "    ${code}: ${path}"
-      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
-        break
-      fi
-    fi
-  done < "$CONFIG"
+  local resolver="$PRISM_DIR/bin/workspace_resolve.py"
+  if [[ -f "$resolver" ]]; then
+    local line code path instance ws
+    while IFS=$'\t' read -r code path instance ws; do
+      [[ -n "$code" ]] && echo -e "    ${code}: ${path} ${DIM}(${ws})${NC}"
+    done < <(uv run python "$resolver" --config "$CONFIG" --tsv 2>/dev/null || python3 "$resolver" --config "$CONFIG" --tsv 2>/dev/null)
+  fi
 
   echo ""
   echo -e "  ${CYAN}路径状态:${NC}"
@@ -150,23 +164,18 @@ do_export() {
   sdk=$(yaml_get sdk_path)
   skills=$(yaml_get skills_path)
 
-  local env_export="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_env_export.py"
-  if [[ -f "$env_export" ]]; then
-    if [[ -x "${PRISM_DIR}/.venv/bin/python3" ]]; then
-      "${PRISM_DIR}/.venv/bin/python3" "$env_export" "$CONFIG"
-    elif command -v uv >/dev/null 2>&1; then
-      uv run python "$env_export" "$CONFIG"
-    else
-      python3 "$env_export" "$CONFIG"
-    fi
+  local vault="" ws_sub="" ws_root=""
+  if _load_workspace_fields; then
+    vault="$VAULT"; ws_sub="$WS_SUB"; ws_root="$WS_ROOT"
   else
     vault=$(yaml_get workspace_root)
     [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
     ws_sub=$(yaml_get workspace_subdir)
-    echo "export PRISM_WORKSPACE_ROOT=\"${vault}\""
-    echo "export PRISM_VAULT=\"${vault}\""  # deprecated compatibility alias
-    echo "export PRISM_WORKSPACE=\"${vault}/${ws_sub}\""
+    ws_root="${vault}/${ws_sub}"
   fi
+  echo "export PRISM_WORKSPACE_ROOT=\"${vault}\""
+  echo "export PRISM_VAULT=\"${vault}\""  # deprecated compatibility alias
+  echo "export PRISM_WORKSPACE=\"${ws_root}\""
 
   local device_id
   device_id=$(yaml_get device_id)
@@ -191,20 +200,6 @@ do_export() {
     echo "export PRISM_OBS_VAULT=\"${obs_p}\""
   fi
 
-  _workspace_git_export
-}
-
-# workspace_git export — launchd PATH 常无 uv，优先用 SDK .venv python
-_workspace_git_export() {
-  local wg_script="${PRISM_DIR}/skills/workflow/shared/scripts/workspace_git_config.py"
-  [[ -f "$wg_script" ]] || return 0
-
-  local venv_py="${PRISM_DIR}/.venv/bin/python3"
-  if [[ -x "$venv_py" ]]; then
-    "$venv_py" "$wg_script" --export 2>/dev/null || true
-  elif command -v uv >/dev/null 2>&1; then
-    uv run python "$wg_script" --export 2>/dev/null || true
-  fi
 }
 
 do_validate() {
@@ -215,527 +210,12 @@ do_validate() {
 
   echo -e "${CYAN}Prism 配置校验${NC}"
   echo "─────────────────────────────────"
-
-  local checker="$PRISM_DIR/skills/workflow/shared/scripts/doctor_config_check.py"
-  if [[ ! -f "$checker" ]]; then
-    echo -e "  ${RED}✗ shared config validator 不存在: ${checker}${NC}" >&2
-    exit 1
-  fi
-
-  if [[ -x "${PRISM_DIR}/.venv/bin/python3" ]]; then
-    "${PRISM_DIR}/.venv/bin/python3" "$checker" "$CONFIG" --human
-  elif command -v uv >/dev/null 2>&1; then
-    uv run python "$checker" "$CONFIG" --human
-  elif command -v python3 >/dev/null 2>&1; then
-    python3 "$checker" "$CONFIG" --human
-  else
-    echo -e "  ${RED}✗ 无可用 Python runner，无法解析 prism.local.yaml${NC}" >&2
-    exit 127
-  fi
-}
-
-do_migrate_config() {
-  if [[ ! -f "$CONFIG" ]]; then
-    echo -e "${RED}✗ prism.local.yaml 不存在${NC}"
-    exit 1
-  fi
-  local py="$PRISM_DIR/skills/workflow/shared/scripts/migrate_prism_config.py"
-  if [[ ! -f "$py" ]]; then
-    echo -e "${RED}✗ 迁移脚本不存在: ${py}${NC}"
-    exit 1
-  fi
-  local args=()
-  $MIGRATE_DRY_RUN && args+=(--dry-run)
-  args+=("$CONFIG")
-  if command -v uv >/dev/null 2>&1; then
-    uv run python "$py" "${args[@]}"
-  else
-    python3 "$py" "${args[@]}"
-  fi
-}
-
-do_migrate_multi_workspace() {
-  if [[ ! -f "$CONFIG" ]]; then
-    echo -e "${RED}✗ prism.local.yaml 不存在${NC}"
-    exit 1
-  fi
-  local py="$PRISM_DIR/skills/workflow/shared/scripts/migrate_multi_workspace.py"
-  if [[ ! -f "$py" ]]; then
-    echo -e "${RED}✗ 迁移脚本不存在: ${py}${NC}"
-    exit 1
-  fi
-  local args=()
-  $MIGRATE_DRY_RUN && args+=(--dry-run)
-  [[ -n "${MIGRATE_PERSONAL_ROOT:-}" ]] && args+=(--personal-root "$MIGRATE_PERSONAL_ROOT")
-  args+=("$CONFIG")
-  if command -v uv >/dev/null 2>&1; then
-    uv run python "$py" "${args[@]}"
-  else
-    python3 "$py" "${args[@]}"
-  fi
-}
-
-do_example() {
-  cat <<EOF
-# Prism Local Configuration — core contract example
-# 保存为 prism.local.yaml；本地路径状态，不入版本控制。
-
-# 设备标识（hostname -s 自动生成，跨设备路径解析用）
-device_id: $(hostname -s)
-
-# SDK 路径（Prism 仓库位置）
-sdk_path: ${PRISM_DIR}
-
-# Workspace backend 物理根（默认本地目录；也可指向 iCloud/Obsidian Vault）
-workspace_root: ${HOME}/.local/share/prism
-
-# backend 内 Workspace 子目录（相对于 workspace_root）
-workspace_subdir: Workspace
-
-# 可选：外部 Skills 扩展仓库路径
-# skills_path: ${HOME}/prism-skills
-
-# 可选：env 层路径（如 ArnoDotFiles）
-# env_path: ${HOME}/ArnoDotFiles
-
-# 可选：个人知识库路径
-# obs_vault_personal: ${HOME}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Arno Obsidian
-
-# 可选：Workspace Git 同步（Layer 4 增强；显式 enabled: true 才启用）
-# workspace_git:
-#   enabled: false
-#   branch: master
-#   remote: origin
-#   debounce_seconds: 300
-#   schedule:
-#     - "9:00"
-#     - "12:00"
-#     - "14:00"
-#     - "16:00"
-#     - "18:00"
-#     - "20:00"
-#     - "22:00"
-
-# 注册项目（CODE: 本地路径）
-projects:
-EOF
-}
-
-write_config() {
-  local sdk="$1" skills="$2" workspace_root="$3" ws_sub="$4" env_p="${5:-}" obs_p="${6:-}"
-  local device_id
-  device_id=$(hostname -s)
-  cat > "$CONFIG" << 'YAML_END'
-# Prism Local Configuration
-# 本地路径状态，不入版本控制（受控最小 schema，不可自由扩展）。
-# 由 bin/setenv 初始化，bin/relink 读取刷新软链接。
-
-YAML_END
-  cat >> "$CONFIG" << CONFDATA
-# 设备标识（hostname -s 自动生成，跨设备路径解析用）
-device_id: ${device_id}
-
-# SDK 路径（Prism 仓库位置）
-sdk_path: ${sdk}
-
-# Workspace backend 物理根（本地目录；可选指向 Vault）
-workspace_root: ${workspace_root}
-
-# backend 内子目录（相对于 workspace_root）
-workspace_subdir: ${ws_sub}
-
-CONFDATA
-  if [[ -n "$skills" ]]; then
-    cat >> "$CONFIG" << CONFDATA
-# 可选：外部 Skills 扩展仓库路径（未配置则仅使用 SDK 内置 workflow）
-skills_path: ${skills}
-
-CONFDATA
-  fi
-  if [[ -n "$env_p" ]]; then
-    cat >> "$CONFIG" << CONFDATA
-# 可选：env 层路径（如 ArnoDotFiles），存在则分发其 skills/ 下的技能
-env_path: ${env_p}
-
-CONFDATA
-  fi
-  if [[ -n "$obs_p" ]]; then
-    cat >> "$CONFIG" << CONFDATA
-# 可选：个人知识库路径（Obsidian vault，note/deposit/obsidian-doctor 目标）
-obs_vault_personal: ${obs_p}
-
-CONFDATA
-  fi
-  cat >> "$CONFIG" << 'CONFDATA'
-# 注册项目（CODE: 本地路径）
-# relink 据此刷新 workspace.{code}.local 软链接
-projects:
-CONFDATA
-}
-
-do_init() {
-  if [[ -f "$CONFIG" ]]; then
-    if $NON_INTERACTIVE; then
-      echo -e "${RED}✗ prism.local.yaml 已存在，非交互模式拒绝覆盖。${NC}" >&2
-      echo -e "${DIM}如需重新初始化，请先手动删除或备份。${NC}" >&2
-      exit 1
-    fi
-    echo -e "${YELLOW}⚠ prism.local.yaml 已存在${NC}"
-    echo ""
-    read -r -p "覆盖现有配置？已注册的 projects 段将丢失 [y/N]: " confirm
-    if [[ "${confirm,,}" != "y" ]]; then
-      echo "已取消。"
-      exit 0
-    fi
-    cp "$CONFIG" "${CONFIG}.bak.$(date +%Y%m%d%H%M%S)"
-    echo -e "${DIM}已备份至 ${CONFIG}.bak.*${NC}"
-    echo ""
-  fi
-
-  echo -e "${CYAN}Prism 配置初始化${NC}"
-  echo "─────────────────────────────────"
-
-  local sdk skills workspace_root ws_sub env_p obs_p
-
-  if $NON_INTERACTIVE; then
-    sdk="${PRISM_SDK_PATH:-$PRISM_DIR}"
-    skills="${PRISM_SKILLS_PATH:-}"
-    workspace_root="${PRISM_WORKSPACE_ROOT:-${PRISM_VAULT_PATH:-$HOME/.local/share/prism}}"
-    ws_sub="${PRISM_WS_SUBDIR:-Workspace}"
-    env_p="${PRISM_ENV_PATH:-}"
-    obs_p="${PRISM_OBS_PERSONAL:-}"
-
-    echo -e "  SDK:       ${sdk}"
-    [[ -n "$skills" ]] && echo -e "  Skills:    ${skills}" || echo -e "  Skills:    (未配置，可选)"
-    echo -e "  Workspace backend: ${workspace_root}"
-    echo -e "  子目录:    ${ws_sub}"
-    [[ -n "$env_p" ]] && echo -e "  Env:       ${env_p}"
-    [[ -n "$obs_p" ]] && echo -e "  个人知识库: ${obs_p}"
-
-    write_config "$sdk" "$skills" "$workspace_root" "$ws_sub" "$env_p" "$obs_p"
-    echo ""
-    echo -e "${GREEN}✓ 已创建 prism.local.yaml（非交互模式）${NC}"
-    echo -e "运行 ${CYAN}bin/setenv --validate${NC} 校验路径，${CYAN}bin/relink${NC} 刷新软链接。"
-    return
-  fi
-
-  read -r -p "SDK 路径 [${PRISM_DIR}]: " sdk
-  sdk="${sdk:-$PRISM_DIR}"
-
-  local default_skills=""
-  [[ -d "$HOME/prism-skills" ]] && default_skills="$HOME/prism-skills"
-  if [[ -n "$default_skills" ]]; then
-    read -r -p "外部 Skills 路径（可选，留空跳过） [${default_skills}]: " skills
-    skills="${skills:-$default_skills}"
-  else
-    read -r -p "外部 Skills 路径（可选，留空跳过） []: " skills
-    skills="${skills:-}"
-  fi
-
-  local default_workspace_root="$HOME/.local/share/prism"
-  read -r -p "Workspace backend 根（本地目录；可指向 Vault） [${default_workspace_root}]: " workspace_root
-  workspace_root="${workspace_root:-$default_workspace_root}"
-
-  read -r -p "Workspace 子目录 [Workspace]: " ws_sub
-  ws_sub="${ws_sub:-Workspace}"
-
-  echo ""
-  echo -e "${DIM}可选：Env 层路径（如 ArnoDotFiles dotfiles 仓库），留空跳过${NC}"
-  read -r -p "Env 层路径 []: " env_p
-  env_p="${env_p:-}"
-
-  echo ""
-  local default_obs="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Arno Obsidian"
-  echo -e "${DIM}可选：个人知识库路径（Obsidian vault，note/deposit 等技能目标），留空跳过${NC}"
-  read -r -p "个人知识库路径 []: " obs_p
-  obs_p="${obs_p:-}"
-
-  write_config "$sdk" "$skills" "$workspace_root" "$ws_sub" "$env_p" "$obs_p"
-
-  echo ""
-  echo -e "${GREEN}✓ 已创建 prism.local.yaml${NC}"
-  echo ""
-
-  local add_more="y"
-  while [[ "$add_more" == "y" ]]; do
-    local code path
-    read -r -p "注册项目代号 (留空跳过): " code
-    [[ -z "$code" ]] && break
-    read -r -p "  本地路径: " path
-    echo "  ${code}: ${path}" >> "$CONFIG"
-    echo -e "  ${GREEN}✓ 已注册 ${code}${NC}"
-    read -r -p "继续注册? [y/N]: " add_more
-    add_more="${add_more:-n}"
-  done
-
-  echo ""
-  echo -e "${GREEN}配置完成。运行 bin/relink 刷新软链接。${NC}"
-}
-
-do_sync() {
-  if [[ ! -f "$CONFIG" ]]; then
-    echo -e "${RED}✗ prism.local.yaml 不存在，先运行 bin/setenv --init${NC}"
-    exit 1
-  fi
-
-  local device_id vault ws_sub ws_root
-  device_id=$(yaml_get device_id)
-  vault=$(yaml_get workspace_root)
-  [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
-  ws_sub=$(yaml_get workspace_subdir)
-  ws_root="${vault}/${ws_sub}"
-
-  # 如果没有 device_id，自动补充
-  if [[ -z "$device_id" ]]; then
-    device_id=$(hostname -s)
-    # 插入 device_id 到 sdk_path 之前
-    local tmp="${CONFIG}.tmp.$$"
-    awk -v did="$device_id" '
-      /^sdk_path:/ && !inserted {
-        print "# 设备标识（hostname -s 自动生成，跨设备路径解析用）"
-        print "device_id: " did
-        print ""
-        inserted=1
-      }
-      { print }
-    ' "$CONFIG" > "$tmp" && mv "$tmp" "$CONFIG"
-    echo -e "${GREEN}⟳${NC} 自动补充 device_id: ${device_id}"
-  fi
-
-  echo -e "${CYAN}Prism Sync — 从 Workspace 同步项目注册${NC}"
-  echo -e "${DIM}设备: ${device_id}${NC}"
-  echo "─────────────────────────────────"
-
-  if [[ ! -d "$ws_root" ]]; then
-    echo -e "${RED}✗ Workspace 根目录不存在: ${ws_root}${NC}"
-    exit 1
-  fi
-
-  # 收集本地已注册项目（bash 3.2 兼容，用 \n 分隔的 CODE=PATH 列表）
-  local local_project_list=""
-  local in_projects=false
-  while IFS= read -r line; do
-    if [[ "$line" == "projects:" ]]; then
-      in_projects=true
-      continue
-    fi
-    if $in_projects; then
-      if [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
-        local_project_list="${local_project_list}${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"$'\n'
-      elif [[ ! "$line" =~ ^[[:space:]] ]]; then
-        break
-      fi
-    fi
-  done < "$CONFIG"
-
-  local added=0
-  local updated=0
-  local skipped=0
-
-  # 扫描 Workspace 内所有 project.yaml
-  for proj_dir in "$ws_root"/*/; do
-    [[ -d "$proj_dir" ]] || continue
-    local proj_yaml="${proj_dir}project.yaml"
-    [[ -f "$proj_yaml" ]] || continue
-
-    local code
-    code=$(grep "^code:" "$proj_yaml" 2>/dev/null | sed 's/^code: *//; s/^"//; s/"$//')
-    [[ -z "$code" ]] && continue
-
-    echo -e "\n  ${CYAN}${code}${NC}"
-
-    # 解析 paths（支持 map 和 list 两种格式）
-    local resolved_path=""
-    local paths_is_map=false
-    local in_paths=false
-    local paths_raw=""
-
-    while IFS= read -r line; do
-      if [[ "$line" =~ ^paths: ]]; then
-        in_paths=true
-        continue
-      fi
-      if $in_paths; then
-        if [[ "$line" =~ ^[[:space:]]+-[[:space:]]*(.*) ]]; then
-          paths_raw="${paths_raw}list:${BASH_REMATCH[1]}"$'\n'
-        elif [[ "$line" =~ ^[[:space:]]+([A-Za-z0-9_-]+):[[:space:]]*(.*) ]]; then
-          paths_raw="${paths_raw}map:${BASH_REMATCH[1]}:${BASH_REMATCH[2]}"$'\n'
-          paths_is_map=true
-        elif [[ ! "$line" =~ ^[[:space:]] || "$line" =~ ^[a-z_]+: ]]; then
-          break
-        fi
-      fi
-    done < "$proj_yaml"
-
-    # 解析路径
-    if $paths_is_map; then
-      local match
-      match=$(echo "$paths_raw" | grep "^map:${device_id}:" | head -1 || true)
-      if [[ -n "$match" ]]; then
-        resolved_path="${match#map:${device_id}:}"
-        resolved_path=$(echo "$resolved_path" | sed 's/^"//; s/"$//')
-      fi
-    else
-      while IFS= read -r entry; do
-        [[ -z "$entry" ]] && continue
-        local p="${entry#list:}"
-        p=$(echo "$p" | sed 's/^"//; s/"$//')
-        local expanded="${p/#\~/$HOME}"
-        if [[ -d "$expanded" ]]; then
-          resolved_path="$expanded"
-          break
-        fi
-      done <<< "$paths_raw"
-    fi
-
-    # 已在本地注册？
-    local registered_path=""
-    registered_path=$(echo "$local_project_list" | grep "^${code}=" | head -1 | sed "s/^${code}=//" || true)
-    if [[ -n "$registered_path" ]]; then
-      if [[ -d "$registered_path" ]]; then
-        echo -e "    ${GREEN}✓${NC} 已注册: ${registered_path}"
-
-        # 回写 project.yaml（如果是 map 格式且缺少当前设备）
-        _sync_writeback_path "$proj_yaml" "$device_id" "$registered_path" "$paths_is_map"
-        ((skipped++)) || true
-        continue
-      else
-        echo -e "    ${YELLOW}⚠${NC} 已注册但路径不可达: ${registered_path}"
-      fi
-    fi
-
-    # 尝试已解析的路径
-    if [[ -n "$resolved_path" && -d "$resolved_path" ]]; then
-      echo -e "    ${GREEN}⟳${NC} 从 project.yaml 解析: ${resolved_path}"
-      _sync_add_project "$code" "$resolved_path"
-      _sync_writeback_path "$proj_yaml" "$device_id" "$resolved_path" "$paths_is_map"
-      ((added++)) || true
-      continue
-    fi
-
-    # 尝试 repo 字段做 git remote 匹配
-    local repo_url
-    repo_url=$(grep "^repo:" "$proj_yaml" 2>/dev/null | sed 's/^repo: *//; s/^"//; s/"$//' || true)
-    if [[ -n "$repo_url" ]]; then
-      local found_by_repo=""
-      found_by_repo=$(_sync_find_by_remote "$repo_url" || true)
-      if [[ -n "$found_by_repo" ]]; then
-        echo -e "    ${GREEN}⟳${NC} 通过 git remote 匹配: ${found_by_repo}"
-        _sync_add_project "$code" "$found_by_repo"
-        _sync_writeback_path "$proj_yaml" "$device_id" "$found_by_repo" "$paths_is_map"
-        ((added++)) || true
-        continue
-      fi
-    fi
-
-    # 无法自动解析，交互提示
-    if $NON_INTERACTIVE; then
-      echo -e "    ${YELLOW}⊘${NC} 无法自动解析，跳过（非交互模式）"
-      ((skipped++)) || true
-      continue
-    fi
-
-    echo -e "    ${YELLOW}?${NC} 未找到本地路径"
-    read -r -p "    输入 ${code} 的本地路径（留空跳过）: " user_path
-    if [[ -n "$user_path" ]]; then
-      # 展开 ~
-      user_path="${user_path/#\~/$HOME}"
-      if [[ -d "$user_path" ]]; then
-        _sync_add_project "$code" "$user_path"
-        _sync_writeback_path "$proj_yaml" "$device_id" "$user_path" "$paths_is_map"
-        ((added++)) || true
-      else
-        echo -e "    ${RED}✗${NC} 路径不存在: ${user_path}"
-        ((skipped++)) || true
-      fi
-    else
-      ((skipped++)) || true
-    fi
-  done
-
-  echo ""
-  echo "─────────────────────────────────"
-  echo -e "  新增: ${GREEN}${added}${NC}  跳过: ${DIM}${skipped}${NC}"
-  if [[ $added -gt 0 ]]; then
-    echo -e "\n  运行 ${CYAN}bin/relink${NC} 刷新软链接。"
-  fi
-}
-
-_sync_add_project() {
-  local code="$1" path="$2"
-  echo "  ${code}: ${path}" >> "$CONFIG"
-}
-
-_sync_writeback_path() {
-  local proj_yaml="$1" device_id="$2" local_path="$3" is_map="$4"
-  # 检查 project.yaml 是否已有当前 device_id 的条目
-  if grep -q "  ${device_id}:" "$proj_yaml" 2>/dev/null; then
-    return 0
-  fi
-
-  if [[ "$is_map" == "true" ]]; then
-    # map 格式：在 paths 段末尾追加当前设备
-    local tmp="${proj_yaml}.tmp.$$"
-    awk -v did="$device_id" -v lp="$local_path" '
-      /^paths:/ { in_paths=1; print; next }
-      in_paths && /^[^ ]/ && !/^  / {
-        print "  " did ": " lp
-        in_paths=0
-      }
-      { print }
-      END { if (in_paths) print "  " did ": " lp }
-    ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
-    echo -e "    ${DIM}↪ 已写回 project.yaml (${device_id})${NC}"
-  else
-    # list 格式：转换为 map 格式
-    local tmp="${proj_yaml}.tmp.$$"
-    local converted=false
-    awk -v did="$device_id" -v lp="$local_path" '
-      /^paths:/ { in_paths=1; print; next }
-      in_paths && /^  - / {
-        # 跳过旧 list 条目（保留为注释）
-        sub(/^  - /, "  # (legacy) ")
-        print
-        next
-      }
-      in_paths && /^[^ ]/ && !/^  / {
-        if (!wrote) {
-          print "  " did ": " lp
-          wrote=1
-        }
-        in_paths=0
-      }
-      { print }
-      END { if (in_paths && !wrote) print "  " did ": " lp }
-    ' "$proj_yaml" > "$tmp" && mv "$tmp" "$proj_yaml"
-    echo -e "    ${DIM}↪ project.yaml paths 已从 list 转为 map 格式${NC}"
-  fi
-}
-
-_sync_find_by_remote() {
-  local target_remote="$1"
-  # 在常见目录搜索匹配的 git remote
-  local search_dirs=("$HOME/Desktop" "$HOME/Projects" "$HOME/code" "$HOME/dev" "$HOME/Work" "$HOME/Desktop/Work")
-  for dir in "${search_dirs[@]}"; do
-    [[ -d "$dir" ]] || continue
-    while IFS= read -r git_dir; do
-      local repo_dir
-      repo_dir=$(dirname "$git_dir")
-      local remote
-      remote=$(git -C "$repo_dir" remote get-url origin 2>/dev/null)
-      if [[ "$remote" == "$target_remote" ]]; then
-        echo "$repo_dir"
-        return 0
-      fi
-    done < <(find "$dir" -maxdepth 3 -name ".git" -type d 2>/dev/null)
-  done
-  return 1
+  # 委托 bin/doctor 的配置阶段（内联 parser，自包含）
+  exec "$PRISM_DIR/bin/doctor" --scope config
 }
 
 NON_INTERACTIVE=false
 ACTION=""
-MIGRATE_DRY_RUN=false
-MIGRATE_PERSONAL_ROOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -744,13 +224,6 @@ while [[ $# -gt 0 ]]; do
     --export)           ACTION="export"; shift ;;
     --validate)         ACTION="validate"; shift ;;
     --sync)             ACTION="sync"; shift ;;
-    --migrate-config)   ACTION="migrate-config"; shift ;;
-    --migrate-multi-workspace) ACTION="migrate-multi-workspace"; shift ;;
-    --personal-root)
-      MIGRATE_PERSONAL_ROOT="$2"
-      shift 2
-      ;;
-    --dry-run)          MIGRATE_DRY_RUN=true; shift ;;
     --non-interactive)  NON_INTERACTIVE=true; shift ;;
     --help|-h)
       echo "用法: bin/setenv [--init [--non-interactive]|--example|--export|--validate|--sync|--help]"
@@ -760,9 +233,6 @@ while [[ $# -gt 0 ]]; do
       echo "  --example         输出 core contract 配置样例"
       echo "  --export          输出 export 语句（配合 source 使用）"
       echo "  --validate        校验 prism.local.yaml 字段与路径"
-      echo "  --migrate-config  升级 yaml 至 d02 canonical key（配合 --dry-run 预览）"
-      echo "  --migrate-multi-workspace  Phase C 多 workspace 迁移（配合 --dry-run）"
-      echo "  --personal-root PATH  multi-workspace 迁移时 personal workspace_root"
       echo "  --sync            从 Workspace project.yaml 同步项目注册"
       exit 0
       ;;
@@ -775,8 +245,6 @@ case "${ACTION:-show}" in
   example)  do_example ;;
   export)   do_export ;;
   validate) do_validate ;;
-  migrate-config) do_migrate_config ;;
-  migrate-multi-workspace) do_migrate_multi_workspace ;;
   sync)     do_sync ;;
   show)     show_config ;;
 esac

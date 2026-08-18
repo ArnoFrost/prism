@@ -1,1 +1,0 @@
-../../shared/focus-derive-spec.md

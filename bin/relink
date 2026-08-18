@@ -9,8 +9,8 @@
 #   bin/relink --prune      清理陈旧/失效软链接（可与 --dry-run 组合）
 #   bin/relink --no-workspace
 #                           跳过 Workspace backend 链接，仅刷新代码层 Skills 分发
-#   bin/relink --skill-profile prism4|legacy|all
-#                           选择 SDK 内置 skill 分发面；默认 prism4
+#   bin/relink --skill-profile prism4
+#                           SDK 内置 skill 分发面（3.x 面已随 prism-4 分支剔除）
 
 set -euo pipefail
 
@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
       TARGET_PROJECT="$2"; shift 2
       ;;
     --help|-h)
-      echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE|--no-workspace|--skill-profile prism4|legacy|all]"
+      echo "用法: bin/relink [--check|--dry-run|--prune|--project CODE|--no-workspace|--skill-profile prism4]"
       echo "  (无参数)     刷新所有软链接"
       echo "  --check      仅检查状态"
       echo "  --dry-run    预览变更"
@@ -59,8 +59,8 @@ while [[ $# -gt 0 ]]; do
       echo "  --project X  仅刷新指定项目"
       echo "  --no-workspace / --code-only"
       echo "               跳过 Workspace backend 链接，仅刷新代码层 Skills 分发"
-      echo "  --skill-profile prism4|legacy|all"
-      echo "               SDK 内置 skill 分发面；默认 prism4"
+      echo "  --skill-profile prism4"
+      echo "               SDK 内置 skill 分发面（默认且唯一：prism4）"
       exit 0
       ;;
     *) echo "未知参数: $1"; exit 1 ;;
@@ -68,16 +68,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$SKILL_PROFILE" in
-  prism4|legacy|all) ;;
-  *) echo -e "${RED}✗ --skill-profile 仅支持 prism4|legacy|all，当前: ${SKILL_PROFILE}${NC}" >&2; exit 1 ;;
+  prism4) ;;
+  legacy|all)
+    echo -e "${RED}✗ 3.x 技能面（workflow/workspace）已随 prism-4 分支剔除，仅支持 prism4。${NC}" >&2
+    echo -e "  ${DIM}3.x 终态见 git tag legacy-3x-final${NC}" >&2; exit 1 ;;
+  *) echo -e "${RED}✗ --skill-profile 仅支持 prism4，当前: ${SKILL_PROFILE}${NC}" >&2; exit 1 ;;
 esac
 
-SDK_SKILL_CATEGORIES=()
-case "$SKILL_PROFILE" in
-  prism4) SDK_SKILL_CATEGORIES=(prism4) ;;
-  legacy) SDK_SKILL_CATEGORIES=(workflow workspace) ;;
-  all)    SDK_SKILL_CATEGORIES=(prism4 workflow workspace) ;;
-esac
+SDK_SKILL_CATEGORIES=(prism4)
 ACTIVE_SDK_LINK_NAMES=()
 
 is_active_sdk_link_name() {
@@ -133,25 +131,6 @@ _load_resolved_config() {
       WS_ROOT) WS_ROOT="$value" ;;
     esac
   done <<< "$out"
-}
-
-_load_default_workspace_from_export() {
-  local py="$PRISM_DIR/skills/workflow/shared/scripts/workspace_env_export.py"
-  [[ -f "$py" ]] || return 1
-  local out vault pwr
-  if [[ -x "${PRISM_DIR}/.venv/bin/python3" ]]; then
-    out=$("${PRISM_DIR}/.venv/bin/python3" "$py" "$CONFIG" 2>/dev/null) || return 1
-  elif command -v uv >/dev/null 2>&1; then
-    out=$(uv run python "$py" "$CONFIG" 2>/dev/null) || return 1
-  else
-    out=$(python3 "$py" "$CONFIG" 2>/dev/null) || return 1
-  fi
-  vault=$(echo "$out" | sed -n 's/^export PRISM_VAULT="\(.*\)"$/\1/p')
-  pwr=$(echo "$out" | sed -n 's/^export PRISM_WORKSPACE="\(.*\)"$/\1/p')
-  [[ -n "$vault" ]] && VAULT_PATH="$vault"
-  if [[ -n "$pwr" && -n "$vault" ]]; then
-    WS_SUBDIR="${pwr#"${vault}/"}"
-  fi
 }
 
 if [[ -f "$CONFIG" ]]; then

@@ -24,7 +24,7 @@ versioning:
   note: "NN starts at 01 per skill, increments on substantive change. Public versions bump atomically with repo tag."
 
 # ─────────────────────────────────────────────
-# Catalog entries（workspace-init 含原 prism-workspace-migrate 迁移能力）
+# Catalog entries（3.x legacy 条目已随 prism-4 分支剔除；终态见 git tag legacy-3x-final）
 # ─────────────────────────────────────────────
 entries:
 # ─────────────────────────────────────────────
@@ -72,112 +72,8 @@ entries:
     rationale: "Prism 4.0 occasional alignment compression; audits reading-surface format, archives stale pending clarifications, and regenerates Brief without changing Decision commitments."
 
 # ─────────────────────────────────────────────
-# Prism 3.x legacy public/stable skills — source retained, not default on prism-4
+# External prism-skills entries（独立仓库，随其自身发布）
 # ─────────────────────────────────────────────
-  - id: workspace-init
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Topic-aware project init + vault/SDK path migration; unified id workspace-init (merges former prism-workspace-migrate, prism-workflow-init; supersedes prism-workspace-init)."
-  - id: workflow-intake
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Topic intake and routing: create or append a bounded topic container without implying a fixed workflow sequence."
-  - id: workflow-review
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Topic-aware review evolution for task cohesion workflow. Replaces prism-review."
-  - id: workflow-scope
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Scope SSOT maintenance — delta-based scope update plus focus and task-structure derivation."
-  - id: workflow-status
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Topic health scanner — scope progress, stale detection, archive hints."
-  - id: workflow-tidy
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Mechanical artifact alignment — sync rXX decision mirrors, optional review navigation mirrors, and frontmatter after review/decision."
-  - id: workflow-digest
-    visibility: public
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-13"
-    rationale: "Topic status digest — human-readable snapshot for stakeholder sync, not SSOT."
-
-# ─────────────────────────────────────────────
-# Retired compatibility skills — hidden from the active public surface
-# ─────────────────────────────────────────────
-  - id: workflow-review-lite
-    visibility: internal
-    stability: stable
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-31"
-    rationale: "Retired-with-compat since Prism 3.2: hidden from active/default/recommended surfaces while explicit calls and legacy type=review-lite artifacts remain supported."
-
-# ─────────────────────────────────────────────
-# Prism experimental skills — shipped but outside the GA formal surface
-# ─────────────────────────────────────────────
-  - id: workflow-clarify
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-31"
-    rationale: "Prism 3.2 可选澄清原语：每轮只解决一个阻塞性人类取舍，默认零写盘，仅在明确授权后向既有 workflow 交接候选语义。"
-  - id: workflow-execute
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-07-10"
-    rationale: "Prism 3.0 current-cursor executor — runs one authorized structured task/wave or eligible no-structures topic-focus batch, closing code, verification, evidence, focus, and mechanical validation without becoming Next or an orchestrator."
-  - id: workflow-compact
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-06-01"
-    rationale: "Topic active-context and context-entropy compaction — low-frequency maintenance skill, preview-first with backup gate before apply."
-  - id: workflow-archive
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-06-06"
-    rationale: "Topic lifecycle archive — attention entropy governance; preview-first before irreversible topics/ to archive/ move."
   - id: prism-dist
     visibility: dev
     stability: experimental

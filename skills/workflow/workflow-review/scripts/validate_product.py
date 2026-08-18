@@ -1,1 +1,0 @@
-../../shared/scripts/validate_product.py

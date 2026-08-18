@@ -1,1 +1,0 @@
-../../shared/obsidian-config.md

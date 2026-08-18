@@ -10,8 +10,6 @@
 #   --version, -V                显示版本后退出
 #   --json                       4.0 record 成功：{ok, ids}（不是 3.x outer schema）
 #                                doctor 的 --json 是 bin/doctor flat passthrough
-#                                relink/update/dist/sync 放在 verb 前时走 3.x envelope
-#                                3.x topic 动词必须 prism legacy --json <verb>
 #
 # 可用子命令:
 #   topic probe     机械探测当前目录是否已桥接 Workspace
@@ -25,17 +23,15 @@
 #   clarify record    持久化 Clarify 结果 → semantic payloads（候选，不是 Decision）
 #   plan record       持久化 Plan
 #   decision record   记录被授权的 Decision
-#   legacy ...      委托旧 3.x CLI adapter
-#   doctor          委托 bin/doctor（不经 3.x prism_cli.py）
-#   relink          委托 bin/relink（不经 3.x prism_cli.py）
-#   update          委托 bin/update（不经 3.x prism_cli.py）
-#   dist            委托 bin/dist（不经 3.x prism_cli.py）
-#   sync            运维入口，仍在默认表面（经 3.x facade）
+#   doctor          委托 bin/doctor
+#   relink          委托 bin/relink
+#   update          委托 bin/update
+#   dist            委托 bin/dist
 #
 # record = persist semantic output；不等于授权。
 #
-# 3.x topic 动词请用 prism legacy …
-#   （3.x decision 走 `prism legacy decision ...`；4.0 用 `decision record`）
+# 3.x 实现已从 prism-4 分支剔除（git tag legacy-3x-final）。
+#   旧 topic 只读；要操作 3.x 请切到 3.x 分支。
 #
 # 退出码: 透传子命令的退出码
 #

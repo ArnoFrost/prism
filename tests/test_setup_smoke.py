@@ -328,7 +328,6 @@ def test_relink_no_workspace_does_not_require_vault_config(tmp_path):
     """relink --no-workspace 应允许只刷新代码层，不要求 vault/workspace 字段。"""
     tmp_sdk = tmp_path / "sdk"
     (tmp_sdk / "bin").mkdir(parents=True)
-    (tmp_sdk / "skills/workflow").mkdir(parents=True)
     shutil.copy(SDK_ROOT / "bin" / "relink", tmp_sdk / "bin" / "relink")
     (tmp_sdk / "bin" / "relink").chmod(0o755)
     (tmp_sdk / "prism.local.yaml").write_text(
