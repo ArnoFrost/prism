@@ -10,9 +10,9 @@
   uv run python bin/doctor_cli.py --json     # JSON 输出（默认也是 JSON）
 
 检查项：
-  1. PRISM_SDK env 已导出
-  2. $PRISM_SDK/bin/prism 存在且可执行
-  3. `which prism` 命中（PATH 包含 bin/prism 所在目录）
+  1. PRISM_SDK env 与当前 SDK 一致（当前 SDK 以本脚本所在目录为准）
+  2. 当前 SDK 的 bin/prism 存在且可执行
+  3. `which prism` 命中当前 SDK 的 bin/prism
   4. ~/.local/bin/prism symlink 存在且指向正确
   5. shell rc（~/.zshrc + ~/.bashrc）含 PRISM_SDK 锚点块
 
@@ -42,10 +42,11 @@ SHELL_RC_FILES = [Path.home() / ".zshrc", Path.home() / ".bashrc"]
 
 
 def _prism_sdk_root() -> Path:
-    """推导 PRISM_SDK：优先 env，其次本脚本所在 bin/ 的父目录。"""
-    env = os.environ.get("PRISM_SDK")
-    if env and Path(env).is_dir():
-        return Path(env).resolve()
+    """推导当前 SDK：以本脚本所在 bin/ 的父目录为准。
+
+    setup / doctor 可能在旧 shell 中运行；此时 PRISM_SDK 仍指向旧安装。
+    CLI 注入必须修复到正在执行的 SDK，而不是继续信任旧 env。
+    """
     here = Path(__file__).resolve()
     return here.parent.parent
 
@@ -69,14 +70,61 @@ def _rc_has_anchor(rc_path: Path) -> bool:
     return ANCHOR_BEGIN in content and ANCHOR_END in content
 
 
+def _rc_anchor_matches(rc_path: Path, sdk_root: Path) -> bool:
+    if not rc_path.is_file():
+        return False
+    try:
+        content = rc_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return _anchor_block(sdk_root).strip() in content
+
+
+def _replace_anchor_block(content: str, sdk_root: Path) -> tuple[str, bool]:
+    """Replace an existing Prism rc anchor block if present."""
+    lines = content.splitlines()
+    new_lines = []
+    inside = False
+    replaced = False
+    for line in lines:
+        if ANCHOR_BEGIN in line:
+            if not replaced:
+                new_lines.extend(_anchor_block(sdk_root).strip("\n").splitlines())
+                replaced = True
+            inside = True
+            continue
+        if inside and ANCHOR_END in line:
+            inside = False
+            continue
+        if inside:
+            continue
+        new_lines.append(line)
+    return "\n".join(new_lines) + ("\n" if content.endswith("\n") else ""), replaced
+
+
 def _ensure_rc_anchor(rc_path: Path, sdk_root: Path) -> tuple[bool, str]:
-    """幂等写入锚点块。返回 (是否实际改动, 说明)"""
+    """幂等写入或更新锚点块。返回 (是否实际改动, 说明)"""
+    desired = _anchor_block(sdk_root)
     if _rc_has_anchor(rc_path):
-        return False, "锚点已存在"
+        try:
+            content = rc_path.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            return False, f"读取失败：{e}"
+        if desired.strip() in content:
+            return False, "锚点已指向当前 SDK"
+        updated, replaced = _replace_anchor_block(content, sdk_root)
+        if not replaced:
+            return False, "锚点格式异常，未更新"
+        try:
+            rc_path.write_text(updated, encoding="utf-8")
+        except OSError as e:
+            return False, f"写入失败：{e}"
+        return True, "已更新锚点到当前 SDK"
+
     # 文件不存在时创建；存在时追加
     try:
         with rc_path.open("a", encoding="utf-8") as f:
-            f.write(_anchor_block(sdk_root))
+            f.write(desired)
     except OSError as e:
         return False, f"写入失败：{e}"
     return True, "已插入锚点块"
@@ -198,10 +246,20 @@ def check(do_fix: bool = False) -> dict:
     elif not os.access(prism_bin, os.X_OK):
         errors.append({"rule": "bin-prism-not-executable", "msg": f"{prism_bin} 不可执行（chmod +x）"})
 
-    # C3: which prism 命中
+    # C3: which prism 命中当前 SDK
     which_prism = shutil.which("prism")
     if which_prism is None:
         warnings.append({"rule": "path-prism-unreachable", "msg": "PATH 中找不到 prism（需 source 新 rc 或 启动新 terminal）"})
+    else:
+        which_resolved = Path(which_prism).resolve()
+        if which_resolved != prism_bin.resolve():
+            warnings.append({
+                "rule": "path-prism-mismatch",
+                "msg": (
+                    f"当前 shell 的 prism 命中 {which_prism}（解析为 {which_resolved}），"
+                    f"期望 {prism_bin}；可能仍在使用旧版本，请 source shell rc 或打开新 terminal"
+                ),
+            })
 
     # C4: ~/.local/bin/prism symlink
     local_link = USER_LOCAL_BIN / "prism"
@@ -229,12 +287,15 @@ def check(do_fix: bool = False) -> dict:
 
     # C5: shell rc 锚点
     rc_missing = []
+    rc_stale = []
     for rc in SHELL_RC_FILES:
         if not rc.is_file():
             # rc 文件不存在属于正常（用户只用 zsh 没 .bashrc）
             continue
         if not _rc_has_anchor(rc):
             rc_missing.append(rc)
+        elif not _rc_anchor_matches(rc, sdk_root):
+            rc_stale.append(rc)
 
     if rc_missing:
         if do_fix:
@@ -248,6 +309,19 @@ def check(do_fix: bool = False) -> dict:
             warnings.append({
                 "rule": "rc-anchor-missing",
                 "msg": f"未在 {[str(r) for r in rc_missing]} 插入锚点（运行 --fix 自动插入）",
+            })
+    if rc_stale:
+        if do_fix:
+            for rc in rc_stale:
+                changed, note = _ensure_rc_anchor(rc, sdk_root)
+                if changed:
+                    fixes.append({"rule": "rc-anchor", "msg": f"{rc}: {note}"})
+                else:
+                    warnings.append({"rule": "rc-anchor", "msg": f"{rc}: {note}"})
+        else:
+            warnings.append({
+                "rule": "rc-anchor-stale",
+                "msg": f"{[str(r) for r in rc_stale]} 中的 Prism 锚点不是当前 SDK（运行 --fix 自动更新）",
             })
 
     # ~/.local/bin 是否在 PATH 里（macOS 通常有，Linux 不一定）

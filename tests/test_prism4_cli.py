@@ -2,6 +2,7 @@ import json
 import os
 import stat
 import subprocess
+import sys
 from pathlib import Path
 from shutil import copy2, copytree, ignore_patterns
 
@@ -874,6 +875,78 @@ def test_prism_doctor_cli_does_not_need_workflow_tree(tmp_path: Path) -> None:
     assert "doctor_cli.py 不存在" not in blob
     assert "legacy CLI not found" not in blob
     assert result.returncode != 127
+
+
+def test_doctor_cli_uses_running_sdk_when_prism_sdk_env_is_stale(tmp_path: Path) -> None:
+    dut = _isolated_product_sdk(tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    old_sdk = tmp_path / "old-sdk"
+    old_bin = old_sdk / "bin"
+    old_bin.mkdir(parents=True)
+    old_prism = old_bin / "prism"
+    old_prism.write_text("#!/usr/bin/env bash\necho 3.1.0\n", encoding="utf-8")
+    old_prism.chmod(0o755)
+
+    env = _env()
+    env["HOME"] = str(home)
+    env["PRISM_SDK"] = str(old_sdk)
+    env["PATH"] = str(old_bin)
+
+    result = subprocess.run(
+        [sys.executable, str(dut / "bin" / "doctor_cli.py"), "--fix"],
+        cwd=str(dut),
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=env,
+    )
+
+    assert result.returncode == 2, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert Path(payload["sdk_root"]).resolve() == dut.resolve()
+    local_prism = home / ".local" / "bin" / "prism"
+    assert local_prism.is_symlink()
+    assert local_prism.resolve() == (dut / "bin" / "prism").resolve()
+    assert any(w["rule"] == "env-prism-sdk-mismatch" for w in payload["warnings"])
+    assert any(w["rule"] == "path-prism-mismatch" for w in payload["warnings"])
+
+
+def test_doctor_cli_fix_updates_stale_rc_anchor(tmp_path: Path) -> None:
+    dut = _isolated_product_sdk(tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    old_sdk = tmp_path / "old-sdk"
+    old_sdk.mkdir()
+    zshrc = home / ".zshrc"
+    zshrc.write_text(
+        '\n# BEGIN prism-sdk\n'
+        f'export PRISM_SDK="{old_sdk}"\n'
+        'export PATH="$PRISM_SDK/bin:$PATH"\n'
+        '# END prism-sdk\n',
+        encoding="utf-8",
+    )
+
+    env = _env()
+    env["HOME"] = str(home)
+    env["PRISM_SDK"] = str(old_sdk)
+    env["PATH"] = str(dut / "bin")
+
+    result = subprocess.run(
+        [sys.executable, str(dut / "bin" / "doctor_cli.py"), "--fix"],
+        cwd=str(dut),
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=env,
+    )
+
+    assert result.returncode == 2, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert any(f["rule"] == "rc-anchor" for f in payload["fixes_applied"])
+    content = zshrc.read_text(encoding="utf-8")
+    assert f'export PRISM_SDK="{dut.resolve()}"' in content
+    assert str(old_sdk) not in content
 
 
 def test_prism_relink_does_not_need_prism_cli_without_workflow(tmp_path: Path) -> None:
