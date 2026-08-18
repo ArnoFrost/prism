@@ -61,7 +61,7 @@ setup.sh init → prism --version 验收 → relink / 桥接
 
 - 动 **本机环境 / 软链 / 全仓 skill** → `prism relink` 或 `./setup.sh relink`
 - 动 **4.0 Topic / Brief / Findings / Clarify payload** → `prism topic` · `prism brief` · `prism review record` / `prism clarify record` 或 `/prism-*`
-- 动 **旧 3.x topic 的 reviews / decisions / scope** → `prism legacy ...` 或显式 legacy workflow
+- 动 **旧 3.x topic 的 reviews / decisions / scope** → 本分支只读；要操作请切 3.x 分支或 `legacy-3x-final` tag
 
 ---
 
@@ -109,7 +109,7 @@ prism clarify record <topic_id> --question "..." --proposed-patch "..."
 
 Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。
 
-旧 3.x workflow 仅在历史 topic 兼容时显式启用：`prism legacy ...`，或 `bin/relink --skill-profile legacy` 后使用 `/workflow-*`。
+旧 3.x workflow 已随 prism-4 分支剔除；历史文档见 `docs/historical/`。
 
 ### 升级 SDK
 
@@ -148,4 +148,4 @@ prism --version
 ## 参考
 
 - 4.0 当前叙事：[prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) · [architecture.md](./architecture.md)
-- 3.x legacy 参考：[cli-contract.md](./cli-contract.md) · [topic-lifecycle.md](./historical/topic-lifecycle.md) · [skill-taxonomy.md](./historical/skill-taxonomy.md) · [prism-3.0.md](./historical/prism-3.0.md)
+- 3.x 历史参考：[cli-contract.md](./historical/cli-contract.md) · [topic-lifecycle.md](./historical/topic-lifecycle.md) · [skill-taxonomy.md](./historical/skill-taxonomy.md) · [prism-3.0.md](./historical/prism-3.0.md)

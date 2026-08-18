@@ -10,7 +10,7 @@
 |----|----------|----------|
 | **Protocol Core** | Topic / Artifact / Capability / Invocation / Decision Semantics | 不是 SDK 仓库，也不是 `AGENTS.md` 这一份文件 |
 | **Reference Experience** | 参考实现怎么好用：CLI、Markdown 适配器、`prism-*` skills、Workspace 桥接、Brief 投影 | 不是第二套 Core |
-| **Legacy Compatibility** | 3.x `workflow-*`、旧 CLI、旧 topic 布局 | 文件还在 ≠ 架构权威 |
+| **Legacy Compatibility** | 3.x 叙事与旧 topic 只读布局 | 实现已剔除；git tag `legacy-3x-final` 保管终态 |
 
 禁止再画一张把 Core、Skill、Profile、Workspace、Adapter 并列的总表当「Prism 是什么」。
 
@@ -27,7 +27,7 @@
 | **Workspace** | 项目级协作状态实例 | 逻辑上要有地方放 | 默认本地 backend，Vault/Git 可选 |
 | **Env** | 运行环境与终端基座 | 可选 | 外部 DotFiles |
 
-Skills 和 Env 不是硬依赖。4.0-canary 默认只分发 `skills/prism4/`；3.x `skills/workflow/` 与 `skills/workspace/` 是 Legacy Compatibility 源码。
+Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`；3.x 实现已随 prism-4 分支剔除。
 
 ---
 
@@ -100,7 +100,7 @@ Prism 4.0 的默认分发面不是固定 workflow，而是围绕协议原语组�
 | `prism-clarify` | `/prism-clarify` | 单问澄清，输出候选 payload |
 | `prism-compress` | `/prism-compress` | 低频对齐压缩阅读面，再生成 Brief |
 
-`bin/relink` 默认等价于 `bin/relink --skill-profile prism4`。旧 3.x 能力面需要显式 `--skill-profile legacy` 或 `--skill-profile all`。
+`bin/relink` 的分发面只有 `prism4`；`--skill-profile legacy/all` 会诚实报错并指向 git tag。
 
 能力按需组合，不预设固定顺序。Review 产出 Findings 后弱衔接（告知洞察与是否要 Clarify），不自动调用其他能力。
 
@@ -119,7 +119,7 @@ flowchart LR
 
 ## Legacy Compatibility
 
-本节不是 4.0 默认入口。3.x 文件保留给历史 topic、legacy adapter 与测试。
+本节不是 4.0 默认入口。3.x 实现已随 prism-4 分支剔除；本节保留为历史叙事，旧 topic 在本分支只读。
 
 ### 3.x 叙事锚点：轻量认知熵管理
 
@@ -134,109 +134,18 @@ v3.0 把上层目标写成**长期人机协作中的轻量认知熵管理**。�
 | 注意力熵 | 什么都重要、当前工作集膨胀 | `focus` |
 | 结构熵 | 长期问题切片失控、目录变杂物间 | `task` / `structures` |
 | 方向熵 | 不知道下一步该做什么 | `status` + `next_actions[]`（handoff-only） |
-| 注意力熵 | 已结束 topic 仍占活跃注意力 | `archive` / `prism legacy reactivate` |
+| 注意力熵 | 已结束 topic 仍占活跃注意力 | `archive` / `reactivate`（3.x，已剔除） |
 | 上下文熵 | 跨会话、跨设备恢复成本高 | digest / compact preview→apply（按需） |
 
 OpenSpec 更像 planning layer；3.x Prism workflow 更像 cognitive governance layer。二者可以串联。4.0 默认面用 Topic / Artifact / Capability / Decision，不再用这张熵源表定义「Prism 是什么」。
 
-### Legacy Workflow 按需闭环
+### Legacy Workflow 深潜（已剔除）
 
-Prism 3.x Workflow 是一组基于 AI Skill 的认知熵治理能力。核心思想：**topic 是持续推进的专项工作区，review 是 topic 内的一轮判断事件，clarify 是任意阶段的对话 sidecar**。这些能力按熵源进入，不构成必须完整执行的固定管线。4.0-canary 保留本节作为历史兼容说明，不作为默认入口。
-
-### 关系图
-
-```mermaid
-flowchart LR
-  I["Intake：容器与初始输入"] --> S["Scope：合同"]
-  S --> F["Focus：当前工作集"]
-  C["Clarify：单问澄清"] -. "候选交接" .-> I
-  C -. "已有 Topic" .-> F
-  F --> E["Execute：单一获权游标"]
-  E -->|"验证、证据、当前态"| F
-  F --> R["Review：多视角判断"]
-  R --> D["Decision Record：授权事实"]
-  D --> S
-  M["Status / Digest / Compact / Archive"] -. "按需维护" .-> F
-```
-
-图中的箭头表达允许的回流关系，不是默认阶段顺序。关键约束：
-
-- **Scope 是 Focus 与 task 结构分解的唯一上游 SSOT**。
-- Clarify 默认零写盘，只提供短确认或候选交接，不正式写 Scope / Decision。
-- intake 初始收敛可在用户明确授权后直接进入 Scope；局部、低风险、可逆的 scope 修正可由显式授权进入 Scope；review 驱动或长期审计合同变化必须经 Decision → Scope。
-- Review 负责多视角发现和仲裁；Decision Record 只机械记录明确授权，不判断价值或选择 Next。
-- Execute 只推进一个现存获权游标，完成后停止，不自动消费后续 task / wave。
-
-### 内置 Workflow Skills
-
-| Skill | 触发 | 职责 |
-|-------|------|------|
-| `workspace-init` | `/workspace-init` | 项目级初始化（workspace 容器 + 路径迁移） |
-| `workflow-clarify` | `/workflow-clarify` | 任意阶段澄清一个阻塞性人类取舍；默认零写盘（dev experimental） |
-| `workflow-intake` | `/workflow-intake` | 入料 → 亲和路由 → topic 创建/内聚 |
-| `workflow-scope` | `/workflow-scope` | scope 合同维护 → focus 刷新 / task 同步 |
-| `workflow-execute` | `/workflow-execute` | 单一已授权游标的实现、验证与工件闭环；不选择 Next（dev experimental） |
-| `workflow-review` | `/workflow-review` | 正式评审（多角色总分总） |
-| `workflow-tidy` | `/workflow-tidy` | 工件机械对齐（review/decision 后状态同步） |
-| `workflow-digest` | `/workflow-digest` | 专项状态通报（面向协作者的快照摘要） |
-| `workflow-status` | `/workflow-status` | 健康度巡检（report-first + `next_actions[]` handoff） |
-| `workflow-compact` | `/workflow-compact` | 上下文熵治理（默认 preview；授权后 backup→apply） |
-| `workflow-archive` | `/workflow-archive` | topic 生命周期归档 / 再激活（preview-first） |
-
-技能位于 `skills/workflow/workflow-*` 和 `skills/workspace/workspace-init`（目录名 = frontmatter `name` = IDE 软链名），环境预探测脚本按需分布在各 skill 的 `scripts/`，共享 `workflow/shared/sniff_lib.py`。
-
-兼容入口 `workflow-review-lite` 不属于上表的现役能力面；它自 3.2 起仅保留显式 legacy 调用、旧 topic 与旧 `type: review-lite` 产物兼容。
-
-### Topic 工件
-
-已有 workspace 的 v3.0 接入口径见 [workspace-v3-upgrade.md](./historical/workspace-v3-upgrade.md)：它强调新 topic 默认 `focus`，存量 `README` / `plan` grandfather，不批量迁移旧 topic。topic 生命周期的阅读版说明见 [topic-lifecycle.md](./historical/topic-lifecycle.md)，skill 全景图见 [skill-taxonomy.md](./historical/skill-taxonomy.md)。
-
-| 文件 | 职责 | 操作模式 |
-|------|------|---------|
-| `focus.md` | topic 入口 + 当前工作集（保留区导航 / 聚焦区 rewrite） | scope 刷新 |
-| `references/intake.md` | 混沌输入 → 结构化摘要（来源意图留档） | 写一次 + 追加 |
-| `scope.md` | 合同面 SSOT（目标 / 非目标 / 验收口径 / 约束 / 未决） | 原地更新 |
-| `structures/task.index.md` | 长期结构分解导航，仅当出现 task 时存在 | 按需更新 |
-| `structures/task-N_slug/scope.md` | 单个 task 的收窄合同，1:1 投影 topic 级 V；`tN` 仍是稳定 id | 按需创建 |
-| `structures/task-N_slug/wave-N_slug.md` | task 内时间推进批次；数字 N 表顺序，slug 只做人读 | 按需推进 |
-| `reviews/rXX.md` | 综合评审报告（P0/P1/P2 评审发现 + 结论 + 建议） | 每轮新建 |
-| `decisions/dXX.md` | 人类裁决记录；由 Decision Record 在双门满足后原子写入 | 每次正式决策新建 |
-| `verify/vXX.md` | 验收细则（`[auto]`/`[human]` 标记） | 按需创建 |
-| `README.md` | 2.x topic 控制台；3.0 起 deprecated / grandfather | 存量保留，新 topic 不再作为入口 |
-
-### 3.x Legacy CLI 自省与治理层（023 / 024 之后）
-
-3.x workflow adapter 不再只是“Skill 集合 + 几个脚本”，而是具备**自描述与自治理**能力。本节服务 `prism legacy ...`、历史 topic 与回归测试，不描述 4.0 默认 CLI 面：
-
-| 能力 | 当前入口 | 说明 |
-|------|---------|------|
-| CLI 命令面自描述 | `prism legacy --json manifest` | 导出 verb registry（stability / schema_compliant / description），作为机器可见真源 |
-| Workflow 收尾串联 | `prism legacy finalize` | Decision 后串联 tidy → validate → **validate-trace (Step 2.5)** → scope 提示；旧 `pipeline` alias 自 v2.0 起已物理移除（v1.1.x deprecated 期已结束） |
-| 正式决策落盘 | `prism decision record` | 在用户明确授权与可审计治理事件双门后，原子写入 dXX / decision.index / decision_artifact；不判断价值、不改 scope、不选择 next |
-| 痕迹义务抽检 | `prism legacy validate-trace` | 扫描 topic 痕迹义务家族（task_probe / decision_artifact / intake_gate_out / merge_artifact，自 v2.0 起永久封顶 4 族）；默认 lenient |
-| 工件机械对齐 | `prism legacy tidy` | 对齐 focus 入口、rXX decision 镜像、既有 review.index、frontmatter 等 topic 工件；README 仅存量兜底 |
-| 健康巡检 | `prism legacy status` | 扫描活跃 topic 状态，输出 workspace 健康快照 |
-| 摘要采集 | `prism legacy digest` | 为协作者摘要 / 状态同步采集 topic 工件 |
-| 发布/体检治理 | `bin/doctor` | `--scope cli/release`、`--rollback`、`--output` 让 CLI 寻址和 release health 可检查、可回滚、可落盘 |
-| 多仓状态嗅探 | `prism sync` | 统一观察 SDK / Skills / Env 的 Git 状态 |
-
-这意味着 3.x legacy 面已经从“散落脚本”收敛为：
-
-- `bin/`：仓库/环境级治理入口
-- `prism legacy <verb>`：workspace/topic 级 3.x 工作流入口
-- `manifest`：3.x 命令面自省，走 `prism legacy --json manifest`
-- `doctor` / `sync`：系统自省与治理入口，仍在默认 `prism` 表面
-
-### 3.x Legacy 能力边界
-
-- 3.2 提供 Clarify、Decision Record 与 Execute 的按需治理闭环，并继续通过真实 Topic dogfood 交互体验。
-- Clarify、Decision Record、Execute、Compact 与 Archive 仍保持实验标记，不因版本发行晋升稳定性。
-- Workspace template、topic lifecycle 与现役文档表面已对齐按需治理叙事；旧图暂以文字占位等待重绘。
-- verify 与 trace 仍是结构化协作的可选增强，不成为最小参考安装的硬入口。
+3.x 的 workflow 能力面（intake / scope / focus / task / wave、reviews/rXX、决策双门、痕迹义务抽检等）及其 `prism legacy` CLI 已随 prism-4 分支物理剔除。本分支不再保留其实现细节文档；叙事与契约归档在 [historical/](./historical/)（`prism-3.2.md`、`topic-lifecycle.md`、`skill-taxonomy.md`、`cli-contract.md`），可执行终态见 git tag `legacy-3x-final`。
 
 ### 痕迹义务家族封顶政策（v2.0 起永久生效）
 
-`prism legacy validate-trace` 扫描的痕迹义务家族（trace obligation families）在 v2.0 起 **永久封顶为 4 族**：
+3.x 时代 `validate-trace` 扫描的痕迹义务家族（trace obligation families）自 v2.0 起**永久封顶为 4 族**（本政策随 3.x 一并归档，4.0 无此概念）：
 
 | 族 | 落点 | 用途 |
 |---|---|---|

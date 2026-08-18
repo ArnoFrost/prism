@@ -2,7 +2,7 @@
 
 Prism 的可执行工具入口。每个脚本可配合同名 Skill 使用，形成"脚本 + 自然语言"的双通道能力。
 
-> **命令面分层**：`bin/` 承载仓库/环境级动作；4.0 topic/capability 动作走 `bin/prism <verb>`；旧 3.x workflow verb 走 `prism legacy ...`。3.x legacy 契约见 [docs/cli-contract.md](../docs/cli-contract.md)；**init 后日常**见 [docs/onboarding.md](../docs/onboarding.md)。
+> **命令面分层**：`bin/` 承载仓库/环境级动作；4.0 topic/capability 动作走 `bin/prism <verb>`。3.x 实现已随 prism-4 分支剔除（终态见 git tag `legacy-3x-final`，历史契约见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)）；**init 后日常**见 [docs/onboarding.md](../docs/onboarding.md)。
 
 ## 仓库根入口
 
@@ -25,7 +25,6 @@ Prism 的可执行工具入口。每个脚本可配合同名 Skill 使用，形�
 | `create-skill` | 从模板创建新 skill 骨架 | — | ✅ 可用 |
 | `validate-skills` | 扫描全量 skill frontmatter 合规性 | — | ✅ 可用 |
 | `clean` | relink 的逆操作，清理软链接和配置 | — | ✅ 可用 |
-| `rename-artifacts` | 批量重命名任务产物（task_plan → task_review） | aitask-to-prism | ✅ 可用 |
 | `prism` | 4.0 reference CLI + legacy adapter（含 relink / doctor / update facade） | prism-* | ✅ 可用 |
 
 > **`prism doctor --json`** 为 flat passthrough（非 outer envelope）；底层仍走 `bin/doctor`。
@@ -74,7 +73,7 @@ bin/relink --no-workspace
                         # 跳过 Workspace backend，仅刷新代码层 Skills 分发
 ```
 
-`--skill-profile prism4` 分发 `skills/prism4/*`，是本分支默认行为；`legacy` 分发旧 `workflow-*` / `workspace-init`；`all` 仅用于维护者对照调试。
+`--skill-profile` 只认 `prism4`（分发 `skills/prism4/*`）；3.x 技能面已随分支剔除，`legacy` / `all` 会诚实报错。
 
 `relink` 会在目录存在时自动映射 Skills 到以下平台：
 
@@ -149,7 +148,6 @@ bin/doctor --scope <name>         # 只跑指定范围
 prism --help                       # 列出所有子命令
 prism --version                    # 版本信息
 prism --json topic … / record …   # 4.0 成功输出 {ok, ids}
-prism legacy --json <3.x-verb> …  # 3.x outer schema（见 docs/cli-json-schema.json）
 prism topic new <topic_id> --title "<标题>" --intent "<意图>"
 prism topic list
 prism artifact show <artifact_id>
@@ -159,7 +157,6 @@ prism review record <topic_id> --body - --json   # stdin；成功输出 {ok, ids
 prism clarify record <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
 prism plan record <topic_id> --body "<行动结构>"
 prism decision record <topic_id> --body "<决策>"
-prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 ```
 
 `bin/prism` 是 bash 壳，exec `prism4/cli.py`。寻址问题走 `bin/doctor --scope cli --fix`（写 rc 锚点 + 建 `~/.local/bin/prism` symlink）。
@@ -169,7 +166,7 @@ prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 - 落盘：`prism review/clarify/plan/decision record`（persist ≠ authorize）
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
-- 3.x：`prism legacy ...`。topic 动词（sniff / validate / finalize 等）已硬拒绝无前缀调用。`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本；`sync` 仍在默认表面（经 3.x facade）。3.x envelope 见 [docs/cli-contract.md](../docs/cli-contract.md)。
+- 3.x：已随 prism-4 分支剔除。已知 3.x 动词统一报「已剔除 + tag 指引」（exit 2）。`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本。历史 3.x envelope 见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)。
 
 当前 4.0 命令面可分为四类：
 
@@ -178,7 +175,7 @@ prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 - **Record**：`review record` / `clarify record` / `plan record` / `decision record`（persist semantic output；不等于授权）
 - **Legacy adapter**：`legacy ...`
 
-旧 3.x verb（`sniff / validate / validate-trace / archive / reactivate / migrate / sync / decision / finalize / tidy / status / digest / manifest`）仍由 `skills/workflow/shared/scripts/prism_cli.py` 提供，但需要通过 `prism legacy ...` 显式调用。`prism pipeline` 已物理移除；旧调用方请改用 `prism legacy finalize`。
+旧 3.x verb（`sniff / validate / finalize / tidy / status / sync / manifest` 等）已随 `skills/workflow/` 一并剔除，不再由本分支提供。
 
 如需查看当前 CLI 能力面，优先运行：
 
@@ -187,42 +184,6 @@ prism --help
 ```
 
 4.0 当前命令面以 `prism --help` 为准。3.x legacy 命令面契约、稳定性分级、破坏性变更策略见 [docs/cli-contract.md](../docs/cli-contract.md)。outer schema 见 [docs/cli-json-schema.json](../docs/cli-json-schema.json)。
-
-#### 契约防漂移闸门（可选 pre-commit hook）
-
-`docs/cli-contract.md §5.2` 的 verb 表格由 `skills/workflow/shared/scripts/prism_cli.py` 的 `VERB_REGISTRY` 反向守，以防改了一侧忘了另一侧：
-
-```bash
-uv run python skills/workflow/shared/scripts/check_cli_contract_sync.py           # 干跑校验
-uv run python skills/workflow/shared/scripts/check_cli_contract_sync.py --verbose # 查看两侧明细
-```
-
-- **退出码 0**：md ↔ registry 完全对齐
-- **退出码 1**：三维不一致（verb 集合 / stability / schema_compliant），stderr 精确指出差异 + 修复建议
-- **pytest 同等覆盖**：`skills/workflow/shared/tests/test_cli_contract_sync.py`（CI 常开）
-
-启用为本地 git pre-commit hook（可选，默认不开）：
-
-```bash
-cat > .git/hooks/pre-commit <<'EOF'
-#!/usr/bin/env bash
-uv run python "$(git rev-parse --show-toplevel)/skills/workflow/shared/scripts/check_cli_contract_sync.py" || exit 1
-EOF
-chmod +x .git/hooks/pre-commit
-```
-
-### rename-artifacts — 产物重命名
-
-```bash
-bin/rename-artifacts              # 扫描所有 Workspace，重命名评审类 task_plan → task_review
-bin/rename-artifacts --dry-run    # 预览变更
-bin/rename-artifacts --project X  # 仅处理指定项目
-bin/rename-artifacts <path>       # 直接扫描指定目录（无需 prism.local.yaml）
-```
-
-判定规则：目录名含 `[评审]`/`[专项]`，或存在 `reviewer_*.md` 文件。幂等安全，不覆盖已存在的 `task_review.md`。
-
-配合 `aitask-to-prism` 迁移使用：迁移 topics/ 后执行此脚本即可完成产物规范化，零 token 消耗。
 
 ## 配置文件
 

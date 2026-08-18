@@ -26,15 +26,12 @@
 
 | 文档 | 用途 |
 |------|------|
-| [cli-contract.md](./cli-contract.md) | **Legacy CLI Contract**：3.x verb 稳定性与 envelope；4.0 看 `prism --help` / [bin/README.md](../bin/README.md) |
 | [onboarding.md](./onboarding.md) | init 后命令面分层、日常运维、E2E 验收 checklist |
-| [cli-json-schema.json](./cli-json-schema.json) | `--json` envelope schema |
-| [glossary.md](./glossary.md) | 术语人类速查（cite `vocabulary.md` SSOT） |
 | [migration.md](./migration.md) | 3.x → 4.0 迁移入口（v1→v2 见 [historical/](./historical/)） |
 | [contributing.md](./contributing.md) | L1–L4 分层、SDK vs Workspace 边界、默认面 checklist |
 | [ofm-cheatsheet.md](./ofm-cheatsheet.md) | Obsidian OFM callout 速查（维护者常用） |
 
-机器真源：`prism legacy --json manifest` · `bin/validate-skills` · [`skills/schema/frontmatter-spec.md`](../skills/schema/frontmatter-spec.md)（SKILL frontmatter 分层与顺序）
+机器真源：`bin/validate-skills` · [`skills/schema/frontmatter-spec.md`](../skills/schema/frontmatter-spec.md)（SKILL frontmatter 分层与顺序）
 
 ---
 
@@ -51,7 +48,7 @@
 
 ## C — 3.x legacy / historical
 
-保留给旧 topic、legacy adapter、测试与迁移参考；不作为 4.0 默认读序。3.x 系列说明已归档到 [`historical/`](./historical/)。
+保留给旧 topic 参考与迁移阅读；不作为 4.0 默认读序。3.x 系列说明与旧 CLI 契约已归档到 [`historical/`](./historical/)；3.x 实现已随 prism-4 分支剔除（终态见 git tag `legacy-3x-final`）。
 
 | 文档 | 用途 |
 |------|------|
@@ -61,6 +58,9 @@
 | [topic-lifecycle.md](./historical/topic-lifecycle.md) | topic 从 intake 到 archive |
 | [workspace-v3-upgrade.md](./historical/workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
 | [review-lite-compatibility.md](./historical/review-lite-compatibility.md) | review-lite 3.2 退役边界与旧产物迁移选择 |
+| [cli-contract.md](./historical/cli-contract.md) | **历史**：3.x Legacy CLI Contract（verb 稳定性与 envelope） |
+| [cli-json-schema.json](./historical/cli-json-schema.json) | **历史**：3.x `--json` envelope schema |
+| [glossary.md](./historical/glossary.md) | **历史**：3.x 术语人类速查 |
 
 ---
 

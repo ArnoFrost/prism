@@ -15,7 +15,7 @@
 
 - `~/prism` 承载 SDK、内置 workflow/workspace、CLI、schema、模板和共享脚本。
 - `~/prism-skills` 承载外部通用 Skills。
-- `~/prism-skills/shared` 是指向 `~/prism/skills/workflow/shared` 的软链接；不要在 `prism-skills` 仓库提交 `shared/` 下的文件。
+- `~/prism-skills/shared` 是自包含目录（070 起不再是软链接）；共享脚本直接在 prism-skills 仓库提交。
 - `prism.local.yaml`、`AGENTS.local.md`、`workspace.*.local` 是本地状态，不提交。
 
 ### 跨仓 commit 引用边界
@@ -36,7 +36,7 @@ trace_strict: true
 
 ### SDK 层 vs Workspace 层引用边界
 
-SDK 层文件（`bin/` / `skills/workflow/` / `docs/` / 模板等，**入 git 公共分发**）**不应**引用 Workspace 实例层的具体决策痕迹，包括：
+SDK 层文件（`bin/` / `skills/prism4/` / `docs/` 等，**入 git 公共分发**）**不应**引用 Workspace 实例层的具体决策痕迹，包括：
 
 - workspace 内的 finding 编号（`F-P0-X` / `F-meta-X` / `r01` / `r02` 等）
 - decision 编号（`d01` / `d02` / `AP-N` / `AP-L-N` 等）

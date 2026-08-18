@@ -22,7 +22,7 @@ Prism 4.0 是一层轻量协作协议。**Protocol Core** 只有 Topic / Artifac
 | 语义边界（什么算 Core） | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
 | 安装并跑起来 | 下文 [快速开始](#快速开始) · SDK + `uv` |
 
-**当前发行**：4.0-canary。默认技能面是 `/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。`prism` 进入 4.0 reference adapter。旧 CLI 与旧 workflow 不在默认路径，需要时用 `prism legacy`。
+**当前发行**：4.0-canary。默认技能面是 `/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。`prism` 进入 4.0 reference adapter。3.x 实现已从本分支剔除（终态见 git tag `legacy-3x-final`；旧 topic 只读）。
 
 **发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）
 
@@ -96,7 +96,7 @@ clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总�
 | 澄清一个阻塞取舍 | `/prism-clarify` · `prism clarify record ...` |
 | 对齐阅读面并同步进度 | `/prism-compress`（低频；先 preview） |
 
-`bin/relink` 默认分发 `skills/prism4/*`。旧 `workflow-*` 只在显式 `--skill-profile legacy` 时出现。
+`bin/relink` 分发 `skills/prism4/*`（唯一技能面）。
 
 最小能跑 = SDK + `uv`（Minimal Reference Installation）。Skills、Env、Vault 都是可选部署。
 
@@ -154,13 +154,12 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 | `prism clarify record` | 持久化 Clarify payload（候选，不是 Decision） |
 | `prism plan record` | 持久化 Plan |
 | `prism decision record` | 记录被授权的 Decision |
-| `prism legacy ...` | 显式委托旧 3.x CLI adapter |
 | `prism relink`   | 刷新项目/Skills IDE 软链接（委托 `bin/relink`） |
 | `prism doctor`   | 仓库/环境体检（委托 `bin/doctor`） |
 | `prism update`   | 拉取 SDK 并执行核心 doctor + 代码层 relink（experimental；Vault/Workspace 可选） |
 | `prism dist`     | 分发统一 facade（experimental）；mini/full 仅 legacy maintenance-only |
 
-旧 3.x `sniff / validate / finalize / status / digest / decision record` 等 verb 仍可通过 `prism legacy ...` 使用；它们服务历史 topic 与 legacy workflow，不是 4.0 默认入口。需要旧 `workflow-*` 技能面时显式 `bin/relink --skill-profile legacy`。痕迹义务家族（`task_probe` 等）同属 legacy，默认 lenient，不是硬入口。
+旧 3.x verb（`sniff / validate / finalize / status / digest` 等）已随分支剔除；旧 topic 只读，要操作请切 3.x 分支或 `legacy-3x-final` tag。
 
 详见 [bin/README.md](bin/README.md)。长文本用 `--body -`（stdin）或 `--body @path`；4.0 record 的 `--json` 只输出 `{ok, ids}`，不是 3.x outer schema。
 
@@ -179,7 +178,7 @@ prism --help
 - **新增稳定**：新增命令 / 新增可选参数 / 新增 JSON 字段 可在任意 minor 版本落地，不视为破坏性变更
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
 - **experimental 标记**：标注为 experimental 的 verb（当前含 4.0 `topic / artifact / brief / review / clarify / plan / decision` 与部分 facade）可能在下一个 minor 改名或改参数
-- **历史 breaking change**：`prism pipeline` 已物理移除；旧调用方请改用 `prism legacy finalize`
+- **历史 breaking change**：`prism pipeline` 已物理移除；3.x 实现整体剔除见 [docs/migration.md](docs/migration.md)
 - **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 
 > 完整命令面契约、分层判断树、稳定性分级与破坏性变更策略见 [docs/cli-contract.md](docs/cli-contract.md)。

@@ -53,7 +53,7 @@ def test_pilot_entry_is_discoverable_from_public_docs() -> None:
     assert "FrostAtlas" not in readme
     assert "开源生态" not in readme
     assert "/prism-clarify" in _read(ONBOARDING)
-    assert "bin/relink --skill-profile legacy" in _read(ONBOARDING)
+    assert "docs/historical/" in _read(ONBOARDING)
 
 
 def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:

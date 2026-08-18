@@ -34,7 +34,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 | `prism-clarify` | `/prism-clarify` | 单问澄清；候选 ≠ Decision |
 | `prism-compress` | `/prism-compress` | 低频对齐阅读面 |
 
-旧 `workflow-*` 与 `workspace-init` 源码保留。默认 `bin/relink --skill-profile prism4` 不分发它们；需要旧 topic 时显式 `--skill-profile legacy` 或 `prism legacy ...`。
+3.x `workflow-*` 与 `workspace-init` 已随 prism-4 分支剔除；终态由 git tag `legacy-3x-final` 保管。旧 topic 在本分支只读。
 
 ## 公开叙事与分发视图
 
@@ -44,7 +44,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 |----|----------|----------|
 | **Protocol Core** | Topic / Artifact / Capability / Invocation / Decision Semantics | 不是 SDK 目录 |
 | **Reference Experience** | CLI、Markdown 适配器、`prism-*` skills、Workspace 桥接、Brief | 不是第二套 Core |
-| **Legacy Compatibility** | 3.x `workflow-*`、旧 CLI、旧 topic 布局 | 文件还在 ≠ 架构权威 |
+| **Legacy Compatibility** | 3.x 叙事归档（`docs/historical/`）与旧 topic 只读布局 | 实现已剔除；git tag 保管 |
 
 分发与所有权（旧称「四层模型」）只解释「放哪」，嵌套在 Reference Experience 下：
 
@@ -57,7 +57,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 
 语义最小是 Protocol Core。跑起来还要 Minimal Reference Installation（SDK + `uv`）和可选的 Workspace 实例。不要把「Protocol + Workspace」说成最小可用集合而与 Core 抢解释权。
 
-Skills 和 Env 不是硬依赖。4.0-canary 默认只分发 `skills/prism4/`；3.x `skills/workflow/` 作为 legacy 源码保留。
+Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`。
 
 ---
 
@@ -118,7 +118,7 @@ Workspace backend/
     └── {OTHER_PROJECT}/
 ```
 
-工作流技能内置于 SDK `skills/` 目录（默认分发 `prism4/`；`workflow/` 为 legacy）；个人工具技能存放在独立 Git 仓库（`~/prism-skills`）。两者通过各自的 `bin/relink` 分发到 IDE 环境。
+工作流技能内置于 SDK `skills/prism4/` 目录；个人工具技能存放在独立 Git 仓库（`~/prism-skills`）。两者通过各自的 `bin/relink` 分发到 IDE 环境。
 
 ---
 
@@ -163,7 +163,7 @@ Workspace backend/
 
 | 位置 | 含义 | 必需 | 放什么 |
 |------|------|:----:|--------|
-| **SDK 仓库** | 协议文本 + schema + 4.0 semantic skills + legacy 源码 | 是 | 参考实现与默认技能面 |
+| **SDK 仓库** | 协议文本 + schema + 4.0 semantic skills | 是 | 参考实现与默认技能面 |
 | **外部技能仓库** | 个人工具、git 同步 | **可选** | Skills 扩展 |
 | **Workspace backend** | 项目状态、评审记录；默认本地，可选 Vault/Git | 是（逻辑实例） | Workspace 实例 |
 
@@ -237,28 +237,17 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 工具入口可配合同名 Skill 使用，形成 "脚本 + 自然语言" 的双通道能力。
 
-旧 `workspace-init` / `workflow-*` 源码仍在 `skills/workflow/` 与 `skills/workspace/`，默认不分发。3.x 术语只认 [`skills/workflow/shared/vocabulary.md`](skills/workflow/shared/vocabulary.md)，不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。3.x topic 动词走 `prism legacy …`（默认 `prism sniff` 等已硬拒绝）。`doctor` / `relink` / `update` / `dist` / `sync` 仍可直接调用。CodeBuddy 的 3.x tidy hook 见 `skills/workflow/shared/hooks/`。
+3.x 实现（`workflow-*` / `workspace-init` / `prism legacy`）已随 prism-4 分支剔除，终态见 git tag `legacy-3x-final`。不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本。
 
 ---
 
 ## ⚠️ 仓库操作陷阱（避免重复犯错）
 
-### `prism-skills/shared` 是指向本仓库的软链接
+### `prism-skills/shared` 是自包含目录（不再是软链接）
 
-```
-~/prism-skills/shared  →  ~/prism/skills/workflow/shared
-```
+070 剔除前它曾软链到本仓库 `skills/workflow/shared`；剔除后 `~/prism-skills/shared/` 改为**真实目录**，自带 prism-pull/push 所需脚本（`sniff_lib` 族、`prism_sync_sniff.py`、`prism_changelog_scan.py`）。
 
-**后果**：在 `prism-skills/` 目录下 `git add shared/...` 会报错 `beyond a symbolic link`。
-
-**正确做法**：`shared/` 下的所有文件在**本仓库**（`~/prism`）提交：
-
-```bash
-# 新增/修改共享脚本后，在 prism 仓库提交
-cd ~/prism
-git add skills/workflow/shared/scripts/your_script.py
-git commit -m "feat: 新增 xxx 脚本"
-```
+**后果**：共享脚本直接在 `~/prism-skills` 提交，本仓库不再保管它们。
 
 ### `prism.local.yaml` 是 gitignore 文件
 
@@ -281,4 +270,4 @@ git commit -m "feat: 新增 xxx 脚本"
 | 阅读面漂移、假待办堆积、进度与现状不对齐 | 使用 `/prism-compress`；先 preview，低频对齐，不要实时压缩 |
 | 需要审视现状、暴露风险/缺口/取舍 | 使用 `/prism-review`；Findings 不自动授权 |
 | 下一步被一个人类取舍阻塞 | 使用 `/prism-clarify`；候选 payload 不等于 Decision |
-| 需要旧 3.x topic 兼容 | 显式使用 legacy skill 或 `prism legacy ...` |
+| 需要旧 3.x topic 兼容 | 本分支只读；要操作切 3.x 分支或 `legacy-3x-final` tag |
