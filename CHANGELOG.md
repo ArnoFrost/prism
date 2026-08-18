@@ -7,6 +7,7 @@
 - **3.x topic 动词退出默认表面** — `prism sniff` / `validate` / `finalize` 等硬拒绝并提示 `prism legacy …`。`doctor` / `relink` / `update` / `dist` / `sync` 仍可直接调用。默认 `prism --help` 不再列出退场动词。`prism --json --help` 与 `prism help` 走同一张壳帮助；裸 `prism decision` 同时提示 4.0 `decision record` 与 `prism legacy decision`。
 - **`prism doctor` 直调 `bin/doctor`** — 默认产品入口不再经 `skills/workflow/**/prism_cli.py`。`relink` / `update` / `dist` / `sync` 仍走 legacy facade。`--json doctor` 保持 bin/doctor flat passthrough。
 - **CLI 寻址脚本迁出 workflow 树** — `bin/doctor_cli.py` 供 setup / doctor 使用；旧 `skills/workflow/.../doctor_cli.py` 保留为 shim。
+- **`topic probe` 列出最近目录** — 已桥接时打印编号倒序的 topic 目录名与 `next_number`，不做亲和匹配建议。
 - **Host 边界** — Topic 发现收回 `host.py`；配置查询不再进程内 import sniff。
 - **4.0 机器面** — `--body -` / `@path` 读长文本；record `--json` 输出 `{ok, ids}`，不使用 3.x outer schema。
 - **CLI 收尾** — use-case 测试钉住 Plan / Decision authority，并不再依赖 Markdown 序号函数；`docs/cli-contract.md` 明确为 3.x Legacy CLI Contract。

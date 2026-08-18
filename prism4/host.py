@@ -33,6 +33,7 @@ SDK_ROOT = Path(__file__).resolve().parents[1]
 STATE_FILENAME = "prism4-state.json"
 TOPIC_FILENAME = "topic.md"
 CODE_PATTERN = re.compile(r"^[A-Z][A-Z0-9_-]{0,31}$")
+_TOPIC_DIR_PREFIX = re.compile(r"^(\d{3,})_")
 
 
 class WorkspaceProbe(NamedTuple):
@@ -84,12 +85,21 @@ def format_workspace_probe(probe: WorkspaceProbe) -> str:
         f"next_number: {probe.next_number:03d}",
     ]
     if probe.live:
+        recent = sorted(probe.topic_stores, key=_topic_dir_number, reverse=True)[:15]
+        if recent:
+            lines.append("recent:")
+            lines.extend(f"  {store.name}" for store in recent)
         return "\n".join(lines)
     if probe.bridge is not None:
         lines.append(dangling_bridge_guidance(probe.bridge))
         return "\n".join(lines)
     lines.append(unbridged_guidance(probe.cwd))
     return "\n".join(lines)
+
+
+def _topic_dir_number(path: Path) -> int:
+    match = _TOPIC_DIR_PREFIX.match(path.name)
+    return int(match.group(1)) if match else -1
 
 
 def unbridged_guidance(start: Path) -> str:

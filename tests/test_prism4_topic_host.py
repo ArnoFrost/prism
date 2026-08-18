@@ -91,6 +91,24 @@ def test_topic_probe_fails_closed_when_unbridged(tmp_path: Path) -> None:
     assert "workspace-init" in result.stdout
 
 
+def test_topic_probe_lists_recent_dirs_and_next_number(tmp_path: Path) -> None:
+    project, workspace = _bridge_project(tmp_path)
+    for name in ("065_host", "067_dist", "066_surface"):
+        root = workspace / "topics" / name
+        root.mkdir(parents=True)
+        (root / "topic.md").write_text(f'---\nid: "topic:{name}"\ntitle: "{name}"\n---\n', encoding="utf-8")
+
+    result = _run(["topic", "probe"], cwd=project)
+    assert result.returncode == 0, result.stderr
+    assert "bridged: yes" in result.stdout
+    assert "next_number: 068" in result.stdout
+    assert "recent:" in result.stdout
+    recent = result.stdout.split("recent:\n", 1)[1]
+    assert recent.index("067_dist") < recent.index("066_surface") < recent.index("065_host")
+    assert "affinity" not in result.stdout
+    assert "suggestion" not in result.stdout
+
+
 def test_topic_new_without_root_does_not_write_into_project(tmp_path: Path) -> None:
     result = _run(
         ["topic", "new", "topic:loop-demo", "--title", "闭环演示"],

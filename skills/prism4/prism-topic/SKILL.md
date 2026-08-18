@@ -41,6 +41,8 @@ prism topic probe
 
 `bridged: yes` 才继续。`bridged: no` 时**不要**在项目目录写 `topic.md`，**不要**自行 `ln -s`。
 
+已桥接时 probe 会给出 `next_number` 和编号倒序的 `recent:` 目录名。用这些做定位；不要做亲和匹配或猜测「该进哪个 Topic」。多个候选时问用户。
+
 ```bash
 prism host attach --code CODE
 ```
