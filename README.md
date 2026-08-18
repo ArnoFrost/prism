@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/v4/prism-banner.jpg" alt="Prism — 折射协议" width="720">
+
 # Prism
 
 **人与 AI 共同维护清晰的协作状态。**
@@ -28,16 +30,25 @@ Prism 4.0 是一层轻量协作协议。**Protocol Core** 只有 Topic / Artifac
 
 ---
 
-## 快速开始
+## 快速上手
 
-**一条命令 init**（clone 之后）：
+**30 秒跑通第一环**：
 
 ```bash
+# 1. 安装（clone + 一键 init）
 git clone git@github.com:ArnoFrost/prism.git ~/prism
-cd ~/prism
-./setup.sh init
+cd ~/prism && ./setup.sh init
 prism --version
+
+# 2. 进入你的项目，桥接 Workspace
+cd ~/your-project
+prism host attach --code MYPROJ
+
+# 3. 创建第一个 Topic，开始协作
+prism topic new topic:my-first --title "我的第一个专项" --intent "要解决的问题"
 ```
+
+之后：Agent 里 `/prism-topic` 起新边界，`/prism-brief` 恢复上下文，`/prism-review` 留 Findings，`/prism-clarify` 解阻塞。完整阶段表见 **[生命周期总览](#生命周期总览)**。
 
 | 入口 | 读者 |
 |------|------|
@@ -45,21 +56,9 @@ prism --version
 | [SETUP_AGENT.md](SETUP_AGENT.md) | Agent 协议 |
 | [docs/onboarding.md](docs/onboarding.md) | init **之后**日常 / update / doctor |
 
-### 仓库地址
-
-GitHub 公开版：
-
-```bash
-git clone git@github.com:ArnoFrost/prism.git ~/prism
-```
-
 ### Agent 引导
 
 > 帮我 clone `git@github.com:ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并读 `SETUP_AGENT.md` 完成验收。
-
-### 首屏闭环
-
-clone + `./setup.sh init` 即可启动；完整阶段表见 **[生命周期总览](#生命周期总览)**。
 
 ---
 
@@ -188,6 +187,8 @@ prism --help
 棱镜本身不发光，它只负责折射光线。
 
 Prism 在 AI 协作里的角色也是如此——共享规则保留在上游，本地上下文保留在个人工作区，两者通过轻量协议与软链接完成折射融合。
+
+<img src="docs/assets/v4/prism-refraction.jpg" alt="共享规则经 Prism 折射为本地工作区状态" width="720">
 
 两条演进原则（064–070 系列确立）：
 

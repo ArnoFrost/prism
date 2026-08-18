@@ -28,6 +28,8 @@
 
 旧称「四层模型」。它只解释东西放在哪，嵌套在 Reference Experience 下，**不是** Protocol Core。
 
+<img src="./assets/v4/prism-layers.jpg" alt="Prism 分发与所有权四层：Protocol Core / Reference Experience / Workspace 实例 / Skills 与 Env 可选扩展" width="720">
+
 | 载体 | 职责 | 必需 | 典型落点 |
 |------|------|:----:|----------|
 | **SDK** | 协议文本、schema、模板、参考 CLI | 安装时是 | `~/prism` |
