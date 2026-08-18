@@ -694,6 +694,24 @@ def test_prism_doctor_does_not_need_prism_cli(tmp_path: Path) -> None:
     assert result.returncode == 0, blob
 
 
+def test_prism_doctor_cli_does_not_need_workflow_tree(tmp_path: Path) -> None:
+    dut = _isolated_product_sdk(tmp_path)
+    env = _isolated_env(tmp_path, dut)
+    assert (dut / "bin" / "doctor_cli.py").is_file()
+    result = subprocess.run(
+        [str(dut / "bin" / "prism"), "doctor", "--scope", "cli"],
+        cwd=str(dut),
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=env,
+    )
+    blob = result.stdout + result.stderr
+    assert "doctor_cli.py 不存在" not in blob
+    assert "legacy CLI not found" not in blob
+    assert result.returncode != 127
+
+
 def test_prism_relink_still_needs_prism_cli_without_workflow(tmp_path: Path) -> None:
     dut = _isolated_product_sdk(tmp_path)
     env = _isolated_env(tmp_path, dut)

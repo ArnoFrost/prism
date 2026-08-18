@@ -392,7 +392,7 @@ _stage_cli() {
   _in_scope cli || return 0
 
   ! $JSON && echo -e "\n${CYAN}[CLI 寻址]${NC}"
-  local cli_script="$PRISM_DIR/skills/workflow/shared/scripts/doctor_cli.py"
+  local cli_script="$PRISM_DIR/bin/doctor_cli.py"
   if [[ ! -f "$cli_script" ]]; then
     ! $JSON && echo -e "  ${YELLOW}⚠${NC} doctor_cli.py 不存在"
     WARN_CLI=$((WARN_CLI + 1))
