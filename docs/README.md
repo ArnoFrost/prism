@@ -10,9 +10,8 @@
 
 1. 仓库根 [README](../README.md) — 4.0 愿景 + **`./setup.sh init`**
 2. 仓库根 [AGENTS.md](../AGENTS.md) — 协作契约与 4.0 术语
-3. [SETUP_GITHUB.md](../SETUP_GITHUB.md) / [SETUP_AGENT.md](../SETUP_AGENT.md) — 安装
-4. [onboarding.md](./onboarding.md) — init 后日常命令
-5. [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) — 语义地基（Core 边界）
+3. [onboarding.md](./onboarding.md) — init 后日常命令与 E2E 验收
+4. [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) — 语义地基（Core 边界）
 
 架构图口径与施工笔记不在 L1。见下方 B 区。3.x 升级与历史见 C 区（历史归档）。
 

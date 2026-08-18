@@ -143,8 +143,7 @@ def test_open_source_surface_has_no_private_or_retired_entrypoints() -> None:
     """Public setup/docs must not drift back to private paths or removed 3.x entrypoints."""
     surfaces = [
         ROOT / "README.md",
-        ROOT / "SETUP_GITHUB.md",
-        ROOT / "SETUP_AGENT.md",
+        ROOT / "SETUP.md",
         ROOT / "bin" / "README.md",
         ROOT / "docs" / "migration.md",
         ROOT / "docs" / "contributing.md",
@@ -167,6 +166,24 @@ def test_open_source_surface_has_no_private_or_retired_entrypoints() -> None:
         text = path.read_text(encoding="utf-8")
         for phrase in forbidden:
             assert phrase not in text, f"{phrase!r} leaked into {path}"
+
+
+def test_retired_setup_guides_are_not_public_entrypoints() -> None:
+    assert not (ROOT / "SETUP_GITHUB.md").exists()
+    assert not (ROOT / "SETUP_AGENT.md").exists()
+
+    surfaces = [
+        ROOT / "README.md",
+        ROOT / "SETUP.md",
+        ROOT / "docs" / "README.md",
+        ROOT / "docs" / "onboarding.md",
+        ROOT / "docs" / "architecture.md",
+        ROOT / "docs" / "contributing.md",
+    ]
+    for path in surfaces:
+        text = path.read_text(encoding="utf-8")
+        assert "SETUP_GITHUB.md" not in text
+        assert "SETUP_AGENT.md" not in text
 
 
 def test_current_skill_schema_examples_use_prism4_surface() -> None:

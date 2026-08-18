@@ -14,7 +14,7 @@
 2. 把旧命令 `prism pipeline` 替换为 `prism finalize`。
 3. 运行 **`./setup.sh init`**（或 `bin/setup --non-interactive` + `bin/relink`），让本机配置与软链接自动补齐。
 
-如果你使用 zip 分发包，按包内 `INSTALL_INTERNAL.md` 的升级模式走；如果你使用 git clone，按 [SETUP_AGENT.md](../SETUP_AGENT.md) 重新执行非交互初始化，或人类自助见 [SETUP_GITHUB.md](../SETUP_GITHUB.md)。
+如果你使用 zip 分发包，按包内 `INSTALL_INTERNAL.md` 的升级模式走；如果你使用 git clone，当前安装入口见仓库根 [SETUP.md](../../SETUP.md)。
 
 ## 破坏性变化
 

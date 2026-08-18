@@ -2,7 +2,7 @@
 
 > **定位**：`./setup.sh init` 完成后的命令面与习惯路径。4.0 当前命令面看 `prism --help`；3.x 历史契约 → [historical/cli-contract.md](./historical/cli-contract.md)。
 >
-> **尚未 init** → [SETUP_GITHUB.md](../SETUP_GITHUB.md)（人类）· [SETUP_AGENT.md](../SETUP_AGENT.md)（Agent）
+> **尚未 init** → 先读仓库根 [README.md](../README.md#快速上手)，再运行 `./setup.sh init`。
 
 ---
 

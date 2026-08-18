@@ -52,13 +52,13 @@ prism topic new topic:my-first --title "我的第一个专项" --intent "要解�
 
 | 入口 | 读者 |
 |------|------|
-| [SETUP_GITHUB.md](SETUP_GITHUB.md) | 人类分步说明 |
-| [SETUP_AGENT.md](SETUP_AGENT.md) | Agent 协议 |
+| 本节快速上手 | 首次安装 |
 | [docs/onboarding.md](docs/onboarding.md) | init **之后**日常 / update / doctor |
+| [SETUP.md](SETUP.md) | 旧安装链接兼容入口 |
 
 ### Agent 引导
 
-> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并读 `SETUP_AGENT.md` 完成验收。
+> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并用 `prism --version` 与 `./setup.sh check` 完成验收。
 
 ---
 
@@ -108,7 +108,7 @@ prism topic new topic:my-first --title "我的第一个专项" --intent "要解�
 | 你想了解 | 入口 |
 |----------|------|
 | **4.0 愿景与协作契约** | [AGENTS.md](AGENTS.md) |
-| **安装（人类 / Agent）** | [SETUP_GITHUB.md](SETUP_GITHUB.md) · [SETUP_AGENT.md](SETUP_AGENT.md) |
+| **安装与验收** | 上文 [快速开始](#快速开始) · [docs/onboarding.md](docs/onboarding.md) |
 | **语义边界与术语** | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
 | **init 后日常** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
 | **分发与参考实现怎么放** | [docs/architecture.md](docs/architecture.md) |

@@ -163,9 +163,7 @@ OpenSpec 更像 planning layer；3.x Prism workflow 更像 cognitive governance 
 prism/
 ├── AGENTS.md                        # 协作契约（Protocol 入口）
 ├── setup.sh                         # 人类一键 init（委托 bin/setup）
-├── SETUP.md                         # 兼容 stub → SETUP_AGENT / SETUP_GITHUB
-├── SETUP_AGENT.md                   # Agent 交互式引导（SSOT；main/internal 同文）
-├── SETUP_GITHUB.md                  # 人类安装（GitHub main）
+├── SETUP.md                         # 旧安装链接兼容 stub → README / onboarding
 ├── prism.local.yaml.example         # 配置样例
 ├── README.md
 ├── LICENSE
