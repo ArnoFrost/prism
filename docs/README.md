@@ -64,7 +64,7 @@
 | [cli-json-schema.json](./historical/cli-json-schema.json) | 3.x `--json` envelope schema |
 | [glossary.md](./historical/glossary.md) | 3.x 术语人类速查 |
 | [migration-v1-to-v2.md](./historical/migration-v1-to-v2.md) | v1.x → v2.0 历史迁移 |
-| [prism-4-dogfood-plan.md](./historical/prism-4-dogfood-plan.md) | 4.0-canary 起步期施工笔记（已被 070 超越） |
+| [prism-4-dogfood-plan.md](./historical/prism-4-dogfood-plan.md) | 4.0-canary 起步期施工笔记（软切换策略已被后续的物理剔除超越） |
 | [leader-pitch.md](./historical/leader-pitch.md) | 对内沟通 ≤300 字（internal） |
 | [CHANGELOG](../CHANGELOG.md) | 版本变更史（仓库根） |
 

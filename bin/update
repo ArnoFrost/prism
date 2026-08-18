@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """prism update — 拉取 SDK（可选 Skills）并执行核心体检 + 代码层 relink。
 
-实现位于 bin/，供无 skills/workflow 时使用（069 d02 从 prism_cli.py 抽出）。
+实现位于 bin/，自包含，不依赖 3.x 实现（自 prism_cli.py 抽出）。
 update 的核心职责是让 SDK / Skills 更新生效；Workspace/Vault 是可选协作状态，
 缺失或未同步不应阻断代码层升级。
 """

@@ -38,13 +38,14 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 
 ## 公开叙事与分发视图
 
-公开叙事分三层，**不是**第三套 primitive：
+公开叙事分两层，**不是**新的 primitive：
 
 | 层 | 回答什么 | 不是什么 |
 |----|----------|----------|
 | **Protocol Core** | Topic / Artifact / Capability / Invocation / Decision Semantics | 不是 SDK 目录 |
 | **Reference Experience** | CLI、Markdown 适配器、`prism-*` skills、Workspace 桥接、Brief | 不是第二套 Core |
-| **Legacy Compatibility** | 3.x 叙事归档（`docs/historical/`）与旧 topic 只读布局 | 实现已剔除；git tag 保管 |
+
+历史不是一层叙事，只是归档：3.x 文档在 `docs/historical/`，可执行终态由 git tag `legacy-3x-final` 保管。**分支即兼容边界**——兼容由 Git 历史承载，不在工作树里供一份活源码。
 
 分发与所有权（旧称「四层模型」）只解释「放哪」，嵌套在 Reference Experience 下：
 
@@ -243,9 +244,9 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## ⚠️ 仓库操作陷阱（避免重复犯错）
 
-### `prism-skills/shared` 是自包含目录（不再是软链接）
+### `prism-skills/shared` 是自包含目录
 
-070 剔除前它曾软链到本仓库 `skills/workflow/shared`；剔除后 `~/prism-skills/shared/` 改为**真实目录**，自带 prism-pull/push 所需脚本（`sniff_lib` 族、`prism_sync_sniff.py`、`prism_changelog_scan.py`）。
+`~/prism-skills/shared/` 是**真实目录**，自带 prism-pull/push 所需脚本（`sniff_lib` 族、`prism_sync_sniff.py`、`prism_changelog_scan.py`）。
 
 **后果**：共享脚本直接在 `~/prism-skills` 提交，本仓库不再保管它们。
 

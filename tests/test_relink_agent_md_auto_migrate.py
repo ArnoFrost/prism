@@ -26,7 +26,7 @@ def _build_tmp_sdk(tmp_path: Path) -> Path:
 
     tmp_sdk 里：
       - bin/relink （从真实 SDK copy）
-      - bin/workspace_resolve.py （065 起 relink 缺 resolver 会 fail-closed）
+      - bin/workspace_resolve.py （relink 缺 resolver 会 fail-closed）
       - prism.local.yaml （指向 tmp vault + tmp project）
       - skills/ （空，relink 会输出 WARN 但不影响主流程）
     """

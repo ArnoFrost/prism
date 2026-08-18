@@ -15,7 +15,7 @@
 
 - `~/prism` 承载 SDK、内置 workflow/workspace、CLI、schema、模板和共享脚本。
 - `~/prism-skills` 承载外部通用 Skills。
-- `~/prism-skills/shared` 是自包含目录（070 起不再是软链接）；共享脚本直接在 prism-skills 仓库提交。
+- `~/prism-skills/shared` 是自包含目录；共享脚本直接在 prism-skills 仓库提交。
 - `prism.local.yaml`、`AGENTS.local.md`、`workspace.*.local` 是本地状态，不提交。
 
 ### 跨仓 commit 引用边界

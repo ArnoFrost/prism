@@ -38,7 +38,7 @@ yaml_get() {
   (grep "^${key}:" "$CONFIG" 2>/dev/null || true) | sed "s/^${key}: *//"
 }
 
-# 多 workspace 格式解析 — 委托 065 的自包含 resolver（--config-tsv 为 bash 入口设计）
+# 多 workspace 格式解析 — 委托自包含 resolver（--config-tsv 为 bash 入口设计）
 _resolve_config() {
   local resolver="$PRISM_DIR/bin/workspace_resolve.py"
   [[ -f "$resolver" ]] || return 1

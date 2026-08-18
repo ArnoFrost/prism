@@ -190,7 +190,7 @@ Prism 在 AI 协作里的角色也是如此——共享规则保留在上游，�
 
 <img src="docs/assets/v4/prism-refraction.jpg" alt="共享规则经 Prism 折射为本地工作区状态" width="720">
 
-两条演进原则（064–070 系列确立）：
+两条演进原则：
 
 - **去伪存真**：叙事历史（文档、CHANGELOG）保留；可执行历史（旧实现、shim、fallback）剔除。
 - **分支即兼容边界**：旧版本由 git 分支 / tag 承接（3.x 终态见 `legacy-3x-final`），当前分支只承载当前版本。

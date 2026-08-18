@@ -437,7 +437,7 @@ if not storage_root:
     lines.append("\u2717 \u7f3a\u5fc5\u586b\u5b57\u6bb5: workspace_root \u6216 vault_path")
     err += 1
 
-# d02 deprecated key 检测
+# deprecated key 检测
 if config.get("vault_path") and not config.get("workspace_root"):
     lines.append("\u26a0 deprecated: vault_path \u2192 workspace_root\uff08bin/setenv --migrate-config\uff09")
     warn += 1

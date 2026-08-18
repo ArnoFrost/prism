@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """prism dist — 分发统一入口（legacy mini/full maintenance-only 代理）。
 
-实现位于 bin/，供无 skills/workflow 时使用（069 d03）。
+实现位于 bin/，自包含，不依赖 3.x 实现。
 packer 定位只认 prism.local.yaml 的 skills_path 一条候选；
 未配置时诚实报错，不把外部 Skills 变成硬依赖。
 """

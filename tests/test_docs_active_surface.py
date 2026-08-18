@@ -14,7 +14,6 @@ RETIRED_VISUALS = (
 def test_retired_visuals_are_absent_and_unreferenced() -> None:
     text_surfaces = [ROOT / "README.md"]
     text_surfaces.extend((ROOT / "docs").rglob("*.md"))
-    text_surfaces.extend((ROOT / "workspace" / "templates").glob("*.md"))
 
     for filename in RETIRED_VISUALS:
         assert not (ROOT / "docs" / "assets" / "v3" / filename).exists()
@@ -89,3 +88,29 @@ def test_active_docs_use_nested_public_narrative() -> None:
     assert "prism-4-architecture-guide" not in l1
     assert architecture.index("## 公开叙事") < architecture.index("## Legacy Compatibility")
     assert architecture.index("## 4.0 Semantic Skills") < architecture.index("## Legacy Compatibility")
+
+
+def test_live_surface_has_no_workspace_roadmap_references() -> None:
+    """Workspace 实例层的路书编号（067/068/…）不得回写 SDK 活文档与脚本。
+
+    依据 AGENTS.md 核心规则 3：Workspace 状态不是仓库真实来源。
+    historical/ 与 CHANGELOG 旧条目是 point-in-time 档案，不在此限。
+    """
+    import re
+
+    pattern = re.compile(r"\b0[6-7]\d\s*(?:起|授权|裁决|三刀|系列|已执行|超越|关账|落地|剔除|时代)")
+    surfaces = [ROOT / "README.md", ROOT / "AGENTS.md"]
+    surfaces.extend(
+        path
+        for path in (ROOT / "docs").rglob("*.md")
+        if "historical" not in path.parts
+    )
+    surfaces.extend((ROOT / "bin").glob("*"))
+    surfaces.extend((ROOT / "prism4").glob("*.py"))
+
+    for path in surfaces:
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        match = pattern.search(text)
+        assert match is None, f"路书编号污染 {path}: {match.group(0)!r}"
