@@ -90,6 +90,29 @@ def test_active_docs_use_nested_public_narrative() -> None:
     assert architecture.index("## 4.0 Semantic Skills") < architecture.index("## Legacy Compatibility")
 
 
+def test_style_profile_slot_stays_optional_and_outside_core() -> None:
+    architecture_guide = (
+        ROOT / "docs" / "prism-4-architecture-guide.md"
+    ).read_text(encoding="utf-8")
+    artifact_format = (
+        ROOT
+        / "skills"
+        / "prism4"
+        / "prism-compress"
+        / "references"
+        / "artifact-format.md"
+    ).read_text(encoding="utf-8")
+    skills_readme = (ROOT / "skills" / "README.md").read_text(encoding="utf-8")
+
+    assert "### 2.1 Style Profile Slot" in architecture_guide
+    assert "默认 profile 为空" in architecture_guide
+    assert "不要求 Obsidian" in architecture_guide
+    assert "Style Profile 是可选槽位" in artifact_format
+    assert "未显式加载 profile" in artifact_format
+    assert "Style Profile 类技能" in skills_readme
+    assert "不进入 Core" in skills_readme
+
+
 def test_live_surface_has_no_workspace_roadmap_references() -> None:
     """Workspace 实例层的路书编号（067/068/…）不得回写 SDK 活文档与脚本。
 

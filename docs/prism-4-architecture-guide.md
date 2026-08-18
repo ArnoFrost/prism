@@ -70,6 +70,18 @@ Design notes:
 - `Invocation` is not a workflow engine. It is the causal trace of actual calls.
 - `Decision Semantics` is a rule set governing the Decision artifact role, not another artifact or runtime object.
 
+### 2.1 Style Profile Slot
+
+Style Profile 是 Reference Experience 的可选槽位，用来描述同一份 Prism Artifact 在不同人、项目或工具中的阅读呈现。默认 profile 为空：SDK 写出的 canonical artifact 应保持可移植 Markdown，不要求 Obsidian、OFM、wiki link、特定 CSS 或任何个人 vault 规则。
+
+个人或项目可以在外部 skill、项目约定或 adapter 配置中声明 Style Profile，例如 Obsidian/OFM callout、高亮、表格密度、状态标记与标题层级。这些偏好只改变阅读性，不改变以下语义：
+
+- Artifact role、id、frontmatter 与 relation。
+- Intent / Decision / Findings / Plan / Brief 的权威性和演进语义。
+- `record ≠ 授权`、Brief 不是事实源、Findings 不自动形成 Decision 等 Core 规则。
+
+当 Agent 未明确加载某个 Style Profile 时，应按 SDK 默认阅读面写作。加载后，也只能做可逆的呈现增强：可以增加 callout 或高亮帮助扫描，但不能把样式块当作新的事实源、行动授权或持久工件类型。
+
 ## 3. Topic Model
 
 ```mermaid

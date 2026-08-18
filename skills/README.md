@@ -52,6 +52,8 @@ skills/
 iCloud vault        (Workspace)  — 项目状态（iCloud 同步）
 ```
 
+SDK 内置技能只定义 canonical 语义能力。个人可在 `~/prism-skills` 中追加 Style Profile 类技能（例如 Obsidian/OFM 呈现偏好），用来增强 Prism Artifact 的阅读性；这类 profile 默认不启用，不进入 Core，也不得改变 Artifact/Decision/Brief/Findings 的语义。
+
 内置技能通过 SDK `bin/relink` 分发到 IDE 环境；外部技能通过 `prism-skills` 自带 `relink` 分发。SDK 分发面只有 `prism4`：
 
 ```

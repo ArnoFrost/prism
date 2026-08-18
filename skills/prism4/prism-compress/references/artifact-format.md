@@ -4,6 +4,12 @@
 
 新写入的工件必须遵循对应章节。历史件以中文校准与归档为主，**不强制**补全新章节，以免把旧证据改成假结构。
 
+## Style Profile
+
+本文件定义 SDK 默认阅读面，不绑定个人渲染环境。Style Profile 是可选槽位，默认留空；个人或项目可通过外部 skill 声明 Obsidian/OFM、GitHub Markdown 或其他呈现偏好。
+
+Style Profile 只能增强可读性，例如 callout、少量高亮、表格密度、状态标签和标题层级；不能改变 Artifact role、frontmatter、id、relation、authority/evolution、Decision 授权语义或 Brief 投影来源。未显式加载 profile 时，按本文件的 canonical 结构写作。
+
 ## 分层
 
 | 层 | 回答什么 | 权威性 |
