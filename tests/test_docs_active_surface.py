@@ -242,6 +242,15 @@ def test_readme_open_source_doorway_contract() -> None:
         assert phrase not in readme
 
 
+def test_setup_stub_and_architecture_tree_match_current_surface() -> None:
+    setup = (ROOT / "SETUP.md").read_text(encoding="utf-8")
+    architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+
+    assert "README.md#快速开始" in setup
+    assert "README.md#快速上手" not in setup
+    assert "├── dogfood/" not in architecture
+
+
 def test_current_skill_schema_examples_use_prism4_surface() -> None:
     """Schema/template examples should teach the current prism4 skill surface, not 3.x workflow."""
     surfaces = [

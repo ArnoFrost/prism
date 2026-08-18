@@ -198,7 +198,6 @@ prism/
 │   │   └── prism-compress/
 │   └── README.md
 ├── tests/                           # 4.0 reference adapter / docs / setup guards
-├── dogfood/                         # 早期 4.0 reference-json 样例
 ├── pyproject.toml
 └── uv.lock
 ```

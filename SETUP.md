@@ -4,7 +4,7 @@
 
 | 场景 | 入口 |
 |------|------|
-| 首次安装 | [README.md](README.md#快速上手) |
+| 首次安装 | [README.md](README.md#快速开始) |
 | init 后日常 / E2E | [docs/onboarding.md](docs/onboarding.md) |
 | 版本提升与发布门禁 | [docs/release-process.md](docs/release-process.md) |
 
