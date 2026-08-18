@@ -18,6 +18,7 @@ import pytest
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
 RELINK_SOURCE = SDK_ROOT / "bin" / "relink"
+RESOLVER_SOURCE = SDK_ROOT / "bin" / "workspace_resolve.py"
 
 
 def _build_tmp_sdk(tmp_path: Path) -> Path:
@@ -25,6 +26,7 @@ def _build_tmp_sdk(tmp_path: Path) -> Path:
 
     tmp_sdk 里：
       - bin/relink （从真实 SDK copy）
+      - bin/workspace_resolve.py （065 起 relink 缺 resolver 会 fail-closed）
       - prism.local.yaml （指向 tmp vault + tmp project）
       - skills/ （空，relink 会输出 WARN 但不影响主流程）
     """
@@ -34,6 +36,7 @@ def _build_tmp_sdk(tmp_path: Path) -> Path:
 
     shutil.copy(RELINK_SOURCE, tmp_sdk / "bin" / "relink")
     (tmp_sdk / "bin" / "relink").chmod(0o755)
+    shutil.copy(RESOLVER_SOURCE, tmp_sdk / "bin" / "workspace_resolve.py")
 
     return tmp_sdk
 
