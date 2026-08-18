@@ -122,7 +122,7 @@ compress_plan:
 
 1. 归档假待办澄清（写 `archive/`，从 `clarifications/` 移除）。
 2. 中文化列出的历史件；不补造新章节。
-3. 过期 Plan 保持 `historical`；需要时新增当前 Plan（`evolution: operative`）。
+3. 过期 Plan 保持 `historical`；需要时新增当前 Plan（`authority: advisory` / `evolution: regenerable`）。
 4. 已被吸收的 Findings 标 `historical`，保留 `supersedes`。
 5. 再生成 Brief。不要手写一份与 CLI 投影分叉的 Brief。
 6. 必要时改 README 入口句（例如「暂无 Brief」）。
