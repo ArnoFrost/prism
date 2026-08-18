@@ -101,6 +101,35 @@ run_python() {
   fi
 }
 
+report_prism_cli_version() {
+  local expected_version found_prism resolved_prism found_version version_rc=0
+
+  expected_version=$(head -1 "$PRISM_DIR/VERSION" 2>/dev/null | tr -d '[:space:]')
+  found_prism=$(command -v prism 2>/dev/null || true)
+
+  if [[ -z "$found_prism" ]]; then
+    log_warn "当前 shell 尚未找到 prism；请 source ~/.zshrc 或打开新 terminal 后运行 prism --version"
+    return 0
+  fi
+
+  resolved_prism=$(run_python -c 'import pathlib, sys; print(pathlib.Path(sys.argv[1]).resolve())' "$found_prism" 2>/dev/null || echo "$found_prism")
+
+  if [[ "$resolved_prism" == "$PRISM_DIR/bin/prism" ]]; then
+    log_ok "当前 shell prism: $found_prism"
+  else
+    log_warn "当前 shell prism 命中 $found_prism → $resolved_prism，期望 $PRISM_DIR/bin/prism"
+  fi
+
+  found_version=$(PRISM_FALLBACK_QUIET=1 prism --version 2>/dev/null) || version_rc=$?
+  if [[ $version_rc -ne 0 ]]; then
+    log_warn "prism --version 无法启动 (rc=$version_rc)；请 source ~/.zshrc 或打开新 terminal 后重试"
+  elif [[ -n "$expected_version" && "$found_version" != "$expected_version" ]]; then
+    log_warn "prism --version: $found_version，期望 $expected_version（可能仍命中旧 CLI）"
+  else
+    log_ok "prism --version: $found_version"
+  fi
+}
+
 PRISM_GITIGNORE_PATTERNS=(
   "AGENTS.local.md"
   "AGENTS.*.local.md"
@@ -402,6 +431,7 @@ else
     log_ok "CLI 寻址已就绪"
   fi
 fi
+report_prism_cli_version
 
 # ── Step 4: IDE 平台探测 ─────────────
 

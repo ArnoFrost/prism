@@ -29,6 +29,7 @@
 | [onboarding.md](./onboarding.md) | init 后命令面分层、日常运维、E2E 验收 checklist |
 | [migration.md](./migration.md) | 3.x → 4.0 迁移入口（v1→v2 见 [historical/](./historical/)） |
 | [contributing.md](./contributing.md) | L1–L4 分层、SDK vs Workspace 边界、默认面 checklist |
+| [testing-contract.md](./testing-contract.md) | 4.0 测试分层与版本提升门禁 |
 | [ofm-cheatsheet.md](./ofm-cheatsheet.md) | Obsidian OFM callout 速查（维护者常用） |
 
 机器真源：`bin/validate-skills` · [`skills/schema/frontmatter-spec.md`](../skills/schema/frontmatter-spec.md)（SKILL frontmatter 分层与顺序）

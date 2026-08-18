@@ -912,6 +912,38 @@ def test_doctor_cli_uses_running_sdk_when_prism_sdk_env_is_stale(tmp_path: Path)
     assert any(w["rule"] == "path-prism-mismatch" for w in payload["warnings"])
 
 
+def test_doctor_cli_warns_when_path_shadows_current_sdk(tmp_path: Path) -> None:
+    dut = _isolated_product_sdk(tmp_path)
+    home = tmp_path / "home"
+    home.mkdir()
+    old_bin = tmp_path / "old-bin"
+    old_bin.mkdir()
+    old_prism = old_bin / "prism"
+    old_prism.write_text("#!/usr/bin/env bash\necho 3.1.0\n", encoding="utf-8")
+    old_prism.chmod(0o755)
+
+    env = _env()
+    env["HOME"] = str(home)
+    env["PRISM_SDK"] = str(dut)
+    env["PATH"] = os.pathsep.join([str(old_bin), str(dut / "bin")])
+
+    result = subprocess.run(
+        [sys.executable, str(dut / "bin" / "doctor_cli.py")],
+        cwd=str(dut),
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=env,
+    )
+
+    assert result.returncode == 2, result.stdout + result.stderr
+    payload = json.loads(result.stdout)
+    assert any(w["rule"] == "path-prism-mismatch" for w in payload["warnings"])
+    mismatch = next(w for w in payload["warnings"] if w["rule"] == "path-prism-mismatch")
+    assert "old-bin" in mismatch["msg"]
+    assert str(dut / "bin" / "prism") in mismatch["msg"]
+
+
 def test_doctor_cli_fix_updates_stale_rc_anchor(tmp_path: Path) -> None:
     dut = _isolated_product_sdk(tmp_path)
     home = tmp_path / "home"

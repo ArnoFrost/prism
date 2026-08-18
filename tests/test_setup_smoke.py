@@ -44,6 +44,29 @@ def test_setup_check_non_interactive_with_temp_home(tmp_path):
     assert "健康检查: 0 个错误" in result.stdout
 
 
+def test_setup_check_reports_current_prism_version(tmp_path):
+    if not LOCAL_CONFIG.exists():
+        pytest.skip("prism.local.yaml is local-only; setup smoke requires a configured workspace")
+
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path)
+    env["PATH"] = os.pathsep.join([str(SDK_ROOT / "bin"), env.get("PATH", "")])
+    env["PRISM_FALLBACK_QUIET"] = "1"
+
+    result = subprocess.run(
+        [str(SETUP), "--check", "--non-interactive"],
+        cwd=str(SDK_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    expected_version = (SDK_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f"prism --version: {expected_version}" in result.stdout
+
+
 def test_doctor_config_fix_aligns_global_gitignore(tmp_path):
     if not LOCAL_CONFIG.exists():
         pytest.skip("prism.local.yaml is local-only; config doctor requires a configured workspace")
