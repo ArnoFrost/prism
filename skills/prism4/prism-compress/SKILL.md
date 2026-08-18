@@ -45,6 +45,40 @@ Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组
 | Plan / Findings 夹杂英文叙述 | 中文校准，保留协议原语 |
 | 刚结束一个阶段，当前 Plan 仍是 historical | 写一份当前有效 Plan，再生成 Brief |
 | 每次回复前都想瘦身 | **不要**。用 Brief 恢复；Compress 低频 |
+| 活跃 topic 面膨胀，要收窄（如「只保留最近 N 个」） | Topic 归档，见下节 |
+
+## Topic 归档（生命周期）
+
+`topics/` 是热区，只放活跃推进中的 Topic；已完成的进 `archive/`。归档是**低频、preview-first** 的动作，不是实时清理。
+
+### 规则
+
+- **先 preview 再动目录**：列出拟移动清单与索引改动，`writes=0`；用户确认后才 `mv`。
+- **不 hard delete**。`topics/{NNN}_{slug}/` 整体移入 `archive/{NNN}_{slug}/`，编号空间共享、不复用。
+- **Child Topic 随父移动**，不单独归档。
+- **未关闭的 Intent 要显式确认**——「最近 N 个」规则命中未完成 Topic 时，先问，不默许。
+- 归档后 `prism topic list` 自然只显示热区；`topic probe` 的 `next_number` 不受归档影响。
+
+### 校准点（apply 时逐项过）
+
+| 入口 | 动作 |
+|------|------|
+| `archive/README.md` | 专项索引表补新归档行；cutover / 活跃指针注记更新 |
+| Workspace `index.md` | 「进行中」块只留热区 Topic |
+| Workspace `README.md` | 活跃协作入口指向当前 Topic |
+| 被归档 Topic 自身 | Intent「当前落点」应为 DONE 或明确的挂起原因；不是则先问 |
+
+### preview 附加字段
+
+```yaml
+archive_topics:
+  keep_latest: 4            # 或显式 keep: [NNN, ...]
+  move: []                  # 拟移动的 {NNN}_{slug}
+  keep: []                  # 保留在热区的
+  blocked: []               # 命中规则但 Intent 未关闭，需用户逐个点头的
+```
+
+`blocked` 非空时整体停下，等用户逐条裁决，不部分 apply。
 
 ## 工作流
 
