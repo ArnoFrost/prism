@@ -4,11 +4,9 @@ name: CI
 #   1. uv 已装（astral-sh/setup-uv）
 #   2. bin/* 可执行 + bin/prism --version 启动正常（doctor --scope ci）
 #   3. skills frontmatter 合规（doctor --scope ci 内含 skill 阶段）
-#   4. pytest tests/ + skills/workflow/shared/tests/ 全绿
-#      （含 setup smoke + sniff + relink + validate_product + cli_contract_sync
-#       + prism_cli + outer_schema + changelog_scan + index_update + sniff_lib
-#       + check_skill_deprecation 等 shared 回归，覆盖所有防漂移闸门）
+#   4. pytest tests/ 全绿（4.0 主线 + setup smoke + relink + release metadata）
 #   5. release gate：BREAKING 变更必须同步 CHANGELOG.md + docs/migration.md
+#      （bin/release_gate.py；3.x 时代的 check_cli_contract_sync 已随 legacy 树剔除）
 # 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
 # 不依赖 prism.local.yaml / vault / ~/.local/bin（doctor --scope ci 自包含）。
 #
@@ -20,9 +18,9 @@ name: CI
 on:
   workflow_dispatch:
   push:
-    branches: [main, mini, "release/**"]
+    branches: [main, mini, prism-4, "release/**"]
   pull_request:
-    branches: [main, mini]
+    branches: [main, mini, prism-4]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -68,9 +66,9 @@ jobs:
           bin/doctor --scope ci --json | tee doctor-ci.json
           bin/doctor --scope ci
 
-      - name: pytest — SDK smoke + relink + sniff + workflow shared tests
+      - name: pytest — SDK smoke + relink + 4.0 tests
         run: |
-          uv run --with pytest python -m pytest tests/ skills/workflow/shared/tests/ -q
+          uv run --with pytest python -m pytest tests/ -q
 
       - name: Release gate — breaking docs sync
         env:
@@ -81,7 +79,7 @@ jobs:
         # 导致 breaking 提交可在无文档同步的情况下静默合入。来源：r02 F-P0-1。
         shell: bash
         run: |
-          uv run python skills/workflow/shared/scripts/release_gate.py \
+          uv run python bin/release_gate.py \
             --repo . \
             --base "$PR_BASE_SHA" \
             --head "$PR_HEAD_SHA" \
