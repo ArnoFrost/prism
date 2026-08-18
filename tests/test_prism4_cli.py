@@ -108,10 +108,14 @@ def test_bin_prism_brief_project_does_not_require_saving():
     assert "Foundation Intent" in result.stdout
 
 
-def test_bin_prism_discovers_workspace_v4_topic_from_repo_root():
+def test_bin_prism_discovers_workspace_v4_topic_from_repo_root(tmp_path):
+    """Hermetic: 桥接目录下发现 4.0 topic（不依赖本机真实 bridge）。"""
+    store = tmp_path / "workspace.demo.local" / "topics" / "001_refoundation"
+    store.mkdir(parents=True)
+    copy2(DOGFOOD_ROOT / "prism4-state.json", store / "prism4-state.json")
     result = subprocess.run(
         [str(BIN_PRISM), "topic", "list"],
-        cwd=str(SDK_ROOT),
+        cwd=str(tmp_path),
         capture_output=True,
         text=True,
         timeout=10,
