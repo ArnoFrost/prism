@@ -24,7 +24,7 @@
 
 ### 治理 SSOT topic 默认 strict
 
-承担 Prism workflow / skill 治理职责的 topic（如 protocol-hardening / skills-governance / trace-enforce-depth 等），其 `README.md` frontmatter 应显式声明：
+承担 Prism protocol / skill 治理职责的 topic（如 protocol-hardening / skills-governance / trace-enforce-depth 等），其 `README.md` frontmatter 应显式声明：
 
 ```yaml
 trace_strict: true

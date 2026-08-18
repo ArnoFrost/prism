@@ -119,7 +119,7 @@ Workspace backend/
     └── {OTHER_PROJECT}/
 ```
 
-工作流技能内置于 SDK `skills/prism4/` 目录；个人工具技能存放在独立 Git 仓库（`~/prism-skills`）。两者通过各自的 `bin/relink` 分发到 IDE 环境。
+4.0 semantic skills 内置于 SDK `skills/prism4/` 目录；个人工具技能存放在独立 Git 仓库（`~/prism-skills`）。两者通过各自的 `bin/relink` 分发到 IDE 环境。
 
 ---
 
