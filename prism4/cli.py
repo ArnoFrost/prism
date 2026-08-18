@@ -52,8 +52,8 @@ SDK_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = SDK_ROOT / "VERSION"
 STATE_FILENAME = "prism4-state.json"
 LEGACY_CLI = SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "prism_cli.py"
-SURFACE_BIN_VERBS = frozenset({"doctor", "relink", "update"})
-SURFACE_LEGACY_VERBS = frozenset({"dist", "sync"})
+SURFACE_BIN_VERBS = frozenset({"doctor", "relink", "update", "dist"})
+SURFACE_LEGACY_VERBS = frozenset({"sync"})
 RETIRED_TOPIC_VERBS = frozenset(
     {
         "archive",

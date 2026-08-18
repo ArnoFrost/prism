@@ -744,6 +744,23 @@ def test_prism_update_does_not_need_prism_cli_without_workflow(tmp_path: Path) -
     assert result.returncode != 127
 
 
+def test_prism_dist_does_not_need_prism_cli_without_workflow(tmp_path: Path) -> None:
+    dut = _isolated_product_sdk(tmp_path)
+    env = _isolated_env(tmp_path, dut)
+    result = subprocess.run(
+        [str(dut / "bin" / "prism"), "dist", "--adapter-info"],
+        cwd=str(dut),
+        capture_output=True,
+        text=True,
+        timeout=15,
+        env=env,
+    )
+    blob = result.stdout + result.stderr
+    assert "legacy CLI not found" not in blob
+    assert result.returncode != 127
+    assert '"available": false' in result.stdout
+
+
 def test_prism_json_doctor_is_flat_passthrough_not_record_envelope() -> None:
     result = subprocess.run(
         [str(BIN_PRISM), "--json", "doctor", "--scope", "ci"],

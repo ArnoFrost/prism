@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""prism dist — 分发统一入口（legacy mini/full maintenance-only 代理）。
+
+实现位于 bin/，供无 skills/workflow 时使用（069 d03）。
+packer 定位只认 prism.local.yaml 的 skills_path 一条候选；
+未配置时诚实报错，不把外部 Skills 变成硬依赖。
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+SDK_ROOT = Path(__file__).resolve().parents[1]
+LEGACY_PACKER_RELATIVE = Path("prism-dist") / "scripts" / "pack.py"
+
+
+def _yaml_scalar(config_path: Path, key: str) -> str | None:
+    if not config_path.is_file():
+        return None
+    prefix = f"{key}:"
+    for line in config_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith(prefix):
+            value = line[len(prefix):].strip().strip("'\"")
+            return value or None
+    return None
+
+
+def resolve_packer() -> Path | None:
+    skills_path = _yaml_scalar(SDK_ROOT / "prism.local.yaml", "skills_path")
+    if not skills_path:
+        return None
+    packer = Path(skills_path).expanduser() / LEGACY_PACKER_RELATIVE
+    return packer if packer.is_file() else None
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="prism dist",
+        description="分发统一入口（experimental；mini/full 仅 legacy maintenance-only）",
+    )
+    parser.add_argument("--tag", default=None, help="legacy 包版本（如 v3.0.0）")
+    parser.add_argument("--profile", choices=["mini", "full"], default="mini")
+    parser.add_argument("--output", default="~/Desktop", help="legacy 包输出目录")
+    parser.add_argument("--verify", default=None, help="验证已有 legacy zip")
+    parser.add_argument("--sdk-path", default=None, help="verify 时读取 whitelist 的 SDK 路径")
+    parser.add_argument("--skip-health-gate", action="store_true")
+    parser.add_argument("--full-health", action="store_true")
+    parser.add_argument("--health-scope", choices=["release", "ci"], default="release")
+    parser.add_argument(
+        "--adapter-info",
+        action="store_true",
+        help="只报告 adapter 与 legacy 实现可用性，不执行打包",
+    )
+    args = parser.parse_args()
+
+    packer = resolve_packer()
+
+    if args.adapter_info:
+        print(json.dumps({
+            "command": "dist",
+            "stability": "experimental",
+            "mode": "legacy-maintenance-only",
+            "adapter": "sdk-python",
+            "available": packer is not None,
+            "source": "config:skills_path" if packer else None,
+            "packer": str(packer) if packer else None,
+        }, ensure_ascii=False, indent=2))
+        return 0
+
+    if packer is None:
+        print(
+            "✗ prism dist 的可选 legacy packer 未安装；SDK/CLI 与 Workspace 不受影响。",
+            file=sys.stderr,
+        )
+        print(
+            "  如需维护 mini/full 兼容包，请在 prism.local.yaml 配置 skills_path。",
+            file=sys.stderr,
+        )
+        return 2
+
+    forwarded: list[str] = []
+    for flag, value in (
+        ("--tag", args.tag),
+        ("--profile", args.profile),
+        ("--output", args.output),
+        ("--verify", args.verify),
+        ("--sdk-path", args.sdk_path),
+        ("--health-scope", args.health_scope),
+    ):
+        if value is not None:
+            forwarded.extend([flag, str(value)])
+    if args.skip_health_gate:
+        forwarded.append("--skip-health-gate")
+    if args.full_health:
+        forwarded.append("--full-health")
+
+    print(
+        "⚠ prism dist 当前仅代理 legacy mini/full maintenance-only 实现；"
+        "该 profile 不属于 Prism 4.0 默认分发面。",
+        file=sys.stderr,
+    )
+    completed = subprocess.run(
+        [sys.executable, str(packer), *forwarded],
+        cwd=str(packer.parent.parent),
+        check=False,
+    )
+    return completed.returncode
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
