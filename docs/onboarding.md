@@ -105,9 +105,13 @@ prism brief project <topic_id>
 prism review record <topic_id> --body "..."
 # 或：--body - 读 stdin；--json 输出 {ok, ids}
 prism clarify record <topic_id> --question "..." --proposed-patch "..."
+prism plan record <topic_id> --body "..." --supersedes plan:p01
+prism decision record <topic_id> --body "..." --authorizes plan:p02
 ```
 
 Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。
+
+`--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；Decision authorizes 后才形成可执行承诺。
 
 旧 3.x workflow 已随 prism-4 分支剔除；历史文档见 `docs/historical/`。
 

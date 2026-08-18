@@ -16,6 +16,7 @@ from collections.abc import Callable
 from .core import (
     Artifact,
     PrismProtocolError,
+    Relation,
     SemanticPayload,
     Topic,
     clarify_capability,
@@ -95,6 +96,7 @@ def record_review(
     body: str,
     title: str | None = None,
     artifact_id: str | None = None,
+    supersedes: tuple[str, ...] = (),
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str]:
     if topic_id not in store.topics:
@@ -114,6 +116,7 @@ def record_review(
         },
     )
     invocation = store.invoke(review_capability(), inputs=inputs, outputs=(findings,))
+    _add_relations(store, findings.id, "supersedes", supersedes)
     return findings.id, invocation.id
 
 
@@ -234,6 +237,7 @@ def record_plan(
     body: str,
     title: str = "行动结构",
     artifact_id: str | None = None,
+    supersedes: tuple[str, ...] = (),
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str]:
     if topic_id not in store.topics:
@@ -257,6 +261,7 @@ def record_plan(
     invocation = store.invoke(
         plan_capability(), inputs=inputs, outputs=(plan_artifact,)
     )
+    _add_relations(store, plan_artifact.id, "supersedes", supersedes)
     return plan_artifact.id, invocation.id
 
 
@@ -269,6 +274,8 @@ def record_decision(
     authority: str = "human-required",
     artifact_id: str | None = None,
     candidate_id: str | None = None,
+    supersedes: tuple[str, ...] = (),
+    authorizes: tuple[str, ...] = (),
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str, SemanticPayload | None]:
     """Record a Decision and consume an optional candidate.
@@ -305,8 +312,24 @@ def record_decision(
         inputs=inputs,
         outputs=(decision_artifact,),
     )
+    _add_relations(store, decision_artifact.id, "supersedes", supersedes)
+    _add_relations(store, decision_artifact.id, "authorizes", authorizes)
     consumed: SemanticPayload | None = None
     if candidate_id:
         consumed = store.payloads[candidate_id]
         del store.payloads[candidate_id]
     return decision_artifact.id, invocation.id, consumed
+
+
+def _add_relations(
+    store: ReferenceStore,
+    source_ref: str,
+    kind: str,
+    target_refs: tuple[str, ...],
+) -> None:
+    for target_ref in target_refs:
+        if not target_ref.strip():
+            raise PrismProtocolError(f"{kind} target must be non-empty")
+        store.add_relation(
+            Relation(source_ref=source_ref, kind=kind, target_ref=target_ref.strip())
+        )

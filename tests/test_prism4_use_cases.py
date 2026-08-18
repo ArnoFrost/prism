@@ -83,6 +83,31 @@ def test_record_review_sets_advisory_findings_and_intent_brief_plan_inputs():
     assert "intent" in input_roles
 
 
+def test_record_review_can_supersede_existing_findings():
+    store = _topic_store()
+    old_id, _ = record_review(
+        store,
+        topic_id="topic:demo",
+        body="旧发现。",
+        next_artifact_id=fake_artifact_id,
+    )
+
+    new_id, _ = record_review(
+        store,
+        topic_id="topic:demo",
+        body="新发现。",
+        supersedes=(old_id,),
+        next_artifact_id=fake_artifact_id,
+    )
+
+    assert any(
+        relation.source_ref == new_id
+        and relation.kind == "supersedes"
+        and relation.target_ref == old_id
+        for relation in store.relations
+    )
+
+
 def test_record_review_infers_title_from_summary_when_omitted():
     store = _topic_store()
     body = (
@@ -131,6 +156,31 @@ def test_record_plan_sets_advisory_regenerable_and_expected_inputs():
     assert "intent" in input_roles
 
 
+def test_record_plan_can_supersede_existing_plan():
+    store = _topic_store()
+    old_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="旧计划。",
+        next_artifact_id=fake_artifact_id,
+    )
+
+    new_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="新计划。",
+        supersedes=(old_id,),
+        next_artifact_id=fake_artifact_id,
+    )
+
+    assert any(
+        relation.source_ref == new_id
+        and relation.kind == "supersedes"
+        and relation.target_ref == old_id
+        for relation in store.relations
+    )
+
+
 def test_record_clarify_increments_payload_ids_without_explicit_ids():
     store = _topic_store()
     ids, _invocation_id = record_clarify(
@@ -164,6 +214,26 @@ def test_persist_brief_rejects_non_brief_id_collision():
         raise AssertionError("expected PrismProtocolError")
 
 
+def test_persist_brief_keeps_parent_and_child_briefs_distinct():
+    store = _topic_store()
+    create_topic(
+        store,
+        topic_id="topic:demo.child",
+        title="Child",
+        parent_id="topic:demo",
+        next_artifact_id=fake_artifact_id,
+    )
+
+    parent_id = persist_brief(store, "topic:demo")
+    child_id = persist_brief(store, "topic:demo.child")
+
+    assert parent_id == "brief:current"
+    assert child_id == "brief:demo.child.current"
+    assert set(store.artifacts) >= {parent_id, child_id}
+    assert store.artifacts[parent_id].topic_id == "topic:demo"
+    assert store.artifacts[child_id].topic_id == "topic:demo.child"
+
+
 def test_record_decision_defaults_to_human_required_authoritative():
     store = _topic_store()
     decision_id, _invocation_id, consumed = record_decision(
@@ -190,6 +260,44 @@ def test_record_decision_accepts_delegated_authority():
         next_artifact_id=fake_artifact_id,
     )
     assert store.artifacts[decision_id].metadata["authority_required"] == "delegated"
+
+
+def test_record_decision_can_supersede_and_authorize_artifacts():
+    store = _topic_store()
+    old_decision_id, _invocation_id, _consumed = record_decision(
+        store,
+        topic_id="topic:demo",
+        body="旧决策。",
+        next_artifact_id=fake_artifact_id,
+    )
+    plan_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="被授权计划。",
+        next_artifact_id=fake_artifact_id,
+    )
+
+    decision_id, _invocation_id, _consumed = record_decision(
+        store,
+        topic_id="topic:demo",
+        body="新决策。",
+        supersedes=(old_decision_id,),
+        authorizes=(plan_id,),
+        next_artifact_id=fake_artifact_id,
+    )
+
+    assert any(
+        relation.source_ref == decision_id
+        and relation.kind == "supersedes"
+        and relation.target_ref == old_decision_id
+        for relation in store.relations
+    )
+    assert any(
+        relation.source_ref == decision_id
+        and relation.kind == "authorizes"
+        and relation.target_ref == plan_id
+        for relation in store.relations
+    )
 
 
 def test_record_decision_rejects_invalid_authority():

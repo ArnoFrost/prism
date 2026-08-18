@@ -220,6 +220,35 @@ def test_no_machine_index_file_is_written(tmp_path: Path) -> None:
     assert (tmp_path / "brief.md").is_file()
 
 
+def test_parent_and_child_briefs_survive_roundtrip(tmp_path: Path) -> None:
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="brief:current",
+            topic_id="topic:demo",
+            role="brief",
+            body="父 Brief。",
+        )
+    )
+    store.add_artifact(
+        Artifact(
+            id="brief:demo.child.current",
+            topic_id="topic:demo.child",
+            role="brief",
+            body="子 Brief。",
+        )
+    )
+
+    adapter = LocalFileStoreAdapter(tmp_path)
+    adapter.save(store)
+
+    assert (tmp_path / "brief.md").is_file()
+    assert (tmp_path / "children" / "child" / "brief.md").is_file()
+    reloaded = adapter.load()
+    assert reloaded.artifacts["brief:current"].body == "父 Brief。\n"
+    assert reloaded.artifacts["brief:demo.child.current"].body == "子 Brief。\n"
+
+
 def test_invocations_are_not_persisted_but_semantics_are(tmp_path: Path) -> None:
     """Invocation 仍是协议概念；是否落盘属 Adapter 选择。"""
     store = _store()

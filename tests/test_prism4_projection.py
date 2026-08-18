@@ -109,6 +109,20 @@ def test_project_brief_includes_child_topic_artifacts():
     assert "`finding:f01` 子问题发现" in brief.body
 
 
+def test_child_topic_brief_uses_distinct_default_id():
+    store = ReferenceStore()
+    parent = store.add_topic(Topic(id="topic:demo", title="示例"))
+    child = store.add_topic(
+        Topic(id="topic:demo.child", title="子问题", parent_id=parent.id)
+    )
+
+    parent_brief = project_brief(store, parent.id)
+    child_brief = project_brief(store, child.id)
+
+    assert parent_brief.id == "brief:current"
+    assert child_brief.id == "brief:demo.child.current"
+
+
 def test_project_brief_requires_existing_topic():
     with pytest.raises(PrismProtocolError, match="主题不存在"):
         project_brief(ReferenceStore(), "topic:missing")
@@ -205,3 +219,67 @@ def test_project_brief_next_steps_ignore_nested_completed_step_details():
     assert "2. 校准 Brief 索引文案" in next_section
     assert "已创建空目录" not in next_section
     assert "Decision / Clarify 投影索引" not in next_section
+
+
+def test_project_brief_next_steps_ignore_completed_deferred_and_rejected_actions():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="plan:p01",
+            topic_id=topic.id,
+            role="plan",
+            title="当前推进",
+            body="\n".join(
+                [
+                    "## 步骤",
+                    "",
+                    "1. 已完成：补 relation 写入面",
+                    "2. 暂缓 reference record CLI 设计",
+                    "3. rejected: 恢复 3.x workflow",
+                    "4. 修 Brief semantic correctness",
+                    "10. 验证任意编号步骤",
+                ]
+            ),
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    next_section = brief.body.split("## 下一步")[1].split("## 投影导航")[0]
+    progress_section = brief.body.split("## 进度")[1].split("## 未决")[0]
+    assert "补 relation 写入面" not in next_section
+    assert "reference record" not in next_section
+    assert "恢复 3.x workflow" not in next_section
+    assert "4. 修 Brief semantic correctness" in next_section
+    assert "10. 验证任意编号步骤" in next_section
+    assert "10. 验证任意编号步骤" in progress_section
+
+
+def test_project_brief_goal_keeps_intent_boundary_when_plan_has_goal():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="intent:i01",
+            topic_id=topic.id,
+            role="intent",
+            title="权威边界",
+            body="## 完成条件\n\n- 合同验收。",
+        )
+    )
+    store.add_artifact(
+        Artifact(
+            id="plan:p01",
+            topic_id=topic.id,
+            role="plan",
+            title="当前推进",
+            body="## 目标\n\n本轮修 Brief。",
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    goal_section = brief.body.split("## 目标")[1].split("## 验收")[0]
+    assert "本轮修 Brief。" in goal_section
+    assert "权威边界" in goal_section

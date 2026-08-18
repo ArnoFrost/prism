@@ -265,7 +265,13 @@ Local Markdown files -> persist artifact-level relations and provenance projecti
 Brief / index files -> projections, never graph facts.
 ```
 
-The local file adapter may choose not to persist raw Invocation records. That does not remove Invocation from the protocol; it means this adapter exposes a weaker graph view through artifact frontmatter, relations, indexes, and CLI record ids.
+The local file adapter intentionally acts as a weak-provenance adapter. It does
+not persist raw Invocation records by default, and it does not promise a full
+Invocation graph. That does not remove Invocation from the protocol; it means
+this adapter exposes a weaker graph view through artifact frontmatter,
+artifact-level relations, indexes, and CLI record ids. Deep audit scenarios
+should use explicit Findings / Decision body evidence or an optional audit
+profile, not default write-only trace logs.
 
 Invocation conceptually identifies:
 

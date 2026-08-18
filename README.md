@@ -161,6 +161,17 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 
 详见 [bin/README.md](bin/README.md)。长文本用 `--body -`（stdin）或 `--body @path`；4.0 record 的 `--json` 只输出 `{ok, ids}`，不是 3.x outer schema。
 
+Relation 写入保持在现有 record surfaces 上，不新增 lifecycle DSL：
+
+```bash
+prism review record ... --supersedes finding:f01
+prism plan record ... --supersedes plan:p01
+prism decision record ... --authorizes plan:p02
+prism decision record ... --supersedes decision:d01
+```
+
+`supersedes` 只表达被后续工件取代；`authorizes` 只表达 Decision 对某个 Artifact 的授权关系。Reference creates provenance；acceptance creates authority。
+
 如需查看当前 4.0 CLI 能力面，优先运行：
 
 ```bash

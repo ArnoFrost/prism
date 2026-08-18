@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from .core import Artifact, PrismProtocolError
 from .reference import ReferenceStore
 
@@ -101,7 +103,7 @@ def project_brief(
     ]
 
     return Artifact(
-        id=artifact_id or BRIEF_ID,
+        id=artifact_id or _default_brief_id(store, topic_id),
         topic_id=topic_id,
         role="brief",
         title=title,
@@ -127,6 +129,13 @@ def _topic_lineage(store: ReferenceStore, topic_id: str) -> set[str]:
     return ids
 
 
+def _default_brief_id(store: ReferenceStore, topic_id: str) -> str:
+    topic = store.topics[topic_id]
+    if not topic.parent_id:
+        return BRIEF_ID
+    return f"brief:{_local_part(topic_id)}.current"
+
+
 def _is_current(artifact: Artifact, superseded: set[str]) -> bool:
     if artifact.id in superseded:
         return False
@@ -136,6 +145,10 @@ def _is_current(artifact: Artifact, superseded: set[str]) -> bool:
 def _latest(artifacts: list[Artifact], role: str) -> Artifact | None:
     matched = [item for item in artifacts if item.role == role]
     return matched[-1] if matched else None
+
+
+def _local_part(ref: str) -> str:
+    return ref.split(":", 1)[1] if ":" in ref else ref
 
 
 def _section(body: str, heading: str) -> str:
@@ -171,6 +184,9 @@ def _goal_lines(intent: Artifact | None, plans: list[Artifact]) -> list[str]:
     if not lines and intent is not None:
         lines = [f"- {intent.title or intent.id}"]
     if intent is not None:
+        boundary = intent.title or intent.id
+        if lines and not any(boundary in line for line in lines):
+            lines.append(f"- 边界：{boundary}")
         landing = _section(intent.body, "当前落点")
         if landing:
             compact = " ".join(
@@ -210,18 +226,42 @@ def _progress_lines(plans: list[Artifact]) -> list[str]:
             lines.extend(
                 f"  {line.strip()}"
                 for line in steps.splitlines()
-                if line.strip().startswith(("1.", "2.", "3.", "4.", "5.", "6.", "- "))
+                if _is_step_line(line)
             )
     return lines
+
+
+def _is_step_line(line: str) -> bool:
+    stripped = line.strip()
+    return bool(re.match(r"^\d+[\.\)、)]\s+", stripped) or stripped.startswith("- "))
 
 
 def _is_open_step(line: str) -> bool:
     stripped = line.strip()
     if not stripped:
         return False
-    if not stripped[:1].isdigit() and not stripped.startswith("- "):
+    if not _is_step_line(stripped):
         return False
-    if "~~" in stripped or "已完成" in stripped:
+    lowered = stripped.lower()
+    closed_markers = (
+        "~~",
+        "已完成",
+        "已关闭",
+        "已取消",
+        "暂缓",
+        "拒绝",
+        "已拒绝",
+        "不做",
+        "defer",
+        "deferred",
+        "reject",
+        "rejected",
+        "cancelled",
+        "canceled",
+        "done",
+        "completed",
+    )
+    if any(marker in lowered for marker in closed_markers):
         return False
     return True
 

@@ -325,6 +325,110 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert "技能说明使用中文" in decisions[0].read_text(encoding="utf-8")
 
 
+def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
+    root = tmp_path / "state"
+    root.mkdir()
+    subprocess.run(
+        [
+            str(BIN_PRISM),
+            "topic",
+            "new",
+            "topic:relations",
+            "--title",
+            "Relations",
+            "--root",
+            str(root),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    subprocess.run(
+        [
+            str(BIN_PRISM),
+            "plan",
+            "record",
+            "topic:relations",
+            "--root",
+            str(root),
+            "--id",
+            "plan:p01",
+            "--body",
+            "旧计划。",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    plan = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "plan",
+            "record",
+            "topic:relations",
+            "--root",
+            str(root),
+            "--id",
+            "plan:p02",
+            "--body",
+            "新计划。",
+            "--supersedes",
+            "plan:p01",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert plan.returncode == 0, plan.stderr
+
+    decision = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "decision",
+            "record",
+            "topic:relations",
+            "--root",
+            str(root),
+            "--id",
+            "decision:d01",
+            "--body",
+            "授权新计划。",
+            "--authorizes",
+            "plan:p02",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert decision.returncode == 0, decision.stderr
+
+    store = LocalFileStoreAdapter(root).load()
+    assert any(
+        relation.source_ref == "plan:p02"
+        and relation.kind == "supersedes"
+        and relation.target_ref == "plan:p01"
+        for relation in store.relations
+    )
+    assert any(
+        relation.source_ref == "decision:d01"
+        and relation.kind == "authorizes"
+        and relation.target_ref == "plan:p02"
+        for relation in store.relations
+    )
+    plan_text = next((root / "plans").glob("p02*.md")).read_text(encoding="utf-8")
+    decision_text = next((root / "decisions").glob("d01*.md")).read_text(
+        encoding="utf-8"
+    )
+    assert 'supersedes: ["plan:p01"]' in plan_text
+    assert 'authorizes: ["plan:p02"]' in decision_text
+
+
 def test_review_record_infers_readable_title_for_local_file_store(tmp_path):
     root = tmp_path / "state"
     root.mkdir()

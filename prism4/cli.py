@@ -211,6 +211,12 @@ def configure_review_record(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--id", dest="artifact_id")
     parser.add_argument("--title", help="Findings 标题；缺省时从正文摘要或首个发现标题推断")
+    parser.add_argument(
+        "--supersedes",
+        action="append",
+        default=[],
+        help="artifact ref this Findings supersedes; may be repeated",
+    )
     add_root_arg(parser)
     parser.set_defaults(func=cmd_review_record)
 
@@ -242,6 +248,12 @@ def configure_plan_record(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--id", dest="artifact_id")
     parser.add_argument("--title", default="行动结构")
+    parser.add_argument(
+        "--supersedes",
+        action="append",
+        default=[],
+        help="plan ref this Plan supersedes; may be repeated",
+    )
     add_root_arg(parser)
     parser.set_defaults(func=cmd_plan_record)
 
@@ -394,6 +406,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     decision_record.add_argument("--id", dest="artifact_id")
     decision_record.add_argument("--title", default="决策")
+    decision_record.add_argument(
+        "--supersedes",
+        action="append",
+        default=[],
+        help="decision ref this Decision supersedes; may be repeated",
+    )
+    decision_record.add_argument(
+        "--authorizes",
+        action="append",
+        default=[],
+        help="artifact ref this Decision authorizes; may be repeated",
+    )
     add_root_arg(decision_record)
     decision_record.set_defaults(func=cmd_decision_record)
 
@@ -531,6 +555,7 @@ def cmd_review_record(args: argparse.Namespace) -> int:
             body=args.body,
             title=args.title,
             artifact_id=args.artifact_id,
+            supersedes=tuple(args.supersedes),
             next_artifact_id=adapter.next_artifact_id,
         )
 
@@ -570,6 +595,7 @@ def cmd_plan_record(args: argparse.Namespace) -> int:
             body=args.body,
             title=args.title,
             artifact_id=args.artifact_id,
+            supersedes=tuple(args.supersedes),
             next_artifact_id=adapter.next_artifact_id,
         )
 
@@ -590,6 +616,8 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
             authority=args.authority,
             artifact_id=args.artifact_id,
             candidate_id=args.candidate,
+            supersedes=tuple(args.supersedes),
+            authorizes=tuple(args.authorizes),
             next_artifact_id=adapter.next_artifact_id,
         )
         # W1 transitional exception: semantic consumption already happened

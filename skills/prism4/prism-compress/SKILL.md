@@ -33,6 +33,7 @@ Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组
 - 默认 **preview**：先给自检清单和拟写范围，`writes=0`。用户明确要求对齐/apply 后才写盘。
 - **不 hard delete**。过期澄清、被吸收的候选进 `archive/`；旧 Plan / Findings / Decision 留在原目录，标 `historical`。
 - **不改承诺**。Intent / Decision 的语义改写需要新的授权。本技能只做中文校准、归档假待办、同步 Plan、再生成 Brief。
+- **不承接 relation 写入面**。`supersedes` / `authorizes` 走现有 `record` 命令参数；不要把 authority transition 新逻辑塞进 Compress。
 - 正文用中文；协议原语保留英文（见 `d04` 语言策略，若该 Topic 有）。
 - 不要创建 3.x `scope.md` / `focus.md` / `task` / `wave`，不要调用 `workflow-tidy` / `workflow-compact`。
 
