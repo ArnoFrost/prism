@@ -76,6 +76,8 @@ def probe_workspace(start: Path) -> WorkspaceProbe:
 
 
 def format_workspace_probe(probe: WorkspaceProbe) -> str:
+    numbered_dirs = list_numbered_topic_dirs(probe.bridge) if probe.live else []
+    legacy_like = max(0, len(numbered_dirs) - len(probe.topic_stores))
     lines = [
         f"bridged: {'yes' if probe.live else 'no'}",
         f"cwd: {probe.cwd}",
@@ -84,6 +86,10 @@ def format_workspace_probe(probe: WorkspaceProbe) -> str:
         f"topics: {len(probe.topic_stores)}",
         f"next_number: {probe.next_number:03d}",
     ]
+    if legacy_like:
+        lines.append(
+            f"legacy_dirs: {legacy_like} (numbered dirs not recognized as 4.0 stores)"
+        )
     if probe.live:
         recent = sorted(probe.topic_stores, key=_topic_dir_number, reverse=True)[:15]
         if recent:
@@ -160,6 +166,20 @@ def list_bridged_topic_stores(bridge: Path) -> list[Path]:
         if child.is_dir() and is_store_root(child):
             stores.append(child)
     return stores
+
+
+def list_numbered_topic_dirs(bridge: Path | None) -> list[Path]:
+    """All numbered Host topic directories, including legacy 3.x layouts."""
+    if bridge is None:
+        return []
+    topics = Path(bridge) / "topics"
+    if not topics.is_dir():
+        return []
+    return [
+        child
+        for child in sorted(topics.iterdir())
+        if child.is_dir() and _TOPIC_DIR_PREFIX.match(child.name)
+    ]
 
 
 def discover_bridged_state(base: Path) -> Path | None:

@@ -109,6 +109,21 @@ def test_topic_probe_lists_recent_dirs_and_next_number(tmp_path: Path) -> None:
     assert "suggestion" not in result.stdout
 
 
+def test_topic_probe_reports_numbered_legacy_dirs_separately(tmp_path: Path) -> None:
+    project, workspace = _bridge_project(tmp_path)
+    legacy = workspace / "topics" / "051_scope_focus_only"
+    legacy.mkdir(parents=True)
+    (legacy / "scope.md").write_text("# Legacy scope\n", encoding="utf-8")
+    (legacy / "focus.md").write_text("# Legacy focus\n", encoding="utf-8")
+
+    result = _run(["topic", "probe"], cwd=project)
+
+    assert result.returncode == 0, result.stderr
+    assert "topics: 0" in result.stdout
+    assert "next_number: 052" in result.stdout
+    assert "legacy_dirs: 1" in result.stdout
+
+
 def test_topic_new_without_root_does_not_write_into_project(tmp_path: Path) -> None:
     result = _run(
         ["topic", "new", "topic:loop-demo", "--title", "闭环演示"],
