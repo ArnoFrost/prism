@@ -25,8 +25,9 @@ prism brief project <topic_id> --root <topic_dir>
 ```
 
 - 若 Brief 与 Intent、Findings、Decision 语义或 Plan 冲突，把冲突识别为 Finding 或请求澄清。不要默许把 Brief 当作权威。
+- Brief 太空时，不要手写一份私货 Brief。应补充源工件：Intent 给边界，Plan 给当前推进结构，Findings 给风险/缺口，Decision 给承诺；阅读面漂移时用 `/prism-compress`。
 - 不要从本技能创建 3.x `focus.md` 或改写旧 workflow 文件。
-- Brief 章节（目标 / 验收 / 已承诺 / 进度 / 未决 / 已消化 / 下一步）以 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 为准。本技能只投影，不归档假待办、不改历史件。阅读面漂移时改用 `/prism-compress`。
+- Brief 章节（目标 / 验收 / 已承诺 / 进度 / 未决 / 已消化 / 下一步 / 投影导航）以 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 为准。本技能只投影，不归档假待办、不改历史件。阅读面漂移时改用 `/prism-compress`。
 
 ## 导航面
 
@@ -44,4 +45,4 @@ Topic 根是 `topic.md`，当前 Intent 是 `intent.md`，Brief 是 `brief.md`�
 
 ## 输出
 
-返回一份紧凑的中文恢复摘要，按 Brief 章节回答：目标、验收、合同验收、已承诺、进度、未决、下一步。不要把 Brief 扩写成历史综述。
+返回一份紧凑的中文恢复摘要，按 Brief 章节回答：目标、验收、合同验收、已承诺、进度、未决、下一步、投影导航。不要把 Brief 扩写成历史综述。

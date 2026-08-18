@@ -34,6 +34,7 @@ user_invocable: true
 - 按审查对象动态选择 2-5 个评估视角（例如：风险 / 完整性 / 架构 / 进度偏差 / 用户体验）。不同审查用不同视角组合，不套固定角色清单。
 - 每个视角独立产出观察。harness 支持 subagent 时真实并发执行；不支持时诚实串行降级，并在 Findings 中说明降级原因。
 - **不得把同一响应内的角色切换伪装成并行。**
+- Subagent / 视角中途稿默认不落盘。只有在高风险、多视角冲突、需要审计/复盘，或单个视角产出可复用调研材料时，才把独立视角摘要放入 `references/`，最终 Findings 引用它；checkpoint 不是 Decision，也不是默认 Artifact。
 
 ### Merge — 收敛为 Findings（总）
 
@@ -56,6 +57,10 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 
 落盘的 Findings 正文使用中文，遵循固定章节（与 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 一致）。序号由适配器分配（`f01`、`f02`……），
 序号越大越新。
+
+标题必须描述本轮 Findings 的主题，避免默认成“评审发现”。CLI 未传 `--title` 时会从「摘要」或首个 F 标题推断；重要评审建议显式传 `--title`。
+
+密度规则：一次 Review 优先收敛为一条 Findings，内部用 F1/F2/F3 表达多个发现。只有当边界不同、证据来源不同、后续 owner/决策不同，或需要分别 supersede 时，才拆成多条 Findings。不要把每个小洞察都单独落盘成稀碎记忆条目。
 
 ```markdown
 ## 摘要

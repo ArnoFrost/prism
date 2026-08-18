@@ -10,6 +10,7 @@ by the CLI for compatibility and are not a stable application contract.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 
 from .core import (
@@ -92,7 +93,7 @@ def record_review(
     *,
     topic_id: str,
     body: str,
-    title: str = "评审发现",
+    title: str | None = None,
     artifact_id: str | None = None,
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str]:
@@ -103,7 +104,7 @@ def record_review(
         id=artifact_id or next_artifact_id(store, "findings"),
         topic_id=topic_id,
         role="findings",
-        title=title,
+        title=title or infer_review_title(body),
         body=body,
         metadata={
             "authority": "advisory",
@@ -114,6 +115,53 @@ def record_review(
     )
     invocation = store.invoke(review_capability(), inputs=inputs, outputs=(findings,))
     return findings.id, invocation.id
+
+
+def infer_review_title(body: str) -> str:
+    """Infer a readable Findings title when callers omit --title."""
+    summary = _markdown_section(body, "摘要")
+    summary_line = _first_content_line(summary)
+    if summary_line:
+        return _compact_review_title(summary_line)
+
+    for raw in body.splitlines():
+        match = re.match(r"^#{1,6}\s+(.+?)\s*$", raw.strip())
+        if not match:
+            continue
+        heading = match.group(1).strip()
+        if heading in {"摘要", "发现", "对下一步的影响", "目标", "步骤", "验证", "风险"}:
+            continue
+        if "—" in heading:
+            heading = heading.rsplit("—", 1)[1].strip()
+        heading = re.sub(r"^F\d+\s+\S+·\S+\s*", "", heading).strip()
+        if heading:
+            return _compact_review_title(heading)
+
+    fallback = _first_content_line(body)
+    return _compact_review_title(fallback) if fallback else "评审发现"
+
+
+def _markdown_section(body: str, heading: str) -> str:
+    marker = f"## {heading}"
+    if marker not in body:
+        return ""
+    rest = body.split(marker, 1)[1]
+    cutoff = rest.find("\n## ")
+    return rest if cutoff < 0 else rest[:cutoff]
+
+
+def _first_content_line(text: str) -> str:
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        return line.lstrip("- ").strip()
+    return ""
+
+
+def _compact_review_title(text: str) -> str:
+    compact = re.sub(r"\s+", " ", text).strip(" ：:。.")
+    return compact[:48] if len(compact) > 48 else compact
 
 
 def record_clarify(

@@ -4,6 +4,7 @@ from prism4.core import Artifact, PrismProtocolError, SemanticPayload
 from prism4.reference import ReferenceStore
 from prism4.use_cases import (
     create_topic,
+    infer_review_title,
     persist_brief,
     record_clarify,
     record_decision,
@@ -80,6 +81,31 @@ def test_record_review_sets_advisory_findings_and_intent_brief_plan_inputs():
     }
     assert input_roles <= {"intent", "brief", "plan"}
     assert "intent" in input_roles
+
+
+def test_record_review_infers_title_from_summary_when_omitted():
+    store = _topic_store()
+    body = (
+        "## 摘要\n\n"
+        "TVKMM references 语义缺口需要校准。\n\n"
+        "## 发现\n\n"
+        "### F1 缺失·高 — references 需要轻量语义\n"
+    )
+
+    finding_id, _invocation_id = record_review(
+        store,
+        topic_id="topic:demo",
+        body=body,
+        next_artifact_id=fake_artifact_id,
+    )
+
+    assert store.artifacts[finding_id].title == "TVKMM references 语义缺口需要校准"
+
+
+def test_infer_review_title_falls_back_to_first_finding_heading():
+    body = "## 发现\n\n### F1 风险·中 — Brief 索引提示容易误导\n"
+
+    assert infer_review_title(body) == "Brief 索引提示容易误导"
 
 
 def test_record_plan_sets_advisory_regenerable_and_expected_inputs():

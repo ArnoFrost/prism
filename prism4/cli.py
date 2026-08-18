@@ -210,7 +210,7 @@ def configure_review_record(parser: argparse.ArgumentParser) -> None:
         help="finding body; '-' reads stdin, '@path' reads a file",
     )
     parser.add_argument("--id", dest="artifact_id")
-    parser.add_argument("--title", default="评审发现")
+    parser.add_argument("--title", help="Findings 标题；缺省时从正文摘要或首个发现标题推断")
     add_root_arg(parser)
     parser.set_defaults(func=cmd_review_record)
 

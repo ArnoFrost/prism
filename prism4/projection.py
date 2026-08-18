@@ -94,6 +94,10 @@ def project_brief(
         "## 下一步",
         "",
         *_next_lines(plans, pending, findings),
+        "",
+        "## 投影导航",
+        "",
+        *_navigation_lines(decisions, pending, findings),
     ]
 
     return Artifact(
@@ -226,6 +230,8 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
     lines: list[str] = []
     for plan in plans:
         for raw in _section(plan.body, "步骤").splitlines():
+            if raw[:1].isspace():
+                continue
             if _is_open_step(raw):
                 lines.append(f"- {raw.strip()}")
     if pending:
@@ -234,13 +240,23 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
         lines.append("- 有仍有效 Findings；若被取舍阻塞用 `/prism-clarify`，否则按 Plan 推进")
     if not lines:
         lines.append("- 当前无未完成 Plan 步骤。阅读面漂移时用 `/prism-compress`")
-    lines.extend(
-        [
-            "- 决策链索引：`decisions/decision.index.md`",
-            "- 发现链索引：`findings/finding.index.md`",
-        ]
-    )
     return lines
+
+
+def _navigation_lines(
+    decisions: list[Artifact],
+    pending,
+    findings: list[Artifact],
+) -> list[str]:
+    if decisions or pending:
+        decision_line = "- Decision / Clarify 投影索引：`decisions/decision.index.md`"
+    else:
+        decision_line = "- 暂无 Decision / Clarify；record 后会生成 `decisions/decision.index.md`"
+    if findings:
+        finding_line = "- Findings 投影索引：`findings/finding.index.md`"
+    else:
+        finding_line = "- 暂无 Findings；record 后会生成 `findings/finding.index.md`"
+    return [decision_line, finding_line]
 
 
 def _open_lines(pending, findings: list[Artifact]) -> list[str]:

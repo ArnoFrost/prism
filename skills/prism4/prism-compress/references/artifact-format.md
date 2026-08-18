@@ -67,6 +67,8 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 ## 已消化
 
 ## 下一步
+
+## 投影导航
 ```
 
 | 章节 | 来源 | 不含 |
@@ -78,6 +80,8 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 | 进度 | 当前有效 Plan（含已完成步骤） | `historical` 的旧 Plan |
 | 未决 | 未晋升澄清 + 仍有效 Findings | 已消化 Findings |
 | 已消化 | 被取代或 `historical` 的工件 id | 当成待办 |
+| 下一步 | 当前 Plan 未完成的顶层步骤；阻塞时指向 Clarify | 已完成步骤的说明子弹；索引导航 |
+| 投影导航 | local adapter 的发现/决策索引提示 | 新的行动或事实源 |
 | 下一步 | Plan 未完成步骤；阻塞时指向 Clarify | 计数统计；新的授权 |
 
 ## Plan — `plans/pXX_*.md`

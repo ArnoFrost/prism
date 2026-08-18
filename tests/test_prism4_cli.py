@@ -325,6 +325,60 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert "技能说明使用中文" in decisions[0].read_text(encoding="utf-8")
 
 
+def test_review_record_infers_readable_title_for_local_file_store(tmp_path):
+    root = tmp_path / "state"
+    root.mkdir()
+    subprocess.run(
+        [
+            str(BIN_PRISM),
+            "topic",
+            "new",
+            "topic:review-title",
+            "--title",
+            "Review Title",
+            "--root",
+            str(root),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    body = (
+        "## 摘要\n\n"
+        "Brief 索引提示需要从下一步改为投影导航。\n\n"
+        "## 发现\n\n"
+        "### F1 风险·中 — 空 Topic 索引提示容易误导\n"
+    )
+
+    result = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "review",
+            "record",
+            "topic:review-title",
+            "--root",
+            str(root),
+            "--id",
+            "finding:f01",
+            "--body",
+            body,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+
+    assert result.returncode == 0, result.stderr
+    store = LocalFileStoreAdapter(root).load()
+    assert store.artifacts["finding:f01"].title == "Brief 索引提示需要从下一步改为投影导航"
+    findings = list((root / "findings").glob("f01*.md"))
+    assert len(findings) == 1
+    assert findings[0].name == "f01_Brief索引提示需要从下一步改为投影导航.md"
+
+
 def test_bin_prism_brief_save_overwrites_existing(tmp_path):
     root = tmp_path / "state"
     root.mkdir()

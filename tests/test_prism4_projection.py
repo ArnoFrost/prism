@@ -173,4 +173,35 @@ def test_project_brief_separates_active_from_superseded():
     assert "## 验收" in brief.body
     assert "## 已承诺" in brief.body
     assert "## 进度" in brief.body
-    assert "决策链索引" in brief.body
+    assert "## 投影导航" in brief.body
+    assert "record 后会生成 `decisions/decision.index.md`" in brief.body
+
+
+def test_project_brief_next_steps_ignore_nested_completed_step_details():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="plan:p01",
+            topic_id=topic.id,
+            role="plan",
+            title="当前推进",
+            body="\n".join(
+                [
+                    "## 步骤",
+                    "",
+                    "1. ~~已完成：预留 references~~",
+                    "   - 已创建空目录。",
+                    "   - 已保护手动材料。",
+                    "2. 校准 Brief 索引文案",
+                ]
+            ),
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    next_section = brief.body.split("## 下一步")[1].split("## 投影导航")[0]
+    assert "2. 校准 Brief 索引文案" in next_section
+    assert "已创建空目录" not in next_section
+    assert "Decision / Clarify 投影索引" not in next_section
