@@ -1,83 +1,40 @@
-# Prism v1.x → v2.0 Migration Guide
+# Prism 3.x → 4.0 迁移指南
 
-> 本文是从 v1.x 升级到 v2.0 的唯一迁移入口。它只覆盖用户可感知变化、破坏性变化与可执行替换步骤；历史治理过程不在本文展开。
->
-> **4.0-canary 读法**：下面历史表保留 v2.0 当时的命令名。作为**当前可执行命令**时，`prism finalize` / `prism validate-trace` / `prism --json manifest` 必须写成 `prism legacy …`。默认无前缀调用会被硬拒绝。
+> 本文是升级到 4.0 的迁移入口（当前发行：`4.0-canary`，随 canary 演进）。
+> v1.x → v2.0 的历史迁移见 [historical/migration-v1-to-v2.md](./historical/migration-v1-to-v2.md)。
 
 ## 先看结论
 
 多数用户只需要做三件事：
 
-1. 更新 SDK 到 `v2.0.0`。
-2. 把旧命令 `prism pipeline` 替换为 `prism finalize`。
-3. 运行 **`./setup.sh init`**（或 `bin/setup --non-interactive` + `bin/relink`），让本机配置与软链接自动补齐。
-
-如果你使用 zip 分发包，按包内 `INSTALL_INTERNAL.md` 的升级模式走；如果你使用 git clone，按 [SETUP_AGENT.md](../SETUP_AGENT.md) 重新执行非交互初始化，或人类自助见 [SETUP_GITHUB.md](../SETUP_GITHUB.md)。
+1. 更新 SDK 到 `prism-4` 分支并跑 `./setup.sh init`。
+2. 日常入口换成 4.0 原语：`/prism-topic` 创建或定位 Topic（先 `prism topic probe`）。
+3. 旧 3.x 操作一律显式 `prism legacy …`；旧 topic 不迁移，继续可读。
 
 ## 破坏性变化
 
-| 变化 | v1.x 行为 | v2.0 行为 | 迁移方式 |
-|------|-----------|-----------|----------|
-| CLI alias | `prism pipeline <topic>` 转发到 `finalize` | `pipeline` 已物理移除，argparse 直接报错 | 改用 `prism finalize <topic>` |
-| 痕迹校验默认值 | 早期 topic 常以 strict 心智理解 | 全局默认 lenient；缺痕迹默认 WARN，不阻塞成功 | 需要强约束时显式传 `--trace-strict` |
-| 最小运行合同 | 容易把外部 Skills / Env 当作必需 | core contract 收敛为 SDK + Vault Workspace + `uv` | 外部 Skills / Env 按需安装 |
-| 本地协作文件命名 | 旧文档可能仍提到 `AGENT.md` | 标准命名为 `AGENTS.md` / `AGENTS.local.md` | `bin/setup` / `bin/relink` 会自动迁移常见旧命名 |
+| 变化 | 3.x 行为 | 4.0 行为 | 迁移方式 |
+|------|----------|----------|----------|
+| 默认 topic 动词 | `prism sniff / validate / finalize / status …` 直接可用 | 默认表面硬拒绝（exit 2） | 改写为 `prism legacy <verb> …` |
+| 项目接入 | `workspace-init` 技能建骨架 | `prism host attach --code CODE` 登记 + 桥接 | 未桥接时先 attach，不要 workspace-init |
+| Topic 工件 | `scope.md` / `focus.md` / `task.index.md` / `wave` | Intent / Brief / Findings / Plan / Decision（`topic.md` 承载） | 旧工件由 legacy adapter 读取；4.0 Topic 不创建它们 |
+| 默认 skill 面 | `workflow-*` 管线 | `prism-topic / -brief / -review / -clarify / -compress` | `bin/relink` 默认 `--skill-profile prism4`；旧面显式 `--skill-profile legacy` |
+| `prism decision` | 3.x decision 动词 | 4.0 入口，需 `decision record` | 3.x 语义走 `prism legacy decision …` |
 
-## 14 类用户可感知变化
-
-1. `prism pipeline` 不再可用，统一使用 `prism finalize`。
-2. `prism finalize` 默认按 lenient 痕迹校验运行，缺少痕迹块只产生 WARN。
-3. 需要严格治理时，使用 `--trace-strict` 显式开启。
-4. 可用 `--trace-lenient` 显式保持宽松模式。
-5. 可用 `--no-trace-validate` 跳过痕迹抽检。
-6. `prism legacy validate-trace` 可单独运行，便于 CI 或维护者检查。
-7. 痕迹义务家族永久封顶为 4 族，不再新增第五类用户可见块。
-8. README 首屏弱化治理路径，默认用户不需要理解 review / decision 历史链路。
-9. core contract 不要求外部 Skills 仓库存在。
-10. （v2 历史口径）`mini/full profile` 曾表示 zip 分发范围；自 3.0 起已降为 legacy maintenance-only。
-11. 3.0 对外分发入口统一为 experimental `prism dist`；Skills / Env / Vault backend 均为可选部署。
-12. `AGENTS.md` 成为标准协作契约文件名。
-13. `AGENTS.local.md` 和 `workspace.*.local` 继续保持本地状态，不入仓库。
-14. `bin/doctor` / `prism legacy --json manifest` 等自省能力保留，便于维护者确认升级结果。
-
-## 命令替换脚本
-
-在仓库根目录执行以下脚本，可先 dry-run，再执行替换。
-
-```bash
-# dry-run：列出仍引用 prism pipeline 的文件
-rg -n "prism pipeline" .
-
-# 替换 Markdown / shell / Python / YAML 中的旧命令文本
-python3 - <<'PY'
-from pathlib import Path
-
-suffixes = {".md", ".sh", ".py", ".yaml", ".yml", ".txt"}
-for path in Path(".").rglob("*"):
-    if not path.is_file() or path.suffix not in suffixes:
-        continue
-    if any(part in {".git", "node_modules", ".venv"} for part in path.parts):
-        continue
-    text = path.read_text(encoding="utf-8", errors="ignore")
-    new = text.replace("prism pipeline", "prism finalize")
-    if new != text:
-        path.write_text(new, encoding="utf-8")
-        print(path)
-PY
-
-# 复查
-rg -n "prism pipeline" .
-```
+不破坏、保持不变：`doctor` / `relink` / `update` / `dist` / `sync` 仍在默认表面；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。
 
 ## 升级检查清单
 
-- `prism --version` 输出 `v2.0.0` 或更新版本。
-- `prism --help` 不再列出 `pipeline`。
-- `prism legacy finalize <topic>` 能正常运行。
-- `bin/setup --check --non-interactive` 或 `./setup.sh check` 通过。
-- `bin/relink --dry-run` 无意外 destructive 变更。
-- 如果启用 strict 治理，`prism legacy validate-trace <topic> --json` 无 errors。
+- `prism --version` 输出 4.0-canary 对应版本。
+- `prism --help` 不再把 3.x topic 动词宣传为默认入口。
+- `prism topic probe` 在项目目录报告 `bridged: yes`（否则 `prism host attach --code CODE`）。
+- `bin/relink --check` 无意外变更；默认分发面为 `skills/prism4/*`。
+- `bin/doctor --scope cli` 通过；旧脚本调用处已改 `prism legacy …`。
+
+## 旧 topic 处置
+
+不批量迁移。3.x topic 目录由原样保留，经 `prism legacy …` 与 legacy 技能继续操作；4.0 Topic 是新的协作边界，不为旧 topic 补写 4.0 工件。
 
 ## 回滚口径
 
-v2.0 的主要破坏性变化是 CLI alias 移除。若脚本短期无法改完，不建议恢复 `pipeline` alias；更稳妥的做法是在调用方本地做临时 wrapper，并把替换任务排期清掉。Prism 主仓不会重新引入该 alias。
+4.0 以 Git 分支承载：切回 3.x 发行线分支 + `bin/relink --skill-profile legacy` 即可恢复旧默认面。本地 Workspace 状态（`workspace.*.local` 指向的实例）不因分支切换被改写。

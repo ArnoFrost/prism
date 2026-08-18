@@ -37,7 +37,7 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 | **Maintenance / Lifecycle** | `workspace-init` / `workflow-tidy` / `workflow-compact` / `workflow-archive` | 接入、机械整理、压实上下文、释放注意力 | 低频维护、迁移、恢复、归档或上下文读不动 |
 | **Compatibility** | `workflow-review-lite` / 旧 `plan` / 旧 `AP` / 旧 `decision-chain` | 读取旧产物，不引导新路径 | 旧 topic、显式 legacy 调用或迁移排障 |
 
-分类只帮助人类决定“先看哪里”。受控术语仍保持 [`vocabulary.md`](../skills/workflow/shared/vocabulary.md) 平铺 SSOT，不新增核心 / 低频 / 兼容等机器字段。
+分类只帮助人类决定“先看哪里”。受控术语仍保持 [`vocabulary.md`](../../skills/workflow/shared/vocabulary.md) 平铺 SSOT，不新增核心 / 低频 / 兼容等机器字段。
 
 ---
 
@@ -133,5 +133,5 @@ Prism 是轻量认知熵管理框架；workflow skills 是它内置的一套认�
 | [prism-3.0.md](./prism-3.0.md) | 解释为什么用认知熵治理理解 Prism |
 | [topic-lifecycle.md](./topic-lifecycle.md) | 解释 topic 在生命周期中如何流转 |
 | [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 解释已有 workspace 如何渐进接入 v3 |
-| [architecture.md](./architecture.md) | 完整架构与部署视图 |
-| [glossary.md](./glossary.md) | 人类术语速查 |
+| [architecture.md](../architecture.md) | 完整架构与部署视图 |
+| [glossary.md](../glossary.md) | 人类术语速查 |

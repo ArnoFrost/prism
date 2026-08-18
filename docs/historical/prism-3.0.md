@@ -1,7 +1,7 @@
 # Prism 3.0 — GA 定位说明
 
 > 这不是安装文档，也不是完整架构文档。它只回答一个问题：**Prism 3.0 为什么定位为轻量认知熵管理框架，并把 workflow 解释为认知熵治理工作流。**
-> 当前阶段：v3.0 GA。本页是叙事层说明，不新增受控术语；发行见 [README](../README.md)。skill / CLI / validator 的具体演进走 decision gate，不在此页定义实现细节。
+> 当前阶段：v3.0 GA。本页是叙事层说明，不新增受控术语；发行见 [README](../../README.md)。skill / CLI / validator 的具体演进走 decision gate，不在此页定义实现细节。
 
 ---
 
@@ -90,7 +90,7 @@ OpenSpec 产出的 spec、design、tasks 可以进入 Prism topic；Prism 负责
 
 ## GA 已落地锚点
 
-> 架构客观描述见 [architecture.md](./architecture.md)；此处只列 **v3.0 GA 已验收** 的能力锚点。
+> 架构客观描述见 [architecture.md](../architecture.md)；此处只列 **v3.0 GA 已验收** 的能力锚点。
 
 - [x] `focus.md` 成为 topic 入口；README grandfather 兜底
 - [x] `structures/task-N_slug/` 按需递归分解（task-scope 1:1 投影 topic-V）

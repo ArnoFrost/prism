@@ -41,7 +41,7 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 | ⚠️ **AP** | 行动项（旧）→ action | Action Point | 废弃尾 |
 | ⚠️ **decision-chain** | 决策链 → decision-index | Decision chain | 废弃尾 |
 
-如果想按“高频核心 / 执行支持 / 维护生命周期 / 兼容面”理解 Workflow Skill 怎么选，读 [skill-taxonomy.md](./skill-taxonomy.md)。该分类是人类阅读层，不改变本页术语速查和 `vocabulary.md` SSOT。
+如果想按“高频核心 / 执行支持 / 维护生命周期 / 兼容面”理解 Workflow Skill 怎么选，读 [skill-taxonomy.md](./historical/skill-taxonomy.md)。该分类是人类阅读层，不改变本页术语速查和 `vocabulary.md` SSOT。
 
 ## 使用规范
 
@@ -57,11 +57,11 @@ Prism 协作中频繁出现 **scope / goal / V / OQ / focus / action / phase / w
 |------|------|
 | [docs/README.md](./README.md) | 文档分类索引（先读） |
 | `skills/workflow/shared/vocabulary.md` | **协议级 SSOT**，本文 cite 它 |
-| [prism-3.0.md](./prism-3.0.md) | v3.0 叙事锚点 |
-| [skill-taxonomy.md](./skill-taxonomy.md) | 按熵源选 workflow skill |
+| [prism-3.0.md](./historical/prism-3.0.md) | v3.0 叙事锚点 |
+| [skill-taxonomy.md](./historical/skill-taxonomy.md) | 按熵源选 workflow skill |
 | `docs/architecture.md` | 结构客观面；引用本词典中的术语 |
 | `docs/contributing.md` | 贡献者指南；新贡献者写文档前应阅读本词典 |
-| `docs/migration.md` | v1.x→v2.0 迁移指南 |
+| `docs/migration.md` | 3.x→4.0 迁移指南（v1→v2 见 `docs/historical/`） |
 | 各 topic 的 `scope.md` / `focus.md` / `reviews/` | 词典的**消费方**；合规靠人工 checklist + review |
 
 ## 演进治理

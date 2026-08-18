@@ -37,8 +37,8 @@ def test_release_version_is_consistent() -> None:
 
 
 def test_v32_release_narrative_preserves_experimental_boundaries() -> None:
-    release_doc = (ROOT / "docs" / "prism-3.2.md").read_text(encoding="utf-8")
-    compatibility = (ROOT / "docs" / "review-lite-compatibility.md").read_text(
+    release_doc = (ROOT / "docs" / "historical" / "prism-3.2.md").read_text(encoding="utf-8")
+    compatibility = (ROOT / "docs" / "historical" / "review-lite-compatibility.md").read_text(
         encoding="utf-8"
     )
 

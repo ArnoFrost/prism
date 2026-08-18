@@ -1,6 +1,6 @@
 # Prism 3.2：按需治理闭环
 
-> 本页描述 Prism 3.2 的按需治理闭环与能力边界。发行身份以仓库根 [README](../README.md)、`VERSION` 与 [CHANGELOG](../CHANGELOG.md) 为准；结构客观面见 [architecture.md](./architecture.md)。
+> 本页描述 Prism 3.2 的按需治理闭环与能力边界。发行身份以仓库根 [README](../../README.md)、`VERSION` 与 [CHANGELOG](../../CHANGELOG.md) 为准；结构客观面见 [architecture.md](../architecture.md)。
 
 ## Prism 管什么
 

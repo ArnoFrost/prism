@@ -5,11 +5,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PILOT = ROOT / "docs" / "3.2-pilot.md"
+PILOT = ROOT / "docs" / "historical" / "3.2-pilot.md"
 CATALOG = ROOT / "skills" / "schema" / "skills-catalog.yaml"
 README = ROOT / "README.md"
 ONBOARDING = ROOT / "docs" / "onboarding.md"
-TAXONOMY = ROOT / "docs" / "skill-taxonomy.md"
+TAXONOMY = ROOT / "docs" / "historical" / "skill-taxonomy.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
 
 
@@ -45,7 +45,7 @@ def test_pilot_entry_is_discoverable_from_public_docs() -> None:
     docs_index = _read(ROOT / "docs" / "README.md")
     readme = _read(README)
     l1, _, rest = docs_index.partition("## A —")
-    assert "[3.2-pilot.md](./3.2-pilot.md)" in docs_index
+    assert "[3.2-pilot.md](./historical/3.2-pilot.md)" in docs_index
     assert "## C — 3.x legacy / historical" in docs_index
     assert "3.2-pilot" not in l1
     assert "workspace-v3-upgrade" not in l1

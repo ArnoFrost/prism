@@ -9,7 +9,7 @@ TRACE = SDK_ROOT / "skills" / "workflow" / "shared" / "trace-artifacts-spec.md"
 GATE = SDK_ROOT / "skills" / "workflow" / "workflow-review" / "references" / "decision-gate.md"
 DECISION_RECORD = SDK_ROOT / "skills" / "workflow" / "shared" / "decision-record-spec.md"
 VOCAB = SDK_ROOT / "skills" / "workflow" / "shared" / "vocabulary.md"
-PRISM32 = SDK_ROOT / "docs" / "prism-3.2.md"
+PRISM32 = SDK_ROOT / "docs" / "historical" / "prism-3.2.md"
 
 
 def _read(path: Path) -> str:

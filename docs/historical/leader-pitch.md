@@ -5,7 +5,7 @@ doc_kind: internal
 
 # Prism — 对内沟通口径
 
-> 面向 leader / 团队沟通的简要说辞（≤300 字）。非默认用户文档，见 [docs/README.md](./README.md)。
+> 面向 leader / 团队沟通的简要说辞（≤300 字）。非默认用户文档，见 [docs/README.md](../README.md)。
 
 ---
 
@@ -21,7 +21,7 @@ Prism 把 AI 协作从一次性对话变成**可接续、可复盘**的本地过
 
 **v3.0 增量**：`focus` 作 topic 入口；`execute` 推进唯一游标并同步代码与工件；`status` 只读建议下一步（`next_actions[]` handoff）；tidy/compact/archive 分工维护工件与生命周期。
 
-**当前状态**：v3.0 GA（发行见仓库 [README](../README.md)）。
+**当前状态**：v3.0 GA（发行见仓库 [README](../../README.md)）。
 
 **下一步**：在更多异构项目观察恢复成本，并按 3.x 节奏演进实验能力。
 

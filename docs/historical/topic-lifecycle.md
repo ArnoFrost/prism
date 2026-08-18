@@ -182,5 +182,5 @@ index_style: narrative          # 或 anchored / manual
 |------|------|
 | [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 已有 workspace 如何渐进采用 v3 topic 形态 |
 | [skill-taxonomy.md](./skill-taxonomy.md) | 不同 skill 治理哪类认知熵 |
-| [architecture.md](./architecture.md) | 完整架构与部署视图 |
-| [glossary.md](./glossary.md) | 术语速查 |
+| [architecture.md](../architecture.md) | 完整架构与部署视图 |
+| [glossary.md](../glossary.md) | 术语速查 |

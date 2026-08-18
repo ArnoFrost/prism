@@ -415,7 +415,7 @@ done
 
 ## 升级与回滚
 
-> **从 v1.x 升级到 v2.x 的用户**：先看 [docs/migration.md](docs/migration.md) — 它是 v1.x → v2.0 的唯一迁移入口（破坏性变化、命令替换脚本、升级检查清单）。文档分类见 [docs/README.md](docs/README.md)。下面的命令是通用升级流程，与 migration.md 配合使用。
+> **从 3.x 升级到 4.0 的用户**：先看 [docs/migration.md](docs/migration.md) — 它是 3.x → 4.0 的迁移入口（破坏性变化、升级检查清单、旧 topic 处置）。v1.x → v2.0 的历史迁移见 [docs/historical/migration-v1-to-v2.md](docs/historical/migration-v1-to-v2.md)。文档分类见 [docs/README.md](docs/README.md)。下面的命令是通用升级流程，与 migration.md 配合使用。
 
 ### 升级（从旧版本到新版本）
 

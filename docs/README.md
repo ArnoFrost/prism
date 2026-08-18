@@ -30,7 +30,7 @@
 | [onboarding.md](./onboarding.md) | init 后命令面分层、日常运维、E2E 验收 checklist |
 | [cli-json-schema.json](./cli-json-schema.json) | `--json` envelope schema |
 | [glossary.md](./glossary.md) | 术语人类速查（cite `vocabulary.md` SSOT） |
-| [migration.md](./migration.md) | v1.x → v2.0 破坏性迁移 |
+| [migration.md](./migration.md) | 3.x → 4.0 迁移入口（v1→v2 见 [historical/](./historical/)） |
 | [contributing.md](./contributing.md) | L1–L4 分层、SDK vs Workspace 边界、默认面 checklist |
 | [ofm-cheatsheet.md](./ofm-cheatsheet.md) | Obsidian OFM callout 速查（维护者常用） |
 
@@ -51,16 +51,16 @@
 
 ## C — 3.x legacy / historical
 
-保留给旧 topic、legacy adapter、测试与迁移参考；不作为 4.0 默认读序。
+保留给旧 topic、legacy adapter、测试与迁移参考；不作为 4.0 默认读序。3.x 系列说明已归档到 [`historical/`](./historical/)。
 
 | 文档 | 用途 |
 |------|------|
-| [prism-3.2.md](./prism-3.2.md) | 当前治理图景、按需闭环与 3.2 实验边界 |
-| [3.2-pilot.md](./3.2-pilot.md) | 受控同事试用的安装、体验、反馈与退出说明 |
-| [skill-taxonomy.md](./skill-taxonomy.md) | 按认知熵源选 workflow skill |
-| [topic-lifecycle.md](./topic-lifecycle.md) | topic 从 intake 到 archive |
-| [workspace-v3-upgrade.md](./workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
-| [review-lite-compatibility.md](./review-lite-compatibility.md) | review-lite 3.2 退役边界与旧产物迁移选择 |
+| [prism-3.2.md](./historical/prism-3.2.md) | 当前治理图景、按需闭环与 3.2 实验边界 |
+| [3.2-pilot.md](./historical/3.2-pilot.md) | 受控同事试用的安装、体验、反馈与退出说明 |
+| [skill-taxonomy.md](./historical/skill-taxonomy.md) | 按认知熵源选 workflow skill |
+| [topic-lifecycle.md](./historical/topic-lifecycle.md) | topic 从 intake 到 archive |
+| [workspace-v3-upgrade.md](./historical/workspace-v3-upgrade.md) | 存量 workspace 渐进接入 v3 |
+| [review-lite-compatibility.md](./historical/review-lite-compatibility.md) | review-lite 3.2 退役边界与旧产物迁移选择 |
 
 ---
 
@@ -70,9 +70,9 @@
 
 | 文档 | 用途 | 备注 |
 |------|------|------|
-| [prism-3.0.md](./prism-3.0.md) | v3.0 GA 定位与成立锚点 | `historical` |
-| [prism-2.0.md](./prism-2.0.md) | v2 历史定位与已成立主线 | `historical` |
-| [leader-pitch.md](./leader-pitch.md) | 对内沟通 ≤300 字 | `audience: internal` |
+| [prism-3.0.md](./historical/prism-3.0.md) | v3.0 GA 定位与成立锚点 | `historical` |
+| [prism-2.0.md](./historical/prism-2.0.md) | v2 历史定位与已成立主线 | `historical` |
+| [leader-pitch.md](./historical/leader-pitch.md) | 对内沟通 ≤300 字 | `audience: internal` |
 | [CHANGELOG](../CHANGELOG.md) | 版本变更史 | 仓库根 |
 
 ---

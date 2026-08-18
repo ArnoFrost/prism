@@ -13,7 +13,7 @@
 
 不适用于：
 
-- v1.x → v2.0 的破坏性迁移。那条路径见 [migration.md](./migration.md)。
+- v1.x → v2.0 的破坏性迁移。那条路径见 [migration-v1-to-v2.md](./migration-v1-to-v2.md)。
 - 批量重写 archive。
 - 一次性小任务的仪式化改造。
 

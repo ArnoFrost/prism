@@ -189,7 +189,7 @@ flowchart LR
 
 ### Topic 工件
 
-已有 workspace 的 v3.0 接入口径见 [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)：它强调新 topic 默认 `focus`，存量 `README` / `plan` grandfather，不批量迁移旧 topic。topic 生命周期的阅读版说明见 [topic-lifecycle.md](./topic-lifecycle.md)，skill 全景图见 [skill-taxonomy.md](./skill-taxonomy.md)。
+已有 workspace 的 v3.0 接入口径见 [workspace-v3-upgrade.md](./historical/workspace-v3-upgrade.md)：它强调新 topic 默认 `focus`，存量 `README` / `plan` grandfather，不批量迁移旧 topic。topic 生命周期的阅读版说明见 [topic-lifecycle.md](./historical/topic-lifecycle.md)，skill 全景图见 [skill-taxonomy.md](./historical/skill-taxonomy.md)。
 
 | 文件 | 职责 | 操作模式 |
 |------|------|---------|
@@ -354,7 +354,7 @@ prism/
 | 未来视觉 | 文字真源 |
 |----------|----------|
 | 安装与维护生命周期 | [onboarding.md](./onboarding.md) |
-| 认知熵源到可选能力（3.x） | [skill-taxonomy.md](./skill-taxonomy.md) |
+| 认知熵源到可选能力（3.x） | [skill-taxonomy.md](./historical/skill-taxonomy.md) |
 | Clarify / Review / Decision 回流（4.0） | 本文「4.0 Semantic Skills」 |
 | 3.x Workflow 按需闭环 | 本文「Legacy Compatibility」 |
 | Prism ↔ SDD / OpenSpec | [现有关系图](assets/v3/prism-sdd-relation.png) |
@@ -373,7 +373,7 @@ prism/
 |----|------|
 | 当前 4.0 语义 | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) |
 | 本机施工笔记 | [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) |
-| 当前 3.x legacy 治理叙事 | [prism-3.2.md](./prism-3.2.md) |
-| v3.0 GA 历史成立锚点 | [prism-3.0.md](./prism-3.0.md) |
+| 当前 3.x legacy 治理叙事 | [prism-3.2.md](./historical/prism-3.2.md) |
+| v3.0 GA 历史成立锚点 | [prism-3.0.md](./historical/prism-3.0.md) |
 | 文档分类与读序 | [docs/README.md](./README.md) |
 | 发行（`prism --version`） | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |

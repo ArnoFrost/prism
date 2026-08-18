@@ -148,4 +148,4 @@ prism --version
 ## 参考
 
 - 4.0 当前叙事：[prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) · [architecture.md](./architecture.md)
-- 3.x legacy 参考：[cli-contract.md](./cli-contract.md) · [topic-lifecycle.md](./topic-lifecycle.md) · [skill-taxonomy.md](./skill-taxonomy.md) · [prism-3.0.md](./prism-3.0.md)
+- 3.x legacy 参考：[cli-contract.md](./cli-contract.md) · [topic-lifecycle.md](./historical/topic-lifecycle.md) · [skill-taxonomy.md](./historical/skill-taxonomy.md) · [prism-3.0.md](./historical/prism-3.0.md)

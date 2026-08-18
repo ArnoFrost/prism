@@ -14,7 +14,7 @@ user_invocable: true
 ---
 
 > [!WARNING]
-> **3.2 retired-with-compat**：本技能已退出 active/default/recommended surfaces，仅保留显式调用与旧 `type: review-lite` 产物兼容。迁移说明见 [review-lite compatibility](../../../docs/review-lite-compatibility.md)。
+> **3.2 retired-with-compat**：本技能已退出 active/default/recommended surfaces，仅保留显式调用与旧 `type: review-lite` 产物兼容。迁移说明见 [review-lite compatibility](../../../docs/historical/review-lite-compatibility.md)。
 
 ## 职责边界
 

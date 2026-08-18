@@ -13,7 +13,7 @@ AGENTS = ROOT / "AGENTS.md"
 SKILLS_README = ROOT / "skills" / "README.md"
 WORKSPACE_AGENTS = ROOT / "workspace" / "templates" / "AGENTS.md"
 PROJECT_README = ROOT / "workspace" / "templates" / "project-readme.md"
-MIGRATION = ROOT / "docs" / "review-lite-compatibility.md"
+MIGRATION = ROOT / "docs" / "historical" / "review-lite-compatibility.md"
 VALIDATE_PRODUCT = ROOT / "skills" / "workflow" / "shared" / "scripts" / "validate_product.py"
 VALIDATE_TRACE = ROOT / "skills" / "workflow" / "shared" / "scripts" / "validate_trace.py"
 

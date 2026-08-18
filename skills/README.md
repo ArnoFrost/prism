@@ -75,7 +75,7 @@ Compatibility-only：`workflow-review-lite` 自 3.2 起不属于现役管线，�
 | `workflow-compact` | `/workflow-compact` | topic 上下文 | preview-first 的上下文熵治理方案 + apply 前备份门禁（experimental） |
 | `workflow-archive` | `/workflow-archive` | workspace + topic | preview-first 生命周期归档（experimental） |
 
-兼容入口：`/workflow-review-lite` 仅用于显式 legacy 调用和旧 topic，迁移说明见 [review-lite compatibility](../docs/review-lite-compatibility.md)。
+兼容入口：`/workflow-review-lite` 仅用于显式 legacy 调用和旧 topic，迁移说明见 [review-lite compatibility](../docs/historical/review-lite-compatibility.md)。
 
 共享依赖位于 `workflow/shared/`：`sniff_lib.py`、`obsidian-config.md`、`parallel-execution.md`、`scripts/archive.py`。
 
