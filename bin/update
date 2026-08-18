@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""prism update — 拉取 SDK（可选 Skills）并执行核心体检 + 代码层 relink。
+
+实现位于 bin/，供无 skills/workflow 时使用（069 d02 从 prism_cli.py 抽出）。
+update 的核心职责是让 SDK / Skills 更新生效；Workspace/Vault 是可选协作状态，
+缺失或未同步不应阻断代码层升级。
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+SDK_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _yaml_scalar(config_path: Path, key: str) -> str | None:
+    if not config_path.is_file():
+        return None
+    prefix = f"{key}:"
+    for line in config_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith(prefix):
+            value = line[len(prefix):].strip().strip("'\"")
+            return value or None
+    return None
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="prism update",
+        description="git pull SDK → doctor ci --quick → relink --no-workspace",
+    )
+    parser.add_argument("--skills", action="store_true", help="同时 pull prism-skills")
+    parser.add_argument("--dry-run", action="store_true", help="只打印步骤")
+    args = parser.parse_args()
+
+    sdk_root = str(SDK_ROOT)
+    config = SDK_ROOT / "prism.local.yaml"
+
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=sdk_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if status.returncode != 0:
+        print(status.stderr.strip() or "git status 失败", file=sys.stderr)
+        return status.returncode
+    if status.stdout.strip() and not args.dry_run:
+        print("✗ SDK 工作区有未提交变更，拒绝 update。请先 commit/stash。", file=sys.stderr)
+        return 1
+
+    skills_path = _yaml_scalar(config, "skills_path") if args.skills else None
+    if args.skills and skills_path and os.path.isdir(skills_path):
+        skills_status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=skills_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if skills_status.stdout.strip() and not args.dry_run:
+            print("✗ prism-skills 有未提交变更，拒绝 update。", file=sys.stderr)
+            return 1
+
+    steps: list[tuple[str, list[str], str]] = [
+        ("git pull --rebase (sdk)", ["git", "pull", "--rebase"], sdk_root),
+    ]
+    if args.skills and skills_path and os.path.isdir(skills_path):
+        steps.append(("git pull --rebase (skills)", ["git", "pull", "--rebase"], skills_path))
+
+    doctor = str(SDK_ROOT / "bin" / "doctor")
+    relink = str(SDK_ROOT / "bin" / "relink")
+    steps.extend([
+        ("doctor --scope ci --quick", [doctor, "--scope", "ci", "--quick"], sdk_root),
+        ("relink --no-workspace", [relink, "--no-workspace"], sdk_root),
+    ])
+
+    for label, cmd, cwd in steps:
+        if args.dry_run:
+            print(f"[dry-run] ({cwd}) {' '.join(cmd)}")
+            continue
+        if cmd[0] == "git" and not os.path.isdir(os.path.join(cwd, ".git")):
+            print(f"✗ 跳过 {label}：非 git 仓库", file=sys.stderr)
+            return 1
+        completed = subprocess.run(cmd, cwd=cwd, check=False)
+        if "doctor" in label and completed.returncode == 2:
+            # bin/doctor：0=全绿，1=ERROR，2=仅 WARN — update 链不因 WARN 中断
+            continue
+        if completed.returncode != 0:
+            print(f"✗ update 在步骤失败: {label}", file=sys.stderr)
+            return completed.returncode
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

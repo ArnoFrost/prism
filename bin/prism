@@ -28,8 +28,8 @@
 #   legacy ...      委托旧 3.x CLI adapter
 #   doctor          委托 bin/doctor（不经 3.x prism_cli.py）
 #   relink          委托 bin/relink（不经 3.x prism_cli.py）
-#   update / dist / sync
-#                   运维入口，仍在默认表面（经 3.x facade）
+#   update          委托 bin/update（不经 3.x prism_cli.py）
+#   dist / sync     运维入口，仍在默认表面（经 3.x facade）
 #
 # record = persist semantic output；不等于授权。
 #

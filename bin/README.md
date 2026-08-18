@@ -169,7 +169,7 @@ prism legacy <3.x verb> ...              # 显式委托旧 workflow CLI
 - 落盘：`prism review/clarify/plan/decision record`（persist ≠ authorize）
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
-- 3.x：`prism legacy ...`。topic 动词（sniff / validate / finalize 等）已硬拒绝无前缀调用。`doctor` / `relink` 直调 `bin/` 同名脚本；`update` / `dist` / `sync` 仍在默认表面（经 3.x facade）。3.x envelope 见 [docs/cli-contract.md](../docs/cli-contract.md)。
+- 3.x：`prism legacy ...`。topic 动词（sniff / validate / finalize 等）已硬拒绝无前缀调用。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`dist` / `sync` 仍在默认表面（经 3.x facade）。3.x envelope 见 [docs/cli-contract.md](../docs/cli-contract.md)。
 
 当前 4.0 命令面可分为四类：
 
