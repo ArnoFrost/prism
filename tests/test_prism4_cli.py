@@ -712,7 +712,7 @@ def test_prism_doctor_cli_does_not_need_workflow_tree(tmp_path: Path) -> None:
     assert result.returncode != 127
 
 
-def test_prism_relink_still_needs_prism_cli_without_workflow(tmp_path: Path) -> None:
+def test_prism_relink_does_not_need_prism_cli_without_workflow(tmp_path: Path) -> None:
     dut = _isolated_product_sdk(tmp_path)
     env = _isolated_env(tmp_path, dut)
     result = subprocess.run(
@@ -723,9 +723,9 @@ def test_prism_relink_still_needs_prism_cli_without_workflow(tmp_path: Path) -> 
         timeout=15,
         env=env,
     )
-    assert result.returncode == 127
-    assert "legacy CLI not found" in result.stderr
-    assert "prism_cli.py" in result.stderr
+    blob = result.stdout + result.stderr
+    assert "legacy CLI not found" not in blob
+    assert result.returncode != 127
 
 
 def test_prism_json_doctor_is_flat_passthrough_not_record_envelope() -> None:
