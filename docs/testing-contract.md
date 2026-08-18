@@ -18,6 +18,7 @@ Prism 4.0 的测试只守边界，不复刻协作仪式。新增测试前先判�
 
 ```bash
 uv run pytest
+uv run python bin/release_gate.py --json
 prism doctor --scope cli
 prism --version
 ```

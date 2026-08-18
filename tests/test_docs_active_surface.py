@@ -176,12 +176,17 @@ def test_current_skill_schema_examples_use_prism4_surface() -> None:
         ROOT / "skills" / "schema" / "frontmatter-spec.md",
         ROOT / "skills" / "schema" / "dist-whitelist.yaml",
         ROOT / "bin" / "create-skill",
+        ROOT / "bin" / "prism-local-schema.yaml",
+        ROOT / "bin" / "validate-skills",
+        ROOT / "docs" / "contributing.md",
     ]
     forbidden = [
         "workflow-archive",
         "workspace-init",
         "skills/workflow",
+        "内置 workflow/workspace",
         "workflow/workspace 完整",
+        'version: "3.0.0"',
     ]
 
     for path in surfaces:

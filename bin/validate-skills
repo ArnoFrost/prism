@@ -190,7 +190,7 @@ for i in "${!SKILLS[@]}"; do
     skill_warnings+=("description 中缺少 'Use when:' 关键词")
   fi
 
-  # 2b. description_zh（SDK workflow/workspace 必填 — frontmatter-spec §A）
+  # 2b. description_zh（SDK 内置技能必填 — frontmatter-spec §A）
   fm_desc_zh=$(fm_get "$file" "description_zh")
   if [[ "$layer" == "sdk" && -z "$fm_desc_zh" ]]; then
     skill_warnings+=("缺失 description_zh（CodeBuddy IDE 列表；见 frontmatter-spec.md）")

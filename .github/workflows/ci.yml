@@ -5,7 +5,7 @@ name: CI
 #   2. bin/* 可执行 + bin/prism --version 启动正常（doctor --scope ci）
 #   3. skills frontmatter 合规（doctor --scope ci 内含 skill 阶段）
 #   4. pytest tests/ 全绿（4.0 主线 + setup smoke + relink + release metadata）
-#   5. release gate：BREAKING 变更必须同步 CHANGELOG.md + docs/migration.md
+#   5. release gate：版本元数据一致；BREAKING 变更必须同步 CHANGELOG.md + docs/migration.md
 #      （bin/release_gate.py；3.x 时代的 check_cli_contract_sync 已随 legacy 树剔除）
 # 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
 # 不依赖 prism.local.yaml / vault / ~/.local/bin（doctor --scope ci 自包含）。
@@ -70,7 +70,7 @@ jobs:
         run: |
           uv run --with pytest python -m pytest tests/ -q
 
-      - name: Release gate — breaking docs sync
+      - name: Release gate — version metadata + breaking docs sync
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

@@ -2,7 +2,7 @@
 # 定义 prism.local.yaml 的结构约束，供 bin/setenv --validate 参考。
 # 此文件本身不被脚本直接解析，作为人类可读的契约文档。
 
-version: "3.0.0"
+version: "4.0-canary"
 
 fields:
   device_id:
@@ -34,7 +34,7 @@ fields:
     validation:
       - "配置时必须是绝对路径"
       - "配置时目录建议存在"
-      - "缺省时跳过外部技能分发，仅使用 SDK 内置 workflow/workspace 能力"
+      - "缺省时跳过外部技能分发，仅使用 SDK 内置 prism4 semantic skills"
 
   workspace_root:
     type: string

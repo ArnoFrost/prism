@@ -13,7 +13,7 @@
 
 ## 仓库边界
 
-- `~/prism` 承载 SDK、内置 workflow/workspace、CLI、schema、模板和共享脚本。
+- `~/prism` 承载 SDK、4.0 semantic skills、Reference CLI、schema、模板和共享脚本。
 - `~/prism-skills` 承载外部通用 Skills。
 - `~/prism-skills/shared` 是自包含目录；共享脚本直接在 prism-skills 仓库提交。
 - `prism.local.yaml`、`AGENTS.local.md`、`workspace.*.local` 是本地状态，不提交。
@@ -111,8 +111,8 @@ audience: maintainer
 
 ```bash
 uv run pytest
-./bin/prism sniff "<topic-dir>"          # 预期 hard reject，并指向 legacy-3x-final
-./bin/prism manifest                    # 预期 hard reject，并指向 legacy-3x-final
+uv run python bin/release_gate.py --json
+./setup.sh check
 ```
 
 跨仓库改动分别在各自仓库提交。不要把 SDK 改动和外部 Skills 改动混进同一个 Git 仓库提交。

@@ -12,18 +12,98 @@ Application policy and Adapter persistence contracts live in
 test_prism4_use_cases.py and test_prism4_local_files.py.
 """
 
-from prism4 import JsonReferenceStoreAdapter, LocalFileStoreAdapter
+from prism4 import (
+    Artifact,
+    JsonReferenceStoreAdapter,
+    LocalFileStoreAdapter,
+    ReferenceStore,
+    Relation,
+    SemanticPayload,
+    Topic,
+    clarify_capability,
+    plan_capability,
+    record_decision_operation,
+    review_capability,
+)
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
 BIN_PRISM = SDK_ROOT / "bin" / "prism"
-DOGFOOD_ROOT = SDK_ROOT / "dogfood" / "prism-4-refoundation"
 
 
 def _env() -> dict[str, str]:
     env = os.environ.copy()
     env["PRISM_FALLBACK_QUIET"] = "1"
     return env
+
+
+def _seed_json_store(root: Path) -> Path:
+    store = ReferenceStore()
+    topic = Topic(id="topic:prism-4-refoundation", title="Prism 4.0 Refoundation")
+    child = Topic(
+        id="topic:prism-4-refoundation.phase-2",
+        title="Phase 2",
+        parent_id=topic.id,
+    )
+    store.add_topic(topic)
+    store.add_topic(child)
+
+    intent = Artifact(
+        id="artifact:intent.foundation",
+        topic_id=topic.id,
+        role="intent",
+        title="Foundation Intent",
+        body="Prism 4.0 is a lightweight governance protocol.",
+    )
+    findings = Artifact(
+        id="artifact:findings.initial",
+        topic_id=topic.id,
+        role="findings",
+        title="Initial Findings",
+        body="Keep Core thin.",
+    )
+    plan = Artifact(
+        id="artifact:plan.next",
+        topic_id=topic.id,
+        role="plan",
+        title="Next Plan",
+        body="## 目标\n\nKeep the reference adapter useful.\n\n## 步骤\n\n1. Verify CLI.\n",
+    )
+    payload = SemanticPayload(
+        id="payload:decision-candidate.phase-2",
+        type="decision-candidate",
+        body="Use explicit Decision semantics.",
+    )
+    decision = Artifact(
+        id="artifact:decision.phase-2-json-adapter",
+        topic_id=topic.id,
+        role="decision",
+        title="JSON Adapter Decision",
+        body="Authorize the next plan.",
+    )
+
+    store.invoke(review_capability(), inputs=(intent,), outputs=(findings,))
+    store.invoke(plan_capability(), inputs=(findings,), outputs=(plan,))
+    store.invoke(clarify_capability(), inputs=(findings,), outputs=(payload,))
+    store.invoke(record_decision_operation(), inputs=(payload,), outputs=(decision,))
+    store.add_artifact(
+        Artifact(
+            id="brief:current",
+            topic_id=topic.id,
+            role="brief",
+            title="Brief",
+            body="Recover current context.",
+        )
+    )
+    store.add_relation(
+        Relation(
+            source_ref=decision.id,
+            kind="authorizes",
+            target_ref=plan.id,
+        )
+    )
+    JsonReferenceStoreAdapter(root).save(store)
+    return root
 
 
 def test_bin_prism_points_to_v4_help_surface():
@@ -54,9 +134,10 @@ def test_bin_prism_points_to_v4_help_surface():
     assert "prism legacy" not in result.stdout
 
 
-def test_bin_prism_topic_list_reads_dogfood_state():
+def test_bin_prism_topic_list_reads_json_reference_state(tmp_path: Path):
+    root = _seed_json_store(tmp_path / "state")
     result = subprocess.run(
-        [str(BIN_PRISM), "topic", "list", "--root", str(DOGFOOD_ROOT)],
+        [str(BIN_PRISM), "topic", "list", "--root", str(root)],
         capture_output=True,
         text=True,
         timeout=10,
@@ -68,7 +149,8 @@ def test_bin_prism_topic_list_reads_dogfood_state():
     assert "parent=topic:prism-4-refoundation" in result.stdout
 
 
-def test_bin_prism_artifact_show_reads_dogfood_artifact():
+def test_bin_prism_artifact_show_reads_json_reference_artifact(tmp_path: Path):
+    root = _seed_json_store(tmp_path / "state")
     result = subprocess.run(
         [
             str(BIN_PRISM),
@@ -76,7 +158,7 @@ def test_bin_prism_artifact_show_reads_dogfood_artifact():
             "show",
             "artifact:intent.foundation",
             "--root",
-            str(DOGFOOD_ROOT),
+            str(root),
         ],
         capture_output=True,
         text=True,
@@ -88,7 +170,8 @@ def test_bin_prism_artifact_show_reads_dogfood_artifact():
     assert "lightweight governance protocol" in result.stdout
 
 
-def test_bin_prism_brief_project_does_not_require_saving():
+def test_bin_prism_brief_project_does_not_require_saving(tmp_path: Path):
+    root = _seed_json_store(tmp_path / "state")
     result = subprocess.run(
         [
             str(BIN_PRISM),
@@ -96,7 +179,7 @@ def test_bin_prism_brief_project_does_not_require_saving():
             "project",
             "topic:prism-4-refoundation",
             "--root",
-            str(DOGFOOD_ROOT),
+                str(root),
         ],
         capture_output=True,
         text=True,
@@ -112,8 +195,7 @@ def test_bin_prism_brief_project_does_not_require_saving():
 def test_bin_prism_discovers_workspace_v4_topic_from_repo_root(tmp_path):
     """Hermetic: 桥接目录下发现 4.0 topic（不依赖本机真实 bridge）。"""
     store = tmp_path / "workspace.demo.local" / "topics" / "001_refoundation"
-    store.mkdir(parents=True)
-    copy2(DOGFOOD_ROOT / "prism4-state.json", store / "prism4-state.json")
+    _seed_json_store(store)
     result = subprocess.run(
         [str(BIN_PRISM), "topic", "list"],
         cwd=str(tmp_path),
@@ -143,7 +225,7 @@ def test_bin_prism_legacy_prefix_is_retired():
 
 def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
     root = tmp_path / "state"
-    copytree(DOGFOOD_ROOT, root)
+    _seed_json_store(root)
 
     review = subprocess.run(
         [
@@ -198,7 +280,7 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
 
 def test_bin_prism_review_record_is_the_public_surface(tmp_path):
     root = tmp_path / "state"
-    copytree(DOGFOOD_ROOT, root)
+    _seed_json_store(root)
 
     help_result = subprocess.run(
         [str(BIN_PRISM), "--help"],
@@ -547,7 +629,7 @@ def test_bin_prism_brief_save_overwrites_existing(tmp_path):
 
 def test_review_record_reads_body_from_stdin_and_file(tmp_path):
     root = tmp_path / "state"
-    copytree(DOGFOOD_ROOT, root)
+    _seed_json_store(root)
     body_file = tmp_path / "finding.md"
     body_file.write_text("Findings from a file.\n", encoding="utf-8")
 
@@ -601,7 +683,7 @@ def test_review_record_reads_body_from_stdin_and_file(tmp_path):
 
 def test_review_record_json_is_small_ok_ids_not_legacy_envelope(tmp_path):
     root = tmp_path / "state"
-    copytree(DOGFOOD_ROOT, root)
+    _seed_json_store(root)
 
     trailing = subprocess.run(
         [
@@ -658,7 +740,7 @@ def test_review_record_json_is_small_ok_ids_not_legacy_envelope(tmp_path):
 
 def test_clarify_rejects_two_stdin_options(tmp_path):
     root = tmp_path / "state"
-    copytree(DOGFOOD_ROOT, root)
+    _seed_json_store(root)
     result = subprocess.run(
         [
             str(BIN_PRISM),
