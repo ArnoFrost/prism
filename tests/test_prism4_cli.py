@@ -1,8 +1,9 @@
 import json
 import os
+import stat
 import subprocess
 from pathlib import Path
-from shutil import copytree
+from shutil import copy2, copytree, ignore_patterns
 
 """CLI interaction tests: parse, stdout, exit, stdin, @file, JSON, aliases.
 
@@ -636,3 +637,90 @@ def test_decision_record_help_still_reaches_argparse() -> None:
     )
     assert result.returncode == 0
     assert "record" in result.stdout.lower()
+
+
+def _isolated_product_sdk(tmp_path: Path) -> Path:
+    dut = tmp_path / "sdk"
+    copied = ignore_patterns("__pycache__", "*.pyc", ".DS_Store")
+    copytree(SDK_ROOT / "bin", dut / "bin", ignore=copied)
+    copytree(SDK_ROOT / "prism4", dut / "prism4", ignore=copied)
+    skill_src = next((SDK_ROOT / "skills" / "prism4").glob("*/SKILL.md"))
+    skill_dest = dut / "skills" / "prism4" / skill_src.parent.name
+    skill_dest.mkdir(parents=True)
+    copy2(skill_src, skill_dest / "SKILL.md")
+    copy2(SDK_ROOT / "VERSION", dut / "VERSION")
+    for path in (dut / "bin").iterdir():
+        if path.is_file():
+            path.chmod(path.stat().st_mode | stat.S_IXUSR)
+    assert not (dut / "skills" / "workflow").exists()
+    assert not (dut / "skills" / "workflow" / "shared" / "scripts" / "prism_cli.py").exists()
+    return dut
+
+
+def _isolated_env(tmp_path: Path, dut: Path) -> dict[str, str]:
+    env = _env()
+    home = tmp_path / "home"
+    home.mkdir()
+    env["HOME"] = str(home)
+    source_bin = str((SDK_ROOT / "bin").resolve())
+    parts = [str(dut / "bin")]
+    for part in env.get("PATH", "").split(os.pathsep):
+        if not part:
+            continue
+        try:
+            if str(Path(part).resolve()) == source_bin:
+                continue
+        except OSError:
+            pass
+        parts.append(part)
+    env["PATH"] = os.pathsep.join(parts)
+    return env
+
+
+def test_prism_doctor_does_not_need_prism_cli(tmp_path: Path) -> None:
+    dut = _isolated_product_sdk(tmp_path)
+    env = _isolated_env(tmp_path, dut)
+    result = subprocess.run(
+        [str(dut / "bin" / "prism"), "doctor", "--scope", "ci"],
+        cwd=str(dut),
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=env,
+    )
+    blob = result.stdout + result.stderr
+    assert "legacy CLI not found" not in blob
+    assert result.returncode != 127
+    assert result.returncode == 0, blob
+
+
+def test_prism_relink_still_needs_prism_cli_without_workflow(tmp_path: Path) -> None:
+    dut = _isolated_product_sdk(tmp_path)
+    env = _isolated_env(tmp_path, dut)
+    result = subprocess.run(
+        [str(dut / "bin" / "prism"), "relink", "--no-workspace"],
+        cwd=str(dut),
+        capture_output=True,
+        text=True,
+        timeout=15,
+        env=env,
+    )
+    assert result.returncode == 127
+    assert "legacy CLI not found" in result.stderr
+    assert "prism_cli.py" in result.stderr
+
+
+def test_prism_json_doctor_is_flat_passthrough_not_record_envelope() -> None:
+    result = subprocess.run(
+        [str(BIN_PRISM), "--json", "doctor", "--scope", "ci"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=_env(),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    payload = json.loads(result.stdout.strip().splitlines()[-1])
+    assert "errors" in payload
+    assert "ok" not in payload
+    assert "ids" not in payload

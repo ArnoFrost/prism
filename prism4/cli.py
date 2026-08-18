@@ -52,7 +52,8 @@ SDK_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = SDK_ROOT / "VERSION"
 STATE_FILENAME = "prism4-state.json"
 LEGACY_CLI = SDK_ROOT / "skills" / "workflow" / "shared" / "scripts" / "prism_cli.py"
-SURFACE_LEGACY_VERBS = frozenset({"doctor", "relink", "update", "dist", "sync"})
+SURFACE_BIN_VERBS = frozenset({"doctor"})
+SURFACE_LEGACY_VERBS = frozenset({"relink", "update", "dist", "sync"})
 RETIRED_TOPIC_VERBS = frozenset(
     {
         "archive",
@@ -68,7 +69,6 @@ RETIRED_TOPIC_VERBS = frozenset(
         "validate-trace",
     }
 )
-LEGACY_VERBS = SURFACE_LEGACY_VERBS | RETIRED_TOPIC_VERBS
 FOUR_OH_DECISION_VERBS = frozenset({"record"})
 
 
@@ -98,6 +98,8 @@ def main(argv: list[str] | None = None) -> int:
     if args and args[0] == "--json":
         if len(args) >= 2 and args[1] in RETIRED_TOPIC_VERBS:
             return reject_retired_topic_verb(args[1])
+        if len(args) >= 2 and args[1] in SURFACE_BIN_VERBS:
+            return run_product_bin(args[1], args)
         if len(args) >= 2 and args[1] in SURFACE_LEGACY_VERBS:
             return run_legacy(args)
         json_output = True
@@ -109,6 +111,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_legacy(args[1:])
     if args and args[0] in RETIRED_TOPIC_VERBS:
         return reject_retired_topic_verb(args[0])
+    if args and args[0] in SURFACE_BIN_VERBS:
+        return run_product_bin(args[0], args)
     if args and args[0] in SURFACE_LEGACY_VERBS:
         return run_legacy(args)
     if args and args[0] == "decision":
@@ -637,6 +641,29 @@ def run_legacy(args: list[str]) -> int:
         print(f"error: legacy CLI not found: {LEGACY_CLI}", file=sys.stderr)
         return 127
     return subprocess.call([sys.executable, str(LEGACY_CLI), *args])
+
+
+def run_product_bin(verb: str, args: list[str]) -> int:
+    """Delegate a 4.0 product-surface verb to bin/<verb>.
+
+    Does not import or exec skills/workflow/**. `--json` before or after
+    the verb is forwarded as bin/doctor's own flat-JSON flag, not the
+    4.0 `{ok, ids}` envelope.
+    """
+    rest = list(args)
+    json_prefix = False
+    if rest and rest[0] == "--json":
+        json_prefix = True
+        rest = rest[1:]
+    if rest and rest[0] == verb:
+        rest = rest[1:]
+    if json_prefix and "--json" not in rest:
+        rest = ["--json", *rest]
+    script = SDK_ROOT / "bin" / verb
+    if not script.is_file():
+        print(f"error: bin/{verb} not found: {script}", file=sys.stderr)
+        return 127
+    return subprocess.call([str(script), *rest])
 
 
 def topic_new_root(args: argparse.Namespace) -> Path:

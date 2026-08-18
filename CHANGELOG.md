@@ -5,6 +5,7 @@
 - **4.0 record 表面** — 日常入口改为 `prism review/clarify/plan/decision record`（persist semantic output，不等于授权）。旧 `capability run` 仍作 hidden alias。
 - **Host 运行时独立** — `host attach` 与 `bin/relink` 经 subprocess 调用自包含的 `bin/workspace_resolve.py`，运行时不再依赖 `skills/workflow/**`。resolver 缺失或失败时 fail-closed，禁止 bash 猜测 named/map yaml。
 - **3.x topic 动词退出默认表面** — `prism sniff` / `validate` / `finalize` 等硬拒绝并提示 `prism legacy …`。`doctor` / `relink` / `update` / `dist` / `sync` 仍可直接调用。默认 `prism --help` 不再列出退场动词。`prism --json --help` 与 `prism help` 走同一张壳帮助；裸 `prism decision` 同时提示 4.0 `decision record` 与 `prism legacy decision`。
+- **`prism doctor` 直调 `bin/doctor`** — 默认产品入口不再经 `skills/workflow/**/prism_cli.py`。`relink` / `update` / `dist` / `sync` 仍走 legacy facade。`--json doctor` 保持 bin/doctor flat passthrough。
 - **Host 边界** — Topic 发现收回 `host.py`；配置查询不再进程内 import sniff。
 - **4.0 机器面** — `--body -` / `@path` 读长文本；record `--json` 输出 `{ok, ids}`，不使用 3.x outer schema。
 - **CLI 收尾** — use-case 测试钉住 Plan / Decision authority，并不再依赖 Markdown 序号函数；`docs/cli-contract.md` 明确为 3.x Legacy CLI Contract。
