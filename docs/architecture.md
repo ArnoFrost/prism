@@ -10,9 +10,17 @@
 |----|----------|----------|
 | **Protocol Core** | Topic / Artifact / Capability / Invocation / Decision Semantics | 不是 SDK 仓库，也不是 `AGENTS.md` 这一份文件 |
 | **Reference Experience** | 参考实现怎么好用：CLI、Markdown 适配器、`prism-*` skills、Workspace 桥接、Brief 投影 | 不是第二套 Core |
-| **Legacy Compatibility** | 3.x 叙事与旧 topic 只读布局 | 实现已剔除；git tag `legacy-3x-final` 保管终态 |
+
+历史不是一层叙事，只是归档：3.x 叙事在 [`historical/`](./historical/)，可执行终态由 git tag `legacy-3x-final` 保管。**分支即兼容边界**——兼容由 Git 历史承载，不在工作树里供一份活源码。
 
 禁止再画一张把 Core、Skill、Profile、Workspace、Adapter 并列的总表当「Prism 是什么」。
+
+### 演进原则
+
+064–070 系列实际确立、现行有效的两条：
+
+- **奥卡姆 / 去伪存真**：叙事历史（文档、CHANGELOG）保留；可执行历史（旧实现、shim、fallback）剔除。能由 Git 保管的，不留在工作树。
+- **分支即兼容边界**：旧版本能力用分支/tag 承接，当前分支只承载当前版本。旧 topic 只读，不就地维护双栈。
 
 ---
 

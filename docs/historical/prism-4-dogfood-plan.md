@@ -1,5 +1,5 @@
 ---
-status: draft
+status: historical
 target: Prism 4.0
 type: dogfood-plan
 created: 2026-08-14
@@ -10,7 +10,8 @@ source:
 
 # Prism 4.0 Dogfood Plan
 
-> 本机长期演进计划。本文用于指导 Prism 4.0 在 `prism-4` 分支上从文档地基进入最小实现，同时避免被 3.x workflow、CLI、workspace 结构反向约束。
+> **historical**：本机施工笔记，写于 4.0-canary 起步期。其软切换策略（「不物理删除旧 workflow 文件直到…」）已被 070 的物理剔除超越；4.0 现状以 README 与 architecture.md 为准。
+> 原注：本机长期演进计划。本文用于指导 Prism 4.0 在 `prism-4` 分支上从文档地基进入最小实现，同时避免被 3.x workflow、CLI、workspace 结构反向约束。
 > 语义源是 `prism-4-refoundation-alignment.md`；本文只消费该语义来安排 dogfood，不重新定义协议。
 
 ## 1. Dogfood Principle

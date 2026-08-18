@@ -130,13 +130,12 @@ Prism 对外以 `prism` CLI 为统一日常入口；`./setup.sh init` 保留为�
 | 命令                     | 职责                                                                               |
 | ---------------------- | -------------------------------------------------------------------------------- |
 | `bin/setup`            | 一键初始化 / 健康检查 / 重配置检测（仓库→配置→relink→IDE→报告，`--check` 仅检查，`--non-interactive` 脚本调用） |
-| `bin/doctor`           | 统一体检入口（`--scope env/skill/sync/cli/config/release`，`--fix` 非破坏性自动修复）             |
+| `bin/doctor`           | 统一体检入口（`--scope env/skill/cli/config/release`，`--fix` 非破坏性自动修复）             |
 | `bin/setenv`           | 管理 `prism.local.yaml` 配置                                                         |
 | `bin/relink`           | 刷新项目/Skills IDE 软链接；默认分发 4.0 semantic skills                                          |
 | `bin/create-skill`     | 从模板创建新 skill 骨架（支持 `--layer sdk/skills/env`）                                     |
 | `bin/validate-skills`  | 扫描全量 skill frontmatter 合规性                                                       |
-| `bin/clean`            | 归档技能管理（`--add/--restore/--list`）                                                 |
-| `bin/rename-artifacts` | 批量重命名产物                                                                          |
+| `bin/clean`            | relink 逆操作（清理软链）+ 归档技能管理（`--add/--restore/--list`）                                                 |
 
 
 ### `prism <verb>` — 4.0 reference CLI
@@ -179,9 +178,8 @@ prism --help
 - **改名/删除走双 minor 保留**：破坏性变更在 N+1 引入新命令并对旧命令打 WARN，N+2 才移除
 - **experimental 标记**：标注为 experimental 的 verb（当前含 4.0 `topic / artifact / brief / review / clarify / plan / decision` 与部分 facade）可能在下一个 minor 改名或改参数
 - **历史 breaking change**：`prism pipeline` 已物理移除；3.x 实现整体剔除见 [docs/migration.md](docs/migration.md)
-- **historic exemption**：`prism sync` 是唯一历史豁免（实际偏 `bin/` 语义），**不可援引为新豁免的先例**
 
-> 完整命令面契约、分层判断树、稳定性分级与破坏性变更策略见 [docs/cli-contract.md](docs/cli-contract.md)。
+> 3.x 时代的完整命令面契约已归档：[docs/historical/cli-contract.md](docs/historical/cli-contract.md)。4.0 当前命令面以 `prism --help` 为准。
 
 ---
 
@@ -190,6 +188,11 @@ prism --help
 棱镜本身不发光，它只负责折射光线。
 
 Prism 在 AI 协作里的角色也是如此——共享规则保留在上游，本地上下文保留在个人工作区，两者通过轻量协议与软链接完成折射融合。
+
+两条演进原则（064–070 系列确立）：
+
+- **去伪存真**：叙事历史（文档、CHANGELOG）保留；可执行历史（旧实现、shim、fallback）剔除。
+- **分支即兼容边界**：旧版本由 git 分支 / tag 承接（3.x 终态见 `legacy-3x-final`），当前分支只承载当前版本。
 
 ---
 

@@ -1,6 +1,6 @@
 # Prism 安装后日常操作
 
-> **定位**：`./setup.sh init` 完成后的命令面与习惯路径。4.0 当前命令面看 `prism --help`；3.x legacy verb 契约 → [cli-contract.md](./cli-contract.md)。
+> **定位**：`./setup.sh init` 完成后的命令面与习惯路径。4.0 当前命令面看 `prism --help`；3.x 历史契约 → [historical/cli-contract.md](./historical/cli-contract.md)。
 >
 > **尚未 init** → [SETUP_GITHUB.md](../SETUP_GITHUB.md)（人类）· [SETUP_AGENT.md](../SETUP_AGENT.md)（Agent）
 
@@ -45,7 +45,7 @@ setup.sh init → prism --version 验收 → relink / 桥接
 | **旧包维护** | `prism dist --adapter-info` | experimental；mini/full 仅 legacy maintenance-only |
 | **桥接修复** | `prism relink` | 软链漂移时 |
 
-> **`prism doctor --json`** 不是 outer envelope。见 [cli-contract §4.3](./cli-contract.md)。
+> **`prism doctor --json`** 不是 outer envelope（历史 3.x envelope 见 [historical/cli-contract.md](./historical/cli-contract.md)）。
 
 ---
 

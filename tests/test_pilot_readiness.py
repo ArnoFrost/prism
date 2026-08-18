@@ -46,7 +46,7 @@ def test_pilot_entry_is_discoverable_from_public_docs() -> None:
     readme = _read(README)
     l1, _, rest = docs_index.partition("## A —")
     assert "[3.2-pilot.md](./historical/3.2-pilot.md)" in docs_index
-    assert "## C — 3.x legacy / historical" in docs_index
+    assert "## C — 历史归档" in docs_index
     assert "3.2-pilot" not in l1
     assert "workspace-v3-upgrade" not in l1
     assert "prism-4-dogfood-plan" not in l1
