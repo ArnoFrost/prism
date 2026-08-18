@@ -432,6 +432,22 @@ def main() -> None:
         for key, value in fields:
             if value is not None:
                 print(f"{key}\t{value}")
+        # 默认 workspace 的 workspace_git（供 setenv --export → 定时同步脚本）
+        wg = (workspaces.get(default_ws) or {}).get("workspace_git") or {}
+        if wg.get("present"):
+            wg_fields = (
+                ("WG_ENABLED", "true" if wg.get("enabled") else "false"),
+                ("WG_BRANCH", wg.get("branch")),
+                ("WG_REMOTE", wg.get("remote")),
+                ("WG_DEBOUNCE", wg.get("debounce_seconds")),
+                ("WG_INTERVAL_MINUTES", wg.get("interval_minutes")),
+                ("WG_LARGE_FILE_MB", wg.get("large_file_mb")),
+                ("WG_NOTIFY_SUCCESS", "true" if wg.get("notify_on_success") else "false"),
+                ("WG_NOTIFY_BLOCK", "true" if wg.get("notify_on_block") else "false"),
+            )
+            for key, value in wg_fields:
+                if value is not None:
+                    print(f"{key}\t{value}")
         return
 
     if args.code:

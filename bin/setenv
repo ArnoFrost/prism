@@ -50,9 +50,11 @@ _resolve_config() {
   "${runner[@]}" "$resolver" --config "$CONFIG" --config-tsv 2>/dev/null
 }
 
-# 填充 VAULT / WS_SUB / WS_ROOT / DEFAULT_WS（成功返回 0）
+# 填充 VAULT / WS_SUB / WS_ROOT / DEFAULT_WS / WG_*（成功返回 0）
 _load_workspace_fields() {
   VAULT=""; WS_SUB=""; WS_ROOT=""; DEFAULT_WS=""
+  WG_ENABLED=""; WG_BRANCH=""; WG_REMOTE=""; WG_DEBOUNCE=""
+  WG_INTERVAL_MINUTES=""; WG_LARGE_FILE_MB=""; WG_NOTIFY_SUCCESS=""; WG_NOTIFY_BLOCK=""
   local line k v
   while IFS=$'\t' read -r k v; do
     case "$k" in
@@ -60,6 +62,8 @@ _load_workspace_fields() {
       WS_SUBDIR) WS_SUB="$v" ;;
       WS_ROOT) WS_ROOT="$v" ;;
       DEFAULT_WORKSPACE) DEFAULT_WS="$v" ;;
+      WG_ENABLED|WG_BRANCH|WG_REMOTE|WG_DEBOUNCE|WG_INTERVAL_MINUTES|WG_LARGE_FILE_MB|WG_NOTIFY_SUCCESS|WG_NOTIFY_BLOCK)
+        eval "$k=\"$v\"" ;;
     esac
   done < <(_resolve_config) || return 1
   [[ -n "$VAULT" ]]
@@ -176,6 +180,17 @@ do_export() {
   echo "export PRISM_WORKSPACE_ROOT=\"${vault}\""
   echo "export PRISM_VAULT=\"${vault}\""  # deprecated compatibility alias
   echo "export PRISM_WORKSPACE=\"${ws_root}\""
+  # workspace_git（定时同步脚本消费）；未配置则不输出，由调用方走默认值
+  if [[ -n "$WG_ENABLED" ]]; then
+    echo "export PRISM_WORKSPACE_GIT_ENABLED=\"${WG_ENABLED}\""
+    echo "export PRISM_WORKSPACE_GIT_BRANCH=\"${WG_BRANCH}\""
+    echo "export PRISM_WORKSPACE_GIT_REMOTE=\"${WG_REMOTE}\""
+    echo "export PRISM_WORKSPACE_GIT_DEBOUNCE=\"${WG_DEBOUNCE}\""
+    echo "export PRISM_WORKSPACE_GIT_INTERVAL_MINUTES=\"${WG_INTERVAL_MINUTES}\""
+    echo "export PRISM_WORKSPACE_GIT_LARGE_FILE_MB=\"${WG_LARGE_FILE_MB}\""
+    echo "export PRISM_WORKSPACE_GIT_NOTIFY_SUCCESS=\"${WG_NOTIFY_SUCCESS}\""
+    echo "export PRISM_WORKSPACE_GIT_NOTIFY_BLOCK=\"${WG_NOTIFY_BLOCK}\""
+  fi
 
   local device_id
   device_id=$(yaml_get device_id)
