@@ -331,6 +331,8 @@ def test_prism_plan_skill_is_active_but_not_workflow_or_authority() -> None:
     assert "主动设计下一段行动结构" in plan_skill
     assert "可用、权威且相关的上下文" in plan_skill
     assert "Existing Plan 可作为 replanning 输入" in plan_skill
+    assert "不要为了“同步一下”再生成一份内容等价的新 Plan" in plan_skill
+    assert "不要把已持久化的 Plan 文件整体作为新 Plan 正文" in plan_skill
     assert "规划深度应随任务复杂度调整" in plan_skill
     assert "自检（Self-review）是 Plan 内部质量控制，不自动产生 Findings" in plan_skill
     assert "prism plan record" not in plan_skill
@@ -398,6 +400,8 @@ def test_findings_format_prioritizes_human_readability_without_changing_authorit
         assert phrase in review_skill
     assert "仍然是 advisory，不构成授权" in artifact_format
     assert "先帮助人类把握局势" in review_skill
+    assert "若现有 Findings 已足够表达本轮判断，直接引用现有 Findings" in review_skill
+    assert "不要把已持久化的 Findings 文件整体作为新 Findings 正文" in review_skill
 
 
 def test_open_source_readiness_review_is_indexed_and_actionable() -> None:

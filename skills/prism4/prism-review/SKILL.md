@@ -62,6 +62,10 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 
 密度规则：一次 Review 优先收敛为一条 Findings，内部用 F1/F2/F3 表达多个发现。只有当边界不同、证据来源不同、后续 owner/决策不同，或需要分别 supersede 时，才拆成多条 Findings。不要把每个小洞察都单独落盘成稀碎记忆条目。
 
+落盘前先检查当前 Topic 是否已有等价 Findings。若现有 Findings 已足够表达本轮判断，直接引用现有 Findings；只有判断发生实质变化、证据来源不同、或需要保留审视演进时才新建 Findings，并说明如何 supersede 旧 Findings。
+
+不要把已持久化的 Findings 文件整体作为新 Findings 正文。若输入是一份已有 Findings Artifact，应抽取有效判断后改写，或在需要保留历史时生成新的 Review Findings 并标明 supersedes 关系。
+
 可读性规则：Findings 要先帮助人类把握局势，再展开证据。长 Review 不要一开始就进入代码点或机械 F 编号；先给 TL;DR、问题脉络和发现地图。每个 F 项优先按「论点 / 依据 / 影响 / 建议」写清楚，避免只给结论或只堆细节。
 
 ```markdown

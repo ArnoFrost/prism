@@ -31,7 +31,7 @@ Plan 会根据当前可用的协作状态主动设计下一段行动结构；它
 
 使用可用、权威且相关的上下文，尤其是 Intent 与适用的 Decisions。Brief、Findings、references、当前用户指令与 Existing Plan 可提供额外规划上下文。
 
-Existing Plan 可作为 replanning 输入，用于修订、细化或 supersede 旧行动结构。
+Existing Plan 可作为 replanning 输入，用于修订、细化或 supersede 旧行动结构。若现有 Plan 已足够表达当前行动结构，不要为了“同步一下”再生成一份内容等价的新 Plan，直接引用现有 Plan 即可。
 
 ## 调用条件
 
@@ -91,6 +91,8 @@ Plan 的语义要求是：
 
 仅在用户要求、或当前 Prism 上下文需要持久工件（durable artifact）时持久化 Plan。持久化机制属于当前 adapter，不属于 Plan 语义。
 
+落盘前先检查当前 Topic 是否已有等价 Plan。只有行动结构发生实质变化、或需要保留 replanning 历史时才新建 Plan；这种情况应说明新 Plan 如何 supersede 旧 Plan。
+
 ## 自检（Self-review）
 
 输出前自检：
@@ -100,6 +102,7 @@ Plan 的语义要求是：
 - 是否偷偷扩大边界？
 - 是否把 assumption 当成事实？
 - 是否私自决定 material choice？
+- 是否重复落盘已有 Plan，或把带 frontmatter 的 Plan Artifact 包进新 Plan？
 - 依赖关系与执行顺序是否合理？
 - Plan 是否足够显式，让预期执行者无需重建隐藏推理即可行动？
 - 是否有成功或验证信号？
@@ -111,3 +114,5 @@ Plan 的语义要求是：
 ## 落盘边界
 
 仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘。落盘后仍是 advisory / regenerable，除非后续有效 authority 接受它。
+
+不要把已持久化的 Plan 文件整体作为新 Plan 正文。若输入是一份已有 Plan Artifact，应抽取其有效内容后改写，或在需要保留历史时生成新的 replanning Plan 并标明 supersedes 关系。

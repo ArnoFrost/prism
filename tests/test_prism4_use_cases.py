@@ -130,6 +130,34 @@ def test_record_review_can_supersede_existing_findings():
     )
 
 
+def test_record_review_rejects_wrapping_persisted_findings_artifact():
+    store = _topic_store()
+    body = """---
+id: "finding:f01"
+role: "findings"
+title: "旧风险评审"
+topic: "topic:demo"
+---
+## 摘要
+
+不要把整份 Findings 再包一层。
+"""
+
+    try:
+        record_review(
+            store,
+            topic_id="topic:demo",
+            body=body,
+            next_artifact_id=fake_artifact_id,
+        )
+    except PrismProtocolError as error:
+        assert "persisted Findings artifact" in str(error)
+    else:
+        raise AssertionError(
+            "record_review should reject nested persisted Findings bodies"
+        )
+
+
 def test_record_review_infers_title_from_summary_when_omitted():
     store = _topic_store()
     body = (
@@ -215,6 +243,34 @@ def test_record_plan_can_supersede_existing_plan():
         and relation.target_ref == old_id
         for relation in store.relations
     )
+
+
+def test_record_plan_rejects_wrapping_persisted_plan_artifact():
+    store = _topic_store()
+    body = """---
+id: "plan:p01"
+role: "plan"
+title: "旧行动结构"
+topic: "topic:demo"
+---
+# Plan: 旧行动结构
+
+## 目标
+
+不要把整份 Plan 再包一层。
+"""
+
+    try:
+        record_plan(
+            store,
+            topic_id="topic:demo",
+            body=body,
+            next_artifact_id=fake_artifact_id,
+        )
+    except PrismProtocolError as error:
+        assert "persisted Plan artifact" in str(error)
+    else:
+        raise AssertionError("record_plan should reject nested persisted Plan bodies")
 
 
 def test_record_clarify_increments_payload_ids_without_explicit_ids():

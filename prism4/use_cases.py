@@ -124,6 +124,11 @@ def record_review(
 ) -> tuple[str, str]:
     if topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {topic_id}")
+    if _looks_like_persisted_artifact(body, role="findings", id_namespace="finding"):
+        raise PrismProtocolError(
+            "review body appears to contain a persisted Findings artifact; "
+            "rewrite the body or supersede the existing Findings instead"
+        )
     inputs = topic_artifacts(store, topic_id, roles=("intent", "brief", "plan"))
     findings = Artifact(
         id=artifact_id or next_artifact_id(store, "findings"),
@@ -275,6 +280,11 @@ def record_plan(
 ) -> tuple[str, str]:
     if topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {topic_id}")
+    if _looks_like_persisted_plan(body):
+        raise PrismProtocolError(
+            "plan body appears to contain a persisted Plan artifact; "
+            "rewrite the body or supersede the existing Plan instead"
+        )
     inputs = topic_artifacts(
         store, topic_id, roles=("intent", "brief", "findings", "decision")
     )
@@ -296,6 +306,26 @@ def record_plan(
     )
     _add_relations(store, plan_artifact.id, "supersedes", supersedes)
     return plan_artifact.id, invocation.id
+
+
+def _looks_like_persisted_plan(body: str) -> bool:
+    return _looks_like_persisted_artifact(body, role="plan", id_namespace="plan")
+
+
+def _looks_like_persisted_artifact(
+    body: str,
+    *,
+    role: str,
+    id_namespace: str,
+) -> bool:
+    match = re.match(r"\A\s*---\n(?P<frontmatter>.*?)\n---(?:\n|\Z)", body, re.DOTALL)
+    if not match:
+        return False
+    frontmatter = match.group("frontmatter")
+    return bool(
+        re.search(rf'(?m)^\s*role:\s*["\']?{re.escape(role)}["\']?\s*$', frontmatter)
+        or re.search(rf'(?m)^\s*id:\s*["\']?{re.escape(id_namespace)}:', frontmatter)
+    )
 
 
 def record_decision(
