@@ -26,6 +26,7 @@ prism brief project <topic_id> --root <topic_dir>
 
 - 若 Brief 与 Intent、Findings、Decision 语义或 Plan 冲突，把冲突识别为 Finding 或请求澄清。不要默许把 Brief 当作权威。
 - Brief 太空时，不要手写一份私货 Brief。应补充源工件：Intent 给边界，Plan 给当前推进结构，Findings 给风险/缺口，Decision 给承诺；阅读面漂移时用 `/prism-compress`。
+- 若 Brief 投影不出「进度」或「下一步」，优先检查当前 Plan 是否缺 `## 步骤`，或是否只是指向 `references/` 的一段摘要。修源工件，不手写 Brief 补洞。
 - 不要从本技能创建 3.x `focus.md` 或改写旧 workflow 文件。
 - Brief 章节（目标 / 验收 / 已承诺 / 进度 / 未决 / 已消化 / 下一步 / 投影导航）以 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 为准。本技能只投影，不归档假待办、不改历史件。阅读面漂移时改用 `/prism-compress`。
 

@@ -56,13 +56,14 @@ def create_topic(
 ) -> str:
     topic = store.add_topic(Topic(id=topic_id, title=title, parent_id=parent_id))
     if intent_body:
+        readable_intent = _initial_intent_body(intent_body)
         store.add_artifact(
             Artifact(
                 id=next_artifact_id(store, "intent"),
                 topic_id=topic.id,
                 role="intent",
                 title=f"{topic.title} Intent",
-                body=intent_body,
+                body=readable_intent,
                 metadata={
                     "authority": "authoritative",
                     "evolution": "supersedable",
@@ -71,6 +72,28 @@ def create_topic(
             )
         )
     return topic.id
+
+
+def _initial_intent_body(body: str) -> str:
+    text = body.strip()
+    if "\n## " in f"\n{text}":
+        return text
+    return (
+        "## 为什么做\n\n"
+        f"{text}\n\n"
+        "## 北极星\n\n"
+        "未声明。\n\n"
+        "## 边界内\n\n"
+        "围绕本 Topic 的协作问题空间展开。\n\n"
+        "## 不做什么\n\n"
+        "未声明。\n\n"
+        "## 关键约束\n\n"
+        "未声明。\n\n"
+        "## 完成条件\n\n"
+        "未声明。\n\n"
+        "## 当前落点\n\n"
+        "Topic 刚创建；后续由 Findings、Decision、Plan 与 Brief 补足当前态。"
+    )
 
 
 def persist_brief(
@@ -132,7 +155,17 @@ def infer_review_title(body: str) -> str:
         if not match:
             continue
         heading = match.group(1).strip()
-        if heading in {"摘要", "发现", "对下一步的影响", "目标", "步骤", "验证", "风险"}:
+        if heading in {
+            "摘要",
+            "问题脉络",
+            "发现地图",
+            "发现",
+            "对下一步的影响",
+            "目标",
+            "步骤",
+            "验证",
+            "风险",
+        }:
             continue
         if "—" in heading:
             heading = heading.rsplit("—", 1)[1].strip()

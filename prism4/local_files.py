@@ -532,9 +532,26 @@ def _topic_frontmatter(topic: Topic) -> dict[str, Any]:
 
 
 def _topic_body(topic: Topic) -> str:
+    navigation = (
+        "## 阅读入口\n\n"
+        "| 想恢复什么 | 看哪里 |\n"
+        "|------------|--------|\n"
+        "| 协作边界与完成条件 | `intent.md` |\n"
+        "| 当前上下文切片 | `brief.md`（生成后） |\n"
+        "| 当前行动结构 | `plans/` |\n"
+        "| 观察、风险与建议 | `findings/` |\n"
+        "| 已授权承诺 | `decisions/` |\n"
+        "| 调研、证据与长材料 | `references/` |\n\n"
+        "`topic.md` 是 Topic 的机械锚点与导航门牌，不是事实源；"
+        "边界以 Intent 为准，承诺以 Decision 为准，恢复上下文优先看 Brief。\n"
+    )
     if topic.parent_id:
-        return f"# {topic.title}\n\n本主题是 `{topic.parent_id}` 的子主题，承载一个需要独立上下文的子问题。\n"
-    return f"# {topic.title}\n\n本主题界定一个持续协作的问题空间。\n"
+        return (
+            f"# {topic.title}\n\n"
+            f"本主题是 `{topic.parent_id}` 的子主题，承载一个需要独立上下文的子问题。\n\n"
+            f"{navigation}"
+        )
+    return f"# {topic.title}\n\n本主题界定一个持续协作的问题空间。\n\n{navigation}"
 
 
 def _topic_from_document(document: Path) -> Topic:

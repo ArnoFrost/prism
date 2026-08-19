@@ -81,6 +81,10 @@ def test_roundtrip_preserves_topics_artifacts_and_payloads(tmp_path: Path) -> No
     assert (tmp_path / "references").is_dir()
     assert (tmp_path / "children" / "child" / "topic.md").is_file()
     assert (tmp_path / "children" / "child" / "references").is_dir()
+    topic_text = (tmp_path / "topic.md").read_text(encoding="utf-8")
+    assert "## 阅读入口" in topic_text
+    assert "`topic.md` 是 Topic 的机械锚点与导航门牌，不是事实源" in topic_text
+    assert "`intent.md`" in topic_text and "`brief.md`" in topic_text
 
     reloaded = adapter.load()
 

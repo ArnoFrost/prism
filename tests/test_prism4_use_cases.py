@@ -59,6 +59,28 @@ def test_create_topic_writes_authoritative_intent():
     )
     assert intent.metadata["authority"] == "authoritative"
     assert intent.metadata["evolution"] == "supersedable"
+    assert "## 为什么做" in intent.body
+    assert "Keep the core thin." in intent.body
+    assert "## 完成条件" in intent.body
+
+
+def test_create_topic_preserves_structured_intent_body():
+    store = ReferenceStore()
+    body = "## 为什么做\n\n已有结构。\n\n## 完成条件\n\n可验证。"
+    create_topic(
+        store,
+        topic_id="topic:structured",
+        title="Structured",
+        intent_body=body,
+        next_artifact_id=fake_artifact_id,
+    )
+
+    intent = next(
+        artifact
+        for artifact in store.artifacts.values()
+        if artifact.role == "intent"
+    )
+    assert intent.body == body
 
 
 def test_record_review_sets_advisory_findings_and_intent_brief_plan_inputs():
@@ -131,6 +153,20 @@ def test_infer_review_title_falls_back_to_first_finding_heading():
     body = "## 发现\n\n### F1 风险·中 — Brief 索引提示容易误导\n"
 
     assert infer_review_title(body) == "Brief 索引提示容易误导"
+
+
+def test_infer_review_title_skips_readability_headings():
+    body = (
+        "## 问题脉络\n\n"
+        "这里先解释背景。\n\n"
+        "## 发现地图\n\n"
+        "| ID | 判断 |\n"
+        "|----|------|\n"
+        "## 发现\n\n"
+        "### F1 风险·中 — Findings 可读性需要先给总判断\n"
+    )
+
+    assert infer_review_title(body) == "Findings 可读性需要先给总判断"
 
 
 def test_record_plan_sets_advisory_regenerable_and_expected_inputs():

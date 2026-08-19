@@ -296,6 +296,70 @@ def test_plan_format_matches_reference_record_plan_semantics() -> None:
     assert '"authority": "advisory"' in use_cases
     assert '"evolution": "regenerable"' in use_cases
     assert 'authority: "operative"' not in artifact_format
+    assert "Plan 不是旧 3.x Scope 的替身" in artifact_format
+    assert "references 可以承载 diff、证据、风险矩阵或长分析" in artifact_format
+
+
+def test_plan_guidance_stays_advisory_and_not_scope() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    review_skill = (
+        ROOT / "skills" / "prism4" / "prism-review" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    brief_skill = (
+        ROOT / "skills" / "prism4" / "prism-brief" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "它不是旧 Scope" in readme
+    assert "prism plan record" in review_skill
+    assert "缺 `## 步骤`" in brief_skill
+    assert "/prism-plan" not in readme
+    assert "/prism-plan" not in review_skill
+
+
+def test_topic_doorway_guidance_keeps_topic_md_as_navigation_not_source() -> None:
+    artifact_format = (
+        ROOT
+        / "skills"
+        / "prism4"
+        / "prism-compress"
+        / "references"
+        / "artifact-format.md"
+    ).read_text(encoding="utf-8")
+    topic_skill = (
+        ROOT / "skills" / "prism4" / "prism-topic" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    local_files = (ROOT / "prism4" / "local_files.py").read_text(encoding="utf-8")
+
+    assert "Topic doorway — `topic.md`" in artifact_format
+    assert "不是 Core Artifact role，也不是事实源" in artifact_format
+    assert "不要把 `topic.md` 扩写成 README、Scope 或 Brief" in artifact_format
+    assert "`topic.md` 是机械锚点与导航门牌，不是事实源" in topic_skill
+    assert "## 阅读入口" in local_files
+
+
+def test_findings_format_prioritizes_human_readability_without_changing_authority() -> None:
+    artifact_format = (
+        ROOT
+        / "skills"
+        / "prism4"
+        / "prism-compress"
+        / "references"
+        / "artifact-format.md"
+    ).read_text(encoding="utf-8")
+    review_skill = (
+        ROOT / "skills" / "prism4" / "prism-review" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    for phrase in [
+        "TL;DR",
+        "## 问题脉络",
+        "## 发现地图",
+        "论点 / 依据 / 影响 / 建议",
+    ]:
+        assert phrase in artifact_format
+        assert phrase in review_skill
+    assert "仍然是 advisory，不构成授权" in artifact_format
+    assert "先帮助人类把握局势" in review_skill
 
 
 def test_open_source_readiness_review_is_indexed_and_actionable() -> None:
