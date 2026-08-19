@@ -326,17 +326,23 @@ def test_prism_plan_skill_is_active_but_not_workflow_or_authority() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
 
-    assert "Plan designs action" in plan_skill
-    assert "Plan does not commit a material choice" in plan_skill
-    assert "input-polymorphic within contract" in plan_skill
+    assert "Plan 设计行动" in plan_skill
+    assert "不能替用户提交 material choice" in plan_skill
+    assert "主动设计下一段行动结构" in plan_skill
+    assert "可用、权威且相关的上下文" in plan_skill
     assert "Existing Plan 可作为 replanning 输入" in plan_skill
-    assert "Planning depth should scale with task complexity" in plan_skill
-    assert "Self-review 是 Plan 内部质量控制，不自动产生 Findings" in plan_skill
-    assert "不要创建 3.x `scope.md`" in plan_skill
+    assert "规划深度应随任务复杂度调整" in plan_skill
+    assert "自检（Self-review）是 Plan 内部质量控制，不自动产生 Findings" in plan_skill
+    assert "prism plan record" not in plan_skill
     assert "主动设计 advisory 行动结构" in readme
     assert "不定义边界或授权" in architecture
 
     forbidden = [
+        "Scope / Focus / Task / Wave",
+        "scope.md",
+        "focus.md",
+        "task.index.md",
+        "execute 游标",
         "Clarify -> Review -> Plan",
         "Review -> Clarify -> Plan",
         "Plan -> Execute",
