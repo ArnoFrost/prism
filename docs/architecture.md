@@ -108,6 +108,7 @@ Prism 4.0 的默认分发面不是固定 workflow，而是围绕协议原语组�
 | `prism-brief` | `/prism-brief` | 生成 Brief projection，用于 context recovery |
 | `prism-review` | `/prism-review` | 运行 Review 能力，输出 Findings |
 | `prism-clarify` | `/prism-clarify` | 单问澄清，输出候选 payload |
+| `prism-plan` | `/prism-plan` | 主动设计 advisory 行动结构，不定义边界或授权 |
 | `prism-compress` | `/prism-compress` | 低频对齐压缩阅读面，再生成 Brief |
 
 `bin/relink` 的分发面只有 `prism4`；`--skill-profile legacy/all` 会诚实报错并指向 git tag。
@@ -119,9 +120,11 @@ flowchart LR
   T["Topic"] --> A["Artifact"]
   RV["Review"] --> FN["Findings"]
   CL["Clarify"] --> CD["候选"]
+  PL["Plan"] --> PA["Plan Artifact"]
   DC["Decision"]
   BR["Brief 投影"]
   FN --> A
+  PA --> A
   DC --> A
   BR -.-> A
   CL -. "按需" .-> DC
@@ -195,6 +198,7 @@ prism/
 │   │   ├── prism-brief/
 │   │   ├── prism-review/
 │   │   ├── prism-clarify/
+│   │   ├── prism-plan/
 │   │   └── prism-compress/
 │   └── README.md
 ├── tests/                           # 4.0 reference adapter / docs / setup guards

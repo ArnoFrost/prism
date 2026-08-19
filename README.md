@@ -156,7 +156,7 @@ Protocol Core 保持很小：
 | 生成上下文恢复切片 | `prism brief project` · `/prism-brief` |
 | 留下审视结果 | `prism review record` · `/prism-review` |
 | 澄清一个阻塞歧义 | `prism clarify record` · `/prism-clarify` |
-| 记录候选 Plan | `prism plan record`，把已清楚的方向整理成行动结构 |
+| 主动设计行动结构 | `prism plan record` · `/prism-plan` |
 | 记录已授权 Decision | `prism decision record` |
 | 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
 
@@ -168,10 +168,11 @@ Use what the situation needs:
 | `/prism-brief` | 恢复当前上下文切片 |
 | `/prism-review` | 审视现状并输出 Findings |
 | `/prism-clarify` | 只澄清一个阻塞取舍 |
+| `/prism-plan` | 主动设计 advisory 行动结构 |
 | `/prism-compress` | 低频对齐阅读面并再生成 Brief |
 
 这些 skills 是能力菜单，不是顺序管线。Review 不自动进入 Clarify，Plan 不自动获得授权，Decision 才记录承诺。
-Plan 只回答当前怎么做：目标、步骤、验证与风险。它不是旧 Scope，也不负责定义边界或拍板；边界看 Intent，授权看 Decision。
+Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不负责定义边界或拍板；边界看 Intent，授权看 Decision。
 
 完整 CLI 面看：
 

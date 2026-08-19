@@ -23,6 +23,7 @@ user_invocable: true
 | `/prism-brief` | 从当前有效状态**再生成**恢复切片 | Brief 不归档、不改历史件、不写 Plan |
 | `/prism-review` | 暴露风险/缺口/取舍 | Findings 不授权整理 |
 | `/prism-clarify` | 一次澄清一个阻塞取舍 | 候选不是归档许可 |
+| `/prism-plan` | 主动设计行动结构 | Plan 不定义边界、不授权、不执行 |
 | 3.x `workflow-tidy` | 机械指针/frontmatter | 4.0 序号与索引由 CLI 重建，Tidy 默认退后 |
 | 3.x `workflow-compact` | 旧 topic 压实 | 不用于 4.0 Topic |
 

@@ -64,6 +64,7 @@ def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:
         "prism-brief",
         "prism-review",
         "prism-clarify",
+        "prism-plan",
         "prism-compress",
     ):
         entry = _catalog_entry(skill_id)

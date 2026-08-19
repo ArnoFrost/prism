@@ -30,7 +30,8 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     skills_readme = (ROOT / "skills" / "README.md").read_text(encoding="utf-8")
 
     assert "/prism-topic" in readme and "prism topic list" in readme
-    assert "/prism-brief" in onboarding and "prism review record" in onboarding
+    assert "/prism-brief" in onboarding and "/prism-plan" in onboarding
+    assert "prism review record" in onboarding
     assert "prism4/cli.py" in bin_readme and "legacy-3x-final" in bin_readme
     assert "{ok, ids}" in bin_readme
     contract = (ROOT / "docs" / "historical" / "cli-contract.md").read_text(
@@ -40,6 +41,7 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     assert "所有 `prism` verb" not in contract
     assert "4.0 semantic skill surface" in skills_readme
     assert "唯一分发面" in skills_readme and "skills/prism4" in skills_readme
+    assert "prism-plan" in skills_readme
 
 
 def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() -> None:
@@ -208,6 +210,7 @@ def test_readme_open_source_doorway_contract() -> None:
     assert "五个 Core 原语" not in readme
     assert "Small protocol surface" in readme
     assert "不是顺序管线" in readme
+    assert "/prism-plan" in readme
     assert "What Gets Created" not in readme
     assert "会创建什么" in readme
     assert "uv run python bin/release_gate.py --json" in readme
@@ -312,8 +315,37 @@ def test_plan_guidance_stays_advisory_and_not_scope() -> None:
     assert "它不是旧 Scope" in readme
     assert "prism plan record" in review_skill
     assert "缺 `## 步骤`" in brief_skill
-    assert "/prism-plan" not in readme
+    assert "/prism-plan" in readme
     assert "/prism-plan" not in review_skill
+
+
+def test_prism_plan_skill_is_active_but_not_workflow_or_authority() -> None:
+    plan_skill = (
+        ROOT / "skills" / "prism4" / "prism-plan" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+
+    assert "Plan designs action" in plan_skill
+    assert "Plan does not commit a material choice" in plan_skill
+    assert "input-polymorphic within contract" in plan_skill
+    assert "Existing Plan 可作为 replanning 输入" in plan_skill
+    assert "Planning depth should scale with task complexity" in plan_skill
+    assert "Self-review 是 Plan 内部质量控制，不自动产生 Findings" in plan_skill
+    assert "不要创建 3.x `scope.md`" in plan_skill
+    assert "主动设计 advisory 行动结构" in readme
+    assert "不定义边界或授权" in architecture
+
+    forbidden = [
+        "Clarify -> Review -> Plan",
+        "Review -> Clarify -> Plan",
+        "Plan -> Execute",
+        "Plan authorizes",
+        "Plan commits",
+        "Plan defines Intent",
+    ]
+    for phrase in forbidden:
+        assert phrase not in plan_skill
 
 
 def test_topic_doorway_guidance_keeps_topic_md_as_navigation_not_source() -> None:

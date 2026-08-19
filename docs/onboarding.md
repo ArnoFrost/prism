@@ -109,7 +109,7 @@ prism plan record <topic_id> --body "..." --supersedes plan:p01
 prism decision record <topic_id> --body "..." --authorizes plan:p02
 ```
 
-Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-compress`。
+Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-plan` · `/prism-compress`。
 
 `--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；Decision authorizes 后才形成可执行承诺。
 

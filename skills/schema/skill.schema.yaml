@@ -92,12 +92,13 @@ loading:
 # Skill categories in Prism
 categories:
   prism4:
-    description: "Prism 4.0 semantic skills for Topic / Brief / Review / Clarify / Compress"
+    description: "Prism 4.0 semantic skills for Topic / Brief / Review / Clarify / Plan / Compress"
     examples:
       - prism-topic
       - prism-brief
       - prism-review
       - prism-clarify
+      - prism-plan
       - prism-compress
   utility:
     description: "General-purpose tools"

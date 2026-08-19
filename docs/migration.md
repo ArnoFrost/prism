@@ -19,7 +19,7 @@
 | 默认 topic 动词 | `prism sniff / validate / finalize / status …` 直接可用 | 3.x 实现已从分支剔除，统一报「已剔除 + tag 指引」（exit 2） | 4.0 原语重写协作；旧操作切 3.x 分支 |
 | 项目接入 | `workspace-init` 技能建骨架 | `prism host attach --code CODE` 登记 + 桥接 | 未桥接时先 attach，不要 workspace-init |
 | Topic 工件 | `scope.md` / `focus.md` / `task.index.md` / `wave` | Intent / Brief / Findings / Plan / Decision（`topic.md` 承载） | 旧工件原样保留；4.0 Topic 不创建或改写它们 |
-| 默认 skill 面 | `workflow-*` 管线 | `prism-topic / -brief / -review / -clarify / -compress` | `bin/relink` 只有 prism4 面；旧面随分支剔除 |
+| 默认 skill 面 | `workflow-*` 管线 | `prism-topic / -brief / -review / -clarify / -plan / -compress` | `bin/relink` 只有 prism4 面；旧面随分支剔除 |
 | `prism decision` | 3.x decision 动词 | 4.0 入口，需 `decision record` | 3.x 语义随分支剔除 |
 
 不破坏、保持不变：`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。`sync` 随 3.x 树剔除（远端同步由外部 prism-push/pull 技能承担）。

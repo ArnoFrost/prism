@@ -19,6 +19,7 @@ skills/
     ├── prism-brief/
     ├── prism-review/
     ├── prism-clarify/
+    ├── prism-plan/
     └── prism-compress/
 ```
 
@@ -26,7 +27,7 @@ skills/
 
 | 类别 | 位置 | 技能 |
 |------|------|------|
-| prism4 | `skills/prism4/` | prism-topic / prism-brief / prism-review / prism-clarify / prism-compress |
+| prism4 | `skills/prism4/` | prism-topic / prism-brief / prism-review / prism-clarify / prism-plan / prism-compress |
 | dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
@@ -40,6 +41,7 @@ skills/
 | `prism-brief` | `/prism-brief` | Topic state / artifacts | Brief projection |
 | `prism-review` | `/prism-review` | 当前材料 / 风险或校准问题 | Findings |
 | `prism-clarify` | `/prism-clarify` | 一个阻塞问题 / 候选修正 | Clarification payload |
+| `prism-plan` | `/prism-plan` | Intent / Decisions / runtime context / optional Plan | advisory Plan |
 | `prism-compress` | `/prism-compress` | 膨胀或漂移的 Topic 阅读面 | 对齐后的 Plan / archive / Brief |
 
 这些 skill 使用 `bin/prism` 的 4.0 reference adapter：`topic`、`artifact`、`brief`、`review record`、`clarify record`、`plan record` 与 `decision record`。它们不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
@@ -61,6 +63,7 @@ SDK 内置技能只定义 canonical 语义能力。个人可在 `~/prism-skills`
 ~/.codex/skills/prism-brief   -> ~/prism/skills/prism4/prism-brief/
 ~/.codex/skills/prism-review  -> ~/prism/skills/prism4/prism-review/
 ~/.codex/skills/prism-clarify -> ~/prism/skills/prism4/prism-clarify/
+~/.codex/skills/prism-plan -> ~/prism/skills/prism4/prism-plan/
 ~/.codex/skills/prism-compress -> ~/prism/skills/prism4/prism-compress/
 
 ```

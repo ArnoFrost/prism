@@ -32,6 +32,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 | `prism-brief` | `/prism-brief` | Brief 投影；可再生成 |
 | `prism-review` | `/prism-review` | Findings，不自动授权 |
 | `prism-clarify` | `/prism-clarify` | 单问澄清；候选 ≠ Decision |
+| `prism-plan` | `/prism-plan` | 主动设计 advisory 行动结构；不定义边界、不授权 |
 | `prism-compress` | `/prism-compress` | 低频对齐阅读面 |
 
 3.x `workflow-*` 与 `workspace-init` 已随 prism-4 分支剔除；终态由 git tag `legacy-3x-final` 保管。旧 topic 在本分支只读。
@@ -271,4 +272,5 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 | 阅读面漂移、假待办堆积、进度与现状不对齐 | 使用 `/prism-compress`；先 preview，低频对齐，不要实时压缩 |
 | 需要审视现状、暴露风险/缺口/取舍 | 使用 `/prism-review`；Findings 不自动授权 |
 | 下一步被一个人类取舍阻塞 | 使用 `/prism-clarify`；候选 payload 不等于 Decision |
+| 需要主动设计行动结构、执行路线、拆解顺序或验证策略 | 使用 `/prism-plan`；Plan 不定义 Intent、不提交 Decision、不执行工作 |
 | 需要旧 3.x topic 兼容 | 本分支只读；要操作切 3.x 分支或 `legacy-3x-final` tag |

@@ -13,6 +13,7 @@ profiles:
       - prism-brief
       - prism-review
       - prism-clarify
+      - prism-plan
       - prism-compress
     include_shared: false
 
