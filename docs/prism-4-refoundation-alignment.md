@@ -278,7 +278,9 @@ Decisions are commitments.
 - 如何验证
 - 哪些风险需要处理
 
-Plan 是可选、可重算的行动结构。被引用和被接受不是同一层语义。
+Plan 是可选、可重算的行动结构。普通当前轮 planning 可以由 Agent 基于上下文局部完成，不需要默认持久化为 Plan Artifact。
+
+Plan Artifact 是必要时留下的 durable snapshot / recovery anchor：当行动结构需要跨 session 恢复、handoff、后续 Review 或授权承接时才落盘。被引用和被接受不是同一层语义。
 
 ```text
 Reference creates provenance.

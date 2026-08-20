@@ -245,6 +245,55 @@ def test_record_plan_can_supersede_existing_plan():
     )
 
 
+def test_record_plan_auto_supersedes_current_plan_by_default():
+    store = _topic_store()
+    old_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="旧计划。",
+        next_artifact_id=fake_artifact_id,
+    )
+
+    new_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="新计划。",
+        next_artifact_id=fake_artifact_id,
+    )
+
+    assert any(
+        relation.source_ref == new_id
+        and relation.kind == "supersedes"
+        and relation.target_ref == old_id
+        for relation in store.relations
+    )
+
+
+def test_record_plan_can_keep_parallel_candidate_when_explicit():
+    store = _topic_store()
+    old_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="当前计划。",
+        next_artifact_id=fake_artifact_id,
+    )
+
+    new_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="并行候选。",
+        auto_supersede_current=False,
+        next_artifact_id=fake_artifact_id,
+    )
+
+    assert not any(
+        relation.source_ref == new_id
+        and relation.kind == "supersedes"
+        and relation.target_ref == old_id
+        for relation in store.relations
+    )
+
+
 def test_record_plan_rejects_wrapping_persisted_plan_artifact():
     store = _topic_store()
     body = """---

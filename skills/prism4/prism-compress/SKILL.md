@@ -1,7 +1,7 @@
 ---
 name: prism-compress
-description: "Prism 4.0 低频对齐压缩：按阅读面格式自检 Topic，归档假待办，校准中文，同步当前 Plan，再生成 Brief。Use when: Prism 4.0 compress、对齐压缩、整理 topic 现状、归档假待办、中英校准、同步进度、prism-compress"
-description_zh: "Prism 4.0 低频对齐压缩：自检格式、归档噪声、校准语言、同步进度，再生成 Brief。"
+description: "Prism 4.0 低频对齐压缩：按阅读面格式自检 Topic，归档假待办，校准中文，规整 Plan 当前态，再生成 Brief。Use when: Prism 4.0 compress、对齐压缩、整理 topic 现状、归档假待办、中英校准、同步进度、prism-compress"
+description_zh: "Prism 4.0 低频对齐压缩：自检格式、归档噪声、校准语言、规整 Plan 当前态，再生成 Brief。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -23,18 +23,19 @@ user_invocable: true
 | `/prism-brief` | 从当前有效状态**再生成**恢复切片 | Brief 不归档、不改历史件、不写 Plan |
 | `/prism-review` | 暴露风险/缺口/取舍 | Findings 不授权整理 |
 | `/prism-clarify` | 一次澄清一个阻塞取舍 | 候选不是归档许可 |
-| `/prism-plan` | 主动设计行动结构 | Plan 不定义边界、不授权、不执行 |
+| `/prism-plan` | 主动设计行动结构；普通 planning 默认在对话中局部完成 | Plan 不定义边界、不授权、不执行；不默认落盘 |
 | 3.x `workflow-tidy` | 机械指针/frontmatter | 4.0 序号与索引由 CLI 重建，Tidy 默认退后 |
 | 3.x `workflow-compact` | 旧 topic 压实 | 不用于 4.0 Topic |
 
-Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组合现有 CLI：归档 payload、写入 Plan、`prism brief project --save`。
+Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组合现有 CLI 和适配器做低频整理：归档 payload、规整 Plan 当前态、`prism brief project --save`。它不把普通下一步规划自动持久化为 Plan Artifact。
 
 ## 规则
 
 - 默认 **preview**：先给自检清单和拟写范围，`writes=0`。用户明确要求对齐/apply 后才写盘。
-- **不 hard delete**。过期澄清、被吸收的候选进 `archive/`；旧 Plan / Findings / Decision 留在原目录，标 `historical`。
-- **不改承诺**。Intent / Decision 的语义改写需要新的授权。本技能只做中文校准、归档假待办、同步 Plan、再生成 Brief。
-- **不承接 relation 写入面**。`supersedes` / `authorizes` 走现有 `record` 命令参数；不要把 authority transition 新逻辑塞进 Compress。
+- **不 hard delete**。过期澄清、被吸收的候选进 `archive/`；旧 Plan / Findings / Decision 留在原目录，通过 `supersedes` 或 `historical` 收敛。
+- **不改承诺**。Intent / Decision 的语义改写需要新的授权。本技能只做中文校准、归档假待办、规整 Plan 当前态、再生成 Brief。
+- **不制造第二套 relation 写入面**。`supersedes` / `authorizes` 走现有 `record` 命令参数或本地 adapter；不要把 authority transition 新逻辑塞进 Compress。
+- **不默认新增 Plan**。当前轮普通下一步由 Agent 局部感知即可；只有跨 session 恢复、handoff、后续 Review 或授权承接需要 durable snapshot 时，才写 Plan Artifact。
 - 正文用中文；协议原语保留英文（见 `d04` 语言策略，若该 Topic 有）。
 - 不要创建 3.x `scope.md` / `focus.md` / `task` / `wave`，不要调用 `workflow-tidy` / `workflow-compact`。
 
@@ -45,7 +46,8 @@ Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组
 | Brief 只有工件 id，看不到目标/验收/进度 | 先看 Intent / Plan 是否缺章节或过期，再 compress |
 | `clarifications/` 里是已吸收的假待办 | 归档，不硬塞进 Decision |
 | Plan / Findings 夹杂英文叙述 | 中文校准，保留协议原语 |
-| 刚结束一个阶段，当前 Plan 仍是 historical | 写一份当前有效 Plan，再生成 Brief |
+| 刚结束一个阶段，当前 Plan 仍是 historical | 先判断是否只需局部 planning；需要恢复锚点时才写 durable Plan snapshot |
+| 同一 Topic 出现多个 active Plan | 收敛为唯一 current effective Plan：写新 snapshot 时默认 supersede 旧 active；不写新 Plan 时把已吸收/过期者标 historical |
 | 每次回复前都想瘦身 | **不要**。用 Brief 恢复；Compress 低频 |
 | 活跃 topic 面膨胀，要收窄（如「只保留最近 N 个」） | Topic 归档，见下节 |
 
@@ -96,7 +98,8 @@ archive_topics:
 ### 自检清单
 
 - Intent 是否仍有北极星与完成条件？Brief 能否投影出目标与验收？
-- 当前有效 Plan 是否反映最新 Decision？还是只有 historical 计划？
+- 当前有效 Plan 是否唯一？是否反映最新 Decision？还是只有 historical 计划？
+- 普通下一步是否能由 Agent 局部规划完成？是否真的需要 durable Plan snapshot？
 - `clarifications/` 是否只剩真正未晋升候选？
 - 仍占「未决」的 Findings 是否其实已被 supersede / 吸收？
 - 正文是否中文？英文是否只出现在协议原语？
@@ -113,6 +116,7 @@ compress_plan:
   archive_pending: []
   language: []
   plan_sync: []
+  durable_plan_snapshot: needed | not_needed | blocked
   protected_untouched: []
   next_step: observe | apply
 ```
@@ -123,16 +127,21 @@ compress_plan:
 
 1. 归档假待办澄清（写 `archive/`，从 `clarifications/` 移除）。
 2. 中文化列出的历史件；不补造新章节。
-3. 过期 Plan 保持 `historical`；需要时新增当前 Plan（`authority: advisory` / `evolution: regenerable`）。
+3. 规整 Plan 当前态：
+   - 多个 active Plan 不再继续追加同级 Plan；先决定唯一 current effective Plan。
+   - 若需要 durable snapshot，用 `prism plan record` 写入新 Plan；默认 auto-supersede 当前 active Plan。
+   - 若不需要新 snapshot，只把已吸收/过期且不再作为当前依据的 Plan 标 `historical`。
+   - 不能判断哪个 Plan 仍有效时停下，交给用户 Clarify。
 4. 已被吸收的 Findings 标 `historical`，保留 `supersedes`。
 5. 再生成 Brief。不要手写一份与 CLI 投影分叉的 Brief。
 6. 必要时改 README 入口句（例如「暂无 Brief」）。
 
-落盘优先走适配器，避免手改索引：
+落盘优先走适配器，避免手改索引。只有需要 durable Plan snapshot 时才调用：
 
 ```bash
 prism plan record <topic_id> --root <topic_dir> --title "..." --body "..."
 # 长 Plan 正文：--body - 或 --body @path
+# 默认会替代当前 active Plan；并行候选只在用户明确要求时用 --no-auto-supersede
 prism brief project <topic_id> --root <topic_dir> --save
 ```
 
@@ -140,4 +149,4 @@ prism brief project <topic_id> --root <topic_dir> --save
 
 ## 输出
 
-preview 给自检结论与拟写范围。apply 后用新 Brief 回答：目标、验收、已承诺、进度、未决、下一步。列出归档了哪些件、译了哪些件、新 Plan id。
+preview 给自检结论与拟写范围。apply 后用新 Brief 回答：目标、验收、已承诺、进度、未决、下一步。列出归档了哪些件、译了哪些件、Plan 当前态如何收敛；只有实际写入 durable snapshot 时才列新 Plan id。

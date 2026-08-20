@@ -156,7 +156,8 @@ Protocol Core 保持很小：
 | 生成上下文恢复切片 | `prism brief project` · `/prism-brief` |
 | 留下审视结果 | `prism review record` · `/prism-review` |
 | 澄清一个阻塞歧义 | `prism clarify record` · `/prism-clarify` |
-| 主动设计行动结构 | `prism plan record` · `/prism-plan` |
+| 主动设计行动结构 | `/prism-plan`（默认局部规划） |
+| 持久化行动结构快照 | advanced `prism plan record`（默认替代当前 active Plan） |
 | 记录已授权 Decision | `prism decision record` |
 | 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
 

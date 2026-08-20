@@ -276,6 +276,7 @@ def record_plan(
     title: str = "行动结构",
     artifact_id: str | None = None,
     supersedes: tuple[str, ...] = (),
+    auto_supersede_current: bool = True,
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str]:
     if topic_id not in store.topics:
@@ -285,6 +286,9 @@ def record_plan(
             "plan body appears to contain a persisted Plan artifact; "
             "rewrite the body or supersede the existing Plan instead"
         )
+    current_plan_ids = (
+        _current_plan_ids(store, topic_id) if auto_supersede_current else []
+    )
     inputs = topic_artifacts(
         store, topic_id, roles=("intent", "brief", "findings", "decision")
     )
@@ -304,8 +308,29 @@ def record_plan(
     invocation = store.invoke(
         plan_capability(), inputs=inputs, outputs=(plan_artifact,)
     )
-    _add_relations(store, plan_artifact.id, "supersedes", supersedes)
+    effective_supersedes = list(supersedes)
+    if auto_supersede_current:
+        for current_id in current_plan_ids:
+            if current_id not in effective_supersedes:
+                effective_supersedes.append(current_id)
+    _add_relations(store, plan_artifact.id, "supersedes", tuple(effective_supersedes))
     return plan_artifact.id, invocation.id
+
+
+def _current_plan_ids(store: ReferenceStore, topic_id: str) -> list[str]:
+    superseded = {
+        relation.target_ref
+        for relation in store.relations
+        if relation.kind == "supersedes"
+    }
+    return [
+        artifact.id
+        for artifact in sorted(store.artifacts.values(), key=lambda item: item.id)
+        if artifact.topic_id == topic_id
+        and artifact.role == "plan"
+        and artifact.id not in superseded
+        and str(artifact.metadata.get("evolution") or "") != "historical"
+    ]
 
 
 def _looks_like_persisted_plan(body: str) -> bool:

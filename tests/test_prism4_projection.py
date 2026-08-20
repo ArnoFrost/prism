@@ -89,6 +89,83 @@ def test_project_brief_projects_plan_slice_not_intent_slogan():
     assert "`finding:f13` 结构治理中长评估" in brief.body.split("## 未决")[1].split("##")[0]
 
 
+def test_project_brief_uses_only_unsuperseded_current_plan():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="intent:i01",
+            topic_id=topic.id,
+            role="intent",
+            title="当前边界",
+            body="## 完成条件\n\n- 不混淆当前行动结构。",
+            metadata={"evolution": "durable"},
+        )
+    )
+    old_plan = store.add_artifact(
+        Artifact(
+            id="plan:p01",
+            topic_id=topic.id,
+            role="plan",
+            title="旧计划",
+            body="\n".join(
+                [
+                    "## 目标",
+                    "",
+                    "- 旧目标。",
+                    "",
+                    "## 步骤",
+                    "",
+                    "1. 旧步骤",
+                    "",
+                    "## 验证",
+                    "",
+                    "- 旧验收。",
+                ]
+            ),
+            metadata={"evolution": "regenerable"},
+        )
+    )
+    new_plan = store.add_artifact(
+        Artifact(
+            id="plan:p02",
+            topic_id=topic.id,
+            role="plan",
+            title="当前计划",
+            body="\n".join(
+                [
+                    "## 目标",
+                    "",
+                    "- 当前目标。",
+                    "",
+                    "## 步骤",
+                    "",
+                    "1. 当前步骤",
+                    "",
+                    "## 验证",
+                    "",
+                    "- 当前验收。",
+                ]
+            ),
+            metadata={"evolution": "regenerable"},
+        )
+    )
+    store.add_relation(
+        Relation(source_ref=new_plan.id, kind="supersedes", target_ref=old_plan.id)
+    )
+
+    brief = project_brief(store, topic.id)
+
+    goal = brief.body.split("## 目标")[1].split("##")[0]
+    nxt = brief.body.split("## 下一步")[1].split("##")[0]
+    digested = brief.body.split("## 已消化")[1].split("##")[0]
+    assert "当前目标。" in goal
+    assert "当前步骤" in nxt
+    assert "旧目标。" not in goal
+    assert "旧步骤" not in nxt
+    assert "`plan:p01` 旧计划" in digested
+
+
 def test_project_brief_includes_child_topic_artifacts():
     store = ReferenceStore()
     parent = store.add_topic(Topic(id="topic:demo", title="示例"))

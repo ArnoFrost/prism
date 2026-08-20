@@ -155,7 +155,6 @@ prism brief project <topic_id>
 prism review record <topic_id> --body "<审视输入>"
 prism review record <topic_id> --body - --json   # stdin；成功输出 {ok, ids}
 prism clarify record <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
-prism plan record <topic_id> --body "<行动结构>"
 prism decision record <topic_id> --body "<决策>"
 ```
 
@@ -163,7 +162,8 @@ prism decision record <topic_id> --body "<决策>"
 
 4.0 Interaction Contract（薄；不是 3.x envelope）：
 
-- 落盘：`prism review/clarify/plan/decision record`（persist ≠ authorize）
+- 落盘：`prism review/clarify/decision record`（persist ≠ authorize）
+- 高级持久快照：`prism plan record <topic_id> --body "<行动结构>"`；默认 auto-supersede 当前 active Plan。普通当前轮 planning 优先由 Agent 局部感知，不默认落盘。
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
 - 3.x：已随 prism-4 分支剔除。已知 3.x 动词统一报「已剔除 + tag 指引」（exit 2）。`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本。历史 3.x envelope 见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)。
@@ -172,7 +172,8 @@ prism decision record <topic_id> --body "<决策>"
 
 - **Topic**：`topic new / topic list`
 - **Artifact / Projection**：`artifact show / brief project`
-- **Record**：`review record` / `clarify record` / `plan record` / `decision record`（persist semantic output；不等于授权）
+- **Record**：`review record` / `clarify record` / `decision record`（persist semantic output；不等于授权）
+- **Advanced Record**：`plan record`（durable Plan snapshot；默认替代当前 active Plan，并行候选需显式选择）
 - **Retired 3.x surface**：旧 verb 只返回剔除提示，不提供兼容 adapter
 
 旧 3.x verb（`sniff / validate / finalize / tidy / status / sync / manifest` 等）已随 `skills/workflow/` 一并剔除，不再由本分支提供。

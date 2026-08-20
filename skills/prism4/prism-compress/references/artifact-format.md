@@ -16,7 +16,7 @@ Style Profile 只能增强可读性，例如 callout、少量高亮、表格密�
 |----|----------|--------|
 | Intent | 为什么做、做什么、不做什么、完成条件 | 权威边界 |
 | Decision | 已经承诺什么 | 权威承诺 |
-| Plan | 现在按什么顺序做、如何验证 | 可再生成的行动结构 |
+| Plan | 现在按什么顺序做、如何验证 | 可再生成的行动结构；必要时才持久化为 durable snapshot |
 | Findings | 看见了什么风险/缺口/取舍 | 建议，不授权 |
 | Clarify payload | 哪一个取舍还没拍板 | 候选，不是 Decision |
 | Brief | 当前该看什么 | 投影，可随时再生成 |
@@ -96,7 +96,7 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 | 验收 | 当前 Plan「验证」 | Intent 完成条件冒充本轮验收 |
 | 合同验收 | 当前 Intent「完成条件」 | 本轮愿望清单 |
 | 已承诺 | `evolution` 非 `historical`、未被取代的 Decision | 历史决策全文 |
-| 进度 | 当前有效 Plan（含已完成步骤） | `historical` 的旧 Plan |
+| 进度 | 当前有效 Plan（含已完成步骤） | `historical` 或已被 `supersedes` 的旧 Plan |
 | 未决 | 未晋升澄清 + 仍有效 Findings | 已消化 Findings |
 | 已消化 | 被取代或 `historical` 的工件 id | 当成待办 |
 | 下一步 | 当前 Plan 未完成的顶层步骤；阻塞时指向 Clarify | 已完成步骤的说明子弹；索引导航 |
@@ -105,7 +105,7 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 
 ## Plan — `plans/pXX_*.md`
 
-当前有效 Plan 回答怎么做。旧阶段 Plan 标 `evolution: historical`，留在目录里当证据，不占 Brief「进度」。
+当前有效 Plan 回答怎么做。Plan Artifact 是必要时留下的 durable snapshot / recovery anchor，不是普通当前轮 planning 的默认产物。旧阶段 Plan 通过 `supersedes` 关系或 `evolution: historical` 收敛，留在目录里当证据，不占 Brief「进度」。
 Plan 不是旧 3.x Scope 的替身：它不定义协作边界、不承诺授权、不把 Findings 变成已批准工作。边界来自 Intent，承诺来自 Decision 或人类明确指示；Plan 只整理当前采用的行动结构。
 
 ```markdown
@@ -126,7 +126,9 @@ Plan 不是旧 3.x Scope 的替身：它不定义协作边界、不承诺授权�
 本轮整理或实施可能误伤什么。
 ```
 
-frontmatter：当前件 `authority: "advisory"`、`evolution: "regenerable"`；过期件 `evolution: "historical"`。Plan 可以描述当前采用的行动结构，但执行授权来自 Intent、Decision 或人类明确指示，不由 Plan 自身产生。
+frontmatter：当前件 `authority: "advisory"`、`evolution: "regenerable"`；过期件 `evolution: "historical"`。当前有效 Plan 指同一 Topic 内未被 `supersedes`、且 `evolution` 非 `historical` 的 Plan；正常情况下应只有一份。Plan 可以描述当前采用的行动结构，但执行授权来自 Intent、Decision 或人类明确指示，不由 Plan 自身产生。
+
+`prism plan record` 是 advanced durable snapshot 入口；默认会替代当前 active Plan，避免一个 Topic 内不断积累多个并列当前行动结构。并行 Plan 候选只有在用户明确需要比较方案时才保留。
 
 当前有效 Plan 的正文必须足够让 Brief 投影出「目标 / 验收 / 进度 / 下一步」。不要只写一句摘要并把行动结构放进 `references/fix-plan.md` 一类资料；references 可以承载 diff、证据、风险矩阵或长分析，但不能替代 Plan 正文的 `## 目标`、`## 步骤`、`## 验证`。
 

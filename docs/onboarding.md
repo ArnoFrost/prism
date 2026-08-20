@@ -105,13 +105,14 @@ prism brief project <topic_id>
 prism review record <topic_id> --body "..."
 # 或：--body - 读 stdin；--json 输出 {ok, ids}
 prism clarify record <topic_id> --question "..." --proposed-patch "..."
-prism plan record <topic_id> --body "..." --supersedes plan:p01
 prism decision record <topic_id> --body "..." --authorizes plan:p02
 ```
 
 Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-plan` · `/prism-compress`。
 
 `--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；Decision authorizes 后才形成可执行承诺。
+
+普通 planning 优先由 Agent 结合当前上下文局部完成，不默认落盘。只有需要跨 session 恢复、handoff、后续 Review 或授权承接时，才使用 advanced `prism plan record` 保存 durable Plan snapshot；该命令默认 auto-supersede 当前 active Plan，避免一个 Topic 内出现多个并列当前行动结构。
 
 旧 3.x workflow 已随 prism-4 分支剔除；历史文档见 `docs/historical/`。
 

@@ -459,8 +459,6 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
             "plan:p02",
             "--body",
             "新计划。",
-            "--supersedes",
-            "plan:p01",
         ],
         capture_output=True,
         text=True,
@@ -510,6 +508,75 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
     )
     assert 'supersedes: ["plan:p01"]' in plan_text
     assert 'authorizes: ["plan:p02"]' in decision_text
+
+
+def test_plan_record_can_keep_parallel_candidate_with_explicit_flag(tmp_path):
+    root = tmp_path / "state"
+    root.mkdir()
+    subprocess.run(
+        [
+            str(BIN_PRISM),
+            "topic",
+            "new",
+            "topic:parallel-plan",
+            "--title",
+            "Parallel Plan",
+            "--root",
+            str(root),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    subprocess.run(
+        [
+            str(BIN_PRISM),
+            "plan",
+            "record",
+            "topic:parallel-plan",
+            "--root",
+            str(root),
+            "--id",
+            "plan:p01",
+            "--body",
+            "当前计划。",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    parallel = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "plan",
+            "record",
+            "topic:parallel-plan",
+            "--root",
+            str(root),
+            "--id",
+            "plan:p02",
+            "--body",
+            "并行候选。",
+            "--no-auto-supersede",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert parallel.returncode == 0, parallel.stderr
+
+    store = LocalFileStoreAdapter(root).load()
+    assert not any(
+        relation.source_ref == "plan:p02"
+        and relation.kind == "supersedes"
+        and relation.target_ref == "plan:p01"
+        for relation in store.relations
+    )
 
 
 def test_review_record_infers_readable_title_for_local_file_store(tmp_path):

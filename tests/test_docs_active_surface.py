@@ -301,6 +301,21 @@ def test_plan_format_matches_reference_record_plan_semantics() -> None:
     assert 'authority: "operative"' not in artifact_format
     assert "Plan 不是旧 3.x Scope 的替身" in artifact_format
     assert "references 可以承载 diff、证据、风险矩阵或长分析" in artifact_format
+    assert "durable snapshot / recovery anchor" in artifact_format
+    assert "当前有效 Plan 指同一 Topic 内未被 `supersedes`" in artifact_format
+    assert "`prism plan record` 是 advanced durable snapshot 入口" in artifact_format
+
+
+def test_compress_guidance_converges_plan_instead_of_appending_by_default() -> None:
+    compress_skill = (
+        ROOT / "skills" / "prism4" / "prism-compress" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "不把普通下一步规划自动持久化为 Plan Artifact" in compress_skill
+    assert "不默认新增 Plan" in compress_skill
+    assert "收敛为唯一 current effective Plan" in compress_skill
+    assert "默认 auto-supersede 当前 active Plan" in compress_skill
+    assert "只有需要 durable Plan snapshot 时才调用" in compress_skill
 
 
 def test_plan_guidance_stays_advisory_and_not_scope() -> None:

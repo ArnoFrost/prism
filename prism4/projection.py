@@ -217,7 +217,9 @@ def _ref_lines(artifacts: list[Artifact], *, empty: str) -> list[str]:
 
 def _progress_lines(plans: list[Artifact]) -> list[str]:
     if not plans:
-        return ["- 暂无当前有效 Plan。需要同步进度时用 `/prism-compress` 或写入新 Plan。"]
+        return [
+            "- 暂无当前有效 Plan。普通下一步由 Agent 局部规划；需要跨 session 恢复时再记录 durable Plan snapshot。"
+        ]
     lines: list[str] = []
     for plan in plans:
         lines.append(f"- `{plan.id}` {plan.title or plan.id}")

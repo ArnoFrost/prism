@@ -254,6 +254,13 @@ def configure_plan_record(parser: argparse.ArgumentParser) -> None:
         default=[],
         help="plan ref this Plan supersedes; may be repeated",
     )
+    parser.add_argument(
+        "--no-auto-supersede",
+        action="store_false",
+        dest="auto_supersede_current",
+        default=True,
+        help="advanced: keep this as a parallel advisory Plan candidate instead of superseding current active Plan",
+    )
     add_root_arg(parser)
     parser.set_defaults(func=cmd_plan_record)
 
@@ -596,6 +603,7 @@ def cmd_plan_record(args: argparse.Namespace) -> int:
             title=args.title,
             artifact_id=args.artifact_id,
             supersedes=tuple(args.supersedes),
+            auto_supersede_current=args.auto_supersede_current,
             next_artifact_id=adapter.next_artifact_id,
         )
 

@@ -20,11 +20,12 @@ Plan 会根据当前可用的协作状态主动设计下一段行动结构；它
 
 ## 能力边界
 
-- Plan 设计可执行的行动路线，并产出 proposed Plan Artifact。
+- Plan 设计可执行的行动路线；默认在当前对话中给出行动结构，不自动产出持久 Plan Artifact。
+- Plan Artifact 只是必要时留下的 durable snapshot / recovery anchor，不是每次“想一下怎么做”都要新增的文件。
 - Plan 设计行动；Clarify 消除阻塞歧义；Review 评估状态；Decision 固化权威承诺；Execution 执行工作。
 - Plan 不重新定义 Intent，不重写边界，不把 Findings 变成授权，不执行工作。
 - Plan 可以提出建议，也可以暴露 decision gate，但不能替用户提交 material choice。
-- Plan 产生的 Plan 初始是 proposed / advisory / regenerable；它无权自行让输出成为 operative。Reference 只提供来源追踪；接受才形成 authority。
+- 持久化后的 Plan 初始是 proposed / advisory / regenerable；它无权自行让输出成为 operative。Reference 只提供来源追踪；接受才形成 authority。
 - Plan 可设计让工作可执行所需的行动形状，但不替代领域专门推理能力。技术架构、研究判断、产品策略等需要领域判断时，Plan 只组织行动与验证路径。
 
 ## 输入
@@ -32,6 +33,8 @@ Plan 会根据当前可用的协作状态主动设计下一段行动结构；它
 使用可用、权威且相关的上下文，尤其是 Intent 与适用的 Decisions。Brief、Findings、references、当前用户指令与 Existing Plan 可提供额外规划上下文。
 
 Existing Plan 可作为 replanning 输入，用于修订、细化或 supersede 旧行动结构。若现有 Plan 已足够表达当前行动结构，不要为了“同步一下”再生成一份内容等价的新 Plan，直接引用现有 Plan 即可。
+
+当前轮普通规划优先由 Agent 感知上下文后直接在回答中给出；只有当行动结构需要跨 session 恢复、handoff、接受/授权、后续 Review，或用户明确要求持久化时，才考虑落盘为 Plan Artifact。
 
 ## 调用条件
 
@@ -91,7 +94,7 @@ Plan 的语义要求是：
 
 仅在用户要求、或当前 Prism 上下文需要持久工件（durable artifact）时持久化 Plan。持久化机制属于当前 adapter，不属于 Plan 语义。
 
-落盘前先检查当前 Topic 是否已有等价 Plan。只有行动结构发生实质变化、或需要保留 replanning 历史时才新建 Plan；这种情况应说明新 Plan 如何 supersede 旧 Plan。
+落盘前先检查当前 Topic 是否已有等价 Plan。只有行动结构发生实质变化、或需要保留 replanning 历史时才新建 Plan；这种情况应说明新 Plan 如何 supersede 旧 Plan。参考 CLI 默认会让新 Plan supersede 当前 active Plan；并行候选必须是有意选择，而不是默认行为。
 
 ## 自检（Self-review）
 
@@ -102,6 +105,7 @@ Plan 的语义要求是：
 - 是否偷偷扩大边界？
 - 是否把 assumption 当成事实？
 - 是否私自决定 material choice？
+- 是否把本可局部说明的普通行动结构过早持久化？
 - 是否重复落盘已有 Plan，或把带 frontmatter 的 Plan Artifact 包进新 Plan？
 - 依赖关系与执行顺序是否合理？
 - Plan 是否足够显式，让预期执行者无需重建隐藏推理即可行动？
@@ -115,4 +119,4 @@ Plan 的语义要求是：
 
 仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘。落盘后仍是 advisory / regenerable，除非后续有效 authority 接受它。
 
-不要把已持久化的 Plan 文件整体作为新 Plan 正文。若输入是一份已有 Plan Artifact，应抽取其有效内容后改写，或在需要保留历史时生成新的 replanning Plan 并标明 supersedes 关系。
+不要把已持久化的 Plan 文件整体作为新 Plan 正文。若输入是一份已有 Plan Artifact，应抽取其有效内容后改写，或在需要保留历史时生成新的 replanning Plan 并标明 supersedes 关系。不要用持久 Plan 文件替代 Agent 对当前上下文的局部规划能力。
