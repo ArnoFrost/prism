@@ -75,6 +75,10 @@ Dogfood Plan consumes it.
 
 `Workspace` / `Host`、`Adapter` 和 `Style` 不与 Topic、Artifact、Capability 同级。它们是 Core 外围的宿主、运行、存储与呈现层。
 
+外部 Harness、Plugin、MCP 或 Runtime 只能作为现实工程参照和压力测试，不能反向定义 Prism Core。Prism 的论证独立成立：如果具体实现、Provider、Runtime、Storage、UI 或 Model 被替换，Core 仍必须能解释长期协作中的状态、来源、授权和承诺。
+
+因此本轮边界校准只吸收跨实现仍成立的 semantic invariants 与 negative boundaries，不新增 Core 名词。
+
 ### 3.2 Adapter
 
 以下内容不进入 Core，只作为参考实现或适配层：
@@ -85,7 +89,8 @@ Dogfood Plan consumes it.
 - Git 目录布局
 - symlink 分发
 - macOS / Linux / Windows 平台适配
-- Codex / Cursor / Claude Code / CodeBuddy 等 Agent Harness 集成
+- Codex / Cursor / Claude Code / CodeBuddy / DeepSeek Harness 等 Agent Harness 集成
+- MCP / Plugin / Runtime integration
 
 ### 3.3 Style
 
@@ -117,6 +122,8 @@ Workspace 是协议支持的容器概念，但暂不作为 Prism 本体的一级
 它承载一个高内聚问题在多轮讨论、评审、澄清、决策和执行中的协作状态。
 
 Topic 是 4.0 Core 的协作边界语义。
+
+Runtime session identity does not define Topic identity. Topic carries collaboration continuity; runtime sessions carry interaction continuity. 一个 Topic 可以横跨多次 Codex、DeepSeek、Claude、Human discussion 或 Git review，Session 永远不能成为 Topic 的 identity。
 
 Topic 可以通过 `parent` relation 形成层级：
 
@@ -222,6 +229,8 @@ Brief is a current projection for context recovery.
 
 Brief 不是事实源。若 Brief 与 Decision、Intent 或源 Findings 冲突，Decision / Intent / source artifacts 拥有更高权威。Brief 可以被重写、压缩、重新生成或丢弃后恢复。
 
+Projected state must remain reconstructable from more durable authoritative and provenance-bearing state. Brief、handoff summary、dashboard 或 context package 这类 projected artifacts 可以存在，但其来源应由现有 `projects` relation 与 Invocation provenance 表达；不要为 projection 过早新增 `projection_of`、`generated_from` 或其他 projection-specific schema fields。
+
 ### 5.3 Findings
 
 `Findings` 是发现集。
@@ -314,6 +323,12 @@ Need to be done -> Plan Item / Action.
 | Projected | 从其他工件综合出的当前视图，不作为最终事实源 | Brief |
 | Operative | 被接受后可指导执行，但仍受 Intent / Decision 约束 | accepted Plan |
 
+Availability, invocability, and authority are distinct concerns. 一个 Capability 存在、某个 actor / runtime 能调用它、其结果能改变 authoritative state，是三件不同的事。
+
+Production does not imply acceptance or commitment. Agent 生成了 Findings、Plan、Proposed Patch 或 Decision Candidate，只说明它们被产生；是否被接受、成为 operative，或形成 committed Decision，仍由 Authority / Decision Semantics 决定。
+
+这两条是 semantic invariants，不是本轮 schema 设计。不要因此新增 `available`、`invocable_by` 或 `authorized_by` 等固定字段。
+
 ### 6.2 Evolution
 
 | Evolution | Meaning | Typical Artifacts |
@@ -353,6 +368,10 @@ Authority / Evolution 是 protocol semantics first。它们的具体序列化可
 ### 7.1 Capability Contract
 
 `Capability` 是一个可独立调用的协作变换。
+
+Capability identity is independent of provider/runtime realization. `prism:review`、`prism:clarify` 或 `prism:plan` 的语义身份不能绑定到某个 `SKILL.md`、MCP tool、Plugin、Human reviewer 或 Agent Harness。
+
+Provider realizes a Capability outside Core. Provider selection belongs to Adapter / Harness concerns, and may appear only as optional execution metadata; it is not a Core primitive, Artifact Role, Relation, registry, lifecycle, or dependency graph.
 
 它只定义：
 
@@ -536,6 +555,12 @@ Intent + Brief + Decisions -> Plan
 
 `Invocation` 是一次真实 Capability 使用及其因果来源记录。
 
+Invocation records semantic capability use and causal provenance, not exhaustive runtime telemetry.
+
+Runtime Event != Invocation. Tool calls, token generation, retries, cache hits, sandbox creation, plugin mounting, approval prompts, and session forks are runtime events unless they produce a collaboration-semantic transformation.
+
+Execution Graph != Invocation Graph. Runtime Dependency Graph != Invocation Graph. Execution graphs decide what runs next; dependency graphs explain what requires what; Invocation Graph explains why current collaboration state exists.
+
 Protocol 层的最薄 contract：
 
 ```text
@@ -595,6 +620,8 @@ supersession, and affected artifacts.
 
 Decision Semantics 是协议规则，不是另一种 artifact，也不是 runtime object。
 
+Runtime approval authorizes an action. Prism Decision records an authorized collaborative commitment. Runtime approval does not define Decision semantics and cannot replace Decision Record.
+
 基本原则：
 
 ```text
@@ -650,6 +677,8 @@ Prism Core 不重新实现：
 这些都由 Codex、Cursor、Claude Code、CodeBuddy 或未来插件提供。
 
 Prism 只要求能力声明它需要什么输入、会产出什么、会产生什么副作用，以及是否需要人类授权。
+
+Prism 不实现 Provider Registry、Provider discovery、Plugin System、Session Manager、Approval Broker、Event Stream ingestion 或 Runtime Dependency Graph。这些能力可以由外部 Harness 或 Adapter 提供；Prism 只保留跨实现仍成立的协作语义。
 
 ## 15. 建议仓库分层
 
@@ -726,6 +755,11 @@ Prism 4.0 MVP 只有在以下条件成立时才算完成：
 - 同一 Capability 可以理论上运行在 Codex、Cursor、Claude Code、CodeBuddy、人类协作流程中。
 - 至少三个不同领域 case 能使用相同基本语义。
 - 替换 runtime、storage、model、UI 或 CLI，不要求重新定义 Prism。
+- 替换 Provider 或 Runtime 后，Capability semantic identity 仍然成立。
+- Invocation 仍记录 semantic provenance，而不是 runtime telemetry。
+- Generated / produced artifacts 不会在缺少 authority 时自动变成 accepted、operative 或 committed。
+- Projected state 保持可重建且不成为事实源。
+- Topic identity 不依赖 runtime session identity。
 
 ## 18. 待多方校准问题
 
@@ -757,6 +791,10 @@ Prism 4.0 MVP 只有在以下条件成立时才算完成：
 - `Clarify` 与 `Decision` 分层：Clarify 可以产生 Decision Candidate / Proposed Patch，但默认无权修改 authoritative artifacts。
 - `Decide` 暂不进入 MVP Core Capability；`Record Decision` 作为 Reference Capability / Adapter Operation。
 - Capability Contract 只定义 typed inputs、typed outputs、effect policy，不定义固定执行顺序。
+- Capability semantic identity independent of provider/runtime realization；Provider 只属于 Core 外实现与 optional execution metadata。
+- Invocation 记录 semantic capability use and causal provenance，不吸收 runtime telemetry、execution graph 或 runtime dependency graph。
+- Availability / invocability / authority 是不同 concern；production does not imply acceptance or commitment。
+- Runtime session identity 不定义 Topic identity；runtime approval 不定义 Decision semantics。
 
 ## 20. 一句话版本
 

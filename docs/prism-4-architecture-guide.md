@@ -38,7 +38,7 @@ flowchart TB
     H["Host / Workspace<br/>namespace for topics"]
     A["Adapter<br/>run, store, sync, invoke"]
     S["Style<br/>rendering profile"]
-    R["Agent Runtime<br/>Codex, Cursor, Claude, CodeBuddy, Human"]
+    R["Agent Runtime<br/>Codex, Cursor, Claude, DeepSeek, Human"]
   end
 
   subgraph core["Prism Protocol Core"]
@@ -67,6 +67,8 @@ Design notes:
 
 - `Workspace` is shown as Host, not as a Core primitive.
 - `Adapter` and `Style` are outside the protocol, even if the reference implementation ships them.
+- Runtime executes providers, but it does not define Capability identity.
+- Provider / Runtime / Session / Approval / Event / Dependency stay outside Core.
 - `Invocation` is not a workflow engine. It is the causal trace of actual calls.
 - `Decision Semantics` is a rule set governing the Decision artifact role, not another artifact or runtime object.
 
@@ -106,6 +108,14 @@ Need to be done -> Plan Item / Action.
 ```
 
 This removes `Task` from Core. A former Task is either a Child Topic or a Plan Item.
+
+Session rule:
+
+```text
+Topic = collaboration continuity.
+Runtime session = interaction continuity.
+Session != Topic.
+```
 
 ## 4. Artifact Roles
 
@@ -177,7 +187,10 @@ Capability rule:
 ```text
 Capability declares typed inputs, typed outputs, and effect policy.
 It does not declare a fixed place in a workflow.
+Capability identity is independent of provider/runtime realization.
 ```
+
+Provider realizes a Capability outside Core. Invocation records one actual semantic use of that Capability, with causal provenance and optional execution metadata.
 
 Typed inputs and outputs may be persistent Artifact Roles or transient semantic payloads. Do not promote `Understanding Update`, `Proposed Patch`, `Decision Candidate`, `Open Question`, or `Evidence Reference` into Core Artifact Roles unless dogfood proves they need independent identity, lifecycle, authority, and cross-invocation references.
 
@@ -247,6 +260,15 @@ committed
 
 Authority and Evolution are normative protocol semantics first. A reference adapter may serialize them as metadata, relations, derived state, or another representation. Do not imply that MVP must implement these as fixed enum fields.
 
+Authority guard:
+
+```text
+Production does not imply acceptance or commitment.
+Availability, invocability, and authority are distinct concerns.
+```
+
+These are semantic checks, not a requirement to add fixed schema fields such as `available`, `invocable_by`, or `authorized_by`.
+
 ## 7. Invocation Graph
 
 Definitions:
@@ -272,6 +294,16 @@ this adapter exposes a weaker graph view through artifact frontmatter,
 artifact-level relations, indexes, and CLI record ids. Deep audit scenarios
 should use explicit Findings / Decision body evidence or an optional audit
 profile, not default write-only trace logs.
+
+Runtime boundary:
+
+```text
+Runtime Event != Invocation.
+Execution Graph != Invocation Graph.
+Runtime Dependency Graph != Invocation Graph.
+```
+
+Invocation is semantic capability use and causal provenance. Tool calls, retries, cache hits, approval prompts, session forks, and plugin dependency edges belong to Runtime / Adapter concerns unless they are summarized into collaboration-semantic artifacts or relations.
 
 Invocation conceptually identifies:
 
@@ -359,6 +391,10 @@ Before adding a concept to 4.0 Core, ask:
 - Can this be represented as an Artifact role, Capability policy, Invocation relation, or Adapter behavior instead?
 - Does this concept still work for software, research, writing, and simple tasks?
 - Does this concept reduce ambiguity without creating a new DSL?
+- Is this semantic identity, or provider/runtime identity?
+- Is this collaboration authority, or runtime approval?
+- Is this semantic provenance, or runtime telemetry?
+- Is this projection reconstructable from durable state?
 
 Default answer:
 
@@ -389,12 +425,13 @@ Artifact
 Capability
   transforms or proposes artifacts
   core: Review, Clarify, Plan
+  identity survives provider/runtime replacement
 
 Invocation
-  records provenance and causality
+  records semantic provenance, not runtime telemetry
 
 Decision Semantics
-  governs authority and commitment over artifacts
+  governs authority and commitment, not runtime approval
 
 Outside Core
   Host / Workspace
