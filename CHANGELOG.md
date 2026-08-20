@@ -2,6 +2,8 @@
 
 ### Removed
 
+- **旧维护 Skills 退役** — `prism-dist` / `prism-doctor` / `prism-pull` / `prism-push` 从活跃分发面归档；干净代码层更新使用 `prism doctor` / `prism update [--skills]` / `prism relink`；个人多端 SDK、Skills、Env 与已启用 Workspace Git 的双向同步和冲突处理收敛到外部 `prism-maintain`。
+- **legacy dist packer** — `prism dist` 改为退役提示；mini/full zip 实现仅由 Git 历史与 `legacy-3x-final` 保管。
 - **3.x 可执行历史剔除** — `skills/workflow/`、`skills/workspace/`、`workspace/` 系统层、`prism legacy` adapter 与 3.x topic 动词全部从 prism-4 分支物理删除；`sync` 随树退场。旧 topic 只读；3.x 终态由 git tag `legacy-3x-final` 保管。迁移口径见 [docs/migration.md](docs/migration.md)。
 - **legacy 测试面** — `skills/workflow/shared/tests/`（约 2.5M）与 `tests/test_sniff.py` 随树删除；CI 不再覆盖该路径。
 

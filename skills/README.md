@@ -28,7 +28,7 @@ skills/
 | 类别 | 位置 | 技能 |
 |------|------|------|
 | prism4 | `skills/prism4/` | prism-topic / prism-brief / prism-review / prism-clarify / prism-plan / prism-compress |
-| dev ops | `~/prism-skills` (外部) | prism-push, prism-pull, prism-dist |
+| dev ops | `~/prism-skills` (外部) | prism-maintain（个人多端全环境同步与冲突处理） |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
 ## 4.0 semantic skill surface

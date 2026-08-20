@@ -239,17 +239,15 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 工具入口可配合同名 Skill 使用，形成 "脚本 + 自然语言" 的双通道能力。
 
-3.x 实现（`workflow-*` / `workspace-init` / `prism legacy`）已随 prism-4 分支剔除，终态见 git tag `legacy-3x-final`。不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本。
+3.x 实现（`workflow-*` / `workspace-init` / `prism legacy`）已随 prism-4 分支剔除，终态见 git tag `legacy-3x-final`。不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`dist` 仅保留退役提示。
 
 ---
 
 ## ⚠️ 仓库操作陷阱（避免重复犯错）
 
-### `prism-skills/shared` 是自包含目录
+### `prism-skills/shared` 是外部仓的历史辅助目录
 
-`~/prism-skills/shared/` 是**真实目录**，自带 prism-pull/push 所需脚本（`sniff_lib` 族、`prism_sync_sniff.py`、`prism_changelog_scan.py`）。
-
-**后果**：共享脚本直接在 `~/prism-skills` 提交，本仓库不再保管它们。
+`~/prism-skills/shared/` 是**真实目录**，现存 sniff helpers 用于追溯已归档的 pull/push/doctor 链路。活跃 4.0 维护入口不依赖它；若确需修改，变更归 `~/prism-skills` 提交。
 
 ### `prism.local.yaml` 是 gitignore 文件
 

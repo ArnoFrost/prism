@@ -1162,7 +1162,7 @@ def test_prism_update_does_not_need_prism_cli_without_workflow(tmp_path: Path) -
     assert result.returncode != 127
 
 
-def test_prism_dist_does_not_need_prism_cli_without_workflow(tmp_path: Path) -> None:
+def test_prism_dist_is_a_self_contained_retired_tombstone(tmp_path: Path) -> None:
     dut = _isolated_product_sdk(tmp_path)
     env = _isolated_env(tmp_path, dut)
     result = subprocess.run(
@@ -1175,7 +1175,8 @@ def test_prism_dist_does_not_need_prism_cli_without_workflow(tmp_path: Path) -> 
     )
     blob = result.stdout + result.stderr
     assert "legacy CLI not found" not in blob
-    assert result.returncode != 127
+    assert result.returncode == 0
+    assert '"mode": "archived"' in result.stdout
     assert '"available": false' in result.stdout
 
 

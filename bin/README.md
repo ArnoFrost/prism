@@ -166,7 +166,7 @@ prism decision record <topic_id> --body "<决策>"
 - 高级持久快照：`prism plan record <topic_id> --body "<行动结构>"`；默认 auto-supersede 当前 active Plan。普通当前轮 planning 优先由 Agent 局部感知，不默认落盘。
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
-- 3.x：已随 prism-4 分支剔除。已知 3.x 动词统一报「已剔除 + tag 指引」（exit 2）。`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本。历史 3.x envelope 见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)。
+- 3.x：已随 prism-4 分支剔除。已知 3.x 动词统一报「已剔除 + tag 指引」（exit 2）。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`dist` 仅保留退役提示。历史 3.x envelope 见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)。
 
 当前 4.0 命令面可分为四类：
 

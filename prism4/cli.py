@@ -295,7 +295,7 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             f"{RECORD_MEANING}\n\n"
-            "Full product surface including doctor/relink/update/dist: prism --help. "
+            "Product maintenance surface includes doctor/relink/update; dist is a retired tombstone: prism --help. "
             "3.x 实现已从 prism-4 分支剔除（git tag legacy-3x-final）。"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,

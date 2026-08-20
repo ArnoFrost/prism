@@ -19,8 +19,6 @@ profiles:
 
 # 永远排除（dev 工具 + 个人固化版）
 always_exclude:
-  - prism-dist                     # [dev] 分发工具自身不入包
-  - prism-push                     # [dev] 维护者工具
-  - prism-pull                     # [dev] 维护者工具
+  - prism-maintain                 # [dev] 维护者源码仓工具
   - prism-review-arno              # [personal]
   - cursor-insights                # [dev] 内部分析工具

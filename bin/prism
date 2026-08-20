@@ -26,7 +26,7 @@
 #   doctor          委托 bin/doctor
 #   relink          委托 bin/relink
 #   update          委托 bin/update
-#   dist            委托 bin/dist
+#   dist            退役提示（旧 mini/full packer 见 Git 历史）
 #
 # record = persist semantic output；不等于授权。
 #

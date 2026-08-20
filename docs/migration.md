@@ -22,7 +22,7 @@
 | 默认 skill 面 | `workflow-*` 管线 | `prism-topic / -brief / -review / -clarify / -plan / -compress` | `bin/relink` 只有 prism4 面；旧面随分支剔除 |
 | `prism decision` | 3.x decision 动词 | 4.0 入口，需 `decision record` | 3.x 语义随分支剔除 |
 
-不破坏、保持不变：`doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。`sync` 随 3.x 树剔除（远端同步由外部 prism-push/pull 技能承担）。
+保留的维护入口：`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。干净设备用 `prism update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。`dist` 仅保留退役提示，旧 mini/full packer 由 Git 历史保管。
 
 ## 升级检查清单
 

@@ -82,30 +82,14 @@ entries:
 # ─────────────────────────────────────────────
 # External prism-skills entries（独立仓库，随其自身发布）
 # ─────────────────────────────────────────────
-  - id: prism-dist
+  - id: prism-maintain
     visibility: dev
     stability: experimental
     source_repo: prism-skills
     inject_default: false
     reviewed_by: ArnoFrost
-    reviewed_at: "2026-03-18"
-    rationale: "Mini/full distribution tool."
-  - id: prism-push
-    visibility: dev
-    stability: stable
-    source_repo: prism-skills
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-03-19"
-    rationale: "Maintainer repo sync — push local changes."
-  - id: prism-pull
-    visibility: dev
-    stability: stable
-    source_repo: prism-skills
-    inject_default: false
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-03-19"
-    rationale: "Maintainer repo sync — pull remote updates."
+    reviewed_at: "2026-08-20"
+    rationale: "Personal multi-device maintenance router across configured SDK, Skills, Env and Workspace Git; clean code-only pulls may use prism update directly."
   - id: update-marketplaces
     visibility: dev
     stability: experimental

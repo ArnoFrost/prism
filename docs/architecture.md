@@ -49,11 +49,9 @@ Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`；3.x 实现�
 |------|------|----------|
 | **Minimal Reference Installation** | 最小能跑：SDK + `uv`；Workspace 实例默认可落本地 backend | 发行合同，不进 Protocol Core |
 | **optional deployment** | 外部 Skills、Env、Vault/Git backend 按需组合 | 缺失不阻断 SDK/CLI |
-| **legacy mini/full** | 历史 zip profile，仅保留安全修复、迁移兼容与弃用窗口 | maintenance-only |
+| **legacy mini/full** | 历史 zip profile；活跃 4.0 工作树不再维护 | Git 历史 / `legacy-3x-final` |
 
-可选部署回答「状态和扩展落在哪里」。mini/full 不再是主交付面，统一外部入口是 `prism` CLI。
-
-> 兼容窗口：旧 `/prism-dist` Skill 仅作为可选兼容壳；新文档与自动化一律调用 `prism dist`。
+可选部署回答「状态和扩展落在哪里」。4.0 默认交付是版本化 SDK 源码；`prism dist` 仅保留退役提示，旧 packer 已归档。
 
 ---
 
