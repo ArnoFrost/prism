@@ -151,7 +151,11 @@ def test_state_boundary_contract_and_terminology_grammar_are_explicit() -> None:
     intent_template = intent_contract.split("```markdown", 1)[1].split("```", 1)[0]
     assert "## 当前落点" not in intent_template
     assert "Intent 只保存稳定边界" in intent_contract
+    assert "Orientation / Boundary" in intent_contract
+    assert "多个只写“未声明”的空章节" in intent_contract
+    assert "不是新的 Intent 语义字段" in intent_contract
     assert "Child Intent" in artifact_format and "Child Plan" in artifact_format
+    assert "存在 Child 时分组显示当前 Topic / 相关 Child" in artifact_format
     assert "无 Topic provenance 的 payload" in artifact_format
 
 
@@ -496,6 +500,9 @@ def test_findings_format_prioritizes_human_readability_without_changing_authorit
         assert phrase in review_skill
     assert "仍然是 advisory，不构成授权" in artifact_format
     assert "先帮助人类把握局势" in review_skill
+    assert "TL;DR 不复述整张发现地图" in artifact_format
+    assert "发现地图负责 Scan" in review_skill
+    assert "评价标准是读者能否恢复和核实，不是总字数" in review_skill
     assert "若现有 Findings 已足够表达本轮判断，直接引用现有 Findings" in review_skill
     assert "不要把已持久化的 Findings 文件整体作为新 Findings 正文" in review_skill
 

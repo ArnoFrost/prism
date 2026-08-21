@@ -276,6 +276,15 @@ def test_parent_brief_bubbles_child_findings_and_decisions_with_origin():
     )
     store.add_artifact(
         Artifact(
+            id="decision:d00",
+            topic_id=parent.id,
+            role="decision",
+            title="父级承诺",
+            body="已授权。",
+        )
+    )
+    store.add_artifact(
+        Artifact(
             id="decision:d01",
             topic_id=child.id,
             role="decision",
@@ -287,10 +296,12 @@ def test_parent_brief_bubbles_child_findings_and_decisions_with_origin():
     brief = project_brief(store, parent.id)
 
     assert "`finding:f01` 子级发现（来源：`topic:demo.child`）" in brief.body
-    assert (
-        "Child 可见：`decision:d01` 子级承诺（来源：`topic:demo.child`；"
-        "不自动视为 Parent 承诺）"
-    ) in brief.body
+    commitments = brief.body.split("## 已承诺", 1)[1].split("## 风险与未决", 1)[0]
+    assert "**当前 Topic**" in commitments
+    assert "`decision:d00` 父级承诺" in commitments
+    assert "**相关 Child Decision**" in commitments
+    assert "`decision:d01` 子级承诺（来源：`topic:demo.child`）" in commitments
+    assert "除非 Parent authority 明确采用，否则不构成 Parent 承诺" in commitments
 
 
 def test_brief_scopes_clarify_payloads_to_topic_lineage():

@@ -86,7 +86,7 @@ def project_brief(
         "",
         "## 已承诺",
         "",
-        *_ref_lines(
+        *_decision_lines(
             decisions,
             topic_id=topic_id,
             empty="暂无当前有效 Decision。",
@@ -285,21 +285,32 @@ def _contract_lines(intent: Artifact | None) -> list[str]:
     return _as_bullets(_section(intent.body, "完成条件"), "- 见 Intent。")
 
 
-def _ref_lines(
+def _decision_lines(
     artifacts: list[Artifact], *, topic_id: str, empty: str
 ) -> list[str]:
     if not artifacts:
         return [f"- {empty}"]
-    lines: list[str] = []
-    for item in artifacts:
+    own = [item for item in artifacts if item.topic_id == topic_id]
+    children = [item for item in artifacts if item.topic_id != topic_id]
+    if not children:
+        return [f"- `{item.id}` {item.title or item.id}" for item in own]
+
+    lines = ["**当前 Topic**", ""]
+    lines.extend(
+        [f"- `{item.id}` {item.title or item.id}" for item in own]
+        or [f"- {empty}"]
+    )
+    lines.extend(["", "**相关 Child Decision**", ""])
+    for item in children:
         label = f"`{item.id}` {item.title or item.id}"
-        if item.topic_id != topic_id:
-            lines.append(
-                f"- Child 可见：{label}（来源：`{item.topic_id}`；"
-                "不自动视为 Parent 承诺）"
-            )
-        else:
-            lines.append(f"- {label}")
+        lines.append(f"- {label}（来源：`{item.topic_id}`）")
+    lines.extend(
+        [
+            "",
+            "> Child Decision 只表示来源 Topic 已承诺；除非 Parent authority "
+            "明确采用，否则不构成 Parent 承诺。",
+        ]
+    )
     return lines
 
 

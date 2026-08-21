@@ -62,6 +62,9 @@ def test_create_topic_writes_authoritative_intent():
     assert "## 为什么做" in intent.body
     assert "Keep the core thin." in intent.body
     assert "## 完成条件" in intent.body
+    assert "## 尚未声明" in intent.body
+    assert "## 北极星" not in intent.body
+    assert "- 北极星" in intent.body
     assert "## 当前落点" not in intent.body
 
 

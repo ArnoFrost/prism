@@ -76,6 +76,8 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 
 可读性规则：Findings 要先帮助人类把握局势，再展开证据。长 Review 不要一开始就进入代码点或机械 F 编号；先给 TL;DR、问题脉络和发现地图。每个 F 项优先按「论点 / 依据 / 影响 / 建议」写清楚，避免只给结论或只堆细节。frontmatter 已表达 advisory / authority 时，正文不必逐段重复协议自证；只有存在真实误读风险时才补边界说明。
 
+按 progressive disclosure 分工：TL;DR 只交付总判断、重要性和建议方向，不复述整张地图；发现地图负责 Scan；F 项正文负责证据、影响和取舍；Artifact id、reference 与 Invocation 负责 Drill-down。结构随问题变化：短 Findings 可以为补足证据而变长，已有清楚地图的长 Findings 不为模板整齐做等量重写。评价标准是读者能否恢复和核实，不是总字数。
+
 ```markdown
 ## 摘要
 

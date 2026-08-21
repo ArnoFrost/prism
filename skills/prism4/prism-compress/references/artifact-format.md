@@ -54,22 +54,26 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 
 当前 Intent 只有一份，落 Topic 根。被取代的 Intent 进 `archive/`。
 
+Intent 先服务 Orientation / Boundary：首屏给稳定目的与边界，再按需展开约束、来源和完成条件。不要为了模板对称生成多个只写“未声明”的空章节；缺失项可以合并到一个「尚未声明」区域。简短不是目标，读者无需重新拆解长句才是目标。
+
 ```markdown
 ## 为什么做
 
-## 北极星
-
 ## 边界内
 
-## 不做什么
-
-## 关键约束
-
 ## 完成条件
+
+## 尚未声明
+
+- 北极星
+- 明确不做什么
+- 关键约束
 ```
 
 - **北极星** 对应目标。
 - **完成条件** 对应验收。
+- 已有明确内容时，仍可使用 `## 北极星`、`## 不做什么`、`## 关键约束` 分别展开；「尚未声明」只是新建 Topic 的紧凑缺口表达，不是新的 Intent 语义字段。
+- 首段不要同时装入来源、目标、产物、权限和验证；需要时拆成短段或列表，但不改变边界强度。
 - Intent 只保存稳定边界，不保存“当前落点”。当前阶段属于 Plan，当前切片属于 Brief。
 - 存量 Intent 中的 `## 当前落点` 保留为历史文本，但 Brief 不再把它当作当前事实来源；不要批量改写历史 Intent。
 
@@ -105,7 +109,7 @@ Brief 对标 3.x `focus` 的阅读职责，但不是合同，也不派生 scope�
 | 目标与边界 | 当前 Topic 自己的 Intent：目的、北极星与边界 | Intent「当前落点」；Child Intent；Plan 阶段目标 |
 | 当前阶段 | 当前 Topic 自己的 active Plan：阶段目标与顶层行动地图 | Child Plan；完整嵌套实施细节 |
 | 本阶段完成信号 | 当前 Topic 自己的 active Plan「验证」 | Intent 完成条件冒充本阶段信号；Child Plan |
-| 已承诺 | 当前 Topic 与允许冒泡 Child 的有效 Decision；Child 需标明来源与“可见不等于 Parent 承诺” | 历史决策全文；来源不明的承诺 |
+| 已承诺 | 当前 Topic 与允许冒泡 Child 的有效 Decision；存在 Child 时分组显示当前 Topic / 相关 Child，并用一次短护栏说明 Child commitment 不自动成为 Parent commitment | 历史决策全文；来源不明的承诺 |
 | 风险与未决 | 当前 Topic 与允许冒泡 Child 的 Clarify / Findings；Child 来源需标明 | 无 Topic provenance 的 payload；已消化 Findings |
 | 下一步 | 当前 Topic 自己的 active Plan 未完成顶层步骤；阻塞时指向适用 Clarify | Child Plan；已完成步骤的说明子弹；索引导航 |
 | Topic 完成条件 | 当前 Topic 自己的 Intent「完成条件」 | Plan 验证；Child Intent |
@@ -200,6 +204,8 @@ Plan 不是实时任务账本；普通动作完成不要求生成内容等价的
 类型：`缺失` / `冗余` / `偏离` / `违规` / `风险` / `观察` / `已解决`。强度：`高` / `中` / `低`。历史短句 Findings 中文化即可，不强制改写成 F1 结构。
 
 人类可读性规则：先讲总判断，再讲问题脉络，然后给发现地图，最后展开证据。长 Review 要避免机械堆叠 F1/F2/F3；轻量 Review 可以省略「发现地图」，但仍应让「摘要」足够回答 TL;DR。每条 Findings 应优先用「论点 / 依据 / 影响 / 建议」组织，而不是只有结论或只有代码细节。
+
+TL;DR 不复述整张发现地图：它只交付总判断、为什么重要和建议方向。发现地图服务 Scan，F 项正文服务 Read，Artifact id / reference / Invocation 服务 Drill-down。格式深度随问题变化：短 Findings 可以因为补足论点与依据而变长；已有清楚地图和证据层的长 Findings，不为模板整齐进行等量重写。
 
 同一 Findings Artifact 内的 F 项应共享大致相同的 owner、Decision、验证和 supersede 节奏。需要独立演进的判断应拆开记录；这不表示一条 F 项必然对应一个 Artifact。
 
