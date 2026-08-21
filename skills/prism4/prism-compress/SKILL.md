@@ -70,7 +70,7 @@ Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组
 | `archive/README.md` | 专项索引表补新归档行；cutover / 活跃指针注记更新 |
 | Workspace `index.md` | 「进行中」块只留热区 Topic |
 | Workspace `README.md` | 活跃协作入口指向当前 Topic |
-| 被归档 Topic 自身 | Intent「当前落点」应为 DONE 或明确的挂起原因；不是则先问 |
+| 被归档 Topic 自身 | Intent 完成条件已满足，或已有明确的挂起 / 终止授权；否则先问 |
 
 ### preview 附加字段
 
@@ -92,7 +92,7 @@ archive_topics:
 3. 输出 compress_plan（preview）
 4. 用户确认范围后 apply
 5. 最后 prism brief project <id> --root <dir> --save
-6. 用 Brief 自检：目标 / 验收 / 已承诺 / 进度 / 未决 / 下一步 是否都能回答
+6. 用 Brief 自检：目标与边界 / 当前阶段 / 本阶段完成信号 / 已承诺 / 风险与未决 / 下一步 / Topic 完成条件 是否都能回答
 ```
 
 ### 自检清单
@@ -149,4 +149,4 @@ prism brief project <topic_id> --root <topic_dir> --save
 
 ## 输出
 
-preview 给自检结论与拟写范围。apply 后用新 Brief 回答：目标、验收、已承诺、进度、未决、下一步。列出归档了哪些件、译了哪些件、Plan 当前态如何收敛；只有实际写入 durable snapshot 时才列新 Plan id。
+preview 给自检结论与拟写范围。apply 后用新 Brief 回答：目标与边界、当前阶段、本阶段完成信号、已承诺、风险与未决、下一步、Topic 完成条件。列出归档了哪些件、译了哪些件、Plan 当前态如何收敛；只有实际写入 durable snapshot 时才列新 Plan id。

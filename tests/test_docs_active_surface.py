@@ -115,6 +115,70 @@ def test_style_profile_slot_stays_optional_and_outside_core() -> None:
     assert "不进入 Core" in skills_readme
 
 
+def test_state_boundary_contract_and_terminology_grammar_are_explicit() -> None:
+    alignment = (
+        ROOT / "docs" / "prism-4-refoundation-alignment.md"
+    ).read_text(encoding="utf-8")
+    architecture_guide = (
+        ROOT / "docs" / "prism-4-architecture-guide.md"
+    ).read_text(encoding="utf-8")
+    artifact_format = (
+        ROOT
+        / "skills"
+        / "prism4"
+        / "prism-compress"
+        / "references"
+        / "artifact-format.md"
+    ).read_text(encoding="utf-8")
+
+    assert "### 4.5 Terminology Grammar Checkpoint" in alignment
+    assert "不是最终 Terminology Freeze" in alignment
+    assert "命名不能反向驱动 ontology" in alignment
+    assert "Artifact | 持久协作状态；使用名词" in alignment
+    assert "Capability | 语义变换能力；使用动作" in alignment
+    assert "Payload | Invocation 中的 typed semantic result" in alignment
+    assert "Operation | 显式副作用或记录动作 | Record Decision" in alignment
+    assert "Plan capability 与 Plan artifact 暂时允许同名" in alignment
+    assert "Clarify 属于 understanding" in alignment
+    assert "不因为对称性新增 Briefing Capability" in alignment
+    assert "Child Intent and Child Plan do not replace Parent state" in architecture_guide
+    assert "missing provenance never means globally applicable" in architecture_guide
+    assert "There is no Briefing Capability" in architecture_guide
+
+    intent_contract = artifact_format.split("## Intent —", 1)[1].split(
+        "## Brief —", 1
+    )[0]
+    intent_template = intent_contract.split("```markdown", 1)[1].split("```", 1)[0]
+    assert "## 当前落点" not in intent_template
+    assert "Intent 只保存稳定边界" in intent_contract
+    assert "Child Intent" in artifact_format and "Child Plan" in artifact_format
+    assert "无 Topic provenance 的 payload" in artifact_format
+
+
+def test_artifact_language_rules_keep_humanizer_outside_runtime() -> None:
+    artifact_format = (
+        ROOT
+        / "skills"
+        / "prism4"
+        / "prism-compress"
+        / "references"
+        / "artifact-format.md"
+    ).read_text(encoding="utf-8")
+    brief_skill = (
+        ROOT / "skills" / "prism4" / "prism-brief" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    plan_skill = (
+        ROOT / "skills" / "prism4" / "prism-plan" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "## 工程产物语言规则" in artifact_format
+    assert "Prism 工件先交付状态，再解释协议" in artifact_format
+    assert "不是 Prism runtime dependency" in artifact_format
+    assert "不强行加入第一人称、情绪或个性" in artifact_format
+    assert "不在每个章节重复解释 Prism 协议" in brief_skill
+    assert "避免用“为了实现这一目标”" in plan_skill
+
+
 def test_live_surface_has_no_workspace_roadmap_references() -> None:
     """Workspace 实例层的路书编号（067/068/…）不得回写 SDK 活文档与脚本。
 
@@ -329,9 +393,21 @@ def test_plan_guidance_stays_advisory_and_not_scope() -> None:
 
     assert "它不是旧 Scope" in readme
     assert "prism plan record" in review_skill
-    assert "缺 `## 步骤`" in brief_skill
+    assert "`## 目标`、`## 步骤`、`## 验证`" in brief_skill
     assert "/prism-plan" in readme
     assert "/prism-plan" not in review_skill
+
+
+def test_review_findings_granularity_follows_shared_evolution_boundary() -> None:
+    review_skill = (
+        ROOT / "skills" / "prism4" / "prism-review" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "共享演进边界" in review_skill
+    assert "owner、Decision gate、验证方式和 supersede 节奏" in review_skill
+    assert "一条 F 项一个 Artifact" in review_skill
+    assert "如果整份 Findings 被 supersede" in review_skill
+    assert "正文不必逐段重复协议自证" in review_skill
 
 
 def test_prism_plan_skill_is_active_but_not_workflow_or_authority() -> None:
@@ -350,6 +426,11 @@ def test_prism_plan_skill_is_active_but_not_workflow_or_authority() -> None:
     assert "不要把已持久化的 Plan 文件整体作为新 Plan 正文" in plan_skill
     assert "规划深度应随任务复杂度调整" in plan_skill
     assert "自检（Self-review）是 Plan 内部质量控制，不自动产生 Findings" in plan_skill
+    assert "### 双层阅读合同" in plan_skill
+    assert "完整 Plan 服务执行，Brief 服务恢复" in plan_skill
+    assert "不是 Core lifecycle DSL" in plan_skill
+    assert "thin Plan 不需要强行拆阶段" in plan_skill
+    assert "不是让 Brief 自行补写进度" in plan_skill
     assert "prism plan record" not in plan_skill
     assert "主动设计 advisory 行动结构" in readme
     assert "不定义边界或授权" in architecture

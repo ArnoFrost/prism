@@ -92,6 +92,34 @@ Plan 的语义要求是：
 
 `## 目标`、`## 步骤`、`## 验证`、`## 风险` 是当前 Markdown 参考呈现约定，不定义 Plan ontology。简单任务可以生成 thin Plan；复杂或高风险任务需要 structured Plan。规划深度应随任务复杂度调整。
 
+### 双层阅读合同
+
+完整 Plan 服务执行，Brief 服务恢复。不要为了让 Brief 变短而删除 Plan 的事实、依赖、假设、产出、验证和护栏；应通过顶层行动地图实现 progressive disclosure。
+
+复杂 Plan 可以在 `## 步骤` 内使用以下 Reference Markdown 约定：
+
+```markdown
+### P0 — 阶段名称
+
+**状态**：待执行 | 进行中 | 已完成 | 延后 | 放弃
+**依赖**：必要前置；无则省略
+**产出**：本阶段留下什么
+**验证**：怎样证明本阶段完成
+
+1. 顶层动作
+   - 执行细节、事实、假设或护栏
+```
+
+- `P0` 只是示例编号，不是 Core Phase / Wave primitive；也可以使用自然语言阶段名。
+- 顶层阶段至少提供状态和验证；依赖、产出在确有信息时写，不制造空字段。
+- Brief 只投影行动地图、当前阶段、当前阶段验证和该阶段未完成的顶层动作；嵌套细节留在完整 Plan。
+- thin Plan 不需要强行拆阶段，继续使用 `## 目标 / ## 步骤 / ## 验证` 即可。
+- 状态词属于 Reference Experience 的解析约定，不是 Core lifecycle DSL。无法可靠解析时，Brief 回退到 Plan 目标、验证与链接，不猜测状态。
+
+Plan 不需要实时充当任务账本。普通动作完成后不为“同步一下”重复落盘；但当顶层阶段已改变、旧 Plan 会让跨 session 恢复得到错误阶段时，这已经是有意义的 recovery snapshot 变化。需要持久恢复时，应修订或 supersede 旧 Plan，而不是让 Brief 自行补写进度。
+
+正文先写行动事实。frontmatter 已说明 Plan 是 advisory / regenerable 时，不要在每个阶段重复“本 Plan 不授权”“仍需用户确认”等自证；只在真正的 decision gate 或误读风险处说明 authority 边界。避免用“为了实现这一目标”“基于上述分析”等填充句连接步骤。
+
 仅在用户要求、或当前 Prism 上下文需要持久工件（durable artifact）时持久化 Plan。持久化机制属于当前 adapter，不属于 Plan 语义。
 
 落盘前先检查当前 Topic 是否已有等价 Plan。只有行动结构发生实质变化、或需要保留 replanning 历史时才新建 Plan；这种情况应说明新 Plan 如何 supersede 旧 Plan。参考 CLI 默认会让新 Plan supersede 当前 active Plan；并行候选必须是有意选择，而不是默认行为。
