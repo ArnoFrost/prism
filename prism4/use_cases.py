@@ -90,9 +90,7 @@ def _initial_intent_body(body: str) -> str:
         "## 关键约束\n\n"
         "未声明。\n\n"
         "## 完成条件\n\n"
-        "未声明。\n\n"
-        "## 当前落点\n\n"
-        "Topic 刚创建；后续由 Findings、Decision、Plan 与 Brief 补足当前态。"
+        "未声明。"
     )
 
 
@@ -243,6 +241,7 @@ def record_clarify(
     clarify_metadata = {
         "title": title or question,
         "question": question,
+        "topic_id": topic_id,
         "capability": "prism:clarify",
         "created_at": utc_now_iso(),
     }

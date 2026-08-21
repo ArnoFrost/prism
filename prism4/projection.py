@@ -29,8 +29,8 @@ def project_brief(
     """从当前 store 状态投影一份 Brief。
 
     Brief 是用于上下文恢复的工件，不是事实源。本函数只读取现状并返回一个新的
-    Brief 工件，不修改任何权威工件。章节对齐阅读面：目标 / 验收 / 合同验收 /
-    已承诺 / 进度 / 未决 / 已消化 / 下一步。
+    Brief 工件，不修改任何权威工件。章节对齐恢复任务：目标与边界 / 当前阶段 /
+    本阶段完成信号 / 已承诺 / 风险与未决 / 下一步 / Topic 完成条件 / 历史与导航。
     """
 
     if topic_id not in store.topics:
@@ -40,7 +40,14 @@ def project_brief(
     artifacts = [
         artifact
         for artifact in store.artifacts.values()
-        if artifact.topic_id in lineage and artifact.role != "brief"
+        if artifact.role != "brief"
+        and (
+            artifact.topic_id == topic_id
+            or (
+                artifact.topic_id in lineage
+                and artifact.role in {"findings", "decision"}
+            )
+        )
     ]
     artifacts.sort(key=lambda item: (ROLE_ORDER.get(item.role, 99), item.id))
 
@@ -57,7 +64,7 @@ def project_brief(
     decisions = [item for item in current if item.role == "decision"]
     plans = [item for item in current if item.role == "plan"]
     findings = [item for item in current if item.role == "findings"]
-    pending = sorted(store.payloads.values(), key=lambda item: item.id)
+    pending, unscoped_payload_count = _scoped_payloads(store, lineage)
 
     lines = [
         f"# Brief — {store.topics[topic_id].title}",
@@ -65,41 +72,48 @@ def project_brief(
         "> 本 Brief 是用于上下文恢复的投影，不是事实源。",
         "> 与 Intent、Decision 或来源 Findings 冲突时，以后者为准。",
         "",
-        "## 目标",
+        "## 目标与边界",
         "",
-        *_goal_lines(intent, plans),
+        *_boundary_lines(intent),
         "",
-        "## 验收",
+        "## 当前阶段",
+        "",
+        *_stage_lines(plans),
+        "",
+        "## 本阶段完成信号",
         "",
         *_acceptance_lines(plans),
         "",
-        "## 合同验收",
-        "",
-        *_contract_lines(intent),
-        "",
         "## 已承诺",
         "",
-        *_ref_lines(decisions, empty="暂无当前有效 Decision。"),
+        *_ref_lines(
+            decisions,
+            topic_id=topic_id,
+            empty="暂无当前有效 Decision。",
+        ),
         "",
-        "## 进度",
+        "## 风险与未决",
         "",
-        *_progress_lines(plans),
-        "",
-        "## 未决",
-        "",
-        *_open_lines(pending, findings),
-        "",
-        "## 已消化",
-        "",
-        *_digested_lines(digested),
+        *_open_lines(pending, findings, topic_id=topic_id),
         "",
         "## 下一步",
         "",
         *_next_lines(plans, pending, findings),
         "",
-        "## 投影导航",
+        "## Topic 完成条件",
         "",
-        *_navigation_lines(decisions, pending, findings),
+        *_contract_lines(intent),
+        "",
+        "## 历史与导航",
+        "",
+        *_history_navigation_lines(
+            digested,
+            topic_id=topic_id,
+            decisions=decisions,
+            pending=pending,
+            findings=findings,
+            unscoped_payload_count=unscoped_payload_count,
+        ),
     ]
 
     return Artifact(
@@ -134,6 +148,31 @@ def _default_brief_id(store: ReferenceStore, topic_id: str) -> str:
     if not topic.parent_id:
         return BRIEF_ID
     return f"brief:{_local_part(topic_id)}.current"
+
+
+def _scoped_payloads(
+    store: ReferenceStore, lineage: set[str]
+) -> tuple[list, int]:
+    """Return applicable payloads and count ambiguous legacy payloads.
+
+    New Clarify payloads carry ``metadata.topic_id``. A legacy payload without
+    provenance can be inferred only when the store contains exactly one Topic;
+    in a multi-Topic store it is excluded rather than treated as global state.
+    """
+    sole_topic_id = next(iter(store.topics)) if len(store.topics) == 1 else None
+    pending = []
+    unscoped_count = 0
+    for payload in store.payloads.values():
+        source_topic_id = str(payload.metadata.get("topic_id") or "").strip()
+        if not source_topic_id:
+            if sole_topic_id is None:
+                unscoped_count += 1
+                continue
+            source_topic_id = sole_topic_id
+        if source_topic_id in lineage:
+            pending.append(payload)
+    pending.sort(key=lambda item: item.id)
+    return pending, unscoped_count
 
 
 def _is_current(artifact: Artifact, superseded: set[str]) -> bool:
@@ -177,30 +216,67 @@ def _as_bullets(text: str, fallback: str) -> list[str]:
     return [fallback] if fallback else []
 
 
-def _goal_lines(intent: Artifact | None, plans: list[Artifact]) -> list[str]:
+def _boundary_lines(intent: Artifact | None) -> list[str]:
+    if intent is None:
+        return ["- 尚无当前 Intent，无法恢复目标与边界。"]
+
+    lines: list[str] = []
+    purpose = _compact_section(intent.body, "为什么做")
+    if purpose:
+        lines.append(f"- 目的：{purpose}")
+    north_star = _compact_section(intent.body, "北极星")
+    if north_star and north_star != "未声明。":
+        lines.append(f"- 北极星：{north_star}")
+    lines.append(f"- 边界：{intent.title or intent.id}")
+    for heading, label in (("边界内", "边界内"), ("不做什么", "边界外")):
+        value = _compact_section(intent.body, heading)
+        if value and value != "未声明。":
+            lines.append(f"- {label}：{value}")
+    return lines
+
+
+def _compact_section(body: str, heading: str) -> str:
+    return " ".join(
+        line.strip() for line in _section(body, heading).splitlines() if line.strip()
+    )
+
+
+def _stage_lines(plans: list[Artifact]) -> list[str]:
+    if not plans:
+        return ["- 尚未形成当前阶段路线。"]
     lines: list[str] = []
     for plan in plans:
-        lines.extend(_as_bullets(_section(plan.body, "目标"), ""))
-    if not lines and intent is not None:
-        lines = [f"- {intent.title or intent.id}"]
-    if intent is not None:
-        boundary = intent.title or intent.id
-        if lines and not any(boundary in line for line in lines):
-            lines.append(f"- 边界：{boundary}")
-        landing = _section(intent.body, "当前落点")
-        if landing:
-            compact = " ".join(
-                line.strip() for line in landing.splitlines() if line.strip()
-            )
-            lines.append(f"- 当前落点：{compact}")
-    return lines or ["- 暂无当前目标。"]
+        lines.append(f"- `{plan.id}` {plan.title or plan.id}")
+        phases = _plan_phases(plan)
+        if not phases:
+            lines.extend(_as_bullets(_section(plan.body, "目标"), ""))
+            continue
+        active = _active_phase(phases)
+        if active is None:
+            lines.append("- 当前：所有顶层阶段均已结束。")
+        else:
+            lines.append(f"- 当前：{active[0]}（{active[1]}）")
+        lines.append("- 顶层行动地图：")
+        lines.extend(f"  - {status}｜{title}" for title, status, _body in phases)
+    return lines
 
 
 def _acceptance_lines(plans: list[Artifact]) -> list[str]:
     lines: list[str] = []
     for plan in plans:
-        lines.extend(_as_bullets(_section(plan.body, "验证"), ""))
-    return lines or ["- 见当前 Plan「验证」。"]
+        phases = _plan_phases(plan)
+        active = _active_phase(phases)
+        if phases and active is None:
+            lines.append(
+                "- 当前 Plan 的顶层阶段已全部结束；整体结果见完整 Plan「验证」。"
+            )
+            continue
+        phase_signal = _phase_field(active, "验证") if active else ""
+        if phase_signal:
+            lines.append(f"- {phase_signal}")
+        else:
+            lines.extend(_as_bullets(_section(plan.body, "验证"), ""))
+    return lines or ["- 尚未形成当前阶段路线；暂无阶段完成信号。"]
 
 
 def _contract_lines(intent: Artifact | None) -> list[str]:
@@ -209,33 +285,104 @@ def _contract_lines(intent: Artifact | None) -> list[str]:
     return _as_bullets(_section(intent.body, "完成条件"), "- 见 Intent。")
 
 
-def _ref_lines(artifacts: list[Artifact], *, empty: str) -> list[str]:
+def _ref_lines(
+    artifacts: list[Artifact], *, topic_id: str, empty: str
+) -> list[str]:
     if not artifacts:
         return [f"- {empty}"]
-    return [f"- `{item.id}` {item.title or item.id}" for item in artifacts]
-
-
-def _progress_lines(plans: list[Artifact]) -> list[str]:
-    if not plans:
-        return [
-            "- 暂无当前有效 Plan。普通下一步由 Agent 局部规划；需要跨 session 恢复时再记录 durable Plan snapshot。"
-        ]
     lines: list[str] = []
-    for plan in plans:
-        lines.append(f"- `{plan.id}` {plan.title or plan.id}")
-        steps = _section(plan.body, "步骤")
-        if steps:
-            lines.extend(
-                f"  {line.strip()}"
-                for line in steps.splitlines()
-                if _is_step_line(line)
+    for item in artifacts:
+        label = f"`{item.id}` {item.title or item.id}"
+        if item.topic_id != topic_id:
+            lines.append(
+                f"- Child 可见：{label}（来源：`{item.topic_id}`；"
+                "不自动视为 Parent 承诺）"
             )
+        else:
+            lines.append(f"- {label}")
     return lines
 
 
 def _is_step_line(line: str) -> bool:
     stripped = line.strip()
     return bool(re.match(r"^\d+[\.\)、)]\s+", stripped) or stripped.startswith("- "))
+
+
+def _plan_phases(plan: Artifact) -> list[tuple[str, str, str]]:
+    """Parse optional Reference Markdown phases from a Plan.
+
+    The convention is a reading aid, not a Core lifecycle: a ``###`` heading
+    inside ``## 步骤`` counts as a phase only when its block declares
+    ``**状态**：...``. Thin Plans without this shape use the legacy fallback.
+    """
+    steps = _section(plan.body, "步骤")
+    matches = list(re.finditer(r"^###\s+(.+?)\s*$", steps, re.MULTILINE))
+    phases: list[tuple[str, str, str]] = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(steps)
+        body = steps[match.end() : end].strip()
+        status = _field_value(body, "状态")
+        if status:
+            phases.append((match.group(1).strip(), status, body))
+    return phases
+
+
+def _field_value(body: str, label: str) -> str:
+    match = re.search(
+        rf"^\*\*{re.escape(label)}\*\*[ \t]*[：:][ \t]*(.+?)[ \t]*$",
+        body,
+        re.MULTILINE,
+    )
+    return match.group(1).strip() if match else ""
+
+
+def _phase_field(phase: tuple[str, str, str] | None, label: str) -> str:
+    if phase is None:
+        return ""
+    return _field_value(phase[2], label)
+
+
+def _active_phase(
+    phases: list[tuple[str, str, str]],
+) -> tuple[str, str, str] | None:
+    for phase in phases:
+        if _is_in_progress_status(phase[1]):
+            return phase
+    for phase in phases:
+        if not _is_closed_status(phase[1]):
+            return phase
+    return None
+
+
+def _is_in_progress_status(status: str) -> bool:
+    lowered = status.lower()
+    return any(marker in lowered for marker in ("进行中", "in progress", "active"))
+
+
+def _is_closed_status(status: str) -> bool:
+    lowered = status.lower().strip()
+    if lowered in {"完成", "done", "completed", "closed"}:
+        return True
+    return any(
+        marker in lowered
+        for marker in (
+            "已完成",
+            "已关闭",
+            "延后",
+            "暂缓",
+            "放弃",
+            "取消",
+            "拒绝",
+            "done",
+            "completed",
+            "closed",
+            "deferred",
+            "abandoned",
+            "cancelled",
+            "canceled",
+            "rejected",
+        )
+    )
 
 
 def _is_open_step(line: str) -> bool:
@@ -270,18 +417,39 @@ def _is_open_step(line: str) -> bool:
 
 def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> list[str]:
     lines: list[str] = []
+    all_phased_plans_closed = bool(plans) and all(
+        (phases := _plan_phases(plan)) and _active_phase(phases) is None
+        for plan in plans
+    )
     for plan in plans:
-        for raw in _section(plan.body, "步骤").splitlines():
+        phases = _plan_phases(plan)
+        active = _active_phase(phases)
+        if phases and active is None:
+            continue
+        source = active[2] if active else _section(plan.body, "步骤")
+        for raw in source.splitlines():
             if raw[:1].isspace():
+                continue
+            if phases and not re.match(r"^\d+[\.\)、)]\s+", raw.strip()):
                 continue
             if _is_open_step(raw):
                 lines.append(f"- {raw.strip()}")
     if pending:
         lines.append("- 有未晋升澄清，适合 `/prism-clarify`")
-    elif findings:
-        lines.append("- 有仍有效 Findings；若被取舍阻塞用 `/prism-clarify`，否则按 Plan 推进")
+    elif findings and not lines:
+        if all_phased_plans_closed:
+            lines.append(
+                "- 当前 Plan 已结束；仍有有效 Findings。进入下一轮前先确认哪些判断继续适用。"
+            )
+        else:
+            lines.append(
+                "- 有仍有效 Findings；若被取舍阻塞用 `/prism-clarify`，否则按 Plan 推进"
+            )
     if not lines:
-        lines.append("- 当前无未完成 Plan 步骤。阅读面漂移时用 `/prism-compress`")
+        if all_phased_plans_closed:
+            lines.append("- 当前 Plan 已结束；尚未形成新的行动结构。")
+        else:
+            lines.append("- 当前无未完成 Plan 步骤。阅读面漂移时用 `/prism-compress`")
     return lines
 
 
@@ -289,6 +457,8 @@ def _navigation_lines(
     decisions: list[Artifact],
     pending,
     findings: list[Artifact],
+    *,
+    unscoped_payload_count: int = 0,
 ) -> list[str]:
     if decisions or pending:
         decision_line = "- Decision / Clarify 投影索引：`decisions/decision.index.md`"
@@ -298,20 +468,33 @@ def _navigation_lines(
         finding_line = "- Findings 投影索引：`findings/finding.index.md`"
     else:
         finding_line = "- 暂无 Findings；record 后会生成 `findings/finding.index.md`"
-    return [decision_line, finding_line]
+    lines = [decision_line, finding_line]
+    if unscoped_payload_count:
+        lines.append(
+            "- 诊断："
+            f"{unscoped_payload_count} 条历史 Clarify 缺少 Topic provenance，"
+            "未纳入本 Brief。"
+        )
+    return lines
 
 
-def _open_lines(pending, findings: list[Artifact]) -> list[str]:
+def _open_lines(pending, findings: list[Artifact], *, topic_id: str) -> list[str]:
     lines: list[str] = []
     for payload in pending:
         question = str(payload.metadata.get("question") or payload.id)
-        lines.append(f"- `{payload.id}` {question}")
+        source_topic = str(payload.metadata.get("topic_id") or "")
+        lines.append(
+            f"- `{payload.id}` {question}{_origin_suffix(topic_id, source_topic)}"
+        )
     for item in findings:
-        lines.append(f"- `{item.id}` {item.title or item.id}")
+        lines.append(
+            f"- `{item.id}` {item.title or item.id}"
+            f"{_origin_suffix(topic_id, item.topic_id)}"
+        )
     return lines or ["- 暂无未决澄清或仍有效 Findings。"]
 
 
-def _digested_lines(artifacts: list[Artifact]) -> list[str]:
+def _digested_lines(artifacts: list[Artifact], *, topic_id: str) -> list[str]:
     if not artifacts:
         return ["- 暂无。"]
     grouped: dict[str, list[Artifact]] = {}
@@ -324,5 +507,38 @@ def _digested_lines(artifacts: list[Artifact]) -> list[str]:
             continue
         lines.append(f"**{ROLE_LABELS.get(role, role)}**")
         for item in items:
-            lines.append(f"- `{item.id}` {item.title or item.id}")
+            lines.append(
+                f"- `{item.id}` {item.title or item.id}"
+                f"{_origin_suffix(topic_id, item.topic_id)}"
+            )
     return lines
+
+
+def _history_navigation_lines(
+    digested: list[Artifact],
+    *,
+    topic_id: str,
+    decisions: list[Artifact],
+    pending,
+    findings: list[Artifact],
+    unscoped_payload_count: int,
+) -> list[str]:
+    return [
+        "**已消化**",
+        "",
+        *_digested_lines(digested, topic_id=topic_id),
+        "",
+        "**索引**",
+        *_navigation_lines(
+            decisions,
+            pending,
+            findings,
+            unscoped_payload_count=unscoped_payload_count,
+        ),
+    ]
+
+
+def _origin_suffix(current_topic_id: str, source_topic_id: str) -> str:
+    if not source_topic_id or source_topic_id == current_topic_id:
+        return ""
+    return f"（来源：`{source_topic_id}`）"

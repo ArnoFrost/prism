@@ -62,6 +62,7 @@ def test_create_topic_writes_authoritative_intent():
     assert "## 为什么做" in intent.body
     assert "Keep the core thin." in intent.body
     assert "## 完成条件" in intent.body
+    assert "## 当前落点" not in intent.body
 
 
 def test_create_topic_preserves_structured_intent_body():
@@ -335,6 +336,8 @@ def test_record_clarify_increments_payload_ids_without_explicit_ids():
     assert ids == ["clarify:c01", "clarify:c02"]
     assert store.payloads["clarify:c01"].type == "proposed-patch"
     assert store.payloads["clarify:c02"].type == "decision-candidate"
+    assert store.payloads["clarify:c01"].metadata["topic_id"] == "topic:demo"
+    assert store.payloads["clarify:c02"].metadata["topic_id"] == "topic:demo"
 
 
 def test_persist_brief_rejects_non_brief_id_collision():
