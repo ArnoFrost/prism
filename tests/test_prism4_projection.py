@@ -575,6 +575,39 @@ def test_project_brief_next_steps_ignore_nested_completed_step_details():
     assert "Decision / Clarify 投影索引" not in next_section
 
 
+def test_project_brief_keeps_indexes_visible_for_digested_governance_artifacts():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id=topic.id,
+            role="findings",
+            title="已消化发现",
+            body="观察。",
+            metadata={"evolution": "historical"},
+        )
+    )
+    store.add_artifact(
+        Artifact(
+            id="decision:d01",
+            topic_id=topic.id,
+            role="decision",
+            title="历史决策",
+            body="承诺。",
+            metadata={"evolution": "historical"},
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    navigation = brief.body.split("**索引**", 1)[1]
+    assert "Decision / Clarify 投影索引" in navigation
+    assert "Findings 投影索引" in navigation
+    assert "暂无 Decision / Clarify" not in navigation
+    assert "暂无 Findings" not in navigation
+
+
 def test_project_brief_next_steps_ignore_completed_deferred_and_rejected_actions():
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))

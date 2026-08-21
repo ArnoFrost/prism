@@ -544,6 +544,8 @@ def _history_navigation_lines(
     findings: list[Artifact],
     unscoped_payload_count: int,
 ) -> list[str]:
+    digested_decisions = [item for item in digested if item.role == "decision"]
+    digested_findings = [item for item in digested if item.role == "findings"]
     return [
         "**已消化**",
         "",
@@ -551,9 +553,9 @@ def _history_navigation_lines(
         "",
         "**索引**",
         *_navigation_lines(
-            decisions,
+            [*decisions, *digested_decisions],
             pending,
-            findings,
+            [*findings, *digested_findings],
             unscoped_payload_count=unscoped_payload_count,
         ),
     ]
