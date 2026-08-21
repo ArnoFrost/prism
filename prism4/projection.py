@@ -517,10 +517,16 @@ def _digested_lines(artifacts: list[Artifact], *, topic_id: str) -> list[str]:
         if not items:
             continue
         lines.append(f"**{ROLE_LABELS.get(role, role)}**")
-        for item in items:
+        shown = items[-3:] if role == "plan" else items
+        for item in shown:
             lines.append(
                 f"- `{item.id}` {item.title or item.id}"
                 f"{_origin_suffix(topic_id, item.topic_id)}"
+            )
+        hidden_count = len(items) - len(shown)
+        if hidden_count:
+            lines.append(
+                f"- 另有 {hidden_count} 份更早的已消化 Plan；见 `plans/`。"
             )
     return lines
 

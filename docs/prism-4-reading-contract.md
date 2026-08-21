@@ -95,6 +95,8 @@ Intent 不保存当前进度。首屏应先给目的与边界；来源材料、�
 
 Plan 保留微观、可评估的执行事实。复杂 Plan 先提供顶层行动地图，再展开阶段细节；Brief 负责恢复当前切片，不通过压薄 Plan 换取简短。
 
+Plan Artifact 记录行动模型，不记录每一次状态跳动。同一段连续执行中的阶段切换留在临时执行清单；只有路线改变、跨 session / handoff 或恢复将读错时，才需要新的 durable snapshot。Child Topic 表达需要独立 Intent 与长期演进的子问题，不是 Plan phase。测试矩阵、A/B 与 fixture 默认属于 reference / temp。
+
 ### Findings — Attention / Sensemaking
 
 读完后应能回答：

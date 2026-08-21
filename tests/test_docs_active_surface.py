@@ -474,6 +474,8 @@ def test_topic_doorway_guidance_keeps_topic_md_as_navigation_not_source() -> Non
     assert "不是 Core Artifact role，也不是事实源" in artifact_format
     assert "不要把 `topic.md` 扩写成 README、Scope 或 Brief" in artifact_format
     assert "`topic.md` 是机械锚点与导航门牌，不是事实源" in topic_skill
+    assert "Child Topic 不是 Child Plan" in topic_skill
+    assert "测试路线、A/B、fixture、短期 spike" in topic_skill
     assert "## 阅读入口" in local_files
 
 
@@ -505,6 +507,26 @@ def test_findings_format_prioritizes_human_readability_without_changing_authorit
     assert "评价标准是读者能否恢复和核实，不是总字数" in review_skill
     assert "若现有 Findings 已足够表达本轮判断，直接引用现有 Findings" in review_skill
     assert "不要把已持久化的 Findings 文件整体作为新 Findings 正文" in review_skill
+
+
+def test_plan_snapshots_do_not_become_phase_task_logs() -> None:
+    plan_skill = (
+        ROOT / "skills" / "prism4" / "prism-plan" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+    artifact_format = (
+        ROOT
+        / "skills"
+        / "prism4"
+        / "prism-compress"
+        / "references"
+        / "artifact-format.md"
+    ).read_text(encoding="utf-8")
+
+    assert "不要在 P0、P1、P2 每切换一次就各记录一份 Plan Artifact" in plan_skill
+    assert "测试矩阵、A/B、fixture 和临时验证脚本" in plan_skill
+    assert "Child Topic 也不是 Child Plan" in plan_skill
+    assert "不要把每个阶段状态变化都保存成新的 `pXX`" in artifact_format
+    assert "Plan phase / item 只是当前 Topic 内的行动拆解" in artifact_format
 
 
 def test_open_source_readiness_review_is_indexed_and_actionable() -> None:

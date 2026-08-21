@@ -489,6 +489,41 @@ def test_project_brief_separates_active_from_superseded():
     assert "record 后会生成 `decisions/decision.index.md`" in brief.body
 
 
+def test_project_brief_caps_intermediate_plan_snapshots_in_recovery_history():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    plans = []
+    for index in range(1, 6):
+        plan = Artifact(
+            id=f"plan:p{index:02d}",
+            topic_id=topic.id,
+            role="plan",
+            title=f"阶段快照 {index}",
+            body="## 目标\n\n恢复。\n\n## 步骤\n\n1. 推进。\n\n## 验证\n\n清楚。",
+            metadata={"evolution": "regenerable"},
+        )
+        store.add_artifact(plan)
+        plans.append(plan)
+        if index > 1:
+            store.add_relation(
+                Relation(
+                    source_ref=plan.id,
+                    kind="supersedes",
+                    target_ref=plans[index - 2].id,
+                )
+            )
+
+    brief = project_brief(store, topic.id)
+
+    history = brief.body.split("## 历史与导航", 1)[1]
+    assert "`plan:p01`" not in history
+    assert "`plan:p02`" in history
+    assert "`plan:p03`" in history
+    assert "`plan:p04`" in history
+    assert "另有 1 份更早的已消化 Plan；见 `plans/`" in history
+    assert "`plan:p05` 阶段快照 5" in brief.body.split("## 当前阶段", 1)[1]
+
+
 def test_project_brief_next_steps_ignore_nested_completed_step_details():
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))

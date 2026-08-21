@@ -159,7 +159,7 @@ Current Brief source matrix (implementation baseline, not final surface vocabula
 | Current stage, stage completion, next action | Exact Topic active Plan |
 | Commitments | Applicable Decision from the Topic lineage; label Child origin |
 | Risks and open items | Applicable Findings / Clarify from the Topic lineage; label Child origin |
-| History and navigation | Superseded / historical Artifacts and Adapter indexes |
+| History and navigation | Recent superseded / historical Artifacts plus Adapter indexes or directory entry points; recovery view need not enumerate every intermediate Plan snapshot |
 
 Child Intent and Child Plan do not replace Parent state. Clarify payloads carry Topic provenance; missing provenance never means globally applicable.
 

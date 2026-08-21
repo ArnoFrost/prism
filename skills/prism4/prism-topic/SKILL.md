@@ -19,6 +19,7 @@ Workspace 关联是 Host 行为，不是 Topic 语义。项目初始化（`./set
 ## 规则
 
 - Topic 是持久的协作边界。不要为 4.0 创建 `Task` 层级；用子 Topic 表达耐久子问题，用 Plan Item 表达普通执行步骤。
+- **Child Topic 不是 Child Plan。** 只有一个子问题需要独立 Intent、独立演进和跨会话恢复时，才创建 Child Topic。Plan phase / item 仍属于当前 Topic 的行动拆解；测试路线、A/B、fixture、短期 spike 默认放 `references/` 或临时目录，不为它们创建 Child Topic。
 - `topic.md` 是机械锚点与导航门牌，不是事实源；人类恢复边界读 `intent.md`，恢复当前态读生成后的 `brief.md`。
 - `topic new` 会预留空 `references/`，用于人工或 Agent 放置调研、证据、外部材料；它不是 Core Artifact，默认不进入 Brief 投影。
 - 子 Topic 落在 `children/<slug>/`，内聚 topic / intent / plans / references；findings 与 decisions 冒泡回父根。

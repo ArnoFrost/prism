@@ -113,7 +113,7 @@ Intent 先服务 Orientation / Boundary：首屏给稳定目的与边界，再�
 | 风险与未决 | 当前 Topic 与允许冒泡 Child 的 Clarify / Findings；Child 来源需标明 | 无 Topic provenance 的 payload；已消化 Findings |
 | 下一步 | 当前 Topic 自己的 active Plan 未完成顶层步骤；阻塞时指向适用 Clarify | Child Plan；已完成步骤的说明子弹；索引导航 |
 | Topic 完成条件 | 当前 Topic 自己的 Intent「完成条件」 | Plan 验证；Child Intent |
-| 历史与导航 | 被取代 / `historical` 的工件 id + local adapter 索引 | 当成待办；新的行动或事实源 |
+| 历史与导航 | 最近的被取代 / `historical` 工件 id + local adapter 索引或目录入口 | 当成待办；为了审计穷举所有中间 Plan snapshot；新的行动或事实源 |
 
 旧 Clarify payload 缺少 `topic_id` 时，只有 Store 恰好包含一个 Topic 才可推断归属；多 Topic Store 中应从 Brief 隔离并给出诊断，保留原数据，不把缺失 provenance 解释为全局适用。
 
@@ -163,6 +163,10 @@ frontmatter：当前件 `authority: "advisory"`、`evolution: "regenerable"`；�
 当前有效 Plan 的正文必须足够让 Brief 投影出「当前阶段 / 本阶段完成信号 / 下一步」。不要只写一句摘要并把行动结构放进 `references/fix-plan.md` 一类资料；references 可以承载 diff、证据、风险矩阵或长分析，但不能替代 Plan 正文的 `## 目标`、`## 步骤`、`## 验证`。
 
 Plan 不是实时任务账本；普通动作完成不要求生成内容等价的新 Plan。但若顶层阶段已经变化，旧 Plan 会让跨 session Brief 恢复出错误阶段，应修订或 supersede 为新的 recovery snapshot。Brief 不自行推断执行进度。
+
+不要把每个阶段状态变化都保存成新的 `pXX`。在同一段连续执行里，阶段进度使用当前对话的执行清单即可；只有路线实质变化、跨 session / handoff 或恢复会读错时，才新增 durable snapshot。测试计划、A/B、fixture 与短期验证过程默认放 `references/` 或 temp；它们只有成为需要独立接受和跨会话执行的行动模型时，才值得记录为 Plan Artifact。
+
+Child Topic 不是 Plan 层级。独立 Intent、独立演进、需要长期恢复的子问题才使用 Child Topic；Plan phase / item 只是当前 Topic 内的行动拆解。
 
 ## Findings — `findings/fXX_*.md`
 

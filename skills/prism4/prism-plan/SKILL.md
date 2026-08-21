@@ -118,6 +118,8 @@ Plan 的语义要求是：
 
 Plan 不需要实时充当任务账本。普通动作完成后不为“同步一下”重复落盘；但当顶层阶段已改变、旧 Plan 会让跨 session 恢复得到错误阶段时，这已经是有意义的 recovery snapshot 变化。需要持久恢复时，应修订或 supersede 旧 Plan，而不是让 Brief 自行补写进度。
 
+同一段连续执行中，不要在 P0、P1、P2 每切换一次就各记录一份 Plan Artifact。只有行动模型实质改变、即将跨 session / handoff，或旧 Plan 已经会让下一位执行者恢复出错误路线时，才留下新 snapshot。当前轮的细粒度进度可留在对话内执行清单；测试矩阵、A/B、fixture 和临时验证脚本默认属于 `references/` 或 temp，不自动晋升为 Plan。**Child Topic 也不是 Child Plan**：独立子问题才建 Child Topic，普通任务拆解留在当前 Plan。
+
 正文先写行动事实。frontmatter 已说明 Plan 是 advisory / regenerable 时，不要在每个阶段重复“本 Plan 不授权”“仍需用户确认”等自证；只在真正的 decision gate 或误读风险处说明 authority 边界。避免用“为了实现这一目标”“基于上述分析”等填充句连接步骤。
 
 仅在用户要求、或当前 Prism 上下文需要持久工件（durable artifact）时持久化 Plan。持久化机制属于当前 adapter，不属于 Plan 语义。
