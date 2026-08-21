@@ -145,6 +145,18 @@ Decision / Intent / source artifacts outrank Brief.
 Brief is never the source of truth.
 ```
 
+Current Brief source matrix (implementation baseline, not final surface vocabulary):
+
+| Brief information | Source scope |
+|-------------------|--------------|
+| Boundary and Topic completion | Exact Topic Intent |
+| Current stage, stage completion, next action | Exact Topic active Plan |
+| Commitments | Applicable Decision from the Topic lineage; label Child origin |
+| Risks and open items | Applicable Findings / Clarify from the Topic lineage; label Child origin |
+| History and navigation | Superseded / historical Artifacts and Adapter indexes |
+
+Child Intent and Child Plan do not replace Parent state. Clarify payloads carry Topic provenance; missing provenance never means globally applicable.
+
 Artifact roles stay limited to:
 
 ```text
@@ -156,6 +168,23 @@ Plan
 ```
 
 Other typed content in diagrams is semantic payload, not a new Artifact Role.
+
+### 4.1 Terminology Grammar Checkpoint
+
+This checkpoint freezes category grammar needed by the current implementation, not final terminology. Surface words may still change after dogfood, and naming must not drive ontology.
+
+| Category | Grammar | Current mapping |
+|----------|---------|-----------------|
+| Artifact | Persistent collaboration state; noun | Intent / Brief / Findings / Decision / Plan |
+| Capability | Semantic transform; action | Review / Clarify / Plan |
+| Payload | Typed semantic result inside an Invocation; not automatically an Artifact | Understanding Update / Proposed Patch / Decision Candidate |
+| Operation | Explicit side effect or recording action | Record Decision |
+| Semantics | Protocol rules, not an Artifact or runtime object | Decision Semantics |
+
+- Plan capability and Plan artifact may remain homonyms. Use qualified forms where protocol prose is ambiguous; do not rename them merely for symmetry.
+- Clarify belongs to understanding. It may produce a Decision Candidate, but only authority and Decision semantics create commitment.
+- Do not add a Briefing Capability for symmetry. Let dogfood prove whether a reusable semantic transform is needed.
+- Final Terminology Freeze happens separately after boundary repair, Brief A/B, and Review / Plan dogfood.
 
 ## 5. Capability I/O
 
@@ -194,6 +223,10 @@ Provider realizes a Capability outside Core. Invocation records one actual seman
 
 Typed inputs and outputs may be persistent Artifact Roles or transient semantic payloads. Do not promote `Understanding Update`, `Proposed Patch`, `Decision Candidate`, `Open Question`, or `Evidence Reference` into Core Artifact Roles unless dogfood proves they need independent identity, lifecycle, authority, and cross-invocation references.
 
+In qualified prose, `Plan capability` produces a `Plan artifact`. The shared word is temporarily acceptable and does not authorize a terminology rename.
+
+Clarify is an understanding capability: a Decision Candidate remains a payload until an authorized Record Decision operation commits a Decision.
+
 MVP Core capabilities:
 
 - `Review`
@@ -205,6 +238,8 @@ Reference operation:
 - `Record Decision`
 
 `Record Decision` is kept out of MVP Core Capability until real use proves that decision recording itself needs a reusable semantic transformation process.
+
+Brief projection remains a Reference Experience / Adapter behavior. There is no Briefing Capability in the current model.
 
 ## 6. Authority and Evolution
 

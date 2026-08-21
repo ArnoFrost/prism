@@ -136,7 +136,7 @@ Topic
 
 ### 4.3 Artifact
 
-`Artifact` 是 Topic 内可引用、可演进的语义单元。
+`Artifact` 是 Topic 内可引用、可演进的持久协作状态。Artifact role 使用名词。
 
 Artifact 不要求是 Markdown，不要求是文件，也不要求位于 Obsidian。Core 只要求它能表达必要语义和关系。
 
@@ -188,6 +188,25 @@ and cross-invocation reference.
 
 不要因为实现方便、文件方便或某个 CLI 命令方便，就预先扩展 Core ontology。实现不便先记录为 Findings。
 
+### 4.5 Terminology Grammar Checkpoint
+
+本节只冻结当前状态边界实现依赖的**概念类别**，不是最终 Terminology Freeze。surface vocabulary 仍可在 Brief A/B 与 Review / Plan dogfood 后校准；命名不能反向驱动 ontology。
+
+| 类别 | 当前语法 | 当前映射 |
+|------|----------|----------|
+| Artifact | 持久协作状态；使用名词 | Intent / Brief / Findings / Decision / Plan |
+| Capability | 语义变换能力；使用动作 | Review / Clarify / Plan |
+| Payload | Invocation 中的 typed semantic result；不因实现方便晋升为 Artifact | Understanding Update / Proposed Patch / Decision Candidate |
+| Operation | 显式副作用或记录动作 | Record Decision |
+| Semantics | 协议规则；不是 Artifact 或 runtime object | Decision Semantics 等 |
+
+暂定规则：
+
+- Plan capability 与 Plan artifact 暂时允许同名；正式协议文本有歧义时使用 `Plan capability` / `Plan artifact` qualified form，不因为词形重叠立即改名。
+- Clarify 属于 understanding，不直接产生 committed Decision。它可以产生 Decision Candidate；commitment 仍由 authority / Decision semantics 控制。
+- 本轮不因为对称性新增 Briefing Capability。是否需要该能力，留待实际 dogfood 证明。
+- 本轮不执行最终 terminology rename。最终 Terminology Freeze 在状态边界修复、Brief A/B、Review / Plan dogfood 之后单独确认。
+
 ## 5. 工件角色
 
 ### 5.1 Intent
@@ -229,11 +248,23 @@ Brief is a current projection for context recovery.
 
 Brief 不是事实源。若 Brief 与 Decision、Intent 或源 Findings 冲突，Decision / Intent / source artifacts 拥有更高权威。Brief 可以被重写、压缩、重新生成或丢弃后恢复。
 
+本轮实现使用以下 source matrix；这是 semantic responsibility 基线，不冻结最终章节名称：
+
+| Brief 信息 | 来源范围 |
+|------------|----------|
+| 目标与边界、Topic 完成条件 | 当前 Topic 自己的 Intent |
+| 当前阶段、阶段完成信号、下一步 | 当前 Topic 自己的 active Plan |
+| 已承诺 | 当前 Topic 与允许冒泡的 Child Decision；Child 来源必须标明，且不自动表述为 Parent 承诺 |
+| 风险与未决 | 当前 Topic 与允许冒泡的 Child Findings / Clarify；Child 来源必须标明 |
+| 历史与导航 | superseded / historical Artifact 与 Adapter 索引 |
+
+Intent 与 Plan 不从 Child Topic 冒泡到 Parent Brief。Clarify payload 必须保留 Topic provenance；无法证明归属的 payload 不得因为实现方便而被视为全局未决项。兼容旧数据时，仅当 Store 只有一个 Topic 才可推断归属；多 Topic Store 中缺少 provenance 的历史 payload 不进入 Brief，并显示诊断但不删除原数据。
+
 Projected state must remain reconstructable from more durable authoritative and provenance-bearing state. Brief、handoff summary、dashboard 或 context package 这类 projected artifacts 可以存在，但其来源应由现有 `projects` relation 与 Invocation provenance 表达；不要为 projection 过早新增 `projection_of`、`generated_from` 或其他 projection-specific schema fields。
 
 ### 5.3 Findings
 
-`Findings` 是发现集。
+`Findings` 保存可追溯的观察、判断与建议，并按共享演进边界组织。
 
 它记录：
 
@@ -253,6 +284,8 @@ Findings surface what matters.
 ```
 
 更完整地说，Finding 暴露值得关注的事实、观察、解释、风险、缺口、冲突、假设或取舍点，并在可能时引用 Evidence 作为依据。
+
+一次 Review 可以包含多个 F 项，但同一 Findings Artifact 内的 F 项应共享大致相同的 owner、Decision、验证与 supersede 节奏。需要独立演进的判断应拆分；这不表示一条 F 项必然对应一个 Artifact。
 
 ### 5.4 Decision
 
@@ -455,7 +488,7 @@ Clarify 可以产生 Decision Candidate，但不等于 Decision。Clarify 默认
 
 4.0 Core 先只定义 Decision Semantics、Decision Record 与 Authority Policy。现实中的决策可能来自人类对话、按钮确认、团队审批、Agent 预授权、CLI 命令或外部系统，因此不应过早要求一个名为 `Decide` 的通用能力。
 
-`Record Decision` 可以作为 Reference Capability / Adapter Operation：
+`Record Decision` 当前作为 Reference Operation / Adapter Operation，而不是因为记录动作存在就新增 Core Capability：
 
 ```text
 Record Decision
@@ -471,6 +504,8 @@ Decision 可以授权或解释后续对 Intent、Brief、Child Topic Intent 或 
 
 `Plan` 是生成行动结构或方案投影的能力。
 
+本节的 `Plan` 指 Plan capability；第 5.5 节的 `Plan` 指 Plan artifact。存在歧义时使用 qualified form，不在本轮执行 rename。
+
 ```text
 Plan
 input:  Intent / Brief / Findings / Decisions
@@ -480,6 +515,8 @@ policy: Reference creates provenance; acceptance creates authority
 ```
 
 Plan 不应该重新变成固定 workflow。它只是按需产生的行动结构。
+
+Brief 是 projected Artifact，本轮不新增与它对称的 Briefing Capability。投影动作继续由 Reference Experience / Adapter 实现；是否需要独立语义变换能力，等待 dogfood 证明。
 
 ## 8. 不保留 Frame
 
