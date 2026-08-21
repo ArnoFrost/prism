@@ -189,6 +189,27 @@ def test_project_brief_includes_child_topic_artifacts():
     assert "`finding:f01` 子问题发现（来源：`topic:demo.child`）" in brief.body
 
 
+def test_project_brief_does_not_point_to_plan_when_only_findings_are_active():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id=topic.id,
+            role="findings",
+            title="仍需观察",
+            body="观察。",
+            metadata={"evolution": "supersedable"},
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    nxt = brief.body.split("## 下一步", 1)[1].split("## Topic 完成条件", 1)[0]
+    assert "尚未形成新的行动结构" in nxt
+    assert "按 Plan 推进" not in nxt
+
+
 def test_parent_brief_uses_exact_topic_intent_and_plan_only():
     store = ReferenceStore()
     parent = store.add_topic(Topic(id="topic:demo", title="父问题"))

@@ -452,6 +452,10 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
             lines.append(
                 "- 当前 Plan 已结束；仍有有效 Findings。进入下一轮前先确认哪些判断继续适用。"
             )
+        elif not plans:
+            lines.append(
+                "- 仍有有效 Findings，但尚未形成新的行动结构；先确认适用判断，再局部规划下一步。"
+            )
         else:
             lines.append(
                 "- 有仍有效 Findings；若被取舍阻塞用 `/prism-clarify`，否则按 Plan 推进"
