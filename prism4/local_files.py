@@ -164,7 +164,11 @@ class LocalFileStoreAdapter:
             topic_root = self.root / _topic_dir_prefix(topic, store)
             (topic_root / REFERENCES_DIRECTORY).mkdir(parents=True, exist_ok=True)
             target = self.root / _topic_path(topic, store)
-            _write_document(target, _topic_frontmatter(topic), _topic_body(topic))
+            _write_document(
+                target,
+                _topic_frontmatter(topic),
+                _topic_body(topic, store),
+            )
             expected.add(target)
 
         relations_by_source = _group_relations(store.relations)
@@ -531,7 +535,10 @@ def _topic_frontmatter(topic: Topic) -> dict[str, Any]:
     return front
 
 
-def _topic_body(topic: Topic) -> str:
+def _topic_body(topic: Topic, store: ReferenceStore) -> str:
+    root_prefix = _root_relative_prefix(topic, store)
+    findings_path = f"{root_prefix}findings/"
+    decisions_path = f"{root_prefix}decisions/"
     navigation = (
         "## 阅读入口\n\n"
         "| 想恢复什么 | 看哪里 |\n"
@@ -539,19 +546,46 @@ def _topic_body(topic: Topic) -> str:
         "| 协作边界与完成条件 | `intent.md` |\n"
         "| 当前上下文切片 | `brief.md`（生成后） |\n"
         "| 当前行动结构 | `plans/` |\n"
-        "| 观察、风险与建议 | `findings/` |\n"
-        "| 已授权承诺 | `decisions/` |\n"
+        f"| 观察、风险与建议 | [`findings/`]({findings_path}) |\n"
+        f"| 已授权承诺 | [`decisions/`]({decisions_path}) |\n"
         "| 调研、证据与长材料 | `references/` |\n\n"
         "`topic.md` 是 Topic 的机械锚点与导航门牌，不是事实源；"
         "边界以 Intent 为准，承诺以 Decision 为准，恢复上下文优先看 Brief。\n"
     )
+    child_navigation = _child_topic_navigation(topic, store)
     if topic.parent_id:
         return (
             f"# {topic.title}\n\n"
             f"本主题是 `{topic.parent_id}` 的子主题，承载一个需要独立上下文的子问题。\n\n"
-            f"{navigation}"
+            f"{navigation}{child_navigation}"
         )
-    return f"# {topic.title}\n\n本主题界定一个持续协作的问题空间。\n\n{navigation}"
+    return (
+        f"# {topic.title}\n\n本主题界定一个持续协作的问题空间。\n\n"
+        f"{navigation}{child_navigation}"
+    )
+
+
+def _root_relative_prefix(topic: Topic, store: ReferenceStore) -> str:
+    prefix = _topic_dir_prefix(topic, store)
+    return "../" * len(Path(prefix).parts) if prefix else ""
+
+
+def _child_topic_navigation(topic: Topic, store: ReferenceStore) -> str:
+    children = sorted(
+        (item for item in store.topics.values() if item.parent_id == topic.id),
+        key=lambda item: item.id,
+    )
+    if not children:
+        return ""
+    lines = [
+        "\n## Child Topics\n",
+        "| Topic | 入口 |",
+        "|-------|------|",
+    ]
+    for child in children:
+        doorway = f"children/{_child_slug(child)}/topic.md"
+        lines.append(f"| `{child.id}` | [{child.title}]({doorway}) |")
+    return "\n".join(lines) + "\n"
 
 
 def _topic_from_document(document: Path) -> Topic:
@@ -728,8 +762,8 @@ def _render_finding_index(
         "",
         "## 发现时序表",
         "",
-        "| 编号 | 标题 | 来源能力 | 记录时间 | 权威性 | 演进 |",
-        "|:----:|------|:--------:|:--------:|:------:|:----:|",
+        "| 编号 | 标题 | 归属 Topic | 来源能力 | 记录时间 | 权威性 | 演进 |",
+        "|:----:|------|------------|:--------:|:--------:|:------:|:----:|",
     ]
     for finding in findings:
         label = sequence_label(finding.id)
@@ -739,7 +773,7 @@ def _render_finding_index(
         authority = str(finding.metadata.get("authority") or "advisory")
         evolution = str(finding.metadata.get("evolution") or "—")
         lines.append(
-            f"| {label} | [{finding.title or label}]({link}) | `{capability}` | {created} | {authority} | {evolution} |"
+            f"| {label} | [{finding.title or label}]({link}) | `{finding.topic_id}` | `{capability}` | {created} | {authority} | {evolution} |"
         )
     lines.extend(
         [
@@ -774,17 +808,18 @@ def _render_decision_index(
     if clarifications:
         lines.extend(
             [
-                "| 编号 | 阻塞问题 | 产出类型 | 记录时间 |",
-                "|:----:|---------|:--------:|:--------:|",
+                "| 编号 | 阻塞问题 | 归属 Topic | 产出类型 | 记录时间 |",
+                "|:----:|---------|------------|:--------:|:--------:|",
             ]
         )
         for payload in clarifications:
             label = sequence_label(payload.id)
             link = f"../{CLARIFICATION_DIRECTORY}/{_payload_filename(payload)}"
             question = _one_line(payload.metadata.get("question")) or "—"
+            topic_id = str(payload.metadata.get("topic_id") or "—")
             created = _short_time(payload.metadata.get("created_at"))
             lines.append(
-                f"| {label} | [{question}]({link}) | `{payload.type}` | {created} |"
+                f"| {label} | [{question}]({link}) | `{topic_id}` | `{payload.type}` | {created} |"
             )
         lines.append("")
         lines.append(f"共 {len(clarifications)} 条澄清。候选 payload 不等于 Decision。")
@@ -795,8 +830,8 @@ def _render_decision_index(
     if decisions:
         lines.extend(
             [
-                "| 编号 | 决策标题 | 授权 | 记录时间 | 演进 | 取代 |",
-                "|:----:|---------|:----:|:--------:|:----:|------|",
+                "| 编号 | 决策标题 | 归属 Topic | 授权 | 记录时间 | 演进 | 取代 |",
+                "|:----:|---------|------------|:----:|:--------:|:----:|------|",
             ]
         )
         superseded_by_source = _group_relations(store.relations)
@@ -817,7 +852,7 @@ def _render_decision_index(
                 else "—"
             )
             lines.append(
-                f"| {label} | [{decision.title or label}]({link}) | `{authority}` | {created} | {evolution} | {targets} |"
+                f"| {label} | [{decision.title or label}]({link}) | `{decision.topic_id}` | `{authority}` | {created} | {evolution} | {targets} |"
             )
         lines.append("")
         lines.append(f"共 {len(decisions)} 条决策。序号越大越新。")

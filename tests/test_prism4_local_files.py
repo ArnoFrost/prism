@@ -85,6 +85,14 @@ def test_roundtrip_preserves_topics_artifacts_and_payloads(tmp_path: Path) -> No
     assert "## 阅读入口" in topic_text
     assert "`topic.md` 是 Topic 的机械锚点与导航门牌，不是事实源" in topic_text
     assert "`intent.md`" in topic_text and "`brief.md`" in topic_text
+    assert "## Child Topics" in topic_text
+    assert "[子主题](children/child/topic.md)" in topic_text
+
+    child_topic_text = (tmp_path / "children" / "child" / "topic.md").read_text(
+        encoding="utf-8"
+    )
+    assert "[`findings/`](../../findings/)" in child_topic_text
+    assert "[`decisions/`](../../decisions/)" in child_topic_text
 
     reloaded = adapter.load()
 
@@ -118,6 +126,30 @@ def test_manual_references_are_preserved_but_not_loaded_as_artifacts(
     )
 
 
+def test_nested_child_doorway_reaches_root_governance_indexes(tmp_path: Path) -> None:
+    store = _store()
+    store.add_topic(
+        Topic(
+            id="topic:demo.child.deep",
+            title="深层子主题",
+            parent_id="topic:demo.child",
+        )
+    )
+
+    LocalFileStoreAdapter(tmp_path).save(store)
+
+    child_text = (tmp_path / "children" / "child" / "topic.md").read_text(
+        encoding="utf-8"
+    )
+    assert "[深层子主题](children/deep/topic.md)" in child_text
+
+    deep_text = (
+        tmp_path / "children" / "child" / "children" / "deep" / "topic.md"
+    ).read_text(encoding="utf-8")
+    assert "[`findings/`](../../../../findings/)" in deep_text
+    assert "[`decisions/`](../../../../decisions/)" in deep_text
+
+
 def test_sequence_ids_increase_with_existing_artifacts(tmp_path: Path) -> None:
     store = _store()
     assert next_artifact_id(store, "findings") == "finding:f01"
@@ -143,7 +175,7 @@ def test_indexes_are_generated_as_projections(tmp_path: Path) -> None:
     store.add_artifact(
         Artifact(
             id="finding:f01",
-            topic_id="topic:demo",
+            topic_id="topic:demo.child",
             role="findings",
             title="首个发现",
             body="发现正文。",
@@ -153,7 +185,7 @@ def test_indexes_are_generated_as_projections(tmp_path: Path) -> None:
     store.add_artifact(
         Artifact(
             id="decision:d01",
-            topic_id="topic:demo",
+            topic_id="topic:demo.child",
             role="decision",
             title="首个决策",
             body="决策正文。",
@@ -165,7 +197,11 @@ def test_indexes_are_generated_as_projections(tmp_path: Path) -> None:
             id="clarify:c01",
             type="decision-candidate",
             body="候选。",
-            metadata={"title": "载体候选", "question": "选哪个载体？"},
+            metadata={
+                "title": "载体候选",
+                "question": "选哪个载体？",
+                "topic_id": "topic:demo.child",
+            },
         )
     )
 
@@ -177,12 +213,16 @@ def test_indexes_are_generated_as_projections(tmp_path: Path) -> None:
     assert "f01" in finding_index and "首个发现" in finding_index
     assert "不是事实源" in finding_index
     assert "演进" in finding_index
+    assert "归属 Topic" in finding_index
+    assert "`topic:demo.child`" in finding_index
 
     decision_index = (tmp_path / "decisions" / "decision.index.md").read_text(encoding="utf-8")
     assert "决策链索引" in decision_index
     assert "## 澄清链" in decision_index and "## 决策链" in decision_index
     assert "c01" in decision_index and "选哪个载体？" in decision_index
     assert "d01" in decision_index and "首个决策" in decision_index
+    assert "归属 Topic" in decision_index
+    assert decision_index.count("`topic:demo.child`") == 2
 
     # 索引是投影，不能被当成工件读回
     reloaded = adapter.load()
