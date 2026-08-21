@@ -44,6 +44,7 @@
 |------|------|
 | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) | 4.0 语义地基：Core 边界与术语 |
 | [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) | 4.0 架构图设计指导 |
+| [prism-4-reading-contract.md](./prism-4-reading-contract.md) | Reference Experience 阅读合同草案：认知任务、渐进展开与理解型 Eval |
 | [architecture.md](./architecture.md) | 分发/所有权视图、当前 skill 面；3.x 闭环见 C |
 | [prism-4-open-source-readiness-review.md](./prism-4-open-source-readiness-review.md) | 4.0-canary 开源准备度、历史包袱和高 ROI 收口评审 |
 

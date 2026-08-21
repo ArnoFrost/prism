@@ -84,6 +84,12 @@ Style Profile 是 Reference Experience 的可选槽位，用来描述同一份 P
 
 当 Agent 未明确加载某个 Style Profile 时，应按 SDK 默认阅读面写作。加载后，也只能做可逆的呈现增强：可以增加 callout 或高亮帮助扫描，但不能把样式块当作新的事实源、行动授权或持久工件类型。
 
+### 2.2 Reading Contract
+
+Reference Experience 还需要回答一个独立于 Style 的问题：语义正确的状态，是否被低成本交付给下一位读者。候选合同见 [`prism-4-reading-contract.md`](./prism-4-reading-contract.md)。它区分 Traceability 与 Recoverability，并用 first glance / scan / read / drill-down 组织阅读层级。
+
+Reading Contract 不改变 Core，也不规定唯一 Markdown 模板。Protocol Semantics 约束状态不能怎样被改写；Reading Contract 约束参考体验需要帮助读者回答什么；Style Profile 再决定如何呈现这些答案。
+
 ## 3. Topic Model
 
 ```mermaid
