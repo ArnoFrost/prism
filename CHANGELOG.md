@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+### Fixed
+
+- **CLI 健壮性校准（workspace 加载链路）** — load 阶段由「遇错即停」改为聚合报错：一次列出全部不合规文档（每条带文件路径、原因、合法取值），不再「修一个暴露一个」；工件/澄清/主题的校验异常统一补上文件路径定位。`topic new` 查重与 `topic list` 改用仅主题结构的惰性加载（`load_topics`），无关 store 里的坏工件不再阻断新建 Topic 与列 Topic；写入路径仍做全量校验（prune 语义要求）。
+- **frontmatter 解析容错** — 支持手写 YAML 单引号值与块列表（键后跟 `- 条目`），此前这两种合法写法会让整个 store 加载失败。
+
 ### Removed
 
 - **旧维护 Skills 退役** — `prism-dist` / `prism-doctor` / `prism-pull` / `prism-push` 从活跃分发面归档；干净代码层更新使用 `prism doctor` / `prism update [--skills]` / `prism relink`；个人多端 SDK、Skills、Env 与已启用 Workspace Git 的双向同步和冲突处理收敛到外部 `prism-maintain`。

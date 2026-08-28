@@ -333,45 +333,57 @@ class LocalFileStoreAdapter:
         self._known_owned = set()
         return ReferenceStore()
 
+    def load_topics(self) -> dict[str, Topic]:
+        """只读取主题文档（含子 Topic），不加载工件与澄清。
+
+        供只需 Topic 结构的操作（新建前查重、列 Topic）使用：
+        无关工件的问题不会阻断这类轻量操作。
+        """
+        if (self.root / TOPIC_FILENAME).is_file():
+            documents = _iter_topic_documents(self.root)
+        elif (self.root / LEGACY_TOPIC_DIRECTORY).is_dir():
+            documents = [
+                document
+                for document in sorted(
+                    (self.root / LEGACY_TOPIC_DIRECTORY).glob("*.md")
+                )
+                if not document.name.endswith(INDEX_SUFFIX)
+            ]
+        else:
+            return {}
+        topics: dict[str, Topic] = {}
+        for topic in _ordered_by_parent(
+            _topic_from_document(document) for document in documents
+        ):
+            topics[topic.id] = topic
+        return topics
+
     def _load_current(self) -> ReferenceStore:
-        store = ReferenceStore()
-        pending = [
-            _topic_from_document(document)
-            for document in _iter_topic_documents(self.root)
-        ]
-        for topic in _ordered_by_parent(pending):
-            store.add_topic(topic)
-
-        deferred_relations: list[Relation] = []
-        for document, role in _iter_artifact_documents(self.root, store):
-            artifact, relations = _artifact_from_document(document, role)
-            store.add_artifact(artifact)
-            deferred_relations.extend(relations)
-
         clarify_dir = self.root / CLARIFICATION_DIRECTORY
-        if clarify_dir.is_dir():
-            for document in sorted(clarify_dir.glob("*.md")):
-                if document.name.endswith(INDEX_SUFFIX):
-                    continue
-                payload, relations = _payload_from_document(document)
-                store.add_payload(payload)
-                deferred_relations.extend(relations)
-
-        self._add_relations(store, deferred_relations)
-        self._known_owned = self._owned_markdown()
-        return store
+        payload_documents = (
+            [
+                document
+                for document in sorted(clarify_dir.glob("*.md"))
+                if not document.name.endswith(INDEX_SUFFIX)
+            ]
+            if clarify_dir.is_dir()
+            else []
+        )
+        return self._load_documents(
+            topic_documents=_iter_topic_documents(self.root),
+            artifact_documents_for=lambda store: _iter_artifact_documents(
+                self.root, store
+            ),
+            payload_documents=payload_documents,
+        )
 
     def _load_legacy(self, topic_dir: Path) -> ReferenceStore:
-        store = ReferenceStore()
-        pending = [
-            _topic_from_document(document)
+        topic_documents = [
+            document
             for document in sorted(topic_dir.glob("*.md"))
             if not document.name.endswith(INDEX_SUFFIX)
         ]
-        for topic in _ordered_by_parent(pending):
-            store.add_topic(topic)
-
-        deferred_relations: list[Relation] = []
+        artifact_documents: list[tuple[Path, str]] = []
         for role, directory in LEGACY_ROLE_TO_DIRECTORY.items():
             base = self.root / directory
             if not base.is_dir():
@@ -379,20 +391,72 @@ class LocalFileStoreAdapter:
             for document in sorted(base.glob("*.md")):
                 if document.name.endswith(INDEX_SUFFIX):
                     continue
+                artifact_documents.append((document, role))
+        clarify_dir = self.root / CLARIFICATION_DIRECTORY
+        payload_documents = (
+            [
+                document
+                for document in sorted(clarify_dir.glob("*.md"))
+                if not document.name.endswith(INDEX_SUFFIX)
+            ]
+            if clarify_dir.is_dir()
+            else []
+        )
+        return self._load_documents(
+            topic_documents=topic_documents,
+            artifact_documents_for=lambda store: artifact_documents,
+            payload_documents=payload_documents,
+        )
+
+    def _load_documents(
+        self,
+        topic_documents: list[Path],
+        artifact_documents_for: Callable[[ReferenceStore], list[tuple[Path, str]]],
+        payload_documents: list[Path],
+    ) -> ReferenceStore:
+        """按主题 → 工件 → 澄清 → 关系的顺序解析，全部问题一次报出。
+
+        聚合而不是遇到第一个问题即停：一次修复全部，避免「修一个暴露一个」。
+        写入路径必须经过这里完整校验，因为 prune 会删除不在 store 中的托管文档。
+        """
+        store = ReferenceStore()
+        problems: list[str] = []
+        pending: list[Topic] = []
+        for document in topic_documents:
+            try:
+                pending.append(_topic_from_document(document))
+            except PrismProtocolError as error:
+                problems.append(_document_problem(document, error))
+        if problems:
+            raise _aggregated_load_error(problems)
+        for topic in _ordered_by_parent(pending):
+            store.add_topic(topic)
+
+        deferred_relations: list[Relation] = []
+        for document, role in artifact_documents_for(store):
+            try:
                 artifact, relations = _artifact_from_document(document, role)
                 store.add_artifact(artifact)
-                deferred_relations.extend(relations)
+            except PrismProtocolError as error:
+                problems.append(_document_problem(document, error))
+                continue
+            deferred_relations.extend(relations)
 
-        clarify_dir = self.root / CLARIFICATION_DIRECTORY
-        if clarify_dir.is_dir():
-            for document in sorted(clarify_dir.glob("*.md")):
-                if document.name.endswith(INDEX_SUFFIX):
-                    continue
+        for document in payload_documents:
+            try:
                 payload, relations = _payload_from_document(document)
                 store.add_payload(payload)
-                deferred_relations.extend(relations)
+            except PrismProtocolError as error:
+                problems.append(_document_problem(document, error))
+                continue
+            deferred_relations.extend(relations)
 
-        self._add_relations(store, deferred_relations)
+        try:
+            self._add_relations(store, deferred_relations)
+        except PrismProtocolError as error:
+            problems.append(str(error))
+        if problems:
+            raise _aggregated_load_error(problems)
         self._known_owned = self._owned_markdown()
         return store
 
@@ -478,7 +542,7 @@ def _write_plain(target: Path, text: str) -> None:
 def _read_document(target: Path) -> tuple[dict[str, Any], str]:
     text = target.read_text(encoding="utf-8")
     if not text.startswith("---"):
-        raise PrismProtocolError(f"文档缺少 frontmatter：{target}")
+        raise PrismProtocolError("文档缺少 frontmatter")
 
     lines = text.split("\n")
     closing = None
@@ -487,17 +551,29 @@ def _read_document(target: Path) -> tuple[dict[str, Any], str]:
             closing = index
             break
     if closing is None:
-        raise PrismProtocolError(f"frontmatter 未闭合：{target}")
+        raise PrismProtocolError("frontmatter 未闭合")
 
     frontmatter: dict[str, Any] = {}
+    last_key: str | None = None
     for line in lines[1:closing]:
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
+        if stripped.startswith("- "):
+            # 手写 YAML 块列表：条目归属上一个键。
+            if last_key is None:
+                raise PrismProtocolError(f"frontmatter 列表项缺少所属键：{line}")
+            current = frontmatter[last_key]
+            if not isinstance(current, list):
+                current = [] if current == "" else [current]
+                frontmatter[last_key] = current
+            current.append(_parse_scalar(stripped[2:].strip()))
+            continue
         if ":" not in stripped:
-            raise PrismProtocolError(f"frontmatter 行格式非法（{target}）：{line}")
+            raise PrismProtocolError(f"frontmatter 行格式非法：{line}")
         key, _, raw_value = stripped.partition(":")
-        frontmatter[key.strip()] = _parse_scalar(raw_value.strip(), target)
+        last_key = key.strip()
+        frontmatter[last_key] = _parse_scalar(raw_value.strip())
 
     body_lines = lines[closing + 1 :]
     if body_lines and body_lines[0] == "":
@@ -505,20 +581,25 @@ def _read_document(target: Path) -> tuple[dict[str, Any], str]:
     return frontmatter, "\n".join(body_lines)
 
 
-def _parse_scalar(raw: str, target: Path) -> Any:
+def _parse_scalar(raw: str) -> Any:
     if raw == "":
         return ""
     if raw[0] in '"[{':
         try:
             return json.loads(raw)
         except json.JSONDecodeError as error:
-            raise PrismProtocolError(f"frontmatter 值格式非法（{target}）：{raw}") from error
+            raise PrismProtocolError(f"frontmatter 值格式非法：{raw}") from error
     if raw == "null":
         return None
     if raw == "true":
         return True
     if raw == "false":
         return False
+    # 手写 frontmatter 常用 YAML 单引号；JSON 解析器不认单引号，需在此剥除。
+    if raw[0] == "'":
+        if len(raw) >= 2 and raw.endswith("'"):
+            return raw[1:-1].replace("''", "'")
+        raise PrismProtocolError(f"frontmatter 单引号值未闭合：{raw}")
     return raw
 
 
@@ -589,18 +670,23 @@ def _child_topic_navigation(topic: Topic, store: ReferenceStore) -> str:
 
 
 def _topic_from_document(document: Path) -> Topic:
-    front, _ = _read_document(document)
-    if "id" not in front or "title" not in front:
-        raise PrismProtocolError(f"主题文档需要 id 与 title：{document}")
-    metadata = {
-        key: value for key, value in front.items() if key not in TOPIC_RESERVED_KEYS
-    }
-    return Topic(
-        id=str(front["id"]),
-        title=str(front["title"]),
-        parent_id=front.get("parent"),
-        metadata=metadata,
-    )
+    try:
+        front, _ = _read_document(document)
+        if "id" not in front or "title" not in front:
+            raise PrismProtocolError("主题文档需要 id 与 title")
+        metadata = {
+            key: value
+            for key, value in front.items()
+            if key not in TOPIC_RESERVED_KEYS
+        }
+        return Topic(
+            id=str(front["id"]),
+            title=str(front["title"]),
+            parent_id=front.get("parent"),
+            metadata=metadata,
+        )
+    except PrismProtocolError as error:
+        raise _with_document(document, error) from error
 
 
 def _ordered_by_parent(topics: Iterable[Topic]) -> list[Topic]:
@@ -620,6 +706,29 @@ def _ordered_by_parent(topics: Iterable[Topic]) -> list[Topic]:
             missing = "、".join(sorted(topic.id for topic in remaining))
             raise PrismProtocolError(f"主题的父级缺失或成环：{missing}")
     return ordered
+
+
+def _with_document(document: Path, error: PrismProtocolError) -> PrismProtocolError:
+    """校验异常统一在这里补文件路径；已有路径的不重复。"""
+    message = str(error)
+    if message.startswith(str(document)):
+        return error
+    return PrismProtocolError(f"{document}：{message}")
+
+
+def _document_problem(document: Path, error: PrismProtocolError) -> str:
+    """把单份文档的校验错误规范成「路径 + 原因」一行，供聚合输出。"""
+    return str(_with_document(document, error))
+
+
+def _aggregated_load_error(problems: list[str]) -> PrismProtocolError:
+    lines = [f"workspace 存在 {len(problems)} 处不合规文档（一次列出全部，全部修复后重试）："]
+    lines.extend(f"  - {problem}" for problem in problems)
+    lines.append(
+        "修法提示：核心工件 frontmatter 需要 id + topic（role 可省略，由所在目录推导）；"
+        "澄清工件需要 id + type（放 clarifications/）。"
+    )
+    return PrismProtocolError("\n".join(lines))
 
 
 # ── 工件与澄清 ──────────────────────────────────────────────────────────
@@ -642,20 +751,26 @@ def _artifact_frontmatter(
 
 
 def _artifact_from_document(document: Path, role: str) -> tuple[Artifact, list[Relation]]:
-    front, body = _read_document(document)
-    if "id" not in front or "topic" not in front:
-        raise PrismProtocolError(f"工件文档需要 id 与 topic：{document}")
-    metadata = {
-        key: value for key, value in front.items() if key not in ARTIFACT_RESERVED_KEYS
-    }
-    artifact = Artifact(
-        id=str(front["id"]),
-        topic_id=str(front["topic"]),
-        role=str(front.get("role") or role),
-        title=front.get("title"),
-        body=body,
-        metadata=metadata,
-    )
+    try:
+        front, body = _read_document(document)
+        if "id" not in front or "topic" not in front:
+            raise PrismProtocolError("工件文档需要 id 与 topic")
+        metadata = {
+            key: value
+            for key, value in front.items()
+            if key not in ARTIFACT_RESERVED_KEYS
+        }
+        artifact = Artifact(
+            id=str(front["id"]),
+            topic_id=str(front["topic"]),
+            role=str(front.get("role") or role),
+            title=front.get("title"),
+            body=body,
+            metadata=metadata,
+        )
+    except PrismProtocolError as error:
+        # 校验异常在 Core 层生成时不知道文件来源，这里补上路径供定位。
+        raise _with_document(document, error) from error
     return artifact, _relations_from_frontmatter(artifact.id, front)
 
 
@@ -676,20 +791,25 @@ def _payload_frontmatter(
 
 
 def _payload_from_document(document: Path) -> tuple[SemanticPayload, list[Relation]]:
-    front, body = _read_document(document)
-    if "id" not in front or "type" not in front:
-        raise PrismProtocolError(f"澄清文档需要 id 与 type：{document}")
-    metadata = {
-        key: value for key, value in front.items() if key not in PAYLOAD_RESERVED_KEYS
-    }
-    if front.get("title"):
-        metadata["title"] = front["title"]
-    payload = SemanticPayload(
-        id=str(front["id"]),
-        type=str(front["type"]),
-        body=body,
-        metadata=metadata,
-    )
+    try:
+        front, body = _read_document(document)
+        if "id" not in front or "type" not in front:
+            raise PrismProtocolError("澄清文档需要 id 与 type")
+        metadata = {
+            key: value
+            for key, value in front.items()
+            if key not in PAYLOAD_RESERVED_KEYS
+        }
+        if front.get("title"):
+            metadata["title"] = front["title"]
+        payload = SemanticPayload(
+            id=str(front["id"]),
+            type=str(front["type"]),
+            body=body,
+            metadata=metadata,
+        )
+    except PrismProtocolError as error:
+        raise _with_document(document, error) from error
     return payload, _relations_from_frontmatter(payload.id, front)
 
 

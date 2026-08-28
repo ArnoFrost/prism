@@ -209,6 +209,59 @@ def test_bin_prism_discovers_workspace_v4_topic_from_repo_root(tmp_path):
     assert "topic:prism-4-refoundation" in result.stdout
 
 
+def _seed_workspace_with_broken_sibling(bridge: Path) -> None:
+    """一个 store 正常、一个 store 的 findings 有非法 role（交接文档复现场景）。"""
+    broken = bridge / "topics" / "001_broken"
+    broken.mkdir(parents=True)
+    (broken / "topic.md").write_text(
+        '---\nid: "topic:broken"\ntitle: "坏工件所在主题"\n---\n',
+        encoding="utf-8",
+    )
+    findings = broken / "findings"
+    findings.mkdir()
+    (findings / "f01_bad.md").write_text(
+        '---\nid: "finding:f01"\nrole: "finding"\ntopic: "topic:broken"\n---\n',
+        encoding="utf-8",
+    )
+
+
+def test_topic_new_not_blocked_by_bad_artifact_in_sibling_store(tmp_path):
+    """新建 Topic 只需 Topic 结构：无关 store 的坏工件不得阻断（一次只暴露一个的根治）。"""
+    workspace = tmp_path / "workspace.demo.local"
+    _seed_workspace_with_broken_sibling(workspace)
+
+    result = subprocess.run(
+        [str(BIN_PRISM), "topic", "new", "topic:fresh", "--title", "新主题"],
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+
+    assert result.returncode == 0, result.stderr
+    new_store = workspace / "topics" / "002_fresh"
+    assert (new_store / "topic.md").is_file()
+    assert 'id: "topic:fresh"' in (new_store / "topic.md").read_text(encoding="utf-8")
+
+
+def test_topic_list_not_blocked_by_bad_artifacts(tmp_path):
+    workspace = tmp_path / "workspace.demo.local"
+    _seed_workspace_with_broken_sibling(workspace)
+
+    result = subprocess.run(
+        [str(BIN_PRISM), "topic", "list"],
+        cwd=str(tmp_path),
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "topic:broken" in result.stdout
+
+
 def test_bin_prism_legacy_prefix_is_retired():
     result = subprocess.run(
         [str(BIN_PRISM), "legacy", "--version"],

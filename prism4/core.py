@@ -105,7 +105,10 @@ class Artifact:
         _require_non_empty(self.id, "artifact.id")
         _require_non_empty(self.topic_id, "artifact.topic_id")
         if not is_core_artifact_role(self.role):
-            raise PrismProtocolError(f"unknown core artifact role: {self.role}")
+            raise PrismProtocolError(
+                f"unknown core artifact role: {self.role} "
+                f"(valid roles: {', '.join(CORE_ARTIFACT_ROLES)})"
+            )
         if not isinstance(self.body, str):
             raise PrismProtocolError("artifact.body must be a string")
 
@@ -122,7 +125,10 @@ class SemanticPayload:
     def __post_init__(self) -> None:
         _require_non_empty(self.id, "payload.id")
         if not is_semantic_payload_type(self.type):
-            raise PrismProtocolError(f"unknown semantic payload type: {self.type}")
+            raise PrismProtocolError(
+                f"unknown semantic payload type: {self.type} "
+                f"(valid types: {', '.join(SEMANTIC_PAYLOAD_TYPES)})"
+            )
         if self.type in CORE_ARTIFACT_ROLES:
             raise PrismProtocolError(f"payload type must not duplicate artifact role: {self.type}")
         if not isinstance(self.body, str):

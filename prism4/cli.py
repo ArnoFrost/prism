@@ -514,8 +514,7 @@ def cmd_topic_probe(args: argparse.Namespace) -> int:
 
 def cmd_topic_list(args: argparse.Namespace) -> int:
     for root in topic_list_roots(args.root):
-        store = open_adapter(root).load()
-        for topic in store.topics.values():
+        for topic in store_topics(root).values():
             if topic.parent_id:
                 print(f"{topic.id}\t{topic.title}\tparent={topic.parent_id}")
             else:
@@ -726,9 +725,22 @@ def topic_list_roots(root: str | None) -> list[Path]:
 
 def find_store_containing(bridge: Path, topic_id: str) -> Path | None:
     for root in list_bridged_topic_stores(bridge):
-        if topic_id in open_adapter(root).load().topics:
+        if topic_id in store_topics(root):
             return root
     return None
+
+
+def store_topics(root: Path) -> dict:
+    """只加载 Topic 结构。
+
+    工件与澄清不参与校验：`topic new` 查重与 `topic list` 是轻量操作，
+    不能被无关 store 里的坏工件阻断。
+    """
+    adapter = open_adapter(root)
+    loader = getattr(adapter, "load_topics", None)
+    if loader is None:
+        return adapter.load().topics
+    return loader()
 
 
 def open_adapter(root: Path):

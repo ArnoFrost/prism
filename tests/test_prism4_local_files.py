@@ -657,3 +657,97 @@ def test_legacy_decisions_directory_loads(tmp_path: Path) -> None:
 
 def test_role_spec_covers_every_core_artifact_role() -> None:
     assert set(ROLE_SPEC) == set(CORE_ARTIFACT_ROLES)
+
+
+def test_load_aggregates_all_document_problems(tmp_path: Path) -> None:
+    """多个坏文件一次全部报出，每条带路径与修法，不再「修一个暴露一个」。"""
+    topics = tmp_path / "topics"
+    topics.mkdir()
+    (topics / "demo.md").write_text(
+        '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
+        encoding="utf-8",
+    )
+    findings = tmp_path / "findings"
+    findings.mkdir()
+    (findings / "f01_bad_role.md").write_text(
+        '---\nid: "finding:f01"\nrole: "finding"\ntopic: "topic:demo"\n---\n',
+        encoding="utf-8",
+    )
+    (findings / "f02_no_frontmatter.md").write_text(
+        "# 没有 frontmatter 的文档\n",
+        encoding="utf-8",
+    )
+    (findings / "f03_wrong_key.md").write_text(
+        '---\nid: "finding:f03"\nrole: "findings"\ntopic_id: "topic:demo"\n---\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(PrismProtocolError) as error:
+        LocalFileStoreAdapter(tmp_path).load()
+    message = str(error.value)
+    assert "3 处不合规文档" in message
+    assert "f01_bad_role.md" in message
+    assert "valid roles" in message
+    assert "f02_no_frontmatter.md" in message
+    assert "缺少 frontmatter" in message
+    assert "f03_wrong_key.md" in message
+    assert "需要 id 与 topic" in message
+    assert "修法提示" in message
+
+
+def test_load_topics_skips_artifact_problems(tmp_path: Path) -> None:
+    """Topic 查重与列表只需主题结构；无关坏工件不阻断，完整加载仍会报错。"""
+    (tmp_path / "topic.md").write_text(
+        '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
+        encoding="utf-8",
+    )
+    findings = tmp_path / "findings"
+    findings.mkdir()
+    (findings / "f01_bad.md").write_text(
+        '---\nid: "finding:f01"\nrole: "finding"\ntopic: "topic:demo"\n---\n',
+        encoding="utf-8",
+    )
+
+    topics = LocalFileStoreAdapter(tmp_path).load_topics()
+    assert "topic:demo" in topics
+    with pytest.raises(PrismProtocolError):
+        LocalFileStoreAdapter(tmp_path).load()
+
+
+def test_single_quoted_frontmatter_values_load(tmp_path: Path) -> None:
+    """手写 YAML 单引号是合法习惯，不应带引号进入校验。"""
+    (tmp_path / "topic.md").write_text(
+        "---\nid: 'topic:demo'\ntitle: '示例主题'\n---\n",
+        encoding="utf-8",
+    )
+
+    loaded = LocalFileStoreAdapter(tmp_path).load()
+    assert "topic:demo" in loaded.topics
+    assert loaded.topics["topic:demo"].title == "示例主题"
+
+
+def test_block_list_frontmatter_values_load(tmp_path: Path) -> None:
+    """手写 YAML 块列表（related: 后跟 - 条目）是合法习惯，不应阻断加载。"""
+    (tmp_path / "topic.md").write_text(
+        '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
+        encoding="utf-8",
+    )
+    findings = tmp_path / "findings"
+    findings.mkdir()
+    (findings / "f01_links.md").write_text(
+        '---\n'
+        'id: "finding:f01"\n'
+        'role: "findings"\n'
+        'topic: "topic:demo"\n'
+        'related:\n'
+        '  - "./p01_other.md"\n'
+        '  - "./p02_plan.md"\n'
+        '---\n\n正文。\n',
+        encoding="utf-8",
+    )
+
+    loaded = LocalFileStoreAdapter(tmp_path).load()
+    assert loaded.artifacts["finding:f01"].metadata["related"] == [
+        "./p01_other.md",
+        "./p02_plan.md",
+    ]
