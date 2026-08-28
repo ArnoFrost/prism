@@ -137,6 +137,8 @@ prism review record <topic_id> --root <topic_dir> --body "<finding body>"
 # 长文本：--body - 读 stdin，或 --body @path 读文件。机器输出：加 --json 得到 {ok, ids}。
 ```
 
+`review record` 是 transitional 入口（计划下版退役）：日常优先按 finding 合同直写 `findings/`，CLI record 仅作过渡。
+
 ## 边界
 
 - 不创建 3.x 的 `reviews/rXX.md`、`review.index.md`、dXX、scope/focus、task 或 wave 产物。

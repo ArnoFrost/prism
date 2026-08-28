@@ -18,11 +18,13 @@
 #   host attach     登记项目并桥接 workspace.{code}.local（不调用 3.x init）
 #   artifact show   查看 4.0 Artifact / Payload 正文
 #   brief project   从当前状态投影 Brief
-#   review record     持久化 Review 结果 → Findings（advisory；不等于授权）
+#   review record     transitional：持久化 Review 结果 → Findings（advisory；
+#                     不等于授权）。下版退役，日常直写 findings/。
 #                     --body - 读 stdin；--body @path 读文件；--json 输出 {ok, ids}
-#   clarify record    持久化 Clarify 结果 → semantic payloads（候选，不是 Decision）
-#   plan record       高级：持久化 durable Plan snapshot（默认替代当前 active Plan）
-#   decision record   记录被授权的 Decision
+#   clarify record    transitional：持久化 Clarify 结果 → semantic payloads
+#                     （候选，不是 Decision）。下版退役，日常直写 clarifications/。
+#   plan record       advanced：持久化 durable Plan snapshot（默认替代当前 active Plan）
+#   decision record   advanced：记录被授权的 Decision
 #   doctor          委托 bin/doctor
 #   relink          委托 bin/relink
 #   update          委托 bin/update

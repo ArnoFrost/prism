@@ -343,54 +343,42 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(brief_project)
     brief_project.set_defaults(func=cmd_brief_project)
 
+    # record 面分档：review / clarify 为 transitional（下版退役，日常直写
+    # Artifact）；plan / decision 为 advanced（durable snapshot 与授权承接保留）。
     add_noun_record(
         subparsers,
         "review",
-        noun_help="record Review Findings (advisory)",
-        record_help="persist Findings; does not authorize",
+        noun_help="record Review Findings (advisory; transitional)",
+        record_help=(
+            "persist Findings; does not authorize; "
+            "transitional: prefer writing findings/ directly"
+        ),
         configure=configure_review_record,
         json_parent=json_parent,
     )
     add_noun_record(
         subparsers,
         "clarify",
-        noun_help="record Clarify payloads (candidates, not Decisions)",
-        record_help="persist semantic output; does not authorize",
+        noun_help="record Clarify payloads (candidates, not Decisions; transitional)",
+        record_help=(
+            "persist semantic output; does not authorize; "
+            "transitional: prefer writing clarifications/ directly"
+        ),
         configure=configure_clarify_record,
         json_parent=json_parent,
     )
     add_noun_record(
         subparsers,
         "plan",
-        noun_help="record a Plan (advisory / regenerable)",
-        record_help="persist semantic output; does not authorize",
+        noun_help="record a durable Plan snapshot (advisory / regenerable; advanced)",
+        record_help="persist durable Plan snapshot; default supersedes the active Plan",
         configure=configure_plan_record,
         json_parent=json_parent,
     )
 
-    capability = subparsers.add_parser("capability", help=argparse.SUPPRESS)
-    capability_sub = capability.add_subparsers(dest="capability_verb", required=True)
-    capability_run = capability_sub.add_parser("run", help=argparse.SUPPRESS)
-    capability_run_sub = capability_run.add_subparsers(dest="capability_id", required=True)
-    hidden_review = capability_run_sub.add_parser(
-        "review", help=argparse.SUPPRESS, parents=[json_parent]
+    decision = subparsers.add_parser(
+        "decision", help="record authorized Decisions (advanced surface)"
     )
-    configure_review_record(hidden_review)
-    hidden_clarify = capability_run_sub.add_parser(
-        "clarify", help=argparse.SUPPRESS, parents=[json_parent]
-    )
-    configure_clarify_record(hidden_clarify)
-    hidden_plan = capability_run_sub.add_parser(
-        "plan", help=argparse.SUPPRESS, parents=[json_parent]
-    )
-    configure_plan_record(hidden_plan)
-    subparsers._choices_actions = [
-        action
-        for action in subparsers._choices_actions
-        if action.help is not argparse.SUPPRESS
-    ]
-
-    decision = subparsers.add_parser("decision", help="record authorized Decisions")
     decision_sub = decision.add_subparsers(dest="decision_verb", required=True)
     decision_record = decision_sub.add_parser(
         "record",

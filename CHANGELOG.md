@@ -7,6 +7,7 @@
 
 ### Removed
 
+- **capability run hidden alias** — `prism capability run review/clarify/plan` 隐藏兼容面退役，argparse 直接报 invalid choice；日常入口为 `prism review/clarify/plan/decision record` 或 Harness 直写 Artifact。
 - **旧维护 Skills 退役** — `prism-dist` / `prism-doctor` / `prism-pull` / `prism-push` 从活跃分发面归档；干净代码层更新使用 `prism doctor` / `prism update [--skills]` / `prism relink`；个人多端 SDK、Skills、Env 与已启用 Workspace Git 的双向同步和冲突处理收敛到外部 `prism-maintain`。
 - **legacy dist packer** — `prism dist` 改为退役提示；mini/full zip 实现仅由 Git 历史与 `legacy-3x-final` 保管。
 - **3.x 可执行历史剔除** — `skills/workflow/`、`skills/workspace/`、`workspace/` 系统层、`prism legacy` adapter 与 3.x topic 动词全部从 prism-4 分支物理删除；`sync` 随树退场。旧 topic 只读；3.x 终态由 git tag `legacy-3x-final` 保管。迁移口径见 [docs/migration.md](docs/migration.md)。
@@ -14,6 +15,7 @@
 
 ### Changed
 
+- **record 面分档标注** — `review record` / `clarify record` 标 transitional（下版退役；日常直写 `findings/` / `clarifications/`，格式以 `artifact-contracts/` 为准）；`plan record` / `decision record` 标 advanced（durable snapshot 与授权承接保留）。`artifact show` / `topic list` / `brief project` 评估为机械/投影面保留。
 - **4.0 record 表面** — 日常入口改为 `prism review/clarify/plan/decision record`（persist semantic output，不等于授权）。旧 `capability run` 仍作 hidden alias。
 - **Host 运行时独立** — `host attach` 与 `bin/relink` 经 subprocess 调用自包含的 `bin/workspace_resolve.py`，运行时不再依赖 `skills/workflow/**`。resolver 缺失或失败时 fail-closed，禁止 bash 猜测 named/map yaml。
 - **运维动词直调 bin/** — `prism doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本，不再经过 `prism_cli.py`。`bin/update`、`bin/dist` 为新增自包含脚本；dist 的 packer 定位只认 `prism.local.yaml` 的 `skills_path`。

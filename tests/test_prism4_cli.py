@@ -276,11 +276,11 @@ def test_bin_prism_legacy_prefix_is_retired():
     assert "legacy-3x-final" in result.stderr
 
 
-def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
+def test_bin_prism_capability_run_is_retired(tmp_path):
     root = tmp_path / "state"
     _seed_json_store(root)
 
-    review = subprocess.run(
+    hidden = subprocess.run(
         [
             str(BIN_PRISM),
             "capability",
@@ -289,25 +289,20 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
             "topic:prism-4-refoundation",
             "--root",
             str(root),
-            "--id",
-            "finding:f01",
-            "--body",
-            "Review can be used from the 4.0 CLI.",
         ],
         capture_output=True,
         text=True,
         timeout=10,
         env=_env(),
     )
-    assert review.returncode == 0, review.stderr
-    assert "finding:f01" in review.stdout
+    assert hidden.returncode == 2
+    assert "'capability'" in hidden.stderr
 
     clarify = subprocess.run(
         [
             str(BIN_PRISM),
-            "capability",
-            "run",
             "clarify",
+            "record",
             "topic:prism-4-refoundation",
             "--root",
             str(root),
@@ -316,7 +311,7 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
             "--patch-id",
             "clarify:c01",
             "--proposed-patch",
-            "Keep review and clarify as explicit capability invocations.",
+            "Write artifacts directly from the harness.",
         ],
         capture_output=True,
         text=True,
@@ -327,7 +322,6 @@ def test_bin_prism_review_and_clarify_write_daily_collaboration_state(tmp_path):
     assert "clarify:c01" in clarify.stdout
 
     store = JsonReferenceStoreAdapter(root).load()
-    assert "finding:f01" in store.artifacts
     assert "clarify:c01" in store.payloads
 
 

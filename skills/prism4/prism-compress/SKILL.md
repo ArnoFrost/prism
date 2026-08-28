@@ -129,7 +129,7 @@ compress_plan:
 2. 中文化列出的历史件；不补造新章节。
 3. 规整 Plan 当前态：
    - 多个 active Plan 不再继续追加同级 Plan；先决定唯一 current effective Plan。
-   - 若需要 durable snapshot，用 `prism plan record` 写入新 Plan；默认 auto-supersede 当前 active Plan。
+   - 若需要 durable snapshot，用 `prism plan record`（advanced）写入新 Plan；默认 auto-supersede 当前 active Plan。
    - 若不需要新 snapshot，只把已吸收/过期且不再作为当前依据的 Plan 标 `historical`。
    - 不能判断哪个 Plan 仍有效时停下，交给用户 Clarify。
 4. 已被吸收的 Findings 标 `historical`，保留 `supersedes`。

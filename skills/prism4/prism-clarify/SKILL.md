@@ -26,6 +26,8 @@ prism clarify record <topic_id> --root <topic_dir> --question "<question>" --dec
 # 长文本可用 '-'（stdin，同一命令只能一处）或 '@path'。
 ```
 
+`clarify record` 是 transitional 入口（计划下版退役）：日常优先直接更新 Plan / 留一行式 Finding，CLI record 仅作过渡。
+
 - 已提交的 Decision 需要明确的授权。除非授权边界清晰，否则不要把答案、建议或候选 payload 当作 Decision。
 - 不要调用 3.x `workflow-clarify`、创建 handoff 文件，或写 scope/focus/task/wave 产物。
 
