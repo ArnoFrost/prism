@@ -13,14 +13,36 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 | 原语 | 一句话 |
 |------|--------|
 | Topic | 持久的协作问题空间 |
-| Artifact | 承载状态（Intent / Brief / Findings / Decision / Plan） |
+| Artifact | 承载**不可安全重建**的协作状态（Intent / Plan / Findings / Decision / Brief） |
 | Capability | 加工状态（Review / Clarify / Plan 等） |
 | Invocation | 一次调用留下的可追踪关系 |
-| Decision | 被授权后固化的承诺 |
+| Decision | 被授权后固化的承诺；只承接效力超出单一 Plan 生命周期的承诺 |
 | Brief | 从当前有效状态再生成的切片，不是事实源 |
-| Findings | 建议，不授权 |
+| Findings | 建议，不授权；只保留悬置判断与关键证据 |
 
 安装最小集是 SDK + `uv`。Workspace 是状态实例，Skill 是方法，都不是 Core。
+
+### Artifact 语义纪律（4.0 稳定态）
+
+Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议级纪律：
+
+**可重建性测试**：可由足够强的 Agent 基于现有事实与 repository reality 可靠重建的状态，默认投影，不持久化。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
+
+**Roles are available, not mandatory**：Artifact Role 是语义工具，不是 Topic 创建后的文件 checklist。简单 Topic 可以只有 Topic 与少量必要 Artifact 就结束；不为协议完整生成空壳 Intent / Plan / Findings。
+
+**Intent–Plan SSOT**：
+- Intent = 目标与边界的 SSOT（为什么做 / 非目标 / 长期约束 / 完成条件），回答"什么算解决"。
+- Plan = 当前实施方案的 SSOT（Phase / Step、依赖、方案级约束、验收），回答"怎么做"。Plan 不是 Projection——它是构造出来供 Human 审查的行动模型；外化判据是行动模型是否值得恢复、审查、交接，而非任务大小。
+- 跨方案有效的约束归 Intent；仅本方案有效的约束归 Plan。Plan 无权改变 Intent；边界变化先显式改 Intent，再校准 Plan。
+- Plan 永远平级，层次只由 child Topic 表达。Plan 间只有 supersedes 与范围互斥。同一目标的新行动内容优先追加 Plan 内部 Phase / Step；目标正交、验收线独立时才开兄弟 Plan；Phase / Step 只是文本结构，不进入 Protocol Core。
+
+**Decision / Finding / Clarify 收缩口径**：
+- Decision 只承接效力超出单一 Plan 生命周期的承诺（判据：Plan 明天被完整重写后是否仍需保留）。方案级选择连同必要理由吸收进 Plan；Decision 数量减少是健康状态。
+- Finding 只保留两类：无法被吸收但不可忘的悬置判断；未来仍值得引用的关键证据。吸收为默认，已解决 Finding 标注 absorbed 退出 active 状态。
+- Clarify 是协作过程能力，结果默认被 Intent / Plan / Finding / Decision 吸收，不默认形成独立持久文件。
+- 吸收转写硬标准：吸收者必须写清采用什么、为何采用、存在实质替代方案时为何不采用；未满足则源文件不可退档。
+
+**Projection 口径**：Brief / Roadmap / Status / Index 是从有效状态与 repository reality 再生成的投影，解决"怎么看得懂"，不承担"什么是真相"。Roadmap 是 Reference Projection，不作为 authoritative + living 的事实源。
 
 ## 4.0 默认技能
 
