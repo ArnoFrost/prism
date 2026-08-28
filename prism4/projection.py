@@ -178,6 +178,8 @@ def _scoped_payloads(
 def _is_current(artifact: Artifact, superseded: set[str]) -> bool:
     if artifact.id in superseded:
         return False
+    if str(artifact.metadata.get("status") or "") == "absorbed":
+        return False
     return str(artifact.metadata.get("evolution") or "") != "historical"
 
 
@@ -323,19 +325,22 @@ def _plan_phases(plan: Artifact) -> list[tuple[str, str, str]]:
     """Parse optional Reference Markdown phases from a Plan.
 
     The convention is a reading aid, not a Core lifecycle: a ``###`` heading
-    inside ``## 步骤`` counts as a phase only when its block declares
-    ``**状态**：...``. Thin Plans without this shape use the legacy fallback.
+    inside ``## 步骤`` or ``## 行动结构`` counts as a phase. Status is optional;
+    unmarked phases remain open so Phase / Step-only Plans still project.
     """
-    steps = _section(plan.body, "步骤")
+    steps = _plan_action_section(plan)
     matches = list(re.finditer(r"^###\s+(.+?)\s*$", steps, re.MULTILINE))
     phases: list[tuple[str, str, str]] = []
     for index, match in enumerate(matches):
         end = matches[index + 1].start() if index + 1 < len(matches) else len(steps)
         body = steps[match.end() : end].strip()
-        status = _field_value(body, "状态")
-        if status:
-            phases.append((match.group(1).strip(), status, body))
+        status = _field_value(body, "状态") or "未标注"
+        phases.append((match.group(1).strip(), status, body))
     return phases
+
+
+def _plan_action_section(plan: Artifact) -> str:
+    return _section(plan.body, "步骤") or _section(plan.body, "行动结构")
 
 
 def _field_value(body: str, label: str) -> str:
@@ -437,7 +442,7 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
         active = _active_phase(phases)
         if phases and active is None:
             continue
-        source = active[2] if active else _section(plan.body, "步骤")
+        source = active[2] if active else _plan_action_section(plan)
         for raw in source.splitlines():
             if raw[:1].isspace():
                 continue

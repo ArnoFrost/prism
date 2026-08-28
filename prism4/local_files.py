@@ -917,8 +917,8 @@ def _render_finding_index(
         "",
         "## 发现时序表",
         "",
-        "| 编号 | 标题 | 归属 Topic | 来源能力 | 记录时间 | 权威性 | 演进 |",
-        "|:----:|------|------------|:--------:|:--------:|:------:|:----:|",
+        "| 编号 | 标题 | 归属 Topic | 来源能力 | 记录时间 | 权威性 | 演进 | 状态 | 吸收者 |",
+        "|:----:|------|------------|:--------:|:--------:|:------:|:----:|:----:|:------:|",
     ]
     for finding in findings:
         label = sequence_label(finding.id)
@@ -927,8 +927,10 @@ def _render_finding_index(
         created = _short_time(finding.metadata.get("created_at"))
         authority = str(finding.metadata.get("authority") or "advisory")
         evolution = str(finding.metadata.get("evolution") or "—")
+        status = str(finding.metadata.get("status") or "active")
+        absorbed_by = str(finding.metadata.get("absorbed_by") or "—")
         lines.append(
-            f"| {label} | [{finding.title or label}]({link}) | `{finding.topic_id}` | `{capability}` | {created} | {authority} | {evolution} |"
+            f"| {label} | [{finding.title or label}]({link}) | `{finding.topic_id}` | `{capability}` | {created} | {authority} | {evolution} | {status} | {absorbed_by} |"
         )
     lines.extend(
         [

@@ -7,12 +7,15 @@
 ## frontmatter 合同
 
 ```yaml
----
-type: "brief"
-kind: "projection"
+id: "brief:current"
+role: "brief"
+title: "当前切片"
+topic: "topic:<slug>"
+authority: "projected"       # Brief 是投影，不是事实源
+evolution: "regenerable"     # 状态变化后重生成
+projection: "current-state"
 generated_at: "YYYY-MM-DD"
-source_hint: "intent.md + plans/ + findings/ + repository reality"
----
+source_hint: "intent.md + plans/ + findings/ + decisions/ + repository reality"
 ```
 
 ## 内容结构

@@ -510,6 +510,63 @@ def test_project_brief_separates_active_from_superseded():
     assert "record 后会生成 `decisions/decision.index.md`" in brief.body
 
 
+def test_project_brief_treats_absorbed_findings_as_digested():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id=topic.id,
+            role="findings",
+            title="已吸收发现",
+            body="已进入当前 Plan。",
+            metadata={
+                "status": "absorbed",
+                "absorbed_by": "plan:p01",
+                "absorbed_at": "2026-08-28",
+            },
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    open_section = brief.body.split("## 风险与未决", 1)[1].split("## 下一步", 1)[0]
+    history_section = brief.body.split("## 历史与导航", 1)[1]
+    assert "已吸收发现" not in open_section
+    assert "暂无未决澄清或仍有效 Findings" in open_section
+    assert "已吸收发现" in history_section
+
+
+def test_project_brief_projects_action_structure_phases_without_status():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="plan:p01",
+            topic_id=topic.id,
+            role="plan",
+            title="当前实施方案",
+            body=(
+                "## 目标\n\n稳定协作入口。\n\n"
+                "## 行动结构\n\n"
+                "### Phase 1：真实 dogfood\n\n"
+                "1. 分类 Roadmap 内容。\n"
+                "2. 验证恢复。\n\n"
+                "### Phase 2：修正协议叙事\n\n"
+                "1. 更新文档。\n"
+            ),
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    stage_section = brief.body.split("## 当前阶段", 1)[1].split("## 本阶段完成信号", 1)[0]
+    next_section = brief.body.split("## 下一步", 1)[1].split("## Topic 完成条件", 1)[0]
+    assert "Phase 1：真实 dogfood" in stage_section
+    assert "所有顶层阶段均已结束" not in stage_section
+    assert "分类 Roadmap 内容" in next_section
+
+
 def test_project_brief_caps_intermediate_plan_snapshots_in_recovery_history():
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))

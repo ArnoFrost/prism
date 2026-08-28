@@ -284,6 +284,9 @@ def test_indexes_are_generated_as_projections(tmp_path: Path) -> None:
     assert "f01" in finding_index and "首个发现" in finding_index
     assert "不是事实源" in finding_index
     assert "演进" in finding_index
+    assert "状态" in finding_index
+    assert "active" in finding_index
+    assert "吸收者" in finding_index
     assert "归属 Topic" in finding_index
     assert "`topic:demo.child`" in finding_index
 
