@@ -362,6 +362,47 @@ def test_bin_prism_review_record_is_the_public_surface(tmp_path):
     assert review.returncode == 0, review.stderr
     assert "finding:f02" in review.stdout
 
+
+def test_bin_prism_artifact_next_id_and_locate(tmp_path):
+    root = tmp_path / "state"
+    _seed_json_store(root)
+
+    next_id = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "artifact",
+            "next-id",
+            "topic:prism-4-refoundation",
+            "--role",
+            "findings",
+            "--root",
+            str(root),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert next_id.returncode == 0, next_id.stderr
+    assert next_id.stdout.strip() == "finding:f01"
+
+    locate = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "artifact",
+            "locate",
+            "artifact:decision.phase-2-json-adapter",
+            "--root",
+            str(root),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert locate.returncode == 0, locate.stderr
+    assert locate.stdout.strip().startswith("decisions/")
+
     record_help = subprocess.run(
         [str(BIN_PRISM), "review", "record", "--help"],
         capture_output=True,

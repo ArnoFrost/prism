@@ -24,5 +24,5 @@
 ## 使用方式
 
 - Agent 写 / 改 Artifact 时按对应合同执行；格式疑问以本目录为准，不猜、不模仿陈旧样本。
-- 编号约定按类型递增：`intent:iNN` / `plan:pNN` / `finding:fNN` / `decision:dNN` / `clarify:cNN`，由嗅探 Topic 内现有样本 +1 得出。
+- 编号约定按类型递增：`intent:iNN` / `plan:pNN` / `finding:fNN` / `decision:dNN` / `clarify:cNN`，由嗅探 Topic 内现有样本 +1 得出（可用 `prism artifact next-id <topic_id> --role <role>` 机械化，避免手算幻觉）。
 - 不需要的 Artifact 不落盘（总则 2）；落盘即按合同写全，不留空壳字段。

@@ -17,6 +17,8 @@
 #   topic list      列出 4.0 Topic
 #   host attach     登记项目并桥接 workspace.{code}.local（不调用 3.x init）
 #   artifact show   查看 4.0 Artifact / Payload 正文
+#   artifact locate 解析 Artifact / Payload id → 文档路径（机械定位）
+#   artifact next-id 预分配某 Topic 下一个工件 id（Topic 内递增）
 #   brief project   从当前状态投影 Brief
 #   review record     transitional：持久化 Review 结果 → Findings（advisory；
 #                     不等于授权）。下版退役，日常直写 findings/。

@@ -171,7 +171,7 @@ prism decision record <topic_id> --body "<决策>"
 当前 4.0 命令面可分为四类：
 
 - **Topic**：`topic new / topic list`
-- **Artifact / Projection**：`artifact show / brief project`
+- **Artifact / Projection**：`artifact show / locate / next-id / brief project`
 - **Record (transitional)**：`review record` / `clarify record`（persist semantic output；不等于授权；下版退役，日常直写 findings/ / clarifications/）
 - **Advanced Record**：`plan record`（durable Plan snapshot；默认替代当前 active Plan，并行候选需显式选择）/ `decision record`（记录被授权的 Decision）
 - **Retired 3.x surface**：旧 verb 只返回剔除提示，不提供兼容 adapter

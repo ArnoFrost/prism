@@ -46,6 +46,10 @@ from prism4.use_cases import (  # noqa: E402
     record_plan,
     record_review,
 )
+from prism4.local_files import (  # noqa: E402
+    locate_artifact_ref,
+    next_topic_artifact_id,
+)
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -334,6 +338,28 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(artifact_show)
     artifact_show.set_defaults(func=cmd_artifact_show)
 
+    artifact_next_id = artifact_sub.add_parser(
+        "next-id",
+        help="show the next sequenced artifact id within a Topic",
+    )
+    artifact_next_id.add_argument("topic_id")
+    artifact_next_id.add_argument(
+        "--role",
+        required=True,
+        choices=("intent", "findings", "decision", "plan"),
+        help="artifact role to allocate the id for",
+    )
+    add_root_arg(artifact_next_id)
+    artifact_next_id.set_defaults(func=cmd_artifact_next_id)
+
+    artifact_locate = artifact_sub.add_parser(
+        "locate",
+        help="resolve an artifact/payload ref to its document path",
+    )
+    artifact_locate.add_argument("ref")
+    add_root_arg(artifact_locate)
+    artifact_locate.set_defaults(func=cmd_artifact_locate)
+
     brief = subparsers.add_parser("brief", help="project Brief artifacts")
     brief_sub = brief.add_subparsers(dest="brief_verb", required=True)
     brief_project = brief_sub.add_parser("project", help="project a Brief from current state")
@@ -519,6 +545,20 @@ def cmd_artifact_show(args: argparse.Namespace) -> int:
         print(store.payloads[args.ref].body)
         return 0
     raise PrismProtocolError(f"artifact or payload does not exist: {args.ref}")
+
+
+def cmd_artifact_next_id(args: argparse.Namespace) -> int:
+    store = open_adapter(resolve_root(args.root)).load()
+    if args.topic_id not in store.topics:
+        raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
+    print(next_topic_artifact_id(store, args.topic_id, args.role))
+    return 0
+
+
+def cmd_artifact_locate(args: argparse.Namespace) -> int:
+    store = open_adapter(resolve_root(args.root)).load()
+    print(locate_artifact_ref(store, args.ref))
+    return 0
 
 
 def cmd_brief_project(args: argparse.Namespace) -> int:

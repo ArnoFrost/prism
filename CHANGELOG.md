@@ -15,6 +15,7 @@
 
 ### Changed
 
+- **机械面强化** — 新增 `prism artifact next-id`（按 Topic 内递增预分配工件 id，替代手算编号）与 `prism artifact locate`（ref → 文档路径，与 save 落盘推导同源），补齐 record 面收窄后的定位能力。
 - **record 面分档标注** — `review record` / `clarify record` 标 transitional（下版退役；日常直写 `findings/` / `clarifications/`，格式以 `artifact-contracts/` 为准）；`plan record` / `decision record` 标 advanced（durable snapshot 与授权承接保留）。`artifact show` / `topic list` / `brief project` 评估为机械/投影面保留。
 - **4.0 record 表面** — 日常入口改为 `prism review/clarify/plan/decision record`（persist semantic output，不等于授权）。旧 `capability run` 仍作 hidden alias。
 - **Host 运行时独立** — `host attach` 与 `bin/relink` 经 subprocess 调用自包含的 `bin/workspace_resolve.py`，运行时不再依赖 `skills/workflow/**`。resolver 缺失或失败时 fail-closed，禁止 bash 猜测 named/map yaml。

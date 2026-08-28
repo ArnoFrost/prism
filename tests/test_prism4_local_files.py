@@ -16,7 +16,13 @@ from prism4 import (
     Topic,
     review_capability,
 )
-from prism4.local_files import ROLE_SPEC, next_artifact_id, next_payload_id
+from prism4.local_files import (
+    ROLE_SPEC,
+    locate_artifact_ref,
+    next_artifact_id,
+    next_payload_id,
+    next_topic_artifact_id,
+)
 
 
 def _sequenced(directory: Path, label: str) -> Path:
@@ -37,6 +43,71 @@ def _store() -> ReferenceStore:
     )
     store.add_topic(Topic(id="topic:demo.child", title="子主题", parent_id="topic:demo"))
     return store
+
+
+def test_next_topic_artifact_id_counts_within_topic() -> None:
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo",
+            role="findings",
+            title="首个发现",
+            body="发现正文。",
+        )
+    )
+    store.add_artifact(
+        Artifact(
+            id="finding:f03",
+            topic_id="topic:demo",
+            role="findings",
+            title="第三个发现",
+            body="发现正文。",
+        )
+    )
+    store.add_artifact(
+        Artifact(
+            id="finding:f02",
+            topic_id="topic:demo.child",
+            role="findings",
+            title="子题发现",
+            body="发现正文。",
+        )
+    )
+
+    # 只看本 Topic 内的最大序号，不跨 Topic 跳号。
+    assert next_topic_artifact_id(store, "topic:demo", "findings") == "finding:f04"
+    assert next_topic_artifact_id(store, "topic:demo.child", "findings") == "finding:f03"
+
+
+def test_next_topic_artifact_id_rejects_unknown_role() -> None:
+    with pytest.raises(PrismProtocolError):
+        next_topic_artifact_id(_store(), "topic:demo", "briefs")
+
+
+def test_locate_artifact_ref_resolves_document_paths() -> None:
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="decision:d01",
+            topic_id="topic:demo",
+            role="decision",
+            title="示例决策",
+            body="决策正文。",
+        )
+    )
+    store.add_payload(
+        SemanticPayload(
+            id="clarify:c01",
+            type="proposed-patch",
+            body="候选正文。",
+        )
+    )
+
+    assert locate_artifact_ref(store, "decision:d01").startswith("decisions/")
+    assert locate_artifact_ref(store, "clarify:c01").startswith("clarifications/")
+    with pytest.raises(PrismProtocolError):
+        locate_artifact_ref(store, "finding:f99")
 
 
 def test_roundtrip_preserves_topics_artifacts_and_payloads(tmp_path: Path) -> None:
