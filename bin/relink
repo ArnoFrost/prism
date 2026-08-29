@@ -77,6 +77,7 @@ esac
 
 SDK_SKILL_CATEGORIES=(prism4)
 ACTIVE_SDK_LINK_NAMES=()
+PROFILE_SKILLS=()
 
 is_active_sdk_link_name() {
   local name="$1"
@@ -90,6 +91,61 @@ remember_active_sdk_link_name() {
   local name="$1"
   is_active_sdk_link_name "$name" && return 0
   ACTIVE_SDK_LINK_NAMES+=("$name")
+}
+
+load_profile_skills() {
+  local whitelist="$SDK_PATH/skills/schema/dist-whitelist.yaml"
+  local skill
+
+  # Older/minimal SDK fixtures may not carry the schema. Preserve their
+  # historical enumerate-all behavior; a real distribution with a whitelist
+  # must obey it.
+  [[ -f "$whitelist" ]] || return 0
+
+  while IFS= read -r skill; do
+    [[ -n "$skill" ]] && PROFILE_SKILLS+=("$skill")
+  done < <(
+    awk -v profile="$SKILL_PROFILE" '
+      $0 == "  " profile ":" { in_profile=1; next }
+      in_profile && /^  [A-Za-z0-9_-]+:/ { exit }
+      in_profile && /^    skills:[[:space:]]*$/ { in_skills=1; next }
+      in_skills && /^      -[[:space:]]+/ {
+        sub(/^      -[[:space:]]+/, "")
+        sub(/[[:space:]]+#.*/, "")
+        print
+        next
+      }
+      in_skills && /^    [A-Za-z0-9_-]+:/ { exit }
+    ' "$whitelist"
+  )
+
+  if [[ ${#PROFILE_SKILLS[@]} -eq 0 ]]; then
+    echo -e "${RED}✗ dist-whitelist.yaml 未定义 profile: ${SKILL_PROFILE}${NC}" >&2
+    return 1
+  fi
+}
+
+profile_includes_skill() {
+  local skill_name="$1"
+  local allowed
+
+  # Compatibility fallback when a minimal/older SDK has no whitelist file.
+  [[ ${#PROFILE_SKILLS[@]} -eq 0 ]] && return 0
+  for allowed in "${PROFILE_SKILLS[@]}"; do
+    [[ "$allowed" == "$skill_name" ]] && return 0
+  done
+  return 1
+}
+
+sdk_skill_link_name() {
+  local category="$1" skill_name="$2"
+  if [[ "$skill_name" == "prism" ]]; then
+    link_name="prism"
+  elif [[ "$skill_name" == "${category}-"* || "$skill_name" == "prism-"* ]]; then
+    link_name="$skill_name"
+  else
+    link_name="${category}-${skill_name}"
+  fi
 }
 
 if [[ ! -f "$CONFIG" && "$SKIP_WORKSPACE" != true ]]; then
@@ -177,6 +233,8 @@ if [[ -n "$_missing" ]]; then
   echo -e "  请运行 ${CYAN}bin/setenv --init${NC} 补全配置" >&2
   exit 1
 fi
+
+load_profile_skills || exit 1
 
 # 可选字段警告
 if [[ -z "$ENV_PATH" ]]; then
@@ -537,12 +595,13 @@ if [[ ${#PLATFORM_TARGETS[@]} -gt 0 ]]; then
       skill_name=$(basename "$skill_dir")
       [[ "$skill_name" == "shared" ]] && continue
       [[ ! -f "$skill_dir/SKILL.md" ]] && continue
-      # 目录名已与 frontmatter name / IDE 分发 id 对齐（workflow-archive、prism-review 等）
-      if [[ "$skill_name" == "${category}-"* || "$skill_name" == "prism-"* ]]; then
-        link_name="$skill_name"
-      else
-        link_name="${category}-${skill_name}"
+      if ! profile_includes_skill "$skill_name"; then
+        log_skip "${skill_name} ${DIM}(不在 ${SKILL_PROFILE} 默认分发面)${NC}"
+        continue
       fi
+      # prism facade 在未来获准切面时保留精确 /prism 名称；当前 whitelist
+      # 未包含它，因此这里只预留 alias，不提前分发。
+      sdk_skill_link_name "$category" "$skill_name"
       remember_active_sdk_link_name "$link_name"
 
       if is_archived "$link_name"; then
@@ -710,7 +769,10 @@ if $PRUNE; then
     local target_category
     target_category=$(basename "$(dirname "$link_target")")
     for active_category in "${SDK_SKILL_CATEGORIES[@]}"; do
-      [[ "$target_category" == "$active_category" ]] && return 0
+      if [[ "$target_category" == "$active_category" ]]; then
+        profile_includes_skill "$(basename "$link_target")"
+        return $?
+      fi
     done
     return 1
   }

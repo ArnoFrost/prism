@@ -30,6 +30,14 @@ entries:
 # ─────────────────────────────────────────────
 # Prism 4.0 canary skills — active dogfood surface on prism-4
 # ─────────────────────────────────────────────
+  - id: prism
+    visibility: dev
+    stability: experimental
+    source_repo: prism
+    inject_default: false
+    reviewed_by: ArnoFrost
+    reviewed_at: "2026-08-29"
+    rationale: "P4 explicit-only shadow facade for effect-first state routing; excluded from the default prism4 distribution until P5 dogfood and P6 cutover authority."
   - id: prism-topic
     visibility: dev
     stability: experimental
