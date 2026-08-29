@@ -1,8 +1,8 @@
-# Prism 4.0 工件阅读面
+# Prism 4.0 旧阅读面参考
 
-本文件是 4.0 Topic 人类阅读面的格式 SSOT。协议原语（Topic / Artifact / Capability / Invocation / Decision / Intent / Brief / Findings / Plan / Review / Clarify）保留英文；正文用中文。`prism-compress` 按此自检；`prism-brief` 的投影章节与此对齐。
+本文件保留 `prism-compress` 的阅读面、迁移和历史样本校准建议，不再是 Artifact 写法 SSOT。新写入或修订 Artifact 时，以 [`../../artifact-contracts/`](../../artifact-contracts/) 为唯一格式权威；CLI 与 Skill 文档不得另行定义同一套合同。
 
-新写入的工件必须遵循对应章节。历史件以中文校准与归档为主，**不强制**补全新章节，以免把旧证据改成假结构。
+协议原语（Topic / Artifact / Capability / Invocation / Decision / Intent / Brief / Findings / Plan / Review / Clarify）保留英文；正文用中文。历史件以中文校准、吸收标记和归档为主，**不强制**补全新章节，以免把旧证据改成假结构。
 
 ## Style Profile
 
@@ -29,8 +29,8 @@ Prism 工件先交付状态，再解释协议。正文采用中性、直接的�
 |----|----------|--------|
 | Intent | 为什么做、做什么、不做什么、完成条件 | 权威边界 |
 | Decision | 已经承诺什么 | 权威承诺 |
-| Plan | 现在按什么顺序做、如何验证 | 可再生成的行动结构；必要时才持久化为 durable snapshot |
-| Findings | 看见了什么风险/缺口/取舍 | 建议，不授权 |
+| Plan | 现在按什么顺序做、如何验证 | 当前实施方案 SSOT；必要时外化为可审查、可交接、可验证的行动模型 |
+| Findings | 尚未被吸收的重要悬置判断与关键证据 | 建议，不授权 |
 | Clarify payload | 哪一个取舍还没拍板 | 候选，不是 Decision |
 | Brief | 当前该看什么 | 投影，可随时再生成 |
 | 索引 | 链上有哪些件、哪些已消化 | 投影 |
@@ -120,7 +120,7 @@ Intent 先服务 Orientation / Boundary：首屏给稳定目的与边界，再�
 ## Plan — `plans/pXX_*.md`
 
 当前有效 Plan 回答怎么做。Plan Artifact 是必要时留下的 durable snapshot / recovery anchor，不是普通当前轮 planning 的默认产物。旧阶段 Plan 通过 `supersedes` 关系或 `evolution: historical` 收敛，留在目录里当证据，不占 Brief「进度」。
-Plan 不是旧 3.x Scope 的替身：它不定义协作边界、不承诺授权、不把 Findings 变成已批准工作。边界来自 Intent，承诺来自 Decision 或人类明确指示；Plan 只整理当前采用的行动结构。
+Plan 不是旧 3.x Scope 的替身，也不是 Projection：它不定义协作边界、不承诺授权、不把 Findings 变成已批准工作。边界来自 Intent，承诺来自 Decision 或人类明确指示；Plan 只整理当前采用的行动结构。
 
 ```markdown
 ## 目标
@@ -140,7 +140,7 @@ Plan 不是旧 3.x Scope 的替身：它不定义协作边界、不承诺授权�
 本轮整理或实施可能误伤什么。
 ```
 
-复杂 Plan 可在 `## 步骤` 中加入可选的顶层行动地图：
+复杂 Plan 可在 `## 步骤` 或 `## 行动结构` 中加入可选的顶层行动地图：
 
 ```markdown
 ### P0 — 阶段名称
@@ -156,7 +156,7 @@ Plan 不是旧 3.x Scope 的替身：它不定义协作边界、不承诺授权�
 
 这只是 Reference Markdown 阅读约定，不是 Core Phase、Wave、Plan Item ontology 或 lifecycle DSL。Brief 可投影顶层行动地图、当前阶段、对应验证和当前阶段未完成动作；完整事实与嵌套细节仍留在 Plan。简单 Plan 不需要为了模板对称强行拆阶段。
 
-frontmatter：当前件 `authority: "advisory"`、`evolution: "regenerable"`；过期件 `evolution: "historical"`。当前有效 Plan 指同一 Topic 内未被 `supersedes`、且 `evolution` 非 `historical` 的 Plan；正常情况下应只有一份。Plan 可以描述当前采用的行动结构，但执行授权来自 Intent、Decision 或人类明确指示，不由 Plan 自身产生。
+frontmatter：当前件 `authority: "advisory"`；过期件 `evolution: "historical"` 或通过 `supersedes` 退出当前态。当前有效 Plan 指同一 Topic 内未被 `supersedes`、且 `evolution` 非 `historical` 的 Plan；正常情况下应只有一份。Plan 可以描述当前采用的行动结构，但执行授权来自 Intent、Decision 或人类明确指示，不由 Plan 自身产生。
 
 `prism plan record` 是 advanced durable snapshot 入口；默认会替代当前 active Plan，避免一个 Topic 内不断积累多个并列当前行动结构。并行 Plan 候选只有在用户明确需要比较方案时才保留。
 
@@ -213,7 +213,7 @@ TL;DR 不复述整张发现地图：它只交付总判断、为什么重要和�
 
 同一 Findings Artifact 内的 F 项应共享大致相同的 owner、Decision、验证和 supersede 节奏。需要独立演进的判断应拆开记录；这不表示一条 F 项必然对应一个 Artifact。
 
-被后续 Findings 吸收后，把被取代件标 `evolution: "historical"`（`supersedes` 关系仍保留）。
+被 Intent / Plan / Decision / Finding 吸收后，把源件标 `status: "absorbed"`，并尽量填写 `absorbed_by` / `absorbed_at`；`supersedes` 关系仍保留。只有真正过时、证伪或不再具备引用价值的历史件，才标 `evolution: "historical"`。
 
 ## Decision — `decisions/dXX_*.md`
 

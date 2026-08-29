@@ -3,7 +3,7 @@ status: current
 target: Prism 4.0
 type: alignment
 created: 2026-08-14
-updated: 2026-08-15
+updated: 2026-08-28
 ---
 
 # Prism 4.0 语义地基
@@ -32,7 +32,7 @@ Prism 4.0 的北极星：
 更具体地说：
 
 ```text
-Artifact carries state.
+Artifact carries irreducible collaboration state.
 Capability transforms artifacts.
 Invocation relates artifacts.
 Decision records commitment.
@@ -41,6 +41,15 @@ Adapter controls runtime integration.
 ```
 
 Prism 4.0 不再预设固定 workflow。它只定义可组合能力、工件角色和调用关系。实际路径由当前任务需要自然形成。
+
+Artifact 的持久化判据不是二元的“能不能重建”，而是：
+
+```text
+Can a strong future Agent safely, cheaply, and reliably reconstruct this
+from authoritative state plus repository reality?
+```
+
+若重建成本、误解风险或未来交接价值高于维护成本，才值得持久化；否则保持为 projection、对话过程或临时证据。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
 
 ## 2.1 Grounding Documents
 
@@ -136,9 +145,11 @@ Topic
 
 ### 4.3 Artifact
 
-`Artifact` 是 Topic 内可引用、可演进的持久协作状态。Artifact role 使用名词。
+`Artifact` 是 Topic 内可引用、可演进、不可安全遗忘的协作状态。Artifact role 使用名词。
 
 Artifact 不要求是 Markdown，不要求是文件，也不要求位于 Obsidian。Core 只要求它能表达必要语义和关系。
+
+Role 是可用工具，不是 Topic 创建后的 checklist。简单 Topic 可以只留下 Topic 与少量必要 Artifact；不为了协议完整制造空壳 Intent、Plan 或 Findings。
 
 建议最小 envelope：
 
@@ -194,7 +205,7 @@ and cross-invocation reference.
 
 | 类别 | 当前语法 | 当前映射 |
 |------|----------|----------|
-| Artifact | 持久协作状态；使用名词 | Intent / Brief / Findings / Decision / Plan |
+| Artifact | 不可安全遗忘的持久协作状态；使用名词 | Intent / Brief / Findings / Decision / Plan |
 | Capability | 语义变换能力；使用动作 | Review / Clarify / Plan |
 | Payload | Invocation 中的 typed semantic result；不因实现方便晋升为 Artifact | Understanding Update / Proposed Patch / Decision Candidate |
 | Operation | 显式副作用或记录动作 | Record Decision |
@@ -255,8 +266,8 @@ Brief 不是事实源。若 Brief 与 Decision、Intent 或源 Findings 冲突�
 | 目标与边界、Topic 完成条件 | 当前 Topic 自己的 Intent |
 | 当前阶段、阶段完成信号、下一步 | 当前 Topic 自己的 active Plan |
 | 已承诺 | 当前 Topic 与允许冒泡的 Child Decision；Child 来源必须标明，且不自动表述为 Parent 承诺 |
-| 风险与未决 | 当前 Topic 与允许冒泡的 Child Findings / Clarify；Child 来源必须标明 |
-| 历史与导航 | superseded / historical Artifact 与 Adapter 索引 |
+| 风险与未决 | 当前 Topic 与允许冒泡的 Child active Findings；必要时包含仍阻塞的 Clarify payload，Child 来源必须标明 |
+| 历史与导航 | absorbed / superseded / historical Artifact 与 Adapter 索引 |
 
 Intent 与 Plan 不从 Child Topic 冒泡到 Parent Brief。Clarify payload 必须保留 Topic provenance；无法证明归属的 payload 不得因为实现方便而被视为全局未决项。兼容旧数据时，仅当 Store 只有一个 Topic 才可推断归属；多 Topic Store 中缺少 provenance 的历史 payload 不进入 Brief，并显示诊断但不删除原数据。
 
@@ -264,36 +275,33 @@ Projected state must remain reconstructable from more durable authoritative and 
 
 ### 5.3 Findings
 
-`Findings` 保存可追溯的观察、判断与建议，并按共享演进边界组织。
+`Findings` 保存当前还无法被 Intent / Plan / Decision 吸收、但未来不能忘的重要悬置判断，或未来仍值得引用的关键证据 / 验证结论。
 
-它记录：
+它不保存 Review 过程本身，也不默认沉积所有事实、风险、缺口、冲突、假设、取舍点和建议。Review / Clarify / 讨论后的默认路径是把有效结论吸收到 Intent、Plan、Finding 或 Decision；若吸收者已经完整表达结论与必要理由，原 Finding 应退出 active state。
 
-- 事实
-- 证据
-- 风险
-- 缺口
-- 冲突
-- 假设
-- 取舍点
-- 建议
-
-Findings 不等于决策。它负责暴露问题，不替人拍板。
+Findings 不等于决策。它负责暴露仍需关注的问题或证据，不替人拍板。
 
 ```text
-Findings surface what matters.
+Findings preserve unresolved judgment and key evidence.
 ```
 
-更完整地说，Finding 暴露值得关注的事实、观察、解释、风险、缺口、冲突、假设或取舍点，并在可能时引用 Evidence 作为依据。
+更完整地说，Finding 暴露仍未被吸收的重要事实、观察、解释、风险、缺口、冲突、假设或取舍点，并在可能时引用 Evidence 作为依据。
 
 一次 Review 可以包含多个 F 项，但同一 Findings Artifact 内的 F 项应共享大致相同的 owner、Decision、验证与 supersede 节奏。需要独立演进的判断应拆分；这不表示一条 F 项必然对应一个 Artifact。
 
 ### 5.4 Decision
 
-`Decision` 是关键选择记录。
+`Decision` 是效力超出单一 Plan 生命周期的重要承诺。
 
-只有会影响后续方向、边界、架构、风险承诺或长期设计的选择，才需要进入 Decision。
+判断口径：
 
-普通确认、路线跳转、能力调用顺序和可回退的小调整不必成为 Decision Record。
+```text
+If the current Plan is fully rewritten tomorrow, must this commitment remain?
+```
+
+若答案是 yes，它更可能需要 Decision；若只是当前方案的字段命名、步骤选择、局部实现方式或 Clarify 后的方案细节，优先吸收到 Plan，并在 Plan 中保留必要理由。
+
+典型 Decision 包括：改变或约束 Intent 的重要选择、跨多个 Plan 仍有效的承诺、明确的 Human / delegated authority，以及只保留最终 Plan 会丢失且未来不能安全重新推导的重要理由。
 
 ```text
 Decisions are commitments.
@@ -301,7 +309,7 @@ Decisions are commitments.
 
 ### 5.5 Plan
 
-`Plan` 是行动结构或方案投影。
+`Plan` 是当前实施方案的 SSOT。
 
 它回答：
 
@@ -311,16 +319,16 @@ Decisions are commitments.
 - 如何验证
 - 哪些风险需要处理
 
-Plan 是可选、可重算的行动结构。普通当前轮 planning 可以由 Agent 基于上下文局部完成，不需要默认持久化为 Plan Artifact。
+Plan 不是 Projection。它的存在不是因为 Agent 不会 planning，而是为了把复杂实施模型外化成一个可以恢复、审查、交接和验证的对象。普通当前轮 planning 可以由 Agent 基于上下文局部完成，不需要默认持久化为 Plan Artifact。
 
-Plan Artifact 是必要时留下的 durable snapshot / recovery anchor：当行动结构需要跨 session 恢复、handoff、后续 Review 或授权承接时才落盘。被引用和被接受不是同一层语义。
+Plan Artifact 的外化判据不是任务大小，而是行动模型本身是否值得跨 session 恢复、Human 审查、Agent 交接、后续 Review 或验证。Plan 可以持续原地修正、补充和演进，但无权改变 Intent；发现目标、非目标或长期约束应改变时，先显式修 Intent，再重新校准 Plan。
 
 ```text
 Reference creates provenance.
 Acceptance creates authority.
 ```
 
-Proposed Plan 是 advisory / regenerable。被 Review、Clarify 或其他 Invocation 读取的 Plan，可能因为 provenance 获得 historical value，但不会自动获得执行权威。只有被 Decision 或明确 authority 接受的 Plan，才成为 operative / historical / supersedable。
+Plan 在 authority 上仍可能是 advisory：被 Review、Clarify 或其他 Invocation 读取的 Plan，可能因为 provenance 获得 historical value，但不会自动获得执行权威。只有被 Decision、Intent 边界或当前明确人类指令接受的 Plan，才成为 operative。Phase / Step 只是 Plan 内部文本结构，不进入 Protocol Core。
 
 ### 5.6 Child Topic and Plan Item
 
@@ -354,7 +362,7 @@ Need to be done -> Plan Item / Action.
 | Authority | Meaning | Typical Artifacts |
 |-----------|---------|-------------------|
 | Authoritative | 在某个语义范围内可作为判断依据 | Intent, Decision |
-| Advisory | 暴露判断、风险、建议或问题，但不携带授权 | Findings, proposed Plan |
+| Advisory | 暴露判断、风险、建议或问题，但不携带授权 | Findings, Plan before acceptance |
 | Projected | 从其他工件综合出的当前视图，不作为最终事实源 | Brief |
 | Operative | 被接受后可指导执行，但仍受 Intent / Decision 约束 | accepted Plan |
 
@@ -370,7 +378,7 @@ Production does not imply acceptance or commitment. Agent 生成了 Findings、P
 |-----------|---------|-------------------|
 | Durable | 持续有效，直到被后续工件取代 | Intent |
 | Supersedable | 可被后续工件替代，旧判断仍可追溯 | Intent, Findings, Plan, Decision |
-| Regenerable | 可从当前权威工件重新生成 | Brief, proposed Plan |
+| Regenerable | 可从当前权威工件重新生成 | Brief |
 | Historical | 需要保留其曾经存在、被使用或被裁决的事实 | Findings, Decision, accepted or superseded Plan |
 | Committed | 已形成授权或长期承诺 | Decision |
 
@@ -380,21 +388,21 @@ Production does not imply acceptance or commitment. Agent 生成了 Findings、P
 |----------|-----------|-----------|
 | Intent | Authoritative | Durable / Supersedable |
 | Brief | Projected | Regenerable |
-| Findings | Advisory | Historical / Supersedable |
+| Findings | Advisory | Active when unresolved; Absorbed / Historical / Supersedable when resolved |
 | Decision | Authoritative | Historical / Supersedable / Committed |
-| Plan | Advisory before acceptance; Operative after acceptance | Regenerable before acceptance; Historical when referenced for provenance; Historical / Supersedable when accepted |
+| Plan | Advisory until accepted by applicable authority; Operative when accepted | Current implementation model; Supersedable / Historical when replaced |
 
 简写：
 
 ```text
 Intent is the authoritative boundary until superseded.
 Brief is a regenerable projection for context recovery.
-Findings surface what matters, with support when available.
-Decisions commit authorized choices.
+Findings surface unresolved judgments and key evidence.
+Decisions commit choices that outlive one Plan.
 Reference creates provenance; acceptance creates authority.
 ```
 
-Findings 被后续事实证伪时，不要求删除或原地改写。协议语义是用 relation 标记 `superseded`、`invalidated`、`withdrawn`、`reframed` 或 `resolved`；具体存储方式由 Adapter 决定。
+Findings 被吸收、证伪或取代时，不要求删除。协议语义是用 relation / metadata 标记 `absorbed`、`superseded`、`invalidated`、`withdrawn`、`reframed` 或 `resolved`；具体存储方式由 Adapter 决定。被吸收不是简单删除：吸收者必须留下足够理由，使未来不依赖原始讨论也能理解当前方案。
 
 Authority / Evolution 是 protocol semantics first。它们的具体序列化可以是 metadata、relation、derived state 或 adapter representation；Phase 1 不应 schema-first 地把它们固化成必填 enum 或固定字段。
 
@@ -502,7 +510,7 @@ Decision 可以授权或解释后续对 Intent、Brief、Child Topic Intent 或 
 
 ### 7.5 Plan
 
-`Plan` 是生成行动结构或方案投影的能力。
+`Plan` 是生成或校准行动结构的能力。
 
 本节的 `Plan` 指 Plan capability；第 5.5 节的 `Plan` 指 Plan artifact。存在歧义时使用 qualified form，不在本轮执行 rename。
 
@@ -514,7 +522,7 @@ effect: propose
 policy: Reference creates provenance; acceptance creates authority
 ```
 
-Plan 不应该重新变成固定 workflow。它只是按需产生的行动结构。
+Plan capability 不应该重新变成固定 workflow。它只是按需产生或校准行动结构；Plan artifact 是否外化，取决于该行动模型是否值得恢复、审查、交接和验证。
 
 Brief 是 projected Artifact，本轮不新增与它对称的 Briefing Capability。投影动作继续由 Reference Experience / Adapter 实现；是否需要独立语义变换能力，等待 dogfood 证明。
 
@@ -664,9 +672,9 @@ Runtime approval authorizes an action. Prism Decision records an authorized coll
 基本原则：
 
 ```text
-Findings surface.
+Findings preserve unresolved judgment and key evidence.
 Clarification is understanding.
-Decision is commitment.
+Decision is commitment beyond one Plan lifecycle.
 ```
 
 Decision 分层建议：
@@ -674,10 +682,10 @@ Decision 分层建议：
 | Level | Meaning | Protocol handling |
 |-------|---------|-------------------|
 | Route | 普通能力调用路径 | Invocation Graph |
-| Lightweight Decision | 局部、低风险、容易回退，但值得后续知道 | Decision relation / metadata / projection note |
+| Lightweight Choice | 局部、低风险、容易回退，但值得后续知道 | Absorb into Plan / Intent / projection note |
 | Material Decision | 影响方向、边界、架构、风险承诺或长期设计 | Decision Record |
 
-Clarify 可以产生 Decision Candidate；只有 material choice 才进入独立 Decision Record。
+Clarify 可以产生 Decision Candidate；只有超出当前 Plan 生命周期的 material commitment 才进入独立 Decision Record。
 
 ## 13. 3.x 到 4.0 的概念迁移
 
@@ -691,7 +699,7 @@ Clarify 可以产生 Decision Candidate；只有 material choice 才进入独立
 | finding | Findings artifact | 产物，不是授权 |
 | clarify | Clarify capability | 保留，但不产出必然 Decision |
 | decision / decision.index | Decision semantics | 保留关键选择记录，降权普通 route |
-| plan | Plan artifact / capability | 恢复通用语义，可选且可重算 |
+| plan | Plan artifact / capability | Plan artifact 是当前实施方案 SSOT；Plan capability 是生成或校准行动结构的能力 |
 | task | Child Topic / Plan Item | 耐久子问题用 `Topic(parent=...)`；普通执行颗粒用 Plan Item / Action |
 | wave | Execution adapter/profile | 不进入 Core 默认面 |
 | intake | Capture + Create Topic + Draft Brief/Intent | 拆分，不再是 Core workflow |
@@ -825,7 +833,9 @@ Prism 4.0 MVP 只有在以下条件成立时才算完成：
 - `Task` 从 Core 删除：耐久子问题改为 Child Topic，普通执行颗粒改为 Plan Item / Action。
 - `Wave` 移出 Core，放入 execution adapter/profile。
 - `Brief` 定义为 current projection，不作为事实源。
-- `Findings` 定义为 surface what matters，不再等同 evidence。
+- `Findings` 收缩为仍无法吸收的重要悬置判断与关键证据，不再保存 Review 过程本身。
+- `Plan` artifact 不是 Projection，而是当前实施方案 SSOT；是否外化取决于行动模型是否值得恢复、审查、交接和验证。
+- `Decision` 收缩为效力超出单一 Plan 生命周期的重要承诺；方案级选择优先吸收到 Plan。
 - Artifact lifecycle 改为 Authority / Evolution 双轴，避免存储实现泄漏。
 - `Clarify` 与 `Decision` 分层：Clarify 可以产生 Decision Candidate / Proposed Patch，但默认无权修改 authoritative artifacts。
 - `Decide` 暂不进入 MVP Core Capability；`Record Decision` 作为 Reference Capability / Adapter Operation。

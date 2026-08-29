@@ -26,7 +26,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 
 Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议级纪律：
 
-**可重建性测试**：可由足够强的 Agent 基于现有事实与 repository reality 可靠重建的状态，默认投影，不持久化。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
+**可重建性测试**：可由足够强的 Agent 基于现有事实与 repository reality 安全、低成本、可靠重建的状态，默认投影，不持久化。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
 
 **Roles are available, not mandatory**：Artifact Role 是语义工具，不是 Topic 创建后的文件 checklist。简单 Topic 可以只有 Topic 与少量必要 Artifact 就结束；不为协议完整生成空壳 Intent / Plan / Findings。
 

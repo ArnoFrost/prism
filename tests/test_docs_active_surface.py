@@ -134,7 +134,7 @@ def test_state_boundary_contract_and_terminology_grammar_are_explicit() -> None:
     assert "### 4.5 Terminology Grammar Checkpoint" in alignment
     assert "不是最终 Terminology Freeze" in alignment
     assert "命名不能反向驱动 ontology" in alignment
-    assert "Artifact | 持久协作状态；使用名词" in alignment
+    assert "Artifact | 不可安全遗忘的持久协作状态；使用名词" in alignment
     assert "Capability | 语义变换能力；使用动作" in alignment
     assert "Payload | Invocation 中的 typed semantic result" in alignment
     assert "Operation | 显式副作用或记录动作 | Record Decision" in alignment
@@ -363,9 +363,9 @@ def test_plan_format_matches_reference_record_plan_semantics() -> None:
     use_cases = (ROOT / "prism4" / "use_cases.py").read_text(encoding="utf-8")
 
     assert 'authority: "advisory"' in artifact_format
-    assert 'evolution: "regenerable"' in artifact_format
+    assert 'evolution: "regenerable"' not in artifact_format
     assert '"authority": "advisory"' in use_cases
-    assert '"evolution": "regenerable"' in use_cases
+    assert '"evolution": "supersedable"' in use_cases
     assert 'authority: "operative"' not in artifact_format
     assert "Plan 不是旧 3.x Scope 的替身" in artifact_format
     assert "references 可以承载 diff、证据、风险矩阵或长分析" in artifact_format
@@ -397,7 +397,7 @@ def test_plan_guidance_stays_advisory_and_not_scope() -> None:
 
     assert "它不是旧 Scope" in readme
     assert "prism plan record" in review_skill
-    assert "`## 目标`、`## 步骤`、`## 验证`" in brief_skill
+    assert "`## 目标`、`## 步骤` / `## 行动结构`、`## 验证`" in brief_skill
     assert "/prism-plan" in readme
     assert "/prism-plan" not in review_skill
 

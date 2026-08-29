@@ -123,7 +123,7 @@ Protocol Core 保持很小：
 | 概念 | 一句话 |
 |------|--------|
 | Topic | 持久的协作问题边界 |
-| Artifact | 承载状态的可引用单元 |
+| Artifact | 承载不可安全遗忘协作状态的可引用单元 |
 | Capability | 加工状态的语义能力 |
 | Invocation | 一次调用留下的来源、因果和关系记录 |
 | Decision Semantics | 管理 authority、commitment、supersession 和 affected artifacts 的规则 |
@@ -134,9 +134,9 @@ Protocol Core 保持很小：
 |------|------|-----------|
 | Intent | 当前目标、边界和完成条件 | authoritative until superseded |
 | Brief | 当前上下文恢复切片 | projection，可再生成 |
-| Findings | 事实、证据、风险、缺口和建议 | advisory |
-| Plan | 候选执行安排 | advisory，除非被 Decision 授权 |
-| Decision | 已授权的关键选择与承诺 | authoritative / committed |
+| Findings | 仍无法吸收的重要悬置判断与关键证据 | advisory |
+| Plan | 当前可审查、可执行、可验证的实施方案 | advisory until accepted; not a projection |
+| Decision | 效力超出单一 Plan 生命周期的重要承诺 | authoritative / committed |
 
 `supersedes` 表示一个 Artifact 被后续 Artifact 取代；`authorizes` 表示 Decision 可对某个 Artifact 形成授权关系。它们是关系，不是新的 lifecycle DSL。
 
@@ -173,7 +173,7 @@ Use what the situation needs:
 | `/prism-compress` | 低频对齐阅读面并再生成 Brief |
 
 这些 skills 是能力菜单，不是顺序管线。Review 不自动进入 Clarify，Plan 不自动获得授权，Decision 才记录承诺。
-Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不负责定义边界或拍板；边界看 Intent，授权看 Decision。
+Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不是 Brief/Roadmap 一类投影；边界看 Intent，授权看 Decision 或当前明确的人类指令。
 
 完整 CLI 面看：
 

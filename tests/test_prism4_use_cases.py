@@ -201,7 +201,7 @@ def test_infer_review_title_skips_readability_headings():
     assert infer_review_title(body) == "Findings 可读性需要先给总判断"
 
 
-def test_record_plan_sets_advisory_regenerable_and_expected_inputs():
+def test_record_plan_sets_advisory_supersedable_and_expected_inputs():
     store = _topic_store()
     plan_id, invocation_id = record_plan(
         store,
@@ -212,7 +212,7 @@ def test_record_plan_sets_advisory_regenerable_and_expected_inputs():
     plan = store.artifacts[plan_id]
     assert plan.role == "plan"
     assert plan.metadata["authority"] == "advisory"
-    assert plan.metadata["evolution"] == "regenerable"
+    assert plan.metadata["evolution"] == "supersedable"
     assert plan.metadata["capability"] == "prism:plan"
     invocation = store.invocations[invocation_id]
     input_roles = {

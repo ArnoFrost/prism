@@ -14,7 +14,7 @@ user_invocable: true
 
 偶尔把 Topic 的阅读面拉回当前态。不实时压缩（那会吃掉接续上下文）；也不替代 Brief。
 
-先读 [artifact-format.md](references/artifact-format.md)。
+先读 [`../artifact-contracts/README.md`](../artifact-contracts/README.md) 及本次涉及的具体合同；必要时再读 [artifact-format.md](references/artifact-format.md) 作为历史阅读面和迁移参考。
 
 ## 和相邻能力的边界
 
@@ -32,7 +32,7 @@ Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组
 ## 规则
 
 - 默认 **preview**：先给自检清单和拟写范围，`writes=0`。用户明确要求对齐/apply 后才写盘。
-- **不 hard delete**。过期澄清、被吸收的候选进 `archive/`；旧 Plan / Findings / Decision 留在原目录，通过 `supersedes` 或 `historical` 收敛。
+- **不 hard delete**。过期澄清、被吸收的候选进 `archive/`；旧 Plan / Findings / Decision 留在原目录，通过 `absorbed`、`supersedes` 或 `historical` 收敛。
 - **不改承诺**。Intent / Decision 的语义改写需要新的授权。本技能只做中文校准、归档假待办、规整 Plan 当前态、再生成 Brief。
 - **不制造第二套 relation 写入面**。`supersedes` / `authorizes` 走现有 `record` 命令参数或本地 adapter；不要把 authority transition 新逻辑塞进 Compress。
 - **不默认新增 Plan**。当前轮普通下一步由 Agent 局部感知即可；只有跨 session 恢复、handoff、后续 Review 或授权承接需要 durable snapshot 时，才写 Plan Artifact。
@@ -88,7 +88,7 @@ archive_topics:
 
 ```text
 1. 定位 Topic 根（topic.md）
-2. 对照 artifact-format.md 只读盘点
+2. 对照 artifact-contracts 只读盘点；artifact-format.md 只作历史阅读面参考
 3. 输出 compress_plan（preview）
 4. 用户确认范围后 apply
 5. 最后 prism brief project <id> --root <dir> --save
@@ -132,7 +132,7 @@ compress_plan:
    - 若需要 durable snapshot，用 `prism plan record`（advanced）写入新 Plan；默认 auto-supersede 当前 active Plan。
    - 若不需要新 snapshot，只把已吸收/过期且不再作为当前依据的 Plan 标 `historical`。
    - 不能判断哪个 Plan 仍有效时停下，交给用户 Clarify。
-4. 已被吸收的 Findings 标 `historical`，保留 `supersedes`。
+4. 已被吸收的 Findings 标 `status: absorbed`，尽量填写 `absorbed_by` / `absorbed_at`；保留 `supersedes`。只有真正过时、证伪或不再具备引用价值的历史件才标 `evolution: historical`。
 5. 再生成 Brief。不要手写一份与 CLI 投影分叉的 Brief。
 6. 必要时改 README 入口句（例如「暂无 Brief」）。
 

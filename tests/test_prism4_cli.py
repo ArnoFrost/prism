@@ -386,7 +386,7 @@ def test_bin_prism_artifact_next_id_and_locate(tmp_path):
     assert next_id.returncode == 0, next_id.stderr
     assert next_id.stdout.strip() == "finding:f01"
 
-    locate = subprocess.run(
+    json_locate = subprocess.run(
         [
             str(BIN_PRISM),
             "artifact",
@@ -394,6 +394,39 @@ def test_bin_prism_artifact_next_id_and_locate(tmp_path):
             "artifact:decision.phase-2-json-adapter",
             "--root",
             str(root),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert json_locate.returncode == 2
+    assert "JSON reference stores have logical refs" in json_locate.stderr
+
+    local_root = tmp_path / "local-state"
+    local_store = ReferenceStore()
+    local_store.add_topic(
+        Topic(id="topic:local-locate", title="Local Locate")
+    )
+    local_store.add_artifact(
+        Artifact(
+            id="decision:d01",
+            topic_id="topic:local-locate",
+            role="decision",
+            title="Local Decision",
+            body="Locate should return a real Markdown path.",
+        )
+    )
+    LocalFileStoreAdapter(local_root).save(local_store)
+
+    locate = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "artifact",
+            "locate",
+            "decision:d01",
+            "--root",
+            str(local_root),
         ],
         capture_output=True,
         text=True,

@@ -21,7 +21,7 @@ role: "plan"
 title: "..."
 topic: "topic:<slug>"
 authority: "advisory"       # Plan 是可审查的行动模型，不授权执行
-evolution: "regenerable"    # 可原地演进；重定义时 supersedes 重写
+evolution: "supersedable"   # 当前方案可原地修订；实质重定义时 supersedes 重写
 created_at: "YYYY-MM-DD"
 updated_at: "YYYY-MM-DD"
 source:                     # 吸收来源（findings / 外部材料），可选

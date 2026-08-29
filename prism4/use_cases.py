@@ -297,7 +297,7 @@ def record_plan(
         body=body,
         metadata={
             "authority": "advisory",
-            "evolution": "regenerable",
+            "evolution": "supersedable",
             "capability": "prism:plan",
             "created_at": utc_now_iso(),
         },

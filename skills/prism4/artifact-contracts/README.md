@@ -5,7 +5,7 @@
 
 ## 总则（五条）
 
-1. **Persist irreducible state. Derive the rest.** 可由足够强的 Agent 基于现有事实与 repository reality 可靠重建的内容，默认投影，不持久化。
+1. **Persist irreducible state. Derive the rest.** 可由足够强的 Agent 基于现有事实与 repository reality 安全、低成本、可靠重建的内容，默认投影，不持久化。
 2. **Roles are available, not mandatory.** Role 是语义工具，不是 Topic 创建后的文件 checklist；简单 Topic 可以只有 Topic + 一条 Finding 就结束。
 3. **Intent = 目标与边界 SSOT；Plan = 当前实施方案 SSOT。** Plan 不得自行改变 Intent；跨方案有效的约束归 Intent，仅本方案有效的约束归 Plan。
 4. **吸收转写硬标准。** 被吸收不是删除：吸收者必须写清"采用什么 + 为何采用 + 存在实质替代方案时为何不采用"，否则源文件不可退档。

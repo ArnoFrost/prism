@@ -396,7 +396,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_noun_record(
         subparsers,
         "plan",
-        noun_help="record a durable Plan snapshot (advisory / regenerable; advanced)",
+        noun_help="record a durable Plan model (advisory; advanced)",
         record_help="persist durable Plan snapshot; default supersedes the active Plan",
         configure=configure_plan_record,
         json_parent=json_parent,
@@ -556,7 +556,13 @@ def cmd_artifact_next_id(args: argparse.Namespace) -> int:
 
 
 def cmd_artifact_locate(args: argparse.Namespace) -> int:
-    store = open_adapter(resolve_root(args.root)).load()
+    adapter = open_adapter(resolve_root(args.root))
+    if not isinstance(adapter, LocalFileStoreAdapter):
+        raise PrismProtocolError(
+            "artifact locate only supports local Markdown stores; "
+            "JSON reference stores have logical refs, not document paths"
+        )
+    store = adapter.load()
     print(locate_artifact_ref(store, args.ref))
     return 0
 

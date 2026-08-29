@@ -21,11 +21,11 @@ Plan 会根据当前可用的协作状态主动设计下一段行动结构；它
 ## 能力边界
 
 - Plan 设计可执行的行动路线；默认在当前对话中给出行动结构，不自动产出持久 Plan Artifact。
-- Plan Artifact 只是必要时留下的 durable snapshot / recovery anchor，不是每次“想一下怎么做”都要新增的文件。
+- Plan Artifact 是必要时外化的当前实施模型 / recovery anchor，不是每次“想一下怎么做”都要新增的文件。
 - Plan 设计行动；Clarify 消除阻塞歧义；Review 评估状态；Decision 固化权威承诺；Execution 执行工作。
 - Plan 不重新定义 Intent，不重写边界，不把 Findings 变成授权，不执行工作。
 - Plan 可以提出建议，也可以暴露 decision gate，但不能替用户提交 material choice。
-- 持久化后的 Plan 初始是 proposed / advisory / regenerable；它无权自行让输出成为 operative。Reference 只提供来源追踪；接受才形成 authority。
+- 持久化后的 Plan 初始仍是 advisory；它无权自行让输出成为 operative。Reference 只提供来源追踪；接受才形成 authority。
 - Plan 可设计让工作可执行所需的行动形状，但不替代领域专门推理能力。技术架构、研究判断、产品策略等需要领域判断时，Plan 只组织行动与验证路径。
 
 ## 输入
@@ -120,7 +120,7 @@ Plan 不需要实时充当任务账本。普通动作完成后不为“同步一
 
 同一段连续执行中，不要在 P0、P1、P2 每切换一次就各记录一份 Plan Artifact。只有行动模型实质改变、即将跨 session / handoff，或旧 Plan 已经会让下一位执行者恢复出错误路线时，才留下新 snapshot。当前轮的细粒度进度可留在对话内执行清单；测试矩阵、A/B、fixture 和临时验证脚本默认属于 `references/` 或 temp，不自动晋升为 Plan。**Child Topic 也不是 Child Plan**：独立子问题才建 Child Topic，普通任务拆解留在当前 Plan。
 
-正文先写行动事实。frontmatter 已说明 Plan 是 advisory / regenerable 时，不要在每个阶段重复“本 Plan 不授权”“仍需用户确认”等自证；只在真正的 decision gate 或误读风险处说明 authority 边界。避免用“为了实现这一目标”“基于上述分析”等填充句连接步骤。
+正文先写行动事实。frontmatter 已说明 Plan 是 advisory 时，不要在每个阶段重复“本 Plan 不授权”“仍需用户确认”等自证；只在真正的 decision gate 或误读风险处说明 authority 边界。避免用“为了实现这一目标”“基于上述分析”等填充句连接步骤。
 
 仅在用户要求、或当前 Prism 上下文需要持久工件（durable artifact）时持久化 Plan。持久化机制属于当前 adapter，不属于 Plan 语义。
 
@@ -147,6 +147,6 @@ Plan 不需要实时充当任务账本。普通动作完成后不为“同步一
 
 ## 落盘边界
 
-仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘。落盘后仍是 advisory / regenerable，除非后续有效 authority 接受它。
+仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘。落盘后仍是 advisory，除非后续有效 authority 接受它。
 
 不要把已持久化的 Plan 文件整体作为新 Plan 正文。若输入是一份已有 Plan Artifact，应抽取其有效内容后改写，或在需要保留历史时生成新的 replanning Plan 并标明 supersedes 关系。不要用持久 Plan 文件替代 Agent 对当前上下文的局部规划能力。

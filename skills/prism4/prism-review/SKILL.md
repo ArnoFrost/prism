@@ -41,7 +41,7 @@ user_invocable: true
 - 去重、解释分歧、仲裁冲突，合并为一个 Findings 集。
 - 说明独立发现率：多个视角同时发现的问题通常更关键。
 - 当视角间结论冲突时，呈现分歧而非强行统一。
-- 收敛产物仍是 advisory Findings：观察、风险、缺口、冲突、假设、取舍点，不替人拍板。
+- 收敛产物仍是 advisory Findings：只保留尚未被 Intent / Plan / Decision 吸收的重要悬置判断，或未来仍值得引用的关键证据 / 验证结论，不替人拍板。
 
 ## 输出
 
@@ -55,7 +55,7 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 
 ## 工件格式
 
-落盘的 Findings 正文使用中文，遵循固定章节（与 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 一致）。序号由适配器分配（`f01`、`f02`……），
+落盘的 Findings 以 [`../artifact-contracts/finding.md`](../artifact-contracts/finding.md) 为格式权威。下方结构只是 Review 输出的阅读建议，不是新的格式 SSOT。序号由适配器分配（`f01`、`f02`……），
 序号越大越新。
 
 标题必须描述本轮 Findings 的主题，避免默认成“评审发现”。CLI 未传 `--title` 时会从「摘要」或首个 F 标题推断；重要评审建议显式传 `--title`。
@@ -125,7 +125,7 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 
 - Findings 不自动授权。用户裁决后的承诺固化走 `decision record`（由 Decision Semantics 承担）。
 - 能力只承诺输入输出，不承诺自己在流程中的位置。弱衔接是对人类说清「看见了什么 / 建议做什么 / 是否要 Clarify」，不是 3.x 的 Review → Clarify → Scope 固定管线。
-- Plan 只可作为 advisory / regenerable 的行动结构被提醒或记录；不要把 Review 结论包装成旧 Scope，也不要自动把 Findings 变成 Plan。
+- Plan 是当前实施方案 SSOT，但 Review 无权自动改写 Plan；不要把 Review 结论包装成旧 Scope，也不要自动把 Findings 变成 Plan。若结论只是当前方案选择，优先建议吸收到 Plan，而不是新增 Decision。
 - 不自动调用其他能力。被取舍阻塞时只提醒，等用户点头再 Clarify。
 
 ## 落盘

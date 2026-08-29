@@ -26,15 +26,16 @@ prism clarify record <topic_id> --root <topic_dir> --question "<question>" --dec
 # 长文本可用 '-'（stdin，同一命令只能一处）或 '@path'。
 ```
 
-`clarify record` 是 transitional 入口（计划下版退役）：日常优先直接更新 Plan / 留一行式 Finding，CLI record 仅作过渡。
+`clarify record` 是 transitional 入口（计划下版退役）：日常优先把澄清结果吸收到 Intent / Plan，或在确实无法吸收时留 Finding / Decision，CLI record 仅作过渡。
 
 - 已提交的 Decision 需要明确的授权。除非授权边界清晰，否则不要把答案、建议或候选 payload 当作 Decision。
 - 不要调用 3.x `workflow-clarify`、创建 handoff 文件，或写 scope/focus/task/wave 产物。
 
 ## 工件格式
 
-未晋升的澄清落在 `clarifications/`，序号由适配器分配（`c01`、`c02`……）。
-正文用中文，遵循固定章节（与 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 一致）：
+Clarify 默认是讨论过程，不天然制造持久文件。只有当前阻塞必须跨 session 保留、或需要形成候选 payload 时，才暂存在 `clarifications/`；其结果应尽快被 Intent / Plan / Finding / Decision 吸收。
+
+未晋升的澄清落在 `clarifications/`，序号由适配器分配（`c01`、`c02`……）。下方结构是 transitional payload 的阅读建议，不是 Artifact 写法合同；若转为 Finding 或 Decision，分别遵循 [`../artifact-contracts/finding.md`](../artifact-contracts/finding.md) 与 [`../artifact-contracts/decision.md`](../artifact-contracts/decision.md)。
 
 ```markdown
 ## 阻塞问题
@@ -58,7 +59,7 @@ prism clarify record <topic_id> --root <topic_dir> --question "<question>" --dec
 传 `--title` 会用于文件名与索引显示；缺省时取 `--question`。写入后
 `decisions/decision.index.md` 的澄清链会自动重建。
 
-授权写成 Decision 之后：全文并入对应 `dXX` 的「澄清过程」，原 `cXX` 进入
+授权写成 Decision 之后：必要理由并入对应 `dXX`，原 `cXX` 进入
 `archive/`。`prism decision record ... --candidate <id>` 会完成归档。
 尚未晋升的候选继续留在 `clarifications/`。
 

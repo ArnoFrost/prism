@@ -27,9 +27,9 @@ prism brief project <topic_id> --root <topic_dir>
 - 若 Brief 与 Intent、Findings、Decision 语义或 Plan 冲突，把冲突识别为 Finding 或请求澄清。不要默许把 Brief 当作权威。
 - Brief 太空时，不要手写一份私货 Brief。应补充源工件：Intent 给边界，Plan 给当前推进结构，Findings 给风险/缺口，Decision 给承诺；阅读面漂移时用 `/prism-compress`。
 - Intent 与 Plan 只读取当前 Topic 自己的有效工件；允许冒泡的 Child Findings / Decision / Clarify 必须标明来源。缺少 Topic provenance 的 payload 不得视为全局未决项。
-- 若 Brief 投影不出「当前阶段」「本阶段完成信号」或「下一步」，优先检查当前 Plan 是否缺 `## 目标`、`## 步骤`、`## 验证`，或是否只是指向 `references/` 的一段摘要。修源工件，不手写 Brief 补洞。
+- 若 Brief 投影不出「当前阶段」「本阶段完成信号」或「下一步」，优先检查当前 Plan 是否缺 `## 目标`、`## 步骤` / `## 行动结构`、`## 验证`，或是否只是指向 `references/` 的一段摘要。修源工件，不手写 Brief 补洞。
 - 不要从本技能创建 3.x `focus.md` 或改写旧 workflow 文件。
-- Brief 章节（目标与边界 / 当前阶段 / 本阶段完成信号 / 已承诺 / 风险与未决 / 下一步 / Topic 完成条件 / 历史与导航）以 [`../prism-compress/references/artifact-format.md`](../prism-compress/references/artifact-format.md) 为准。本技能只投影，不归档假待办、不改历史件。阅读面漂移时改用 `/prism-compress`。
+- Brief 写法以 [`../artifact-contracts/brief.md`](../artifact-contracts/brief.md) 为准。本技能只投影，不归档假待办、不改历史件。阅读面漂移时改用 `/prism-compress`。
 - 固定的 projection / authority 提示在开头说一次即可。正文直接交付边界、阶段、风险和下一步，不在每个章节重复解释 Prism 协议。
 
 ## 导航面

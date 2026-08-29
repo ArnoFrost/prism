@@ -95,7 +95,7 @@ flowchart TB
 | 活文档描述已删除的 3.x 目录 | `docs/architecture.md` 当前树同步到 prism4 实现 | docs surface tests |
 | schema/template 仍教 workflow skill | 示例统一为 `prism4` / `prism-review` / `prism-topic` | `test_current_skill_schema_examples_use_prism4_surface` |
 | dist profile 仍保留 mini/full legacy 面 | 当前 whitelist 只保留 prism4 profile | skills validation |
-| Plan 文档写 operative、实现写 advisory | artifact-format 与 `record_plan()` 统一为 advisory / regenerable | `test_plan_format_matches_reference_record_plan_semantics` |
+| Plan 文档写 operative、实现写 advisory | Plan 合同与 `record_plan()` 统一为未接受前 advisory，Plan 本身不是 Projection | `test_plan_format_matches_reference_record_plan_semantics` |
 | Invocation Graph 口径强于 local adapter | architecture guide 增加 adapter fidelity 说明 | docs + core/local adapter tests |
 | 旧 CLI 文档断链/误导 | 当前入口指向 `bin/README.md`，3.x 契约归 historical | docs surface tests |
 

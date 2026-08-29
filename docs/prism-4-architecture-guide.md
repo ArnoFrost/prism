@@ -17,7 +17,7 @@ source:
 4.0 的架构图不应再画成固定 workflow。它应表达：
 
 - Topic 定义协作边界。
-- Artifact 承载协作状态。
+- Artifact 承载不可安全遗忘的协作状态。
 - Capability 读取、产生或提出工件变化。
 - Invocation 保留调用、来源与因果关系。
 - Decision 固化被授权的关键承诺。
@@ -43,7 +43,7 @@ flowchart TB
 
   subgraph core["Prism Protocol Core"]
     T["Topic<br/>collaboration boundary"]
-    AR["Artifact<br/>collaboration state"]
+    AR["Artifact<br/>irreducible collaboration state"]
     C["Capability<br/>semantic transform"]
     I["Invocation<br/>provenance and causality"]
     D["Decision Semantics<br/>rules for authorized commitment"]
@@ -130,18 +130,18 @@ flowchart TB
   subgraph topic["Topic"]
     IN["Intent<br/>authoritative boundary and purpose"]
     BR["Brief<br/>current projection for context recovery"]
-    F["Findings<br/>surface what matters"]
-    P["Plan<br/>proposed action structure"]
-    D["Decision<br/>authorized commitment record"]
+    F["Findings<br/>unresolved judgment / key evidence"]
+    P["Plan<br/>current implementation model"]
+    D["Decision<br/>commitment beyond one Plan"]
   end
 
   IN -->|"summarized into"| BR
   F -->|"summarized into"| BR
   D -->|"summarized into"| BR
   IN -->|"constrains"| P
-  D -->|"authorizes or supersedes"| IN
-  D -->|"accepts / rejects / supersedes"| P
-  F -->|"may require"| D
+  D -->|"may authorize boundary change"| IN
+  D -->|"may authorize / constrain"| P
+  F -->|"may remain unresolved until"| D
 ```
 
 Authority rule:
@@ -158,8 +158,8 @@ Current Brief source matrix (implementation baseline, not final surface vocabula
 | Boundary and Topic completion | Exact Topic Intent |
 | Current stage, stage completion, next action | Exact Topic active Plan |
 | Commitments | Applicable Decision from the Topic lineage; label Child origin |
-| Risks and open items | Applicable Findings / Clarify from the Topic lineage; label Child origin |
-| History and navigation | Recent superseded / historical Artifacts plus Adapter indexes or directory entry points; recovery view need not enumerate every intermediate Plan snapshot |
+| Risks and open items | Active Findings plus blocking Clarify payloads from the Topic lineage; label Child origin |
+| History and navigation | Recent absorbed / superseded / historical Artifacts plus Adapter indexes or directory entry points; recovery view need not enumerate every intermediate Plan snapshot |
 
 Child Intent and Child Plan do not replace Parent state. Clarify payloads carry Topic provenance; missing provenance never means globally applicable.
 
@@ -181,7 +181,7 @@ This checkpoint freezes category grammar needed by the current implementation, n
 
 | Category | Grammar | Current mapping |
 |----------|---------|-----------------|
-| Artifact | Persistent collaboration state; noun | Intent / Brief / Findings / Decision / Plan |
+| Artifact | Irreducible collaboration state; noun | Intent / Brief / Findings / Decision / Plan |
 | Capability | Semantic transform; action | Review / Clarify / Plan |
 | Payload | Typed semantic result inside an Invocation; not automatically an Artifact | Understanding Update / Proposed Patch / Decision Candidate |
 | Operation | Explicit side effect or recording action | Record Decision |
@@ -253,7 +253,7 @@ Brief projection remains a Reference Experience / Adapter behavior. There is no 
 flowchart TB
   subgraph authority["Authority"]
     AU["Authoritative<br/>Intent, Decision"]
-    AD["Advisory<br/>Findings, proposed Plan"]
+    AD["Advisory<br/>Findings, Plan before acceptance"]
     PR["Projected<br/>Brief"]
     OP["Operative<br/>accepted Plan"]
   end
@@ -460,7 +460,7 @@ Topic
   defines the collaboration boundary
 
 Artifact
-  carries collaboration state by role
+  carries irreducible collaboration state by role
   roles: Intent, Brief, Findings, Plan, Decision
 
 Capability
