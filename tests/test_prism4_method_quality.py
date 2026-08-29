@@ -1,4 +1,4 @@
-"""P3 Review / Plan method-quality contracts.
+"""Review / Plan method-quality contracts.
 
 These tests guard decision-changing method instructions, not output headings:
 Review must counter shared blind spots before Merge; Plan must scale its route

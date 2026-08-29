@@ -1,4 +1,4 @@
-"""Shared kernel contract tests (plan:p01 P2).
+"""Shared kernel contract tests.
 
 Guards: shared/ stays a non-public reference layer (relink skips it, catalog
 does not list it, SDK skills reference it), and kernel.md does not become a

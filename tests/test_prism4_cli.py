@@ -59,8 +59,8 @@ def _seed_json_store(root: Path) -> Path:
     store = ReferenceStore()
     topic = Topic(id="topic:prism-4-refoundation", title="Prism 4.0 Refoundation")
     child = Topic(
-        id="topic:prism-4-refoundation.phase-2",
-        title="Phase 2",
+        id="topic:prism-4-refoundation.reference-adapter",
+        title="Reference Adapter",
         parent_id=topic.id,
     )
     store.add_topic(topic)
@@ -88,12 +88,12 @@ def _seed_json_store(root: Path) -> Path:
         body="## 目标\n\nKeep the reference adapter useful.\n\n## 步骤\n\n1. Verify CLI.\n",
     )
     payload = SemanticPayload(
-        id="payload:decision-candidate.phase-2",
+        id="payload:decision-candidate.adapter-choice",
         type="decision-candidate",
         body="Use explicit Decision semantics.",
     )
     decision = Artifact(
-        id="artifact:decision.phase-2-json-adapter",
+        id="artifact:decision.json-adapter",
         topic_id=topic.id,
         role="decision",
         title="JSON Adapter Decision",
@@ -409,7 +409,7 @@ def test_bin_prism_artifact_next_id_and_locate(tmp_path):
             str(BIN_PRISM),
             "artifact",
             "locate",
-            "artifact:decision.phase-2-json-adapter",
+            "artifact:decision.json-adapter",
             "--root",
             str(root),
         ],

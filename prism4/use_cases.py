@@ -664,8 +664,8 @@ def _validate_committed_decision_authority(
 
     Grandfathering is not inferred from a missing field. A later, itself valid
     committed Decision must explicitly list the legacy refs in ``grandfathers``.
-    This keeps the d01–d04 exception narrow without baking a Workspace topic id
-    into the protocol implementation.
+    This keeps legacy exceptions narrow without baking Workspace-local
+    provenance or artifact ids into the protocol implementation.
     """
     if decision.id in _seen:
         raise PrismProtocolError(
@@ -713,7 +713,7 @@ def validate_relation(
     kind: str,
     target_ref: str,
 ) -> None:
-    """relation legality matrix（finding:f06 F3）。
+    """Relation legality matrix（Alignment §11）。
 
     supersedes：同 role artifact、同 Topic、target 非 historical、不自环不成环。
     authorizes：source 必须是 committed Decision。
@@ -904,7 +904,7 @@ def plan_state(store: ReferenceStore, plan_ref: str) -> dict[str, bool]:
 def validate_store(store: ReferenceStore) -> list[str]:
     """全库合同校验：relation matrix + committed Decision evidence 链。
 
-    d01–d04 grandfathering 由一个自身 authority 有效的 committed Decision
+    Legacy grandfathering 由一个自身 authority 有效的 committed Decision
     通过 ``grandfathers`` 明确列举；缺 evidence 不再被推断为 legacy。
     """
     problems: list[str] = []

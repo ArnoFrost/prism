@@ -1,4 +1,4 @@
-"""Consumer-source consistency drift tests (plan:p01 P1B.1 Stage C / f08).
+"""Consumer-source consistency drift tests.
 
 Protocol Semantics SSOT = docs/prism-4-refoundation-alignment.md.
 AGENTS.md、Shared kernel、Artifact Contracts、CLI Contract 都是受控 consumer：
@@ -37,24 +37,6 @@ def test_intent_contract_consumes_alignment_layered_policy() -> None:
     assert "诚实降级" in intent
 
 
-def test_decision_authority_contract_points_to_d05() -> None:
-    path = (
-        Path(__file__).resolve().parents[1]
-        / "workspace.prism.local"
-        / "topics"
-        / "081_skill-surface-contract"
-        / "references"
-        / "p1a-state-authority"
-        / "decision-authority-contract.md"
-    )
-    if not path.is_file():
-        # workspace 目录不入库也可能未挂载；SDK 侧合同引用仍可校验。
-        return
-    text = path.read_text(encoding="utf-8")
-    assert "decision:d05" in text
-    assert "授权依据：`decision:d03`" not in text
-
-
 def test_distributed_consumers_do_not_depend_on_workspace_decision_ids() -> None:
     kernel = KERNEL.read_text(encoding="utf-8")
     surfaces = (
@@ -71,6 +53,14 @@ def test_distributed_consumers_do_not_depend_on_workspace_decision_ids() -> None
     assert "Alignment §6.1" in kernel
 
 
+def test_sdk_tests_do_not_read_the_project_workspace_bridge() -> None:
+    forbidden_bridge = "workspace." + "prism.local"
+    for path in (ROOT / "tests").glob("test_*.py"):
+        assert forbidden_bridge not in path.read_text(encoding="utf-8"), (
+            f"SDK test depends on the maintainer's local Workspace bridge: {path}"
+        )
+
+
 def test_alignment_absorbs_released_intent_plan_and_authority_semantics() -> None:
     alignment = (
         ROOT / "docs" / "prism-4-refoundation-alignment.md"
@@ -79,19 +69,3 @@ def test_alignment_absorbs_released_intent_plan_and_authority_semantics() -> Non
     assert "范围互斥的 sibling Plan 可以并存" in alignment
     assert "typed authority evidence" in alignment
     assert "`human-required` 只是 requirement，不是 authority evidence" in alignment
-
-
-def test_cli_contract_marks_implemented_surface() -> None:
-    draft = (
-        ROOT
-        / "workspace.prism.local"
-        / "topics"
-        / "081_skill-surface-contract"
-        / "references"
-        / "p0-authority-dag"
-        / "cli-contract-draft.md"
-    )
-    if not draft.is_file():
-        return
-    text = draft.read_text(encoding="utf-8")
-    assert "active" in text.lower()

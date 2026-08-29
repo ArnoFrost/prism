@@ -412,7 +412,7 @@ Reference creates provenance; acceptance creates authority.
 
 Findings 被吸收、证伪或取代时，不要求删除。协议语义是用 relation / metadata 标记 `absorbed`、`superseded`、`invalidated`、`withdrawn`、`reframed` 或 `resolved`；具体存储方式由 Adapter 决定。被吸收不是简单删除：吸收者必须留下足够理由，使未来不依赖原始讨论也能理解当前方案。
 
-Authority / Evolution 是 protocol semantics first。它们的具体序列化可以是 metadata、relation、derived state 或 adapter representation；Phase 1 不应 schema-first 地把它们固化成必填 enum 或固定字段。
+Authority / Evolution 是 protocol semantics first。它们的具体序列化可以是 metadata、relation、derived state 或 adapter representation；参考实现不应 schema-first 地把它们固化成必填 enum 或固定字段。
 
 ## 7. 能力模型
 

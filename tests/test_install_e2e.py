@@ -1,4 +1,4 @@
-"""Phase H-2 P1 B1 — distribution e2e install smoke.
+"""Distribution end-to-end install smoke tests.
 
 模拟分发用户解压 zip 后的最小可用路径：
 

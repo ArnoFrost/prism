@@ -418,7 +418,7 @@ def build_parser() -> argparse.ArgumentParser:
         "write",
         help="write or update an artifact body (generic mechanical primitive)",
     )
-    artifact_write.add_argument("ref", help="artifact ref, e.g. finding:f06")
+    artifact_write.add_argument("ref", help="artifact ref, e.g. finding:f01")
     artifact_write.add_argument(
         "--topic",
         dest="topic_id",

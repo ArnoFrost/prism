@@ -1,13 +1,12 @@
-"""P1B.1 authority & relation hardening — adversarial contract tests.
+"""Authority and relation hardening — adversarial contract tests.
 
-Driven by finding:f06 (F1–F5) and decision:d05 (typed authority evidence as a
-long-term contract). These tests attack the public surface the way an
-unauthorized writer would; every rejection keeps durable writes = 0.
+These tests guard typed authority evidence as a long-term contract and attack
+the public surface the way an unauthorized writer would; every rejection keeps
+durable writes = 0.
 
-d01–d04 are legacy grandfathered (no structured authority_evidence field);
-the validator accepts them only when a valid committed Decision explicitly
-lists their refs, and new committed writes must carry typed, target-bound
-evidence.
+Legacy committed Decisions without structured ``authority_evidence`` are
+accepted only when a valid committed Decision explicitly lists their refs;
+new committed writes must carry typed, target-bound evidence.
 """
 
 import json
@@ -146,7 +145,7 @@ def test_generic_write_rejects_intent_and_brief_roles():
         )
 
 
-# ── F2: typed evidence validator (decision:d05) ──────────────────────────
+# ── Typed evidence validator ─────────────────────────────────────────────
 
 
 def test_findings_artifact_is_not_authority_evidence():
@@ -333,7 +332,7 @@ def test_human_choice_evidence_targeting_the_decision_is_accepted():
 
 
 def test_grandfathered_decisions_load_and_validate_without_structured_evidence():
-    """d01–d04 grandfathered：无结构化 evidence 字段不判无效。"""
+    """显式 grandfathered 的 legacy Decision 可没有结构化 evidence。"""
     store = ReferenceStore()
     create_topic(
         store,

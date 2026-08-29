@@ -18,7 +18,7 @@ from prism4 import (
 from prism4.core import new_id
 
 
-def test_json_reference_store_roundtrip_preserves_phase_2_semantics(tmp_path):
+def test_json_reference_store_roundtrip_preserves_protocol_semantics(tmp_path):
     store = ReferenceStore()
     root = store.add_topic(Topic(id="topic:prism-4", title="Prism 4.0"))
     child = store.add_topic(
@@ -66,7 +66,7 @@ def test_json_reference_store_roundtrip_preserves_phase_2_semantics(tmp_path):
         id=new_id("artifact"),
         topic_id=root.id,
         role="decision",
-        body="Accepted: use JSON reference adapter for Phase 2 dogfood.",
+        body="Accepted: use the JSON reference adapter for initial dogfood.",
     )
     store.invoke(
         record_decision_operation(authority_required="human-required"),

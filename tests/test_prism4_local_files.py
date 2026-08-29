@@ -464,7 +464,7 @@ def test_removed_artifacts_are_pruned(tmp_path: Path) -> None:
 
 
 def test_prune_after_load_keeps_files_unknown_at_load_time(tmp_path: Path) -> None:
-    """P4：后写者不得把 load 之后才出现的并发工件静默删掉。"""
+    """后写者不得把 load 之后才出现的并发工件静默删掉。"""
     adapter = LocalFileStoreAdapter(tmp_path)
     store = _store()
     store.add_artifact(
