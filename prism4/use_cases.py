@@ -41,6 +41,13 @@ ARTIFACT_ROLE_BY_NAMESPACE = {
     "plan": "plan",
 }
 
+# authority-sensitive roles 不经 generic write 创建或更新（decision:d05）：
+# decision 走 guarded `decision record`，intent 是边界 SSOT，brief 是可再生投影。
+AUTHORITY_SENSITIVE_ROLES = frozenset({"decision", "intent", "brief"})
+
+# typed authority evidence 的 payload 类型（decision:d05 / clarify:c02 形态）。
+EVIDENCE_PAYLOAD_TYPE = "evidence-reference"
+
 # 各角色新建时的默认 authority / evolution；调用方之后可用 relation/archive 演进。
 DEFAULT_ARTIFACT_METADATA: dict[str, dict[str, str]] = {
     "intent": {"authority": "authoritative", "evolution": "supersedable"},
@@ -132,6 +139,19 @@ def persist_brief(
     return brief.id
 
 
+def _resolve_input_items(
+    store: ReferenceStore, refs: tuple[str, ...]
+) -> list[Artifact | SemanticPayload]:
+    """把调用方声明的 exact input refs 解析回 store 对象；不存在的 ref 拒绝。"""
+    items: list[Artifact | SemanticPayload] = []
+    for ref in refs:
+        item = store.artifacts.get(ref) or store.payloads.get(ref)
+        if item is None:
+            raise PrismProtocolError(f"input ref does not exist: {ref}")
+        items.append(item)
+    return items
+
+
 def record_review(
     store: ReferenceStore,
     *,
@@ -140,6 +160,7 @@ def record_review(
     title: str | None = None,
     artifact_id: str | None = None,
     supersedes: tuple[str, ...] = (),
+    input_refs: tuple[str, ...] | None = None,
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str]:
     if topic_id not in store.topics:
@@ -149,7 +170,20 @@ def record_review(
             "review body appears to contain a persisted Findings artifact; "
             "rewrite the body or supersede the existing Findings instead"
         )
-    inputs = topic_artifacts(store, topic_id, roles=("intent", "brief", "plan"))
+    # exact-input 合同（decision:d04 / f06 F4）：调用方未声明 exact inputs 时
+    # 记空表（declared-unavailable），不按 Topic role sweep 推断因果输入。
+    inputs = (
+        _resolve_input_items(store, input_refs)
+        if input_refs is not None
+        else []
+    )
+    _validate_relation_targets_pre_insert(
+        store,
+        kind="supersedes",
+        target_refs=supersedes,
+        source_role="findings",
+        source_topic_id=topic_id,
+    )
     findings = Artifact(
         id=artifact_id or next_artifact_id(store, "findings"),
         topic_id=topic_id,
@@ -235,16 +269,26 @@ def record_clarify(
     title: str | None = None,
     patch_id: str | None = None,
     candidate_id: str | None = None,
+    evidence_target: str | None = None,
+    evidence_kind: str = "human-choice",
+    evidence_confirmed: bool = False,
+    evidence_id: str | None = None,
+    input_refs: tuple[str, ...] | None = None,
     next_payload_id: NextPayloadId,
 ) -> tuple[list[str], str]:
-    if not proposed_patch and not decision_candidate:
+    if not proposed_patch and not decision_candidate and not evidence_target:
         raise PrismProtocolError(
-            "clarify requires proposed_patch and/or decision_candidate"
+            "clarify requires proposed_patch, decision_candidate, or "
+            "evidence_target (typed authority-evidence record)"
         )
     if topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {topic_id}")
 
-    inputs = topic_artifacts(store, topic_id, roles=("intent", "brief", "findings"))
+    inputs = (
+        _resolve_input_items(store, input_refs)
+        if input_refs is not None
+        else []
+    )
     outputs: list[SemanticPayload] = []
     reserved: list[str] = []
 
@@ -285,6 +329,25 @@ def record_clarify(
                 metadata=dict(clarify_metadata),
             )
         )
+    if evidence_target:
+        # typed authority-evidence 记录（decision:d05 / clarify:c02 形态）：
+        # status 只有在用户本次交互中明确确认时才为 confirmed。
+        evidence_meta = dict(clarify_metadata)
+        evidence_meta.update(
+            {
+                "status": "confirmed" if evidence_confirmed else "proposed",
+                "evidence_kind": evidence_kind,
+                "target_ref": evidence_target,
+            }
+        )
+        outputs.append(
+            SemanticPayload(
+                id=allocate(evidence_id),
+                type=EVIDENCE_PAYLOAD_TYPE,
+                body=question,
+                metadata=evidence_meta,
+            )
+        )
     invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
     return [output.id for output in outputs], invocation.id
 
@@ -297,6 +360,7 @@ def record_plan(
     title: str = "行动结构",
     artifact_id: str | None = None,
     supersedes: tuple[str, ...] = (),
+    input_refs: tuple[str, ...] | None = None,
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str]:
     if topic_id not in store.topics:
@@ -306,11 +370,17 @@ def record_plan(
             "plan body appears to contain a persisted Plan artifact; "
             "rewrite the body or supersede the existing Plan instead"
         )
-    # supersedes 是语义选择，只由调用方显式提交；本层验证 target 合法性，
-    # 不自动枚举 current Plan（decision:d03）。
-    _validate_plan_supersede_targets(store, topic_id, supersedes)
-    inputs = topic_artifacts(
-        store, topic_id, roles=("intent", "brief", "findings", "decision")
+    inputs = (
+        _resolve_input_items(store, input_refs)
+        if input_refs is not None
+        else []
+    )
+    _validate_relation_targets_pre_insert(
+        store,
+        kind="supersedes",
+        target_refs=supersedes,
+        source_role="plan",
+        source_topic_id=topic_id,
     )
     plan_artifact = Artifact(
         id=artifact_id or next_artifact_id(store, "plan"),
@@ -328,31 +398,10 @@ def record_plan(
     invocation = store.invoke(
         plan_capability(), inputs=inputs, outputs=(plan_artifact,)
     )
+    # supersedes 经共享 relation matrix 验证（同 role / 同 Topic / 非 historical /
+    # 无环）；不自动枚举 current Plan（decision:d03）。
     _add_relations(store, plan_artifact.id, "supersedes", supersedes)
     return plan_artifact.id, invocation.id
-
-
-def _validate_plan_supersede_targets(
-    store: ReferenceStore,
-    topic_id: str,
-    supersedes: tuple[str, ...],
-) -> None:
-    for target_ref in supersedes:
-        artifact = store.artifacts.get(target_ref)
-        if artifact is None:
-            raise PrismProtocolError(f"supersedes target does not exist: {target_ref}")
-        if artifact.topic_id != topic_id:
-            raise PrismProtocolError(
-                f"supersedes target must belong to the same topic: {target_ref}"
-            )
-        if artifact.role != "plan":
-            raise PrismProtocolError(
-                f"supersedes target must be a plan artifact: {target_ref}"
-            )
-        if str(artifact.metadata.get("evolution") or "") == "historical":
-            raise PrismProtocolError(
-                f"supersedes target is historical and can no longer be superseded: {target_ref}"
-            )
 
 
 def _looks_like_persisted_plan(body: str) -> bool:
@@ -387,6 +436,7 @@ def record_decision(
     candidate_id: str | None = None,
     supersedes: tuple[str, ...] = (),
     authorizes: tuple[str, ...] = (),
+    input_refs: tuple[str, ...] | None = None,
     next_artifact_id: NextArtifactId,
 ) -> tuple[str, str, SemanticPayload | None]:
     """Record a Decision and consume an optional candidate.
@@ -395,30 +445,62 @@ def record_decision(
     active payload set. Adapter archival of the consumed payload is a
     W1 CLI transitional exception, not this function's job.
 
-    committed write 需要显式 authority evidence（指向 human-choice 记录、
-    Decision 或委托授权上下文的 ref）；`human-required` 只是 requirement，
-    不是 evidence（decision:d04）。缺 evidence 或 ref 不合法时拒绝写入，
+    committed write 需要显式 typed authority evidence（decision:d05）：
+    confirmed human-choice 记录、覆盖本次目标的 committed Decision、或 scope
+    有效的 delegated context。evidence 的 target_ref 必须绑定本次 Decision
+    的最终 id（调用方先经 `artifact next-id --role decision` 预分配）；
+    candidate 不得自证；`human-required` 只是 requirement。验证失败时
     durable writes = 0。
     """
     if topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {topic_id}")
     if not authority_evidence:
         raise PrismProtocolError(
-            "decision commit requires authority evidence: a ref to a "
-            "human-choice record, a Decision, or a delegated authority "
-            "context; `--authority human-required` is a requirement, "
-            "not evidence"
+            "decision commit requires authority evidence: a confirmed "
+            "human-choice record, a committed Decision covering this goal, "
+            "or a delegated authority context; `--authority human-required` "
+            "is a requirement, not evidence"
         )
-    _validate_authority_evidence(store, authority_evidence)
+    if candidate_id and authority_evidence == candidate_id:
+        raise PrismProtocolError(
+            "decision candidate cannot self-authorize: the candidate being "
+            "consumed is not its own confirmation record (decision:d05)"
+        )
+    # id 先于验证确定，使 evidence 的 target 绑定始终可严格校验。
+    resolved_id = artifact_id or next_artifact_id(store, "decision")
+    validate_authority_evidence(
+        store,
+        evidence_ref=authority_evidence,
+        target_ref=resolved_id,
+        topic_id=topic_id,
+    )
+    _validate_relation_targets_pre_insert(
+        store,
+        kind="supersedes",
+        target_refs=supersedes,
+        source_role="decision",
+        source_topic_id=topic_id,
+    )
+    _validate_relation_targets_pre_insert(
+        store,
+        kind="authorizes",
+        target_refs=authorizes,
+        source_role="decision",
+        source_topic_id=topic_id,
+    )
 
-    inputs: list = topic_artifacts(store, topic_id, roles=("intent", "findings"))
+    inputs = (
+        _resolve_input_items(store, input_refs)
+        if input_refs is not None
+        else []
+    )
     if candidate_id:
         if candidate_id not in store.payloads:
             raise PrismProtocolError(f"payload does not exist: {candidate_id}")
         inputs.append(store.payloads[candidate_id])
 
     decision_artifact = Artifact(
-        id=artifact_id or next_artifact_id(store, "decision"),
+        id=resolved_id,
         topic_id=topic_id,
         role="decision",
         title=title,
@@ -446,18 +528,307 @@ def record_decision(
     return decision_artifact.id, invocation.id, consumed
 
 
-def _validate_authority_evidence(store: ReferenceStore, evidence_ref: str) -> None:
+def validate_authority_evidence(
+    store: ReferenceStore,
+    *,
+    evidence_ref: str,
+    target_ref: str,
+    topic_id: str,
+) -> dict[str, str]:
+    """typed authority evidence validator（decision:d05）。
+
+    合法证据仅三类：confirmed human-choice 记录、覆盖本次目标的 committed
+    Decision、scope 覆盖本次操作的 delegated authority context。candidate
+    不得自证；`human-required` 是 requirement 不是 evidence；Findings 或其他
+    非 evidence-reference 形态不构成 human-choice。返回 evidence 描述供
+    acceptance payload 复用。
+    """
     artifact = store.artifacts.get(evidence_ref)
     if artifact is not None:
-        if artifact.role in ("plan", "intent", "brief"):
+        if artifact.role != "decision":
             raise PrismProtocolError(
-                f"authority evidence must not point to a {artifact.role} "
-                f"artifact: {evidence_ref}"
+                "authority evidence must be an evidence-reference payload or "
+                f"a committed Decision, not a {artifact.role} artifact: {evidence_ref}"
             )
-        return
-    if evidence_ref in store.payloads:
-        return
-    raise PrismProtocolError(f"authority evidence does not exist: {evidence_ref}")
+        if str(artifact.metadata.get("evolution") or "") != "committed":
+            raise PrismProtocolError(
+                f"authority evidence Decision is not committed: {evidence_ref}"
+            )
+        if artifact.topic_id != topic_id:
+            has_explicit_grant = any(
+                relation.kind == "authorizes"
+                and relation.source_ref == evidence_ref
+                and relation.target_ref == target_ref
+                for relation in store.relations
+            )
+            if not has_explicit_grant:
+                raise PrismProtocolError(
+                    "authority evidence Decision belongs to another topic and "
+                    f"does not explicitly authorize {target_ref}: {evidence_ref}"
+                )
+        return {"kind": "committed-decision", "ref": evidence_ref}
+
+    payload = store.payloads.get(evidence_ref)
+    if payload is None:
+        raise PrismProtocolError(f"authority evidence does not exist: {evidence_ref}")
+    if payload.type != EVIDENCE_PAYLOAD_TYPE:
+        raise PrismProtocolError(
+            f"authority evidence payload must be typed '{EVIDENCE_PAYLOAD_TYPE}' "
+            f"(decision candidates and other payloads cannot self-authorize); "
+            f"got '{payload.type}': {evidence_ref}"
+        )
+    meta = payload.metadata
+    if str(meta.get("status") or "") != "confirmed":
+        raise PrismProtocolError(
+            f"authority evidence is not confirmed: {evidence_ref}"
+        )
+    evidence_kind = str(meta.get("evidence_kind") or "")
+    if evidence_kind not in ("human-choice", "delegated-context"):
+        raise PrismProtocolError(
+            f"authority evidence has unknown evidence_kind '{evidence_kind}': {evidence_ref}"
+        )
+    if str(meta.get("target_ref") or "") != target_ref:
+        raise PrismProtocolError(
+            f"authority evidence is not bound to target {target_ref}: {evidence_ref}"
+        )
+    if str(meta.get("topic_id") or "") != topic_id:
+        raise PrismProtocolError(
+            f"authority evidence belongs to another topic: {evidence_ref}"
+        )
+    if evidence_kind == "delegated-context":
+        scope = meta.get("scope_refs") or []
+        if target_ref not in scope:
+            raise PrismProtocolError(
+                f"delegated authority scope does not cover {target_ref}: {evidence_ref}"
+            )
+    return {"kind": evidence_kind, "ref": evidence_ref}
+
+
+def validate_relation(
+    store: ReferenceStore,
+    *,
+    source_ref: str,
+    kind: str,
+    target_ref: str,
+) -> None:
+    """relation legality matrix（finding:f06 F3）。
+
+    supersedes：同 role artifact、同 Topic、target 非 historical、不自环不成环。
+    authorizes：source 必须是 committed Decision。
+    supports：source 为 Findings 或 evidence 类 payload，target 为
+    plan / intent / decision，同 Topic。
+    projects：source 为 Brief，target 为同 Topic artifact。
+    generic `relation add` 与 record aliases（经 `_add_relations`）共用本
+    validator。
+    """
+    source_artifact = store.artifacts.get(source_ref)
+    target_artifact = store.artifacts.get(target_ref)
+    source_is_payload = source_artifact is None and source_ref in store.payloads
+    target_is_payload = target_artifact is None and target_ref in store.payloads
+
+    if kind == "supersedes":
+        if source_is_payload or target_is_payload:
+            raise PrismProtocolError(
+                "supersedes applies to artifacts, not semantic payloads: "
+                f"{source_ref} -> {target_ref}"
+            )
+        if source_artifact.id == target_artifact.id:
+            raise PrismProtocolError(f"supersedes target cannot be itself: {target_ref}")
+        if source_artifact.role != target_artifact.role:
+            raise PrismProtocolError(
+                f"supersedes target must be a {source_artifact.role} artifact: "
+                f"{target_ref} (got {target_artifact.role})"
+            )
+        if source_artifact.topic_id != target_artifact.topic_id:
+            raise PrismProtocolError(
+                f"supersedes target must belong to the same topic: {target_ref}"
+            )
+        if str(target_artifact.metadata.get("evolution") or "") == "historical":
+            raise PrismProtocolError(
+                f"supersedes target is historical and can no longer be superseded: {target_ref}"
+            )
+        _check_supersede_cycle(store, source_ref=source_ref, target_ref=target_ref)
+    elif kind == "authorizes":
+        if source_is_payload or source_artifact.role != "decision":
+            raise PrismProtocolError(
+                f"authorizes source must be a Decision artifact: {source_ref}"
+            )
+        if str(source_artifact.metadata.get("evolution") or "") != "committed":
+            raise PrismProtocolError(
+                f"authorizes source Decision is not committed: {source_ref}"
+            )
+        if target_is_payload:
+            raise PrismProtocolError(
+                f"authorizes target must be an artifact: {target_ref}"
+            )
+    elif kind == "supports":
+        if source_is_payload:
+            if store.payloads[source_ref].type not in (
+                EVIDENCE_PAYLOAD_TYPE,
+                "decision-candidate",
+                "proposed-patch",
+            ):
+                raise PrismProtocolError(
+                    f"supports source must be Findings or an evidence payload: {source_ref}"
+                )
+        elif source_artifact.role != "findings":
+            raise PrismProtocolError(
+                f"supports source must be Findings or an evidence payload: {source_ref}"
+            )
+        if target_is_payload or target_artifact.role not in ("plan", "intent", "decision"):
+            raise PrismProtocolError(
+                f"supports target must be a plan, intent, or decision artifact: {target_ref}"
+            )
+        if not source_is_payload and source_artifact.topic_id != target_artifact.topic_id:
+            raise PrismProtocolError(
+                f"supports source must belong to the same topic: {source_ref}"
+            )
+    elif kind == "projects":
+        if source_is_payload or source_artifact.role != "brief":
+            raise PrismProtocolError(
+                f"projects source must be a Brief artifact: {source_ref}"
+            )
+        if target_is_payload:
+            raise PrismProtocolError(
+                f"projects target must be an artifact: {target_ref}"
+            )
+        if source_artifact.topic_id != target_artifact.topic_id:
+            raise PrismProtocolError(
+                f"projects target must belong to the same topic: {target_ref}"
+            )
+
+
+def _check_supersede_cycle(store: ReferenceStore, *, source_ref: str, target_ref: str) -> None:
+    seen: set[str] = set()
+    stack = [target_ref]
+    while stack:
+        current = stack.pop()
+        if current == source_ref:
+            raise PrismProtocolError(
+                f"supersedes relation would create a cycle through {current}"
+            )
+        if current in seen:
+            continue
+        seen.add(current)
+        stack.extend(
+            relation.target_ref
+            for relation in store.relations
+            if relation.kind == "supersedes" and relation.source_ref == current
+        )
+
+
+def accept_plan(
+    store: ReferenceStore,
+    *,
+    plan_ref: str,
+    evidence_ref: str,
+) -> str:
+    """Plan acceptance（decision:d03 / plan-state 合同）：target-bound typed payload。
+
+    acceptance 附着于 Plan；evidence 经同一 authority validator（目标绑定到
+    该 Plan）。Plan 被 supersede 或退档时 acceptance 随旧 Plan 保留为历史，
+    但不再参与 operative 推导。
+    """
+    artifact = store.artifacts.get(plan_ref)
+    if artifact is None or artifact.role != "plan":
+        raise PrismProtocolError(f"plan does not exist: {plan_ref}")
+    if str(artifact.metadata.get("evolution") or "") == "historical":
+        raise PrismProtocolError(f"plan is historical and cannot be accepted: {plan_ref}")
+    info = validate_authority_evidence(
+        store, evidence_ref=evidence_ref, target_ref=plan_ref, topic_id=artifact.topic_id
+    )
+    acceptance = {
+        "status": "accepted",
+        "evidence": evidence_ref,
+        "evidence_kind": info["kind"],
+        "granted_by": "human" if info["kind"] == "human-choice" else "delegated-policy"
+        if info["kind"] == "delegated-context"
+        else "decision",
+        "granted_at": utc_now_iso()[:10],
+    }
+    store.artifacts[plan_ref] = _dataclass_replace(
+        artifact, metadata={**artifact.metadata, "acceptance": acceptance}
+    )
+    return plan_ref
+
+
+def plan_state(store: ReferenceStore, plan_ref: str) -> dict[str, bool]:
+    """Plan 三轴推导（plan-state 合同）：current / accepted / operative。
+
+    纯函数：仅依赖 store 的 relation 与 metadata，不依赖时间或加载顺序。
+    acceptance 的 evidence 在推导时复验；不可解析或失效时诚实降级为未接受。
+    """
+    artifact = store.artifacts.get(plan_ref)
+    if artifact is None:
+        raise PrismProtocolError(f"plan does not exist: {plan_ref}")
+    superseded = any(
+        relation.kind == "supersedes" and relation.target_ref == plan_ref
+        for relation in store.relations
+    )
+    historical = str(artifact.metadata.get("evolution") or "") == "historical"
+    current = not superseded and not historical
+    acceptance = artifact.metadata.get("acceptance") or {}
+    accepted = False
+    if current and str(acceptance.get("status") or "") == "accepted":
+        evidence_ref = str(acceptance.get("evidence") or "")
+        if evidence_ref:
+            try:
+                validate_authority_evidence(
+                    store,
+                    evidence_ref=evidence_ref,
+                    target_ref=plan_ref,
+                    topic_id=artifact.topic_id,
+                )
+                accepted = True
+            except PrismProtocolError:
+                accepted = False
+    return {
+        "current": current,
+        "accepted": accepted,
+        "operative": current and accepted,
+        "historical": historical,
+        "superseded": superseded,
+    }
+
+
+def validate_store(store: ReferenceStore) -> list[str]:
+    """全库合同校验：relation matrix + committed Decision evidence 链。
+
+    d01–d04 grandfathered：无结构化 evidence 字段的 committed Decision 视为
+    legacy 形态继续有效（decision:d05），但一旦声明了 evidence ref 就必须
+    通过验证——声明的证据不可解析比缺失更危险。
+    """
+    problems: list[str] = []
+    for relation in store.relations:
+        if relation.kind not in RELATION_KINDS:
+            continue
+        try:
+            validate_relation(
+                store,
+                source_ref=relation.source_ref,
+                kind=relation.kind,
+                target_ref=relation.target_ref,
+            )
+        except PrismProtocolError as error:
+            problems.append(str(error))
+    for artifact in store.artifacts.values():
+        if artifact.role != "decision":
+            continue
+        if str(artifact.metadata.get("evolution") or "") != "committed":
+            continue
+        evidence_ref = artifact.metadata.get("authority_evidence")
+        if not evidence_ref:
+            continue
+        try:
+            validate_authority_evidence(
+                store,
+                evidence_ref=str(evidence_ref),
+                target_ref=artifact.id,
+                topic_id=artifact.topic_id,
+            )
+        except PrismProtocolError as error:
+            problems.append(str(error))
+    return problems
 
 
 def write_artifact(
@@ -477,6 +848,13 @@ def write_artifact(
     if role is None:
         raise PrismProtocolError(
             f"ref namespace does not map to a core artifact role: {ref}"
+        )
+    if role in AUTHORITY_SENSITIVE_ROLES:
+        raise PrismProtocolError(
+            f"generic write cannot create or update authority-sensitive role "
+            f"'{role}' (decision:d05): decisions go through `decision record` "
+            "with authority evidence; intent is the boundary SSOT; brief is "
+            f"a regenerable projection: {ref}"
         )
     existing = store.artifacts.get(ref)
     if existing is not None:
@@ -532,7 +910,11 @@ def add_explicit_relation(
     kind: str,
     target_ref: str,
 ) -> Relation:
-    """显式 relation 写入：语义关系由调用方选择，本层只验证存在性与 kind 合法性。"""
+    """显式 relation 写入：语义关系由调用方选择，合法性由共享 matrix 验证。
+
+    generic `relation add` 与 record aliases（_add_relations）共用本入口，
+    保证所有 relation 写入路径接受同一组语义前置校验（f06 F3）。
+    """
     if kind not in RELATION_KINDS:
         raise PrismProtocolError(
             f"unknown relation kind: {kind} (known: {', '.join(RELATION_KINDS)})"
@@ -541,9 +923,54 @@ def add_explicit_relation(
         raise PrismProtocolError(f"relation source does not exist: {source_ref}")
     if target_ref not in store.artifacts and target_ref not in store.payloads:
         raise PrismProtocolError(f"relation target does not exist: {target_ref}")
+    validate_relation(
+        store, source_ref=source_ref, kind=kind, target_ref=target_ref
+    )
     return store.add_relation(
         Relation(source_ref=source_ref, kind=kind, target_ref=target_ref)
     )
+
+
+def _validate_relation_targets_pre_insert(
+    store: ReferenceStore,
+    *,
+    kind: str,
+    target_refs: tuple[str, ...],
+    source_role: str,
+    source_topic_id: str,
+) -> None:
+    """record aliases 在任何 store mutation 之前预检 relation target。
+
+    与矩阵同规则、同错误消息；环检测在此跳过——新建 source 尚无出边，
+    经由它的 supersedes 环在数学上不可能成立，完整矩阵在落盘前仍会复验。
+    预检保证 target 非法时 in-memory store 也不残留半成品。
+    """
+    for target_ref in target_refs:
+        if not target_ref.strip():
+            raise PrismProtocolError(f"{kind} target must be non-empty")
+        target_artifact = store.artifacts.get(target_ref)
+        if target_artifact is None:
+            if kind == "authorizes":
+                if target_ref not in store.payloads:
+                    raise PrismProtocolError(
+                        f"relation target does not exist: {target_ref}"
+                    )
+                continue
+            raise PrismProtocolError(f"supersedes target does not exist: {target_ref}")
+        if kind == "supersedes":
+            if target_artifact.role != source_role:
+                raise PrismProtocolError(
+                    f"supersedes target must be a {source_role} artifact: "
+                    f"{target_ref} (got {target_artifact.role})"
+                )
+            if target_artifact.topic_id != source_topic_id:
+                raise PrismProtocolError(
+                    f"supersedes target must belong to the same topic: {target_ref}"
+                )
+            if str(target_artifact.metadata.get("evolution") or "") == "historical":
+                raise PrismProtocolError(
+                    f"supersedes target is historical and can no longer be superseded: {target_ref}"
+                )
 
 
 def _add_relations(
@@ -555,6 +982,6 @@ def _add_relations(
     for target_ref in target_refs:
         if not target_ref.strip():
             raise PrismProtocolError(f"{kind} target must be non-empty")
-        store.add_relation(
-            Relation(source_ref=source_ref, kind=kind, target_ref=target_ref.strip())
+        add_explicit_relation(
+            store, source_ref=source_ref, kind=kind, target_ref=target_ref.strip()
         )

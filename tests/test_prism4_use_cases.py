@@ -50,6 +50,26 @@ def _topic_store() -> ReferenceStore:
     return store
 
 
+def _confirmed_evidence(store: ReferenceStore, target_ref: str, ref: str = "clarify:c90", evidence_kind: str = "human-choice", scope_refs: list[str] | None = None):
+    """d05 形态的 typed authority evidence：confirmed、target 绑定。"""
+    metadata = {
+        "topic_id": "topic:demo",
+        "status": "confirmed",
+        "evidence_kind": evidence_kind,
+        "target_ref": target_ref,
+    }
+    if scope_refs is not None:
+        metadata["scope_refs"] = scope_refs
+    payload = SemanticPayload(
+        id=ref,
+        type="evidence-reference",
+        body="用户确认记录。",
+        metadata=metadata,
+    )
+    store.add_payload(payload)
+    return payload
+
+
 def test_create_topic_writes_authoritative_intent():
     store = _topic_store()
     intent = next(
@@ -87,26 +107,37 @@ def test_create_topic_preserves_structured_intent_body():
     assert intent.body == body
 
 
-def test_record_review_sets_advisory_findings_and_intent_brief_plan_inputs():
+def test_record_review_sets_advisory_findings_and_declares_inputs_explicitly():
     store = _topic_store()
+    intent_id = next(
+        artifact.id
+        for artifact in store.artifacts.values()
+        if artifact.role == "intent"
+    )
     finding_id, invocation_id = record_review(
         store,
         topic_id="topic:demo",
         body="CLI was owning application semantics.",
+        input_refs=(intent_id,),
         next_artifact_id=fake_artifact_id,
     )
     findings = store.artifacts[finding_id]
     assert findings.role == "findings"
     assert findings.metadata["authority"] == "advisory"
     assert findings.metadata["evolution"] == "supersedable"
-    invocation = store.invocations[invocation_id]
-    input_roles = {
-        store.artifacts[ref].role
-        for ref in invocation.input_refs
-        if ref in store.artifacts
-    }
-    assert input_roles <= {"intent", "brief", "plan"}
-    assert "intent" in input_roles
+    assert store.invocations[invocation_id].input_refs == (intent_id,)
+
+
+def test_record_review_without_input_refs_declares_unavailable():
+    """exact-input 合同：未声明时空表，不按 role sweep 伪造因果输入。"""
+    store = _topic_store()
+    _finding_id, invocation_id = record_review(
+        store,
+        topic_id="topic:demo",
+        body="CLI was owning application semantics.",
+        next_artifact_id=fake_artifact_id,
+    )
+    assert store.invocations[invocation_id].input_refs == ()
 
 
 def test_record_review_can_supersede_existing_findings():
@@ -201,12 +232,16 @@ def test_infer_review_title_skips_readability_headings():
     assert infer_review_title(body) == "Findings 可读性需要先给总判断"
 
 
-def test_record_plan_sets_advisory_supersedable_and_expected_inputs():
+def test_record_plan_sets_advisory_supersedable_and_declares_inputs_explicitly():
     store = _topic_store()
+    intent_id = next(
+        artifact.id for artifact in store.artifacts.values() if artifact.role == "intent"
+    )
     plan_id, invocation_id = record_plan(
         store,
         topic_id="topic:demo",
         body="1. Lock use-case tests. 2. Stop splitting CLI.",
+        input_refs=(intent_id,),
         next_artifact_id=fake_artifact_id,
     )
     plan = store.artifacts[plan_id]
@@ -214,14 +249,7 @@ def test_record_plan_sets_advisory_supersedable_and_expected_inputs():
     assert plan.metadata["authority"] == "advisory"
     assert plan.metadata["evolution"] == "supersedable"
     assert plan.metadata["capability"] == "prism:plan"
-    invocation = store.invocations[invocation_id]
-    input_roles = {
-        store.artifacts[ref].role
-        for ref in invocation.input_refs
-        if ref in store.artifacts
-    }
-    assert input_roles <= {"intent", "brief", "findings", "decision"}
-    assert "intent" in input_roles
+    assert store.invocations[invocation_id].input_refs == (intent_id,)
 
 
 def test_record_plan_can_supersede_existing_plan():
@@ -358,17 +386,12 @@ def test_persist_brief_keeps_parent_and_child_briefs_distinct():
 
 def test_record_decision_defaults_to_human_required_authoritative():
     store = _topic_store()
-    evidence_id, _ = record_review(
-        store,
-        topic_id="topic:demo",
-        body="用户裁决记录：接受该承诺。",
-        next_artifact_id=fake_artifact_id,
-    )
+    evidence = _confirmed_evidence(store, target_ref="decision:d01")
     decision_id, _invocation_id, consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="Authorize record for persist.",
-        authority_evidence=evidence_id,
+        authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
     decision = store.artifacts[decision_id]
@@ -376,24 +399,24 @@ def test_record_decision_defaults_to_human_required_authoritative():
     assert decision.metadata["authority"] == "authoritative"
     assert decision.metadata["evolution"] == "committed"
     assert decision.metadata["authority_required"] == "human-required"
-    assert decision.metadata["authority_evidence"] == evidence_id
+    assert decision.metadata["authority_evidence"] == evidence.id
     assert consumed is None
 
 
 def test_record_decision_accepts_delegated_authority():
     store = _topic_store()
-    evidence_id, _ = record_review(
+    evidence = _confirmed_evidence(
         store,
-        topic_id="topic:demo",
-        body="委托授权上下文记录。",
-        next_artifact_id=fake_artifact_id,
+        target_ref="decision:d01",
+        evidence_kind="delegated-context",
+        scope_refs=["decision:d01"],
     )
     decision_id, _invocation_id, _consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="Delegated recording is still a Decision.",
         authority="delegated",
-        authority_evidence=evidence_id,
+        authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
     assert store.artifacts[decision_id].metadata["authority_required"] == "delegated"
@@ -401,17 +424,12 @@ def test_record_decision_accepts_delegated_authority():
 
 def test_record_decision_can_supersede_and_authorize_artifacts():
     store = _topic_store()
-    evidence_id, _ = record_review(
-        store,
-        topic_id="topic:demo",
-        body="用户裁决记录：接受旧承诺。",
-        next_artifact_id=fake_artifact_id,
-    )
+    evidence = _confirmed_evidence(store, target_ref="decision:d01")
     old_decision_id, _invocation_id, _consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="旧决策。",
-        authority_evidence=evidence_id,
+        authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
     plan_id, _ = record_plan(
@@ -447,19 +465,14 @@ def test_record_decision_can_supersede_and_authorize_artifacts():
 
 def test_record_decision_rejects_invalid_authority():
     store = _topic_store()
-    evidence_id, _ = record_review(
-        store,
-        topic_id="topic:demo",
-        body="用户裁决记录。",
-        next_artifact_id=fake_artifact_id,
-    )
+    evidence = _confirmed_evidence(store, target_ref="decision:d01")
     try:
         record_decision(
             store,
             topic_id="topic:demo",
             body="This must not become a Decision.",
             authority="none",
-            authority_evidence=evidence_id,
+            authority_evidence=evidence.id,
             next_artifact_id=fake_artifact_id,
         )
     except PrismProtocolError as error:
@@ -477,18 +490,13 @@ def test_record_decision_consumes_candidate_without_archiving():
         metadata={"question": "verb?"},
     )
     store.add_payload(payload)
-    evidence_id, _ = record_review(
-        store,
-        topic_id="topic:demo",
-        body="用户裁决记录：采纳该候选。",
-        next_artifact_id=fake_artifact_id,
-    )
+    evidence = _confirmed_evidence(store, target_ref="decision:d01", ref="clarify:c90")
     decision_id, _invocation_id, consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="Authorize record for persist.",
         candidate_id="clarify:c01",
-        authority_evidence=evidence_id,
+        authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
     assert store.artifacts[decision_id].role == "decision"

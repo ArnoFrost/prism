@@ -494,16 +494,19 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert plan.returncode == 0, plan.stderr
     assert "plan:p01" in plan.stdout
 
-    review = subprocess.run(
+    evidence = subprocess.run(
         [
             str(BIN_PRISM),
-            "review",
+            "clarify",
             "record",
             "topic:prism-4-dev-process",
             "--root",
             str(root),
-            "--body",
-            "用户裁决记录：技能说明使用中文，协议原语术语保留英文 SSOT。",
+            "--question",
+            "是否确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
+            "--evidence-target",
+            "decision:d01",
+            "--evidence-confirmed",
         ],
         check=True,
         capture_output=True,
@@ -511,7 +514,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
         timeout=10,
         env=_env(),
     )
-    assert review.returncode == 0, review.stderr
+    assert evidence.returncode == 0, evidence.stderr
 
     record = subprocess.run(
         [
@@ -526,7 +529,7 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
             "--authority",
             "human-required",
             "--authority-evidence",
-            "finding:f01",
+            "clarify:c01",
             "--body",
             "已确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
         ],
@@ -611,16 +614,19 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
     )
     assert plan.returncode == 0, plan.stderr
 
-    review = subprocess.run(
+    evidence = subprocess.run(
         [
             str(BIN_PRISM),
-            "review",
+            "clarify",
             "record",
             "topic:relations",
             "--root",
             str(root),
-            "--body",
-            "用户裁决记录：授权新计划。",
+            "--question",
+            "是否确认授权新计划。",
+            "--evidence-target",
+            "decision:d01",
+            "--evidence-confirmed",
         ],
         check=True,
         capture_output=True,
@@ -628,7 +634,7 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
         timeout=10,
         env=_env(),
     )
-    assert review.returncode == 0, review.stderr
+    assert evidence.returncode == 0, evidence.stderr
 
     decision = subprocess.run(
         [
@@ -643,7 +649,7 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
             "--body",
             "授权新计划。",
             "--authority-evidence",
-            "finding:f01",
+            "clarify:c01",
             "--authorizes",
             "plan:p02",
         ],

@@ -40,6 +40,7 @@ from prism4.host import (  # noqa: E402
 )
 from prism4.use_cases import (  # noqa: E402
     RELATION_KINDS,
+    accept_plan,
     add_explicit_relation,
     archive_artifact,
     create_topic,
@@ -259,6 +260,29 @@ def configure_clarify_record(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--patch-id")
     parser.add_argument("--candidate-id")
+    parser.add_argument(
+        "--evidence-target",
+        help=(
+            "record a typed authority-evidence payload (decision:d05) bound "
+            "to this target ref, e.g. the pre-allocated decision id"
+        ),
+    )
+    parser.add_argument(
+        "--evidence-kind",
+        choices=("human-choice", "delegated-context"),
+        default="human-choice",
+        help="authority kind of the evidence record",
+    )
+    parser.add_argument(
+        "--evidence-confirmed",
+        action="store_true",
+        help=(
+            "mark the evidence confirmed — only set when the user explicitly "
+            "confirmed in this interaction; unconfirmed evidence cannot "
+            "back a Decision commit"
+        ),
+    )
+    parser.add_argument("--evidence-id", help="explicit payload id for the evidence record")
     add_root_arg(parser)
     parser.set_defaults(func=cmd_clarify_record)
 
@@ -465,17 +489,36 @@ def build_parser() -> argparse.ArgumentParser:
         configure=configure_clarify_record,
         json_parent=json_parent,
     )
-    add_noun_record(
-        subparsers,
-        "plan",
-        noun_help="record a durable Plan model (advisory; advanced)",
-        record_help=(
+    plan = subparsers.add_parser(
+        "plan", help="record a durable Plan model (advisory; advanced)"
+    )
+    plan_sub = plan.add_subparsers(dest="plan_verb", required=True)
+    plan_record = plan_sub.add_parser(
+        "record",
+        help=(
             "persist durable Plan snapshot; supersedes only via explicit "
             "--supersedes targets (no automatic supersede)"
         ),
-        configure=configure_plan_record,
-        json_parent=json_parent,
+        description=RECORD_MEANING,
+        parents=[json_parent],
     )
+    configure_plan_record(plan_record)
+    plan_accept_parser = plan_sub.add_parser(
+        "accept",
+        help=(
+            "record Plan acceptance (decision:d03): evidence must be a typed "
+            "authority-evidence payload or committed Decision bound to this Plan"
+        ),
+        parents=[json_parent],
+    )
+    plan_accept_parser.add_argument("plan_ref")
+    plan_accept_parser.add_argument(
+        "--evidence",
+        required=True,
+        help="authority evidence ref bound to this Plan (target_ref must match)",
+    )
+    add_root_arg(plan_accept_parser)
+    plan_accept_parser.set_defaults(func=cmd_plan_accept)
 
     decision = subparsers.add_parser(
         "decision", help="record authorized Decisions (advanced surface)"
@@ -766,6 +809,10 @@ def cmd_clarify_record(args: argparse.Namespace) -> int:
             title=args.title,
             patch_id=args.patch_id,
             candidate_id=args.candidate_id,
+            evidence_target=args.evidence_target,
+            evidence_kind=args.evidence_kind,
+            evidence_confirmed=args.evidence_confirmed,
+            evidence_id=args.evidence_id,
             next_payload_id=adapter.next_payload_id,
         )
 
@@ -791,6 +838,20 @@ def cmd_plan_record(args: argparse.Namespace) -> int:
             supersedes=tuple(args.supersedes),
             next_artifact_id=adapter.next_artifact_id,
         )
+
+    emit_record(
+        adapter.update(mutate),
+        json_output=wants_json(args),
+        include_invocations=_adapter_persists_invocations(adapter),
+    )
+    return 0
+
+
+def cmd_plan_accept(args: argparse.Namespace) -> int:
+    adapter = open_adapter(resolve_root(args.root))
+
+    def mutate(store):
+        return accept_plan(store, plan_ref=args.plan_ref, evidence_ref=args.evidence)
 
     emit_record(
         adapter.update(mutate),

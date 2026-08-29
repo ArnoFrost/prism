@@ -221,7 +221,7 @@ def test_decision_commit_rejects_missing_evidence_ref():
 
 
 def test_decision_commit_rejects_plan_as_evidence():
-    """F4: Plan 不是授权证据。"""
+    """F4: Plan 不是授权证据（typed validator：仅 evidence-reference payload 或 committed Decision）。"""
     store = _topic_store()
     plan_id, _ = record_plan(
         store,
@@ -229,7 +229,7 @@ def test_decision_commit_rejects_plan_as_evidence():
         body="计划。",
         next_artifact_id=fake_artifact_id,
     )
-    with pytest.raises(PrismProtocolError, match="must not point to a plan"):
+    with pytest.raises(PrismProtocolError, match="not a plan artifact"):
         record_decision(
             store,
             topic_id="topic:demo",
@@ -239,41 +239,72 @@ def test_decision_commit_rejects_plan_as_evidence():
         )
 
 
-def test_decision_commit_accepts_findings_evidence_and_records_it():
-    """F1: human-choice 记录（此处以 Findings 承载）构成 evidence，commit 成功并落 metadata。"""
+def test_decision_commit_accepts_confirmed_human_choice_and_records_it():
+    """F1（d05 形态）：confirmed human-choice 记录（evidence-reference payload）构成 evidence。"""
     store = _topic_store()
-    finding_id, _ = record_review(
-        store,
-        topic_id="topic:demo",
-        body="用户裁决记录：接受该承诺。",
-        next_artifact_id=fake_artifact_id,
-    )
+    evidence = _evidence_payload(store, target_ref="decision:d01")
     decision_id, _invocation_id, _consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="被授权的承诺。",
-        authority_evidence=finding_id,
+        authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
     decision = store.artifacts[decision_id]
     assert decision.metadata["authority"] == "authoritative"
     assert decision.metadata["evolution"] == "committed"
-    assert decision.metadata["authority_evidence"] == finding_id
+    assert decision.metadata["authority_evidence"] == evidence.id
 
 
-def test_decision_commit_accepts_decision_candidate_payload_evidence():
+def test_decision_candidate_cannot_self_authorize_but_distinct_evidence_can_confirm():
+    """f06 F2 反转：candidate 自证被拒绝；候选消费需要独立的确认记录。"""
     store = _topic_store()
     payload = _clarify_candidate(store)
+    with pytest.raises(PrismProtocolError, match="cannot self-authorize|evidence-reference"):
+        record_decision(
+            store,
+            topic_id="topic:demo",
+            body="由候选晋升的承诺。",
+            candidate_id=payload.id,
+            authority_evidence=payload.id,
+            next_artifact_id=fake_artifact_id,
+        )
+    # 独立 confirmed human-choice 记录 + candidate 作为被消费输入 → 合法 commit。
+    evidence = _evidence_payload(store, ref="clarify:c90", target_ref="decision:d01")
     decision_id, _invocation_id, consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="由候选晋升的承诺。",
         candidate_id=payload.id,
-        authority_evidence=payload.id,
+        authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
-    assert store.artifacts[decision_id].metadata["authority_evidence"] == payload.id
+    assert store.artifacts[decision_id].metadata["authority_evidence"] == evidence.id
     assert consumed is not None and consumed.id == payload.id
+
+
+def _evidence_payload(
+    store,
+    *,
+    target_ref: str,
+    ref: str = "clarify:c02",
+    status: str = "confirmed",
+):
+    from prism4.core import SemanticPayload
+
+    payload = SemanticPayload(
+        id=ref,
+        type="evidence-reference",
+        body="用户确认记录。",
+        metadata={
+            "topic_id": "topic:demo",
+            "status": status,
+            "evidence_kind": "human-choice",
+            "target_ref": target_ref,
+        },
+    )
+    store.add_payload(payload)
+    return payload
 
 
 def _clarify_candidate(store: ReferenceStore):
