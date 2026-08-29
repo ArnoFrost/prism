@@ -59,7 +59,7 @@ prism topic list
 prism topic new <topic_id> --title "<title>" --intent "<intent>"
 ```
 
-`--intent` 的分层口径（`decision:d01`）：Core 允许 capture-first 的无 Intent Topic；Reference 默认在用户已表达「为什么做」时写入最小 Intent，动机未知时创建 Topic-only 并在 Brief 诚实降级。`--intent` 的普通单段输入应先写一条稳定定位，不把来源、目标、预期产物、权限和验证全部塞进同一句。CLI 会把尚未提供的北极星、明确非目标和关键约束收在一个「尚未声明」区域；这表示缺口仍然存在，不是模型替用户补齐边界。完成条件保持独立，因为 Brief 需要明确回答 Topic 何时结束。
+`--intent` 的分层口径见 Alignment §5.1：Core 允许 capture-first 的无 Intent Topic；Reference 默认在用户已表达「为什么做」时写入最小 Intent，动机未知时创建 Topic-only 并在 Brief 诚实降级。`--intent` 的普通单段输入应先写一条稳定定位，不把来源、目标、预期产物、权限和验证全部塞进同一句。CLI 会把尚未提供的北极星、明确非目标和关键约束收在一个「尚未声明」区域；这表示缺口仍然存在，不是模型替用户补齐边界。完成条件保持独立，因为 Brief 需要明确回答 Topic 何时结束。
 
 若用户已经给出结构化 Intent，保持其事实强度和边界，不为套模板重写。Intent 只负责 Orientation / Boundary；不要把 current progress、active Plan 或下一步写回 Intent。
 

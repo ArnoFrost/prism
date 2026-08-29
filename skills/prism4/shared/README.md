@@ -1,15 +1,15 @@
 # Shared Kernel（非 Public Skill）
 
-> 定位：Skill-facing kernel（`decision:d02`）。从 Protocol Semantics 受控消费跨 Skill 不变量；不是第二语义 SSOT，不定义 Artifact 格式（→ [`artifact-contracts/`](../artifact-contracts/)），不定义 CLI 参数（→ CLI Contract / `bin/README.md`）。
+> 定位：Alignment §3.2 定义的 Skill-facing kernel。从 Protocol Semantics 受控消费跨 Skill 不变量；不是第二语义 SSOT，不定义 Artifact 格式（→ [`artifact-contracts/`](../artifact-contracts/)），不定义 CLI 参数（→ CLI Contract / `bin/README.md`）。
 >
-> **分发**：`bin/relink` 跳过本目录——Shared 不是第七个 Public 入口，只是供六 Skills 引用的合同层。P4 的 `/prism` facade 按需加载 `methods/` 下的 method references。
+> **分发**：`bin/relink` 跳过本目录——Shared 不是 Public 入口。当前 P5 三入口和 SDK 中保留的旧 wrappers 都可消费本合同；`/prism` 按需加载 `methods/` 下的 method references。
 
 ## 结构
 
 | 文件 | 承载 |
 |------|------|
-| [kernel.md](./kernel.md) | 跨 Skill 最小不变量（九节）；六 Skills 引用，不再各自内联复述 |
-| [methods/topic.md](./methods/topic.md) | Topic 创建 method reference（P4 facade lazy-load 单元） |
+| [kernel.md](./kernel.md) | 跨 Skill 最小不变量（九节）；Skills 引用，不再各自内联复述 |
+| [methods/topic.md](./methods/topic.md) | Topic 创建 method reference（facade lazy-load 单元） |
 | [methods/recover.md](./methods/recover.md) | 零写入恢复 method reference |
 | [methods/clarify.md](./methods/clarify.md) | 单问澄清 method reference |
 | [methods/maintain.md](./methods/maintain.md) | preview-first 整理 method reference |

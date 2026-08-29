@@ -26,14 +26,14 @@ def test_agents_md_declares_derived_status() -> None:
     assert "docs/prism-4-refoundation-alignment.md" in agents
 
 
-def test_intent_contract_carries_d01_layered_policy() -> None:
+def test_intent_contract_consumes_alignment_layered_policy() -> None:
     intent = (
         ROOT / "skills" / "prism4" / "artifact-contracts" / "intent.md"
     ).read_text(encoding="utf-8")
-    # f08 F2：d01 分层口径取代“创建时至少落一句”的强制表述。
     assert "Topic 创建时至少落一句" not in intent
     assert "capture-first" in intent
-    assert "decision:d01" in intent
+    assert "Alignment §5.1" in intent
+    assert "decision:d01" not in intent
     assert "诚实降级" in intent
 
 
@@ -55,15 +55,30 @@ def test_decision_authority_contract_points_to_d05() -> None:
     assert "授权依据：`decision:d03`" not in text
 
 
-def test_shared_kernel_decision_authority_points_to_d05() -> None:
+def test_distributed_consumers_do_not_depend_on_workspace_decision_ids() -> None:
     kernel = KERNEL.read_text(encoding="utf-8")
-    assert "decision:d05" in kernel
-    # d04 只承载 Invocation durability 引用，不再是 authority evidence 的来源。
-    line = next(
-        line for line in kernel.splitlines() if "committed write" in line
+    surfaces = (
+        KERNEL,
+        ROOT / "skills" / "prism4" / "shared" / "README.md",
+        ROOT / "skills" / "prism4" / "artifact-contracts" / "intent.md",
+        ROOT / "skills" / "prism4" / "prism-topic" / "SKILL.md",
     )
-    assert "decision:d05" in line
-    assert "decision:d04" not in line
+    for path in surfaces:
+        text = path.read_text(encoding="utf-8")
+        assert "decision:d0" not in text, f"Workspace Decision leaked into {path}"
+    assert "Alignment §5.1" in kernel
+    assert "Alignment §5.5" in kernel
+    assert "Alignment §6.1" in kernel
+
+
+def test_alignment_absorbs_released_intent_plan_and_authority_semantics() -> None:
+    alignment = (
+        ROOT / "docs" / "prism-4-refoundation-alignment.md"
+    ).read_text(encoding="utf-8")
+    assert "Core 允许 capture-first 的无 Intent Topic" in alignment
+    assert "范围互斥的 sibling Plan 可以并存" in alignment
+    assert "typed authority evidence" in alignment
+    assert "human-required 只是 requirement，不是 authority evidence" in alignment
 
 
 def test_cli_contract_marks_implemented_surface() -> None:

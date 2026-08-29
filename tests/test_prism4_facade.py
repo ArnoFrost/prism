@@ -1,7 +1,7 @@
-"""P4 shadow facade contract tests.
+"""P5 optimistic facade and distribution contract tests.
 
 The facade reduces public routing cost without changing Capability identity,
-authority, effects, or the six-entry control surface.
+authority, effects, or the rollback source retained in the SDK.
 """
 
 import os
@@ -20,19 +20,16 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _catalog_entry(skill_id: str) -> str:
-    text = _read(CATALOG)
-    return text.split(f"  - id: {skill_id}", 1)[1].split("  - id:", 1)[0]
-
-
 def test_facade_is_explicit_only_optimistic_dogfood_skill() -> None:
     skill = _read(FACADE / "SKILL.md")
     policy = _read(FACADE / "agents" / "openai.yaml")
+    catalog = _read(CATALOG)
 
     assert "name: prism" in skill
     assert "user_invocable: true" in skill
     assert "allow_implicit_invocation: false" in policy
-    assert "inject_default: false" in _catalog_entry("prism")
+    assert "P5 optimistic dogfood" in skill
+    assert "inject_default" not in catalog
 
     whitelist = _read(WHITELIST)
     prism4_profile = whitelist.split("  prism4:", 1)[1].split(
@@ -48,6 +45,18 @@ def test_facade_is_explicit_only_optimistic_dogfood_skill() -> None:
         "prism-compress",
     ):
         assert f"      - {retired_control}\n" not in prism4_profile
+
+
+def test_distribution_profile_is_the_only_install_surface_authority() -> None:
+    catalog = _read(CATALOG)
+    whitelist = _read(WHITELIST)
+    relink = _read(ROOT / "bin" / "relink")
+
+    assert "governance metadata" in catalog
+    assert "不定义当前 distribution profile" in catalog
+    assert "Distribution Profile SSOT" in whitelist
+    assert "load_profile_skills" in relink
+    assert "skills-catalog.yaml" not in relink
 
 
 def test_facade_routes_effect_before_one_lazy_method() -> None:
@@ -109,7 +118,7 @@ def test_relink_uses_profile_whitelist_and_reserves_exact_prism_alias() -> None:
     assert 'link_name="prism"' in relink
 
 
-def test_relink_does_not_distribute_shadow_facade_by_default(tmp_path: Path) -> None:
+def test_relink_distributes_only_profile_members(tmp_path: Path) -> None:
     sdk = tmp_path / "sdk"
     home = tmp_path / "home"
     codex_skills = home / ".codex" / "skills"

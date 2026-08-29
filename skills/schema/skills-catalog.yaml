@@ -1,5 +1,7 @@
-# Prism Skills Catalog (SSOT)
-# Public injected skills must be declared here.
+# Prism Skills Catalog — governance metadata SSOT
+# Owns Skill identity, visibility, stability, source, review and lifecycle
+# metadata. It does not define the current distribution profile; that authority
+# belongs only to dist-whitelist.yaml.
 
 version: "1.0.0"
 
@@ -7,7 +9,7 @@ policy:
   default_visibility: internal
   default_stability: experimental
   public_requires_audit: true
-  note: "Private skills are unrestricted. Public skills require universality and normative necessity."
+  note: "Private skills are unrestricted. Public skills require universality and normative necessity. Catalog governance does not imply distribution."
 
 # 版本策略（SSOT）
 # ─────────────────────────────────────────────
@@ -28,21 +30,19 @@ versioning:
 # ─────────────────────────────────────────────
 entries:
 # ─────────────────────────────────────────────
-# Prism 4.0 canary skills — active dogfood surface on prism-4
+# Prism 4.0 SDK skill inventory — distribution is selected by dist-whitelist
 # ─────────────────────────────────────────────
   - id: prism
     visibility: dev
     stability: experimental
     source_repo: prism
-    inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-29"
-    rationale: "P4 explicit-only shadow facade for effect-first state routing; excluded from the default prism4 distribution until P5 dogfood and P6 cutover authority."
+    rationale: "Experimental effect-first state facade used by the P5 optimistic dogfood profile; distribution remains solely owned by dist-whitelist.yaml and does not imply P6 cutover."
   - id: prism-topic
     visibility: dev
     stability: experimental
     source_repo: prism
-    inject_default: true
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-15"
     rationale: "Prism 4.0 Topic boundary management; Host probe before create; replaces workflow-intake for canary dogfood without reusing 3.x scope/focus/task/wave semantics."
@@ -50,7 +50,6 @@ entries:
     visibility: dev
     stability: experimental
     source_repo: prism
-    inject_default: true
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-14"
     rationale: "Prism 4.0 Brief projection for context recovery; explicitly not a fact source."
@@ -58,7 +57,6 @@ entries:
     visibility: dev
     stability: experimental
     source_repo: prism
-    inject_default: true
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-14"
     rationale: "Prism 4.0 Review capability; emits Findings without authorization side effects."
@@ -66,7 +64,6 @@ entries:
     visibility: dev
     stability: experimental
     source_repo: prism
-    inject_default: true
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-14"
     rationale: "Prism 4.0 Clarify capability; records optional proposed-patch or decision-candidate payloads without committing Decisions."
@@ -74,7 +71,6 @@ entries:
     visibility: dev
     stability: experimental
     source_repo: prism
-    inject_default: true
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-19"
     rationale: "Prism 4.0 Plan capability; actively designs advisory action structure without redefining Intent, producing Findings, committing Decisions, executing work, or implying fixed workflow order."
@@ -82,7 +78,6 @@ entries:
     visibility: dev
     stability: experimental
     source_repo: prism
-    inject_default: true
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-15"
     rationale: "Prism 4.0 occasional alignment compression; audits reading-surface format, archives stale pending clarifications, and regenerates Brief without changing Decision commitments."
@@ -94,7 +89,6 @@ entries:
     visibility: dev
     stability: experimental
     source_repo: prism-skills
-    inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-20"
     rationale: "Personal multi-device maintenance router across configured SDK, Skills, Env and Workspace Git; clean code-only pulls may use prism update directly."
@@ -102,7 +96,6 @@ entries:
     visibility: dev
     stability: experimental
     source_repo: prism-skills
-    inject_default: false
     reviewed_by: ArnoFrost
     reviewed_at: "2026-04-23"
     rationale: "Unified plugin marketplace updater — Claude Code git repos + CodeBuddy zip markets. Replaces ArnoDotFiles legacy skill."

@@ -29,8 +29,8 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     bin_readme = (ROOT / "bin" / "README.md").read_text(encoding="utf-8")
     skills_readme = (ROOT / "skills" / "README.md").read_text(encoding="utf-8")
 
-    assert "/prism-topic" in readme and "prism topic list" in readme
-    assert "/prism-brief" in onboarding and "/prism-plan" in onboarding
+    assert "P5 optimistic" in readme and "prism topic list" in readme
+    assert "/prism" in onboarding and "/prism-plan" in onboarding
     assert "prism review record" in onboarding
     assert "prism4/cli.py" in bin_readme and "legacy-3x-final" in bin_readme
     assert "{ok, ids}" in bin_readme
@@ -41,7 +41,10 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     assert "所有 `prism` verb" not in contract
     assert "4.0 semantic skill surface" in skills_readme
     assert "唯一分发面" in skills_readme and "skills/prism4" in skills_readme
-    assert "prism-plan" in skills_readme
+    assert "prism / prism-review / prism-plan" in skills_readme
+    for surface in (readme, onboarding, skills_readme):
+        assert "旧 wrappers" in surface
+        assert "不属于当前默认" in surface
 
 
 def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() -> None:

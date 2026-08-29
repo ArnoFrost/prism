@@ -1,5 +1,5 @@
-# Prism Distribution Whitelist
-# 控制当前 SDK 分发时包含哪些 skills
+# Prism Distribution Whitelist — Distribution Profile SSOT
+# 唯一回答当前 SDK profile 分发哪些 Skills；Catalog 只负责治理 metadata。
 # 策略与机制分离：修改此文件即可调整分发范围，无需改脚本
 # 3.x mini/full profile 已随 prism-4 分支移出当前 schema；可执行终态见 git tag legacy-3x-final。
 

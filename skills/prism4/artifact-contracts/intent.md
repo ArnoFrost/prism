@@ -6,7 +6,7 @@
 
 ## 何时产生 / 何时必须存在
 
-- **Core 允许 capture-first 的无 Intent Topic**；Role available, not mandatory 在 Intent 上同样成立（`decision:d01`）。
+- **Core 允许 capture-first 的无 Intent Topic**；Role available, not mandatory 在 Intent 上同样成立（Alignment §5.1）。
 - **Reference Experience 分层默认**：用户已表达「为什么做」时，Topic 创建默认写入最小 Intent（一句话即可）；动机未知时创建 Topic-only，并在 Brief 中显式标注「尚未形成边界」（诚实降级，不报错、不伪造）。
 - 其余节**按需回填，不强制全齐**；边界尚未形成的节，显式写明"尚未形成"，不写空壳占位。
 - `prism topic new --intent ...` 可以写入紧凑初始脚手架（如「为什么做 / 边界内 / 完成条件 / 尚未声明」），用于先建立协作边界；当 Topic 进入真实校准后，应按下方五节表达已经形成的目标、非目标、长期约束与完成条件。

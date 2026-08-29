@@ -3,7 +3,7 @@ status: current
 target: Prism 4.0
 type: alignment
 created: 2026-08-14
-updated: 2026-08-28
+updated: 2026-08-29
 ---
 
 # Prism 4.0 语义地基
@@ -100,6 +100,8 @@ Dogfood Plan consumes it.
 - macOS / Linux / Windows 平台适配
 - Codex / Cursor / Claude Code / CodeBuddy / DeepSeek Harness 等 Agent Harness 集成
 - MCP / Plugin / Runtime integration
+
+Reference Experience 可以提供 **Skill-facing Shared Kernel**，用于让多个 Skills 按需消费同一组协议不变量。它是从本 Alignment 派生的 Adapter-side consumer，不是新的 Protocol SSOT，不定义 Artifact 格式或 CLI 参数；维护者 Workspace 中的 Decision 只保留 provenance / 历史理由，发布态 consumer 必须引用本 Alignment 的稳定章节，而不能依赖本地 Decision id。
 
 ### 3.3 Style
 
@@ -235,6 +237,8 @@ and cross-invocation reference.
 
 `Intent` 替代 3.x 中 `scope` 的核心价值，但不沿用 `scope` 这个较窄、偏工程范围管理的词。它不是单纯愿景，而是当前有效的 boundary and purpose。
 
+Core 允许 capture-first 的无 Intent Topic；Artifact Role 可用但不强制。Reference Experience 在用户已经表达「为什么做」时默认写入一句最小 Intent，动机未知时允许 Topic-only，并让 Brief 诚实标注边界尚未形成，而不是伪造 Intent 或报错。
+
 ```text
 Intent is the authoritative boundary until superseded.
 ```
@@ -330,6 +334,8 @@ Acceptance creates authority.
 
 Plan 在 authority 上仍可能是 advisory：被 Review、Clarify 或其他 Invocation 读取的 Plan，可能因为 provenance 获得 historical value，但不会自动获得执行权威。只有被 Decision、Intent 边界或当前明确人类指令接受的 Plan，才成为 operative。Phase / Step 只是 Plan 内部文本结构，不进入 Protocol Core。
 
+Plan 的 current set 由有效状态推导：未被显式 supersede 且未进入 historical 的 Plan 保持 current；supersedes 只能由调用方显式提交。目标正交、范围互斥的 sibling Plan 可以并存，不因时间更新或新 Plan 产生而自动互相替代。
+
 ### 5.6 Child Topic and Plan Item
 
 4.0 Core 不保留 `Task` 原语。
@@ -369,6 +375,8 @@ Need to be done -> Plan Item / Action.
 Availability, invocability, and authority are distinct concerns. 一个 Capability 存在、某个 actor / runtime 能调用它、其结果能改变 authoritative state，是三件不同的事。
 
 Production does not imply acceptance or commitment. Agent 生成了 Findings、Plan、Proposed Patch 或 Decision Candidate，只说明它们被产生；是否被接受、成为 operative，或形成 committed Decision，仍由 Authority / Decision Semantics 决定。
+
+Committed Decision write 必须携带与本次 target 和 scope 绑定的 typed authority evidence：已确认的人类选择、明确覆盖本次目标的 committed Decision，或作用域有效的 delegated authority context。Decision Candidate 不得自证，所有 Adapter 写入路径必须复用同一 authority guard；`human-required` 只是 requirement，不是 authority evidence。
 
 这两条是 semantic invariants，不是本轮 schema 设计。不要因此新增 `available`、`invocable_by` 或 `authorized_by` 等固定字段。
 

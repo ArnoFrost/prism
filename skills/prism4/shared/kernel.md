@@ -18,14 +18,14 @@
 ## 3. Reconstructability / persistence
 
 - 可由足够强的 Agent 基于现有事实与 repository reality 安全、低成本、可靠重建的状态，默认投影，不持久化。
-- Role available, not mandatory：不为协议完整制造空壳 Artifact。最小 Intent 口径见 `decision:d01`（Core 允许 capture-first 无 Intent Topic；Reference Experience 在动机已知时默认写最小 Intent，未知时 Topic-only + 诚实降级）。
+- Role available, not mandatory：不为协议完整制造空壳 Artifact。最小 Intent 分层口径见 Alignment §5.1：Core 允许 capture-first 无 Intent Topic；Reference Experience 在动机已知时默认写最小 Intent，未知时 Topic-only + 诚实降级。
 - 落盘即按写法合同写全；持久化判据是行动模型 / 判断是否值得恢复、审查、交接，不是任务大小。
 
 ## 4. Authority / acceptance
 
 - Production does not imply acceptance or commitment：产物生成不等于被接受。
-- Plan 初始 advisory；operative = current + valid acceptance。current set 推导 = 未被显式 supersede 且非 historical；supersedes 只由调用方显式提交；范围互斥的 sibling Plan 合法并存（`decision:d03`）。
-- Decision 的 committed write 需要与目标及作用域绑定的 typed authority evidence（confirmed human-choice / committed Decision / delegated authority context）；candidate 不得自证，所有写入路径共用同一 guard；`human-required` 是 requirement，不是 evidence（`decision:d05`）。
+- Plan 初始 advisory；operative = current + valid acceptance。current set 推导、显式 supersedes 与 sibling Plan 并存规则见 Alignment §5.5。
+- Decision 的 committed write 需要与目标及作用域绑定的 typed authority evidence（confirmed human-choice / committed Decision / delegated authority context）；candidate 不得自证，所有写入路径共用同一 guard；`human-required` 是 requirement，不是 evidence（Alignment §6.1）。
 
 ## 5. Absorption / supersession
 
