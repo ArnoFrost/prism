@@ -39,7 +39,7 @@ entries:
     source_repo: prism
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-29"
-    rationale: "Experimental effect-first state facade used by the P5 optimistic dogfood profile; distribution remains solely owned by dist-whitelist.yaml and does not imply P6 cutover."
+    rationale: "Experimental effect-first state facade used by the natural dogfood profile; distribution remains solely owned by dist-whitelist.yaml and does not imply stable cutover."
   - id: prism-topic
     visibility: dev
     stability: experimental

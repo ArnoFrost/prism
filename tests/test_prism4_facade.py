@@ -1,4 +1,4 @@
-"""P5 optimistic facade and distribution contract tests.
+"""Experimental facade and distribution contract tests.
 
 The facade reduces public routing cost without changing Capability identity,
 authority, effects, or the rollback source retained in the SDK.
@@ -28,7 +28,7 @@ def test_facade_is_explicit_only_optimistic_dogfood_skill() -> None:
     assert "name: prism" in skill
     assert "user_invocable: true" in skill
     assert "allow_implicit_invocation: false" in policy
-    assert "P5 optimistic dogfood" in skill
+    assert "experimental natural dogfood" in skill
     assert "inject_default" not in catalog
 
     whitelist = _read(WHITELIST)
@@ -76,8 +76,8 @@ def test_facade_preserves_deterministic_sdk_method_fallback() -> None:
     assert "sdk_path" in skill
     assert "<sdk_path>/skills/prism4/shared/" in skill
     assert "不要为定位 method 展开目录探查" in skill
-    assert "P5 compatibility mechanism" in skill
-    assert "P6 前只根据真实 dogfood" in skill
+    assert "compatibility mechanism" in skill
+    assert "只根据真实 dogfood" in skill
 
 
 def test_recover_and_maintain_preserve_effect_boundaries() -> None:
@@ -114,12 +114,12 @@ def test_review_and_plan_remain_independent_cognition_routes() -> None:
     assert "自动串成 workflow" in skill
 
 
-def test_p5_dogfood_observation_is_not_invocation_or_implicit_write() -> None:
+def test_dogfood_observation_is_not_invocation_or_implicit_write() -> None:
     skill = _read(FACADE / "SKILL.md")
     observation = _read(FACADE / "references" / "shadow-observation.md")
 
     assert "shadow-observation.md" in skill
-    assert "P5 dogfood observation" in skill
+    assert "Dogfood observation" in skill
     assert "dogfood_observation:" in observation
     assert "不是 Invocation" in observation
     assert "writes: 0" in observation

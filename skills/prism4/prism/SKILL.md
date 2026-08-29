@@ -1,7 +1,7 @@
 ---
 name: prism
-description: "Prism 4.0 状态操作的 thin facade：先判 effect，再按需路由 Recover、Topic、Clarify、Maintain 或结论固化。Use when: P5 optimistic dogfood、显式调用 /prism、恢复 Topic、创建 Topic、单问澄清、对齐整理、吸收结论"
-description_zh: "Prism 4.0 P5 optimistic dogfood 的状态操作 facade；先判 effect，再按需加载一个最小 method。"
+description: "Prism 4.0 状态操作的 thin facade：先判 effect，再按需路由 Recover、Topic、Clarify、Maintain 或结论固化。Use when: experimental natural dogfood、显式调用 /prism、恢复 Topic、创建 Topic、单问澄清、对齐整理、吸收结论"
+description_zh: "Prism 4.0 experimental natural dogfood 的状态操作 facade；先判 effect，再按需加载一个最小 method。"
 license: MIT
 metadata:
   author: ArnoFrost
@@ -12,7 +12,7 @@ user_invocable: true
 ---
 # Prism — 状态操作 Facade
 
-`/prism` 是当前 **P5 optimistic dogfood** 默认分发的状态操作 facade。当前 `prism4` profile 分发 `/prism`、`/prism-review`、`/prism-plan`；本 Skill 仍为 experimental / dev，并通过 harness policy 保持 explicit-only。这是可回退的实验安装面，不是 P6 最终 cutover 或长期 Protocol Decision。
+`/prism` 是当前 **experimental natural dogfood** 默认分发的状态操作 facade。当前 `prism4` profile 分发 `/prism`、`/prism-review`、`/prism-plan`；本 Skill 仍为 experimental / dev，并通过 harness policy 保持 explicit-only。这是可回退的实验安装面，不构成稳定 cutover 或长期 Protocol Decision。
 
 协议级不变量见 [`../shared/kernel.md`](../shared/kernel.md)。本 facade 只识别意图、先判 effect、只加载一个最小 method reference，并在发生写入前执行 Shared authority guard；不要把所有 method 或 Artifact Contract 一次性加载进上下文。
 
@@ -38,7 +38,7 @@ user_invocable: true
 5. Clarify 继续使用 `capability_id: prism:clarify`；需要 provenance 时，`invoked_via: prism` 只能作为 optional adapter metadata。Clarify 不自动进入 Plan，不把 candidate 当 Decision。
 6. Method 解析 fallback：分发侧不携带 `shared/`，`../shared/` 引用不可达时（method 或 kernel 文件缺失），按 SDK 源解析——`sdk_path` 读 `prism.local.yaml`（缺省 `~/prism`），打开 `<sdk_path>/skills/prism4/shared/` 下对应文件；不要为定位 method 展开目录探查，也不要因此放弃按需加载而改用猜测。
 
-该 fallback 是 **P5 compatibility mechanism**，不是新的 Method Resolver 架构。P6 前只根据真实 dogfood 中的 method 缺失、Harness 差异、路径理解成本或用户可见摩擦，决定是否下沉到 packaging / runtime；没有重复摩擦时不继续优化。
+该 fallback 是当前 **compatibility mechanism**，不是新的 Method Resolver 架构。只根据真实 dogfood 中的 method 缺失、Harness 差异、路径理解成本或用户可见摩擦，决定是否下沉到 packaging / runtime；没有重复摩擦时不继续优化。
 
 ## 强 cognition 与兼容入口
 
@@ -48,9 +48,9 @@ user_invocable: true
 - `/prism-review` 与 `/prism-plan` 是当前 profile 中独立的专业 cognition 入口。
 - 旧 `/prism-topic`、`/prism-brief`、`/prism-clarify`、`/prism-compress` wrappers 仍保留在 SDK，作为 control / compatibility / rollback source，但不属于当前默认 distribution profile。
 
-## P5 dogfood observation
+## Dogfood observation
 
-只有用户明确要求 dogfood / trace，或当前 P5 实验 Plan 要求记录对照时，才读取 [`shadow-observation.md`](references/shadow-observation.md)。普通调用不因“要收集 telemetry”而额外落盘。
+只有用户明确要求 dogfood / trace，或当前已批准的实验 Plan 要求记录对照时，才读取 [`shadow-observation.md`](references/shadow-observation.md)。普通调用不因“要收集 telemetry”而额外落盘。
 
 ## 输出
 

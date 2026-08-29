@@ -7,7 +7,7 @@ version: "4.0.0"
 
 profiles:
   prism4:
-    description: "P5 乐观 dogfood 分发 — thin facade + 独立 Review / Plan；P4 基线见 tag p4-shadow-baseline"
+    description: "Experimental natural dogfood 分发 — thin facade + 独立 Review / Plan"
     skills:
       - prism
       - prism-review

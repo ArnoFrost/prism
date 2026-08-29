@@ -46,7 +46,6 @@
 | [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) | 4.0 架构图设计指导 |
 | [prism-4-reading-contract.md](./prism-4-reading-contract.md) | Reference Experience 阅读合同草案：认知任务、渐进展开与理解型 Eval |
 | [architecture.md](./architecture.md) | 分发/所有权视图、当前 skill 面；3.x 闭环见 C |
-| [prism-4-open-source-readiness-review.md](./prism-4-open-source-readiness-review.md) | 4.0-canary 开源准备度、历史包袱和高 ROI 收口评审 |
 
 ## C — 历史归档（historical）
 
@@ -67,6 +66,7 @@
 | [glossary.md](./historical/glossary.md) | 3.x 术语人类速查 |
 | [migration-v1-to-v2.md](./historical/migration-v1-to-v2.md) | v1.x → v2.0 历史迁移 |
 | [prism-4-dogfood-plan.md](./historical/prism-4-dogfood-plan.md) | 4.0-canary 起步期施工笔记（软切换策略已被后续的物理剔除超越） |
+| [prism-4-open-source-readiness-review.md](./historical/prism-4-open-source-readiness-review.md) | 2026-08-18 的开源准备度、测试结果与后续路线快照（已失效） |
 | [leader-pitch.md](./historical/leader-pitch.md) | 对内沟通 ≤300 字（internal） |
 | [CHANGELOG](../CHANGELOG.md) | 版本变更史（仓库根） |
 

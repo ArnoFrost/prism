@@ -1,19 +1,21 @@
 ---
-status: canary
+status: historical
 target: Prism 4.0
 type: readiness-review
 audience: maintainer
 created: 2026-08-18
 source:
   - topic:prism-4-open-source-hardening-review / finding:f01
-  - ./migration.md
-  - ./architecture.md
-  - ./prism-4-architecture-guide.md
+  - ../migration.md
+  - ../architecture.md
+  - ../prism-4-architecture-guide.md
 ---
 
 # Prism 4.0 Open Source Readiness Review
 
-> 本文是 4.0-canary 面向开源、历史包袱清理、能力/工件 graph 组织的维护者评审。它不定义 Protocol Core；语义源仍是 [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) 与 [architecture.md](./architecture.md)。
+> **历史快照**：本文记录 2026-08-18 时点的阶段评审、测试数量与后续建议，不是当前验收清单或执行指令。当前口径请回到 [文档索引](../README.md)、[prism-4-refoundation-alignment.md](../prism-4-refoundation-alignment.md) 与 [architecture.md](../architecture.md)。
+
+本文是当时 4.0-canary 面向开源、历史包袱清理、能力/工件 graph 组织的维护者评审。它不定义 Protocol Core。
 
 ## 结论
 
@@ -149,9 +151,9 @@ CHANGELOG 可能包含 workspace.local、内部编号或 dogfood 语境。作为
 | P1 | 主力机 2-3 项目 canary | 每个项目一个 4.0 Topic + 简短 Findings |
 | P2 | README 加 canary badge 后的稳定发布口径 | 从 4.0-canary 过渡到正式版本时再做 |
 
-## Future Agent 指令
+## 当时的 Future Agent 指令（已失效）
 
-给未来 Agent 执行迁移验证时，可以直接引用：
+以下文本只保留为历史记录，不应再直接交给 Agent 执行：
 
 ```text
 请先读 docs/migration.md 和 docs/prism-4-open-source-readiness-review.md。

@@ -1,6 +1,6 @@
 interface:
   display_name: "Prism"
-  short_description: "Prism 4.0 P5 optimistic 状态操作 facade"
+  short_description: "Prism 4.0 实验性状态操作 facade"
   default_prompt: "Use $prism to recover this Prism Topic without writing changes."
 policy:
   allow_implicit_invocation: false

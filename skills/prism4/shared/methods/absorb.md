@@ -1,6 +1,6 @@
 # Method — Absorb / Commit（结论固化）
 
-> 当前 P5 `/prism` facade 的 lazy-load 单元；materiality 判据见 kernel §5–§6 与 [`artifact-contracts/decision.md`](../../artifact-contracts/decision.md)。
+> 当前 `/prism` facade 的 lazy-load 单元；materiality 判据见 kernel §5–§6 与 [`artifact-contracts/decision.md`](../../artifact-contracts/decision.md)。
 
 | 项 | 内容 |
 |----|------|

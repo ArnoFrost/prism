@@ -9,7 +9,7 @@
 多数用户只需要做三件事：
 
 1. 更新 SDK 到承载 4.0 的分支或发行版本，并跑 `./setup.sh init`。
-2. 日常入口换成 4.0 原语：当前 P5 optimistic dogfood 使用 `/prism` 创建或定位 Topic（先 `prism topic probe`），Review / Plan 分别使用 `/prism-review`、`/prism-plan`。
+2. 日常入口换成 4.0 原语：当前 experimental natural dogfood 使用 `/prism` 创建或定位 Topic（先 `prism topic probe`），Review / Plan 分别使用 `/prism-review`、`/prism-plan`。
 3. 旧 topic 不迁移，继续可读（只读）。3.x 操作能力不在 prism-4 分支；要操作旧 topic 切到 3.x 分支或 `legacy-3x-final` tag。
 
 ## 破坏性变化
@@ -19,7 +19,7 @@
 | 默认 topic 动词 | `prism sniff / validate / finalize / status …` 直接可用 | 3.x 实现已从分支剔除，统一报「已剔除 + tag 指引」（exit 2） | 4.0 原语重写协作；旧操作切 3.x 分支 |
 | 项目接入 | `workspace-init` 技能建骨架 | `prism host attach --code CODE` 登记 + 桥接 | 未桥接时先 attach，不要 workspace-init |
 | Topic 工件 | `scope.md` / `focus.md` / `task.index.md` / `wave` | Intent / Brief / Findings / Plan / Decision（`topic.md` 承载） | 旧工件原样保留；4.0 Topic 不创建或改写它们 |
-| 默认 skill 面 | `workflow-*` 管线 | P5 optimistic：`prism / prism-review / prism-plan` | `dist-whitelist.yaml` 是 Distribution Profile SSOT；旧 4.0 wrappers 留作 control / compatibility / rollback source |
+| 默认 skill 面 | `workflow-*` 管线 | experimental：`prism / prism-review / prism-plan` | `dist-whitelist.yaml` 是 Distribution Profile SSOT；旧 4.0 wrappers 留作 control / compatibility / rollback source |
 | `prism decision` | 3.x decision 动词 | 4.0 入口，需 `decision record` | 3.x 语义随分支剔除 |
 
 保留的维护入口：`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。干净设备用 `prism update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。`dist` 仅保留退役提示，旧 mini/full packer 由 Git 历史保管。

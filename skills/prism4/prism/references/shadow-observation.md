@@ -1,4 +1,4 @@
-# Dogfood observation — `/prism` P5 optimistic 对照记录
+# Dogfood observation — `/prism` 实验对照记录
 
 仅在显式 dogfood / trace 请求下读取。本记录衡量当前三入口实验面的 facade 路由与 effect 保真，**不是 Invocation**、Artifact 或新的 runtime telemetry 系统；Capability provenance 仍遵循 Shared kernel §8。旧 wrappers 只作为 control / rollback source，不属于当前默认 distribution profile。
 
@@ -26,4 +26,4 @@ dogfood_observation:
 - `invoked_via` 是 adapter metadata，不替代 `capability_id`，也不伪造 durable Invocation。
 - 实际读取成本可由 harness 提供时记录 bytes / tokens；无法观测就写 `declared-unavailable`，不估算。
 - route correction 只计用户或执行证据迫使 route 改变的次数，不计正常的 effect guard。
-- Method fallback 仅是 P5 compatibility mechanism；只有真实触发时才在 `result` 中说明是否成功、是否存在 Harness 差异、是否增加路径理解成本或形成用户可见摩擦。未触发时不主动探测，也不据此扩展 packaging / runtime。
+- Method fallback 仅是当前 compatibility mechanism；只有真实触发时才在 `result` 中说明是否成功、是否存在 Harness 差异、是否增加路径理解成本或形成用户可见摩擦。未触发时不主动探测，也不据此扩展 packaging / runtime。

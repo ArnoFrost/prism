@@ -46,7 +46,7 @@ Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议�
 
 **Projection 口径**：Brief / Roadmap / Status / Index 是从有效状态与 repository reality 再生成的投影，解决"怎么看得懂"，不承担"什么是真相"。Roadmap 是 Reference Projection，不作为 authoritative + living 的事实源。
 
-## P5 optimistic 默认分发面
+## Experimental 默认分发面
 
 当前 `dist-whitelist.yaml` Distribution Profile 只分发三个入口：
 
@@ -56,7 +56,7 @@ Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议�
 | `prism-review` | `/prism-review` | Findings，不自动授权 |
 | `prism-plan` | `/prism-plan` | 主动设计 advisory 行动结构；不定义边界、不授权 |
 
-这是 P5 optimistic dogfood，仍属 experimental，不代表 P6。旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 作为 control / compatibility / rollback source，不属于当前默认 Distribution Profile。
+这是 natural dogfood 使用的 experimental 分发面，不构成稳定性承诺。旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 作为 control / compatibility / rollback source，不属于当前默认 Distribution Profile。
 
 3.x `workflow-*` 与 `workspace-init` 已随 prism-4 分支剔除；终态由 git tag `legacy-3x-final` 保管。旧 topic 在本分支只读。
 

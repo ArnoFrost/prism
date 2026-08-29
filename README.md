@@ -33,7 +33,7 @@ Prism Protocol revolves around **Topic / Artifact / Capability / Invocation**, w
 - 不是知识库替代品。
 - 不是重型运行时。
 
-**当前发行**：4.0-canary。当前处于 **P5 optimistic dogfood**：默认 Distribution Profile 只分发 `/prism`、`/prism-review`、`/prism-plan` 三个入口，仍属 experimental，不代表 P6 稳定切换。旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 中作为 control / compatibility / rollback source，**不属于当前默认分发面**。3.x 实现已从本分支剔除，终态见 git tag `legacy-3x-final`；旧 topic 在本分支只读。
+**当前发行**：4.0-canary。当前使用 **experimental natural dogfood** Distribution Profile，只分发 `/prism`、`/prism-review`、`/prism-plan` 三个入口。旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 中作为 control / compatibility / rollback source，**不属于当前默认分发面**。3.x 实现已从本分支剔除，终态见 git tag `legacy-3x-final`；旧 topic 在本分支只读。
 
 ---
 
@@ -171,7 +171,7 @@ Use what the situation needs:
 | `/prism-review` | 审视现状并输出 Findings |
 | `/prism-plan` | 主动设计 advisory 行动结构 |
 
-这是当前 P5 optimistic dogfood 的三入口表面，不是顺序管线，也不代表 P6。旧 wrappers 仍可在 SDK 源码中用于对照、兼容和回滚，但不属于当前默认 Distribution Profile。Review 不自动进入 Clarify，Plan 被引用也不等于被接受。
+这是当前 experimental natural dogfood 的三入口表面，不是顺序管线，也不代表稳定性承诺。旧 wrappers 仍可在 SDK 源码中用于对照、兼容和回滚，但不属于当前默认 Distribution Profile。Review 不自动进入 Clarify，Plan 被引用也不等于被接受。
 Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不是 Brief/Roadmap 一类投影；current Plan 获得有效 acceptance 后才成为 operative，证据可以来自 confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context，不要求每次 acceptance 都新建 Decision。只有效力超出单一 Plan 生命周期、Plan 重写后仍需保留的承诺，才形成 Decision。
 
 完整 CLI 面看：

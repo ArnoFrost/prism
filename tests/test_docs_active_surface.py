@@ -29,7 +29,7 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     bin_readme = (ROOT / "bin" / "README.md").read_text(encoding="utf-8")
     skills_readme = (ROOT / "skills" / "README.md").read_text(encoding="utf-8")
 
-    assert "P5 optimistic" in readme and "prism topic list" in readme
+    assert "experimental natural dogfood" in readme and "prism topic list" in readme
     assert "/prism" in onboarding and "/prism-plan" in onboarding
     assert "prism review record" in onboarding
     assert "prism4/cli.py" in bin_readme and "legacy-3x-final" in bin_readme
@@ -45,6 +45,24 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     for surface in (readme, onboarding, skills_readme):
         assert "旧 wrappers" in surface
         assert "不属于当前默认" in surface
+
+
+def test_active_public_surface_does_not_expose_rollout_phase_labels() -> None:
+    surfaces = [
+        ROOT / "README.md",
+        ROOT / "AGENTS.md",
+        ROOT / "docs" / "architecture.md",
+        ROOT / "docs" / "migration.md",
+        ROOT / "docs" / "onboarding.md",
+        ROOT / "skills" / "README.md",
+        ROOT / "skills" / "prism4" / "prism" / "SKILL.md",
+    ]
+    rollout_labels = ("P" + "5 optimistic", "P" + "6")
+
+    for path in surfaces:
+        text = path.read_text(encoding="utf-8")
+        for label in rollout_labels:
+            assert label not in text, f"rollout phase leaked into {path}: {label}"
 
 
 def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() -> None:
@@ -265,7 +283,6 @@ def test_open_source_surface_has_no_private_or_retired_entrypoints() -> None:
         ROOT / "bin" / "README.md",
         ROOT / "docs" / "migration.md",
         ROOT / "docs" / "contributing.md",
-        ROOT / "docs" / "prism-4-open-source-readiness-review.md",
         ROOT / "skills" / "README.md",
         ROOT / "skills" / "templates" / "SKILL.template.md",
     ]
@@ -578,15 +595,16 @@ def test_plan_snapshots_do_not_become_phase_task_logs() -> None:
     assert "Plan phase / item 只是当前 Topic 内的行动拆解" in artifact_format
 
 
-def test_open_source_readiness_review_is_indexed_and_actionable() -> None:
+def test_open_source_readiness_review_is_historical_not_actionable() -> None:
     docs_index = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
     review = (
-        ROOT / "docs" / "prism-4-open-source-readiness-review.md"
+        ROOT / "docs" / "historical" / "prism-4-open-source-readiness-review.md"
     ).read_text(encoding="utf-8")
 
-    assert "prism-4-open-source-readiness-review.md" in docs_index
+    assert not (ROOT / "docs" / "prism-4-open-source-readiness-review.md").exists()
+    assert "./historical/prism-4-open-source-readiness-review.md" in docs_index
+    assert "status: historical" in review
+    assert "历史快照" in review
+    assert "不是当前验收清单或执行指令" in review
     assert "综合评分：**7.9 / 10**" in review
-    assert "## 4.0 组织图" in review
-    assert "## 迁移前硬伤清单" in review
-    assert "## 下一轮高 ROI" in review
-    assert "请先读 docs/migration.md" in review
+    assert "当时的 Future Agent 指令（已失效）" in review

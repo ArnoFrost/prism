@@ -1,6 +1,6 @@
 # Method — Maintain（低频整理）
 
-> 当前 P5 `/prism` facade 的 lazy-load 单元；旧 wrapper 中的完整工作流见 [`../../prism-compress/SKILL.md`](../../prism-compress/SKILL.md)。
+> 当前 `/prism` facade 的 lazy-load 单元；旧 wrapper 中的完整工作流见 [`../../prism-compress/SKILL.md`](../../prism-compress/SKILL.md)。
 
 | 项 | 内容 |
 |----|------|

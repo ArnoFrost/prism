@@ -1,6 +1,6 @@
 # Method — Topic（创建 / 定位）
 
-> 当前 P5 `/prism` facade 的 lazy-load 单元；旧 wrapper 中的完整触发与输出礼仪见 [`../../prism-topic/SKILL.md`](../../prism-topic/SKILL.md)。
+> 当前 `/prism` facade 的 lazy-load 单元；旧 wrapper 中的完整触发与输出礼仪见 [`../../prism-topic/SKILL.md`](../../prism-topic/SKILL.md)。
 
 | 项 | 内容 |
 |----|------|

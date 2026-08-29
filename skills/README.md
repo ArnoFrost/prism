@@ -34,7 +34,7 @@ skills/
 
 ## 4.0 semantic skill surface
 
-当前 `prism-4` 分支处于 **P5 optimistic dogfood**。`dist-whitelist.yaml` 是唯一分发面 authority，当前 profile 为：`prism / prism-review / prism-plan`。这仍是 experimental 安装面，不代表 P6 最终 cutover。
+当前 `prism-4` 分支使用 **experimental natural dogfood**。`dist-whitelist.yaml` 是唯一分发面 authority，当前 profile 为：`prism / prism-review / prism-plan`。这仍是实验安装面，不构成稳定 cutover 承诺。
 
 | Skill | 触发 | 输入 | 产出 |
 |-------|------|------|------|
