@@ -36,6 +36,7 @@ user_invocable: true
 3. create / mutate / commitment 前检查 kernel 中的 authority 与落盘权限。用户只授权 preview 时，实际 durable writes 必须为零。
 4. 一个请求若同时含多个 effect，先完成可逆、低 effect 的部分，再在首次写入前列出目标与授权边界；不得把一句「整理一下」解释成 apply。
 5. Clarify 继续使用 `capability_id: prism:clarify`；需要 provenance 时，`invoked_via: prism` 只能作为 optional adapter metadata。Clarify 不自动进入 Plan，不把 candidate 当 Decision。
+6. Method 解析 fallback：分发侧不携带 `shared/`，`../shared/` 引用不可达时（method 或 kernel 文件缺失），按 SDK 源解析——`sdk_path` 读 `prism.local.yaml`（缺省 `~/prism`），打开 `<sdk_path>/skills/prism4/shared/` 下对应文件；不要为定位 method 展开目录探查，也不要因此放弃按需加载而改用猜测。
 
 ## 强 cognition 与兼容入口
 
