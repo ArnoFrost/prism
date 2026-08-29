@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from dataclasses import replace as _dataclass_replace
 
 from .core import (
     Artifact,
@@ -30,6 +31,29 @@ from .reference import ReferenceStore
 
 NextArtifactId = Callable[[ReferenceStore, str], str]
 NextPayloadId = Callable[[ReferenceStore], str]
+
+# ref 命名空间 → 工件角色。generic write 按它判定 role，不按 Capability 名称路由。
+ARTIFACT_ROLE_BY_NAMESPACE = {
+    "intent": "intent",
+    "brief": "brief",
+    "finding": "findings",
+    "decision": "decision",
+    "plan": "plan",
+}
+
+# 各角色新建时的默认 authority / evolution；调用方之后可用 relation/archive 演进。
+DEFAULT_ARTIFACT_METADATA: dict[str, dict[str, str]] = {
+    "intent": {"authority": "authoritative", "evolution": "supersedable"},
+    "brief": {"authority": "projected", "evolution": "regenerable"},
+    "findings": {"authority": "advisory", "evolution": "supersedable"},
+    "plan": {"authority": "advisory", "evolution": "supersedable"},
+    "decision": {"authority": "authoritative", "evolution": "committed"},
+}
+
+# 显式 relation add 支持的 artifact 间语义关系（Alignment §11 starter set 的
+# artifact-to-artifact 子集）。references / derived-from 在 Core 语义中专指
+# Invocation 关联，由 invoke 自动创建，不开放为手写 relation。
+RELATION_KINDS = ("supersedes", "authorizes", "supports", "projects")
 
 
 def topic_artifacts(
@@ -434,6 +458,92 @@ def _validate_authority_evidence(store: ReferenceStore, evidence_ref: str) -> No
     if evidence_ref in store.payloads:
         return
     raise PrismProtocolError(f"authority evidence does not exist: {evidence_ref}")
+
+
+def write_artifact(
+    store: ReferenceStore,
+    *,
+    ref: str,
+    body: str,
+    topic_id: str | None = None,
+    title: str | None = None,
+) -> tuple[str, bool]:
+    """机械持久化：ref 已存在则原地更新正文/标题，不存在则按 role 默认合同创建。
+
+    这是 record_* 之外的 generic write-update 原语（Agent 直写路径的机械化）：
+    不创建 Invocation、不判定 authority——调用方对语义后果负责。
+    """
+    role = ARTIFACT_ROLE_BY_NAMESPACE.get(ref.split(":", 1)[0])
+    if role is None:
+        raise PrismProtocolError(
+            f"ref namespace does not map to a core artifact role: {ref}"
+        )
+    existing = store.artifacts.get(ref)
+    if existing is not None:
+        # Artifact 是 frozen dataclass：原地更新 = 以 replace 重建同 id 实例。
+        store.artifacts[ref] = _dataclass_replace(
+            existing,
+            body=body,
+            title=title or existing.title,
+        )
+        return existing.id, False
+    if topic_id is None:
+        raise PrismProtocolError(
+            f"--topic is required when writing a new artifact: {ref}"
+        )
+    if topic_id not in store.topics:
+        raise PrismProtocolError(f"topic does not exist: {topic_id}")
+    artifact = Artifact(
+        id=ref,
+        topic_id=topic_id,
+        role=role,
+        title=title or ref.split(":", 1)[1],
+        body=body,
+        metadata={**DEFAULT_ARTIFACT_METADATA[role], "created_at": utc_now_iso()},
+    )
+    store.add_artifact(artifact)
+    return artifact.id, True
+
+
+def archive_artifact(store: ReferenceStore, *, ref: str) -> str:
+    """生命周期退档：标 evolution: historical，不删除文档。
+
+    退档是机械动作；判断哪个 Plan/Findings 仍是当前依据是语义选择，
+    归调用方。Brief 是可再生投影，不参与退档。
+    """
+    artifact = store.artifacts.get(ref)
+    if artifact is None:
+        raise PrismProtocolError(f"artifact does not exist: {ref}")
+    if artifact.role == "brief":
+        raise PrismProtocolError(
+            "brief is a regenerable projection; archive the underlying artifacts instead"
+        )
+    store.artifacts[ref] = _dataclass_replace(
+        artifact,
+        metadata={**artifact.metadata, "evolution": "historical"},
+    )
+    return artifact.id
+
+
+def add_explicit_relation(
+    store: ReferenceStore,
+    *,
+    source_ref: str,
+    kind: str,
+    target_ref: str,
+) -> Relation:
+    """显式 relation 写入：语义关系由调用方选择，本层只验证存在性与 kind 合法性。"""
+    if kind not in RELATION_KINDS:
+        raise PrismProtocolError(
+            f"unknown relation kind: {kind} (known: {', '.join(RELATION_KINDS)})"
+        )
+    if source_ref not in store.artifacts and source_ref not in store.payloads:
+        raise PrismProtocolError(f"relation source does not exist: {source_ref}")
+    if target_ref not in store.artifacts and target_ref not in store.payloads:
+        raise PrismProtocolError(f"relation target does not exist: {target_ref}")
+    return store.add_relation(
+        Relation(source_ref=source_ref, kind=kind, target_ref=target_ref)
+    )
 
 
 def _add_relations(

@@ -39,12 +39,16 @@ from prism4.host import (  # noqa: E402
     unbridged_guidance,
 )
 from prism4.use_cases import (  # noqa: E402
+    RELATION_KINDS,
+    add_explicit_relation,
+    archive_artifact,
     create_topic,
     persist_brief,
     record_clarify,
     record_decision,
     record_plan,
     record_review,
+    write_artifact,
 )
 from prism4.local_files import (  # noqa: E402
     locate_artifact_ref,
@@ -318,7 +322,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(
         dest="verb",
-        metavar="{topic,artifact,brief,review,clarify,plan,decision,host}",
+        metavar="{topic,artifact,brief,relation,store,review,clarify,plan,decision,host}",
     )
 
     topic = subparsers.add_parser("topic", help="manage 4.0 topics")
@@ -369,6 +373,64 @@ def build_parser() -> argparse.ArgumentParser:
     artifact_locate.add_argument("ref")
     add_root_arg(artifact_locate)
     artifact_locate.set_defaults(func=cmd_artifact_locate)
+
+    artifact_write = artifact_sub.add_parser(
+        "write",
+        help="write or update an artifact body (generic mechanical primitive)",
+    )
+    artifact_write.add_argument("ref", help="artifact ref, e.g. finding:f06")
+    artifact_write.add_argument(
+        "--topic",
+        dest="topic_id",
+        help="owning topic id; required when creating a new artifact",
+    )
+    artifact_write.add_argument("--title", help="artifact title; updates replace it, creations default to the ref local part")
+    artifact_write.add_argument(
+        "--body",
+        required=True,
+        help="artifact body; '-' reads stdin, '@path' reads a file",
+    )
+    add_root_arg(artifact_write)
+    artifact_write.set_defaults(func=cmd_artifact_write)
+
+    artifact_archive = artifact_sub.add_parser(
+        "archive",
+        help="mark an artifact historical (lifecycle archive, no deletion)",
+    )
+    artifact_archive.add_argument("ref")
+    add_root_arg(artifact_archive)
+    artifact_archive.set_defaults(func=cmd_artifact_archive)
+
+    relation = subparsers.add_parser(
+        "relation", help="manage semantic relations between artifacts"
+    )
+    relation_sub = relation.add_subparsers(dest="relation_verb", required=True)
+    relation_add = relation_sub.add_parser(
+        "add",
+        help="add an explicit relation; source, kind, and target are caller choices",
+    )
+    relation_add.add_argument("--from", dest="source_ref", required=True, help="source artifact/payload ref")
+    relation_add.add_argument("--kind", required=True, choices=RELATION_KINDS, help="relation kind")
+    relation_add.add_argument("--to", dest="target_ref", required=True, help="target artifact/payload ref")
+    add_root_arg(relation_add)
+    relation_add.set_defaults(func=cmd_relation_add)
+
+    store = subparsers.add_parser(
+        "store", help="validate or regenerate the local store"
+    )
+    store_sub = store.add_subparsers(dest="store_verb", required=True)
+    store_validate = store_sub.add_parser(
+        "validate",
+        help="load the full store and report aggregated contract problems",
+    )
+    add_root_arg(store_validate)
+    store_validate.set_defaults(func=cmd_store_validate)
+    store_regen = store_sub.add_parser(
+        "regenerate-index",
+        help="rebuild index/projection documents from current artifacts",
+    )
+    add_root_arg(store_regen)
+    store_regen.set_defaults(func=cmd_store_regenerate_index)
 
     brief = subparsers.add_parser("brief", help="project Brief artifacts")
     brief_sub = brief.add_subparsers(dest="brief_verb", required=True)
@@ -586,6 +648,67 @@ def cmd_artifact_locate(args: argparse.Namespace) -> int:
         )
     store = adapter.load()
     print(locate_artifact_ref(store, args.ref))
+    return 0
+
+
+def cmd_artifact_write(args: argparse.Namespace) -> int:
+    expand_text_options(args)
+    adapter = open_adapter(resolve_root(args.root))
+
+    def mutate(store):
+        return write_artifact(
+            store,
+            ref=args.ref,
+            body=args.body,
+            topic_id=args.topic_id,
+            title=args.title,
+        )
+
+    artifact_id, created = adapter.update(mutate)
+    print(f"{'created' if created else 'updated'}: {artifact_id}")
+    return 0
+
+
+def cmd_artifact_archive(args: argparse.Namespace) -> int:
+    adapter = open_adapter(resolve_root(args.root))
+
+    def mutate(store):
+        return archive_artifact(store, ref=args.ref)
+
+    print(f"archived: {adapter.update(mutate)}")
+    return 0
+
+
+def cmd_relation_add(args: argparse.Namespace) -> int:
+    adapter = open_adapter(resolve_root(args.root))
+
+    def mutate(store):
+        return add_explicit_relation(
+            store,
+            source_ref=args.source_ref,
+            kind=args.kind,
+            target_ref=args.target_ref,
+        )
+
+    relation = adapter.update(mutate)
+    print(f"related: {relation.source_ref} -{relation.kind}-> {relation.target_ref}")
+    return 0
+
+
+def cmd_store_validate(args: argparse.Namespace) -> int:
+    store = open_adapter(resolve_root(args.root)).load()
+    print(
+        f"ok: {len(store.topics)} topics, {len(store.artifacts)} artifacts, "
+        f"{len(store.payloads)} payloads"
+    )
+    return 0
+
+
+def cmd_store_regenerate_index(args: argparse.Namespace) -> int:
+    adapter = open_adapter(resolve_root(args.root))
+    # no-op mutate：save 会从当前工件重建全部索引投影。
+    adapter.update(lambda store: None)
+    print(f"indexes regenerated: {adapter.root}")
     return 0
 
 

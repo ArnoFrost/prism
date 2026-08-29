@@ -1089,7 +1089,7 @@ def test_argparse_root_help_hides_capability() -> None:
 
     help_text = build_parser().format_help()
     assert "capability" not in help_text
-    assert "{topic,artifact,brief,review,clarify,plan,decision,host}" in help_text
+    assert "{topic,artifact,brief,relation,store,review,clarify,plan,decision,host}" in help_text
 
 
 def test_bare_decision_hints_legacy_and_record() -> None:

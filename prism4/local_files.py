@@ -107,8 +107,9 @@ INDEX_SUFFIX = ".index.md"
 FINDING_INDEX = f"finding{INDEX_SUFFIX}"
 DECISION_INDEX = f"decision{INDEX_SUFFIX}"
 
-# 存于来源文档 frontmatter 的工件间语义关系。指向 invocation 的关系在保存时丢弃。
-PERSISTED_RELATION_KINDS = ("supersedes", "authorizes")
+# 存于来源文档 frontmatter 的工件间语义关系。references / derived-from 专指
+# Invocation 关联，与 Invocation 本体一同在保存时丢弃（weak-provenance）。
+PERSISTED_RELATION_KINDS = ("supersedes", "authorizes", "supports", "projects")
 
 ARTIFACT_RESERVED_KEYS = ("id", "role", "title", "topic", *PERSISTED_RELATION_KINDS)
 PAYLOAD_RESERVED_KEYS = ("id", "type", "title", *PERSISTED_RELATION_KINDS)
