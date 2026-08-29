@@ -220,7 +220,12 @@ def _as_bullets(text: str, fallback: str) -> list[str]:
 
 def _boundary_lines(intent: Artifact | None) -> list[str]:
     if intent is None:
-        return ["- 尚无当前 Intent，无法恢复目标与边界。"]
+        # decision:d01：Core 允许 capture-first 无 Intent Topic；Brief 诚实降级，
+        # 不伪造边界，也不把缺 Intent 报成错误。
+        return [
+            "- 尚无当前 Intent：本 Topic 为 capture-first 状态（Core 允许）。",
+            "- 边界尚未形成；动机已知时按 Reference 默认补写最小 Intent，未知时保持 Topic-only。",
+        ]
 
     lines: list[str] = []
     purpose = _compact_section(intent.body, "为什么做")

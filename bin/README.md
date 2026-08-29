@@ -174,7 +174,7 @@ prism decision record <topic_id> --body "<决策>" --authority-evidence "<授权
 - **Topic**：`topic new / topic list`
 - **Artifact / Projection**：`artifact show / locate / next-id / brief project`
 - **Record (transitional)**：`review record` / `clarify record`（persist semantic output；不等于授权；下版退役，日常直写 findings/ / clarifications/）
-- **Advanced Record**：`plan record`（durable Plan snapshot；默认替代当前 active Plan，并行候选需显式选择）/ `decision record`（记录被授权的 Decision）
+- **Advanced Record**：`plan record`（durable Plan snapshot；supersedes 仅经显式 `--supersedes` 提交）/ `plan accept`（Plan acceptance，evidence 绑定该 Plan）/ `decision record`（记录被授权的 Decision；`--authority-evidence` 必填）
 - **Retired 3.x surface**：旧 verb 只返回剔除提示，不提供兼容 adapter
 
 旧 3.x verb（`sniff / validate / finalize / tidy / status / sync / manifest` 等）已随 `skills/workflow/` 一并剔除，不再由本分支提供。

@@ -1,7 +1,7 @@
 # Shared Kernel — 跨 Skill 最小不变量
 
-> 唯一语义来源：[`docs/prism-4-refoundation-alignment.md`](../../../docs/prism-4-refoundation-alignment.md)（§3–§7、§12、§19）与 SDK 根 `AGENTS.md` §Artifact 语义纪律。
-> 本文件是供 Skill 消费的受控投影；与此二源冲突时，以后者为准并登记修正。
+> Protocol Semantics 唯一来源：[`docs/prism-4-refoundation-alignment.md`](../../../docs/prism-4-refoundation-alignment.md)（§3–§7、§12、§19）。
+> SDK 根 `AGENTS.md` 是 derived project contract——其语义纪律是 Alignment 的协作侧表达；本 kernel 与 `AGENTS.md` 均为受控 consumer，任何冲突回溯 Alignment 并登记修正，不得以 consumer 覆盖来源。
 
 ## 1. Topic ownership 与 Parent/Child boundary
 
@@ -25,7 +25,7 @@
 
 - Production does not imply acceptance or commitment：产物生成不等于被接受。
 - Plan 初始 advisory；operative = current + valid acceptance。current set 推导 = 未被显式 supersede 且非 historical；supersedes 只由调用方显式提交；范围互斥的 sibling Plan 合法并存（`decision:d03`）。
-- Decision 的 committed write 需要显式 authority evidence（human-choice 记录 / Decision / 委托上下文 ref）；`human-required` 是 requirement，不是 evidence（`decision:d04`）。
+- Decision 的 committed write 需要与目标及作用域绑定的 typed authority evidence（confirmed human-choice / committed Decision / delegated authority context）；candidate 不得自证，所有写入路径共用同一 guard；`human-required` 是 requirement，不是 evidence（`decision:d05`）。
 
 ## 5. Absorption / supersession
 

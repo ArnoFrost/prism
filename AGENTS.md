@@ -24,6 +24,8 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 
 ### Artifact 语义纪律（4.0 稳定态）
 
+> **权威声明**：本文件是 `docs/prism-4-refoundation-alignment.md`（Protocol Semantics SSOT）的 **derived project contract**——以下纪律是 Alignment 语义在协作侧的表达；发生冲突时以 Alignment 为准，不得以本文件覆盖来源。
+
 Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议级纪律：
 
 **可重建性测试**：可由足够强的 Agent 基于现有事实与 repository reality 安全、低成本、可靠重建的状态，默认投影，不持久化。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
