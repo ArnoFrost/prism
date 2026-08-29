@@ -169,6 +169,16 @@ def _scoped_payloads(
                 unscoped_count += 1
                 continue
             source_topic_id = sole_topic_id
+        status = str(payload.metadata.get("status") or "").strip().lower()
+        if status in {"confirmed", "absorbed", "consumed", "historical"}:
+            continue
+        if payload.type not in {
+            "decision-candidate",
+            "proposed-patch",
+            "open-question",
+            "evidence-reference",
+        }:
+            continue
         if source_topic_id in lineage:
             pending.append(payload)
     pending.sort(key=lambda item: item.id)
@@ -376,13 +386,19 @@ def _active_phase(
 
 
 def _is_in_progress_status(status: str) -> bool:
-    lowered = status.lower()
-    return any(marker in lowered for marker in ("进行中", "in progress", "active"))
+    token = _phase_status_token(status)
+    return token in {"进行中", "in progress", "active"} or token.startswith(
+        ("进行中 ", "in progress ", "active ")
+    )
 
 
 def _is_closed_status(status: str) -> bool:
-    lowered = status.lower().strip()
+    lowered = _phase_status_token(status)
     if lowered in {"完成", "done", "completed", "closed"}:
+        return True
+    if lowered.endswith("完成") or lowered.startswith(
+        ("implementation complete", "acceptance passed")
+    ):
         return True
     return any(
         marker in lowered
@@ -404,6 +420,16 @@ def _is_closed_status(status: str) -> bool:
             "rejected",
         )
     )
+
+
+def _phase_status_token(status: str) -> str:
+    """Extract the controlled lifecycle part from a free-text status line.
+
+    Explanatory text may mention words such as ``active CLI Contract``; those
+    words must not change the phase lifecycle inferred from the leading token.
+    """
+    lowered = status.lower().strip()
+    return re.split(r"[（(]|\s+[—–-]\s+", lowered, maxsplit=1)[0].strip()
 
 
 def _is_open_step(line: str) -> bool:

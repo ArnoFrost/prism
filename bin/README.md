@@ -155,14 +155,15 @@ prism brief project <topic_id>
 prism review record <topic_id> --body "<审视输入>"
 prism review record <topic_id> --body - --json   # stdin；成功输出 {ok, ids}
 prism clarify record <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
-prism decision record <topic_id> --body "<决策>" --authority-evidence "<授权证据 ref>"
+prism decision record <topic_id> --body "<决策>" --authority-evidence "<授权证据 ref>" --input-ref "<实际输入 ref>"
 ```
 
 `bin/prism` 是 bash 壳，exec `prism4/cli.py`。寻址问题走 `bin/doctor --scope cli --fix`（写 rc 锚点 + 建 `~/.local/bin/prism` symlink）。
 
 4.0 Interaction Contract（薄；不是 3.x envelope）：
 
-- 落盘：`prism review/clarify/decision record`（persist ≠ authorize）。Decision commit 需要 `--authority-evidence`（指向 human-choice 记录、Decision 或委托上下文的 ref）；缺证据时拒绝写入、durable writes = 0——`--authority` 是 requirement，不是 evidence。
+- 落盘：`prism review/clarify/decision record`（persist ≠ authorize）。Decision commit 需要 `--authority-evidence`（指向 human-choice 记录、明确覆盖目标的 committed Decision 或委托上下文 ref）；缺证据时拒绝写入、durable writes = 0——`--authority` 是 requirement，不是 evidence。record surfaces 用可重复的 `--input-ref` 声明实际语义输入；不传时 Invocation 标记 `declared-unavailable`，不按 Topic role 推断。
+- `authorizes` 是 authority-sensitive relation：只能在已通过授权证据校验的 `decision record --authorizes <ref>` 中原子产生；通用 `relation add` 不得事后扩张既有 Decision 的授权范围。
 - 高级持久快照：`prism plan record <topic_id> --body "<行动结构>"`；supersedes 仅经显式 `--supersedes` 提交，命令不自动替代 current Plan。普通当前轮 planning 优先由 Agent 局部感知，不默认落盘。
 - Provenance 等级：本地 Markdown store 不落盘 Invocation（溯源由工件 frontmatter 的 `capability` / `created_at` 承载），因此 record 输出不含 invocation id（weak-provenance）；JSON 参考存储完整持久化 Invocation 并回显其 id。
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`

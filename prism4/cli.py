@@ -227,6 +227,19 @@ def json_flag_parent() -> argparse.ArgumentParser:
     return parent
 
 
+def add_input_refs_arg(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--input-ref",
+        dest="input_refs",
+        action="append",
+        default=None,
+        help=(
+            "exact semantic input ref used by this invocation; may be repeated. "
+            "Omission is persisted as declared-unavailable, never inferred by role."
+        ),
+    )
+
+
 def configure_review_record(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("topic_id")
     parser.add_argument(
@@ -242,6 +255,7 @@ def configure_review_record(parser: argparse.ArgumentParser) -> None:
         default=[],
         help="artifact ref this Findings supersedes; may be repeated",
     )
+    add_input_refs_arg(parser)
     add_root_arg(parser)
     parser.set_defaults(func=cmd_review_record)
 
@@ -283,6 +297,7 @@ def configure_clarify_record(parser: argparse.ArgumentParser) -> None:
         ),
     )
     parser.add_argument("--evidence-id", help="explicit payload id for the evidence record")
+    add_input_refs_arg(parser)
     add_root_arg(parser)
     parser.set_defaults(func=cmd_clarify_record)
 
@@ -303,6 +318,7 @@ def configure_plan_record(parser: argparse.ArgumentParser) -> None:
         help="plan ref this Plan supersedes; may be repeated; explicit targets "
         "only — recording never supersedes other current Plans on its own",
     )
+    add_input_refs_arg(parser)
     add_root_arg(parser)
     parser.set_defaults(func=cmd_plan_record)
 
@@ -566,6 +582,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         help="artifact ref this Decision authorizes; may be repeated",
     )
+    add_input_refs_arg(decision_record)
     add_root_arg(decision_record)
     decision_record.set_defaults(func=cmd_decision_record)
 
@@ -784,6 +801,7 @@ def cmd_review_record(args: argparse.Namespace) -> int:
             title=args.title,
             artifact_id=args.artifact_id,
             supersedes=tuple(args.supersedes),
+            input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
             next_artifact_id=adapter.next_artifact_id,
         )
 
@@ -813,6 +831,7 @@ def cmd_clarify_record(args: argparse.Namespace) -> int:
             evidence_kind=args.evidence_kind,
             evidence_confirmed=args.evidence_confirmed,
             evidence_id=args.evidence_id,
+            input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
             next_payload_id=adapter.next_payload_id,
         )
 
@@ -836,6 +855,7 @@ def cmd_plan_record(args: argparse.Namespace) -> int:
             title=args.title,
             artifact_id=args.artifact_id,
             supersedes=tuple(args.supersedes),
+            input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
             next_artifact_id=adapter.next_artifact_id,
         )
 
@@ -877,6 +897,7 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
             candidate_id=args.candidate,
             supersedes=tuple(args.supersedes),
             authorizes=tuple(args.authorizes),
+            input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
             next_artifact_id=adapter.next_artifact_id,
         )
         # W1 transitional exception: semantic consumption already happened

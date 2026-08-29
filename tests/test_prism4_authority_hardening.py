@@ -5,8 +5,9 @@ long-term contract). These tests attack the public surface the way an
 unauthorized writer would; every rejection keeps durable writes = 0.
 
 d01–d04 are legacy grandfathered (no structured authority_evidence field);
-the validator treats missing evidence metadata as the legacy shape, and new
-committed writes must carry a typed, target-bound evidence ref.
+the validator accepts them only when a valid committed Decision explicitly
+lists their refs, and new committed writes must carry typed, target-bound
+evidence.
 """
 
 import json
@@ -284,7 +285,7 @@ def test_delegated_context_requires_scope_covering_target():
     assert store2.artifacts[decision_id].metadata["authority_evidence"] == "clarify:c90"
 
 
-def test_committed_decision_as_evidence_accepted_but_plain_decision_rejected():
+def test_committed_decision_requires_explicit_scope_for_target():
     store = _topic_store()
     evidence = _confirmed_evidence(store, target_ref="decision:d01")
     first_id, _inv, _consumed = record_decision(
@@ -294,7 +295,17 @@ def test_committed_decision_as_evidence_accepted_but_plain_decision_rejected():
         authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
-    # 已 committed 的同 Topic Decision 可以授权后续承诺（d05 类型 2）。
+    # 同 Topic 不等于覆盖本次目标；没有显式 scope 时仍必须拒绝。
+    with pytest.raises(PrismProtocolError, match="does not explicitly authorize"):
+        record_decision(
+            store,
+            topic_id="topic:demo",
+            body="未经 scope 授权的后续承诺。",
+            authority_evidence=first_id,
+            next_artifact_id=fake_artifact_id,
+        )
+
+    store.artifacts[first_id].metadata["scope_refs"] = ["decision:d02"]
     second_id, _inv2, _consumed2 = record_decision(
         store,
         topic_id="topic:demo",
@@ -332,13 +343,39 @@ def test_human_choice_evidence_targeting_the_decision_is_accepted():
 
 def test_grandfathered_decisions_load_and_validate_without_structured_evidence():
     """d01–d04 grandfathered：无结构化 evidence 字段不判无效。"""
-    store = _topic_store()
+    store = ReferenceStore()
+    create_topic(
+        store,
+        topic_id="topic:skill-surface-contract",
+        title="Skill Surface",
+        next_artifact_id=fake_artifact_id,
+    )
+    grant = _evidence_payload(
+        store,
+        ref="clarify:c02",
+        target_ref="decision:d05",
+        topic_id="topic:skill-surface-contract",
+    )
+    record_decision(
+        store,
+        topic_id="topic:skill-surface-contract",
+        artifact_id="decision:d05",
+        body="结构化授权 legacy d01–d04。",
+        authority_evidence=grant.id,
+        next_artifact_id=fake_artifact_id,
+    )
+    store.artifacts["decision:d05"].metadata["grandfathers"] = [
+        "decision:d01",
+        "decision:d02",
+        "decision:d03",
+        "decision:d04",
+    ]
     store.add_artifact(
         Artifact(
             id="decision:d01",
-            topic_id="topic:demo",
+            topic_id="topic:skill-surface-contract",
             role="decision",
-            body="legacy 承诺，正文记录 Human 授权来源。",
+            body="# 授权来源\n\nHuman。legacy 承诺正文记录授权来源。",
             metadata={
                 "authority": "authoritative",
                 "evolution": "committed",
@@ -350,6 +387,28 @@ def test_grandfathered_decisions_load_and_validate_without_structured_evidence()
 
     problems = validate_store(store)
     assert problems == []
+
+
+def test_store_validate_rejects_unlisted_no_evidence_decision():
+    """grandfathering 必须由有效 Decision 明确列举，不能泛化为所有缺 evidence 工件。"""
+    store = _topic_store()
+    store.add_artifact(
+        Artifact(
+            id="decision:d99",
+            topic_id="topic:demo",
+            role="decision",
+            body="手写的新承诺。",
+            metadata={
+                "authority": "authoritative",
+                "evolution": "committed",
+                "authority_required": "human-required",
+            },
+        )
+    )
+    from prism4.use_cases import validate_store
+
+    problems = validate_store(store)
+    assert any("missing authority evidence" in problem for problem in problems)
 
 
 def test_store_validate_reports_unbacked_new_committed_decision():
@@ -435,16 +494,44 @@ def test_supersedes_rejects_direct_and_transitive_cycles():
         )
 
 
-def test_authorizes_requires_committed_decision_source():
+def test_generic_authorizes_relation_is_authority_sensitive():
     store = _topic_store()
     plan_id, _ = record_plan(
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     finding_id = _finding(store)
-    with pytest.raises(PrismProtocolError, match="must be a Decision"):
+    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
         add_explicit_relation(
             store, source_ref=finding_id, kind="authorizes", target_ref=plan_id
         )
+
+
+def test_generic_relation_add_cannot_expand_committed_decision_authority():
+    """A legal source/target shape is not authority to mutate a Decision's scope."""
+    store = _topic_store()
+    plan_id, _ = record_plan(
+        store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
+    )
+    evidence = _confirmed_evidence(store, target_ref="decision:d01")
+    decision_id, _inv, _consumed = record_decision(
+        store,
+        topic_id="topic:demo",
+        body="只承诺 A。",
+        authority_evidence=evidence.id,
+        next_artifact_id=fake_artifact_id,
+    )
+
+    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
+        add_explicit_relation(
+            store,
+            source_ref=decision_id,
+            kind="authorizes",
+            target_ref=plan_id,
+        )
+    assert not any(
+        relation.kind == "authorizes" and relation.target_ref == plan_id
+        for relation in store.relations
+    )
 
 
 def test_supports_rejects_plan_source_and_non_authority_target():
@@ -460,6 +547,30 @@ def test_supports_rejects_plan_source_and_non_authority_target():
     with pytest.raises(PrismProtocolError, match="target must be"):
         add_explicit_relation(
             store, source_ref=finding_id, kind="supports", target_ref=finding_id
+        )
+
+
+def test_supports_rejects_cross_topic_payload_source():
+    store = _topic_store()
+    create_topic(
+        store,
+        topic_id="topic:other",
+        title="Other",
+        next_artifact_id=fake_artifact_id,
+    )
+    plan_id, _ = record_plan(
+        store,
+        topic_id="topic:other",
+        body="其他 Topic 的计划。",
+        next_artifact_id=fake_artifact_id,
+    )
+    _evidence_payload(store, target_ref=plan_id, topic_id="topic:demo")
+    with pytest.raises(PrismProtocolError, match="same topic"):
+        add_explicit_relation(
+            store,
+            source_ref="clarify:c90",
+            kind="supports",
+            target_ref=plan_id,
         )
 
 
@@ -560,6 +671,26 @@ def test_acceptance_survives_markdown_roundtrip(tmp_path: Path):
     assert plan_state(reloaded, plan_id)["operative"]
 
 
+def test_store_validate_reports_invalid_persisted_plan_acceptance():
+    store = _topic_store()
+    plan_id, _ = record_plan(
+        store,
+        topic_id="topic:demo",
+        body="计划。",
+        next_artifact_id=fake_artifact_id,
+    )
+    store.artifacts[plan_id].metadata["acceptance"] = {
+        "status": "accepted",
+        "evidence": "clarify:missing",
+        "evidence_kind": "human-choice",
+        "granted_by": "human",
+    }
+    from prism4.use_cases import validate_store
+
+    problems = validate_store(store)
+    assert any("plan:p01 acceptance" in problem and "does not exist" in problem for problem in problems)
+
+
 # ── F4: exact input refs, no role sweep ──────────────────────────────────
 
 
@@ -579,6 +710,7 @@ def test_record_uses_explicit_input_refs_when_provided():
         next_artifact_id=fake_artifact_id,
     )
     assert store.invocations[inv].input_refs == (plan_id,)
+    assert store.invocations[inv].metadata["input_provenance_grade"] == "exact"
 
 
 def test_record_without_input_refs_declares_unavailable_instead_of_role_sweep():
@@ -588,6 +720,10 @@ def test_record_without_input_refs_declares_unavailable_instead_of_role_sweep():
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     assert store.invocations[inv].input_refs == ()
+    assert (
+        store.invocations[inv].metadata["input_provenance_grade"]
+        == "declared-unavailable"
+    )
 
 
 def test_json_adapter_persists_declared_inputs_only(tmp_path: Path):
@@ -619,6 +755,7 @@ def test_json_adapter_persists_declared_inputs_only(tmp_path: Path):
     plan_id, inv_id = adapter.update(build)
     reloaded = JsonReferenceStoreAdapter(root).load()
     assert reloaded.invocations[inv_id].input_refs == ("intent:i01",)
+    assert reloaded.invocations[inv_id].metadata["input_provenance_grade"] == "exact"
     assert not any(
         ref.startswith("brief:") for ref in reloaded.invocations[inv_id].input_refs
     )
@@ -669,3 +806,48 @@ def test_relation_add_via_cli_rejects_illegal_cross_role_supersedes(tmp_path: Pa
     )
     assert result.returncode == 2
     assert "must be a findings artifact" in result.stderr
+
+
+def test_plan_record_cli_persists_exact_input_grade_in_json_store(tmp_path: Path):
+    """Public CLI surface must preserve the same exact-input contract cross-process."""
+    root = tmp_path / "state"
+    root.mkdir()
+    from prism4.local_json import store_to_dict
+
+    (root / "prism4-state.json").write_text(
+        json.dumps(store_to_dict(ReferenceStore())), encoding="utf-8"
+    )
+    assert (
+        _run_prism(
+            "topic",
+            "new",
+            "topic:j",
+            "--title",
+            "J",
+            "--intent",
+            "边界。",
+            root=root,
+        ).returncode
+        == 0
+    )
+
+    result = _run_prism(
+        "plan",
+        "record",
+        "topic:j",
+        "--body",
+        "计划。",
+        "--input-ref",
+        "intent:i01",
+        root=root,
+    )
+    assert result.returncode == 0, result.stderr
+
+    reloaded = JsonReferenceStoreAdapter(root).load()
+    invocation = next(
+        item
+        for item in reloaded.invocations.values()
+        if "plan:p01" in item.output_refs
+    )
+    assert invocation.input_refs == ("intent:i01",)
+    assert invocation.metadata["input_provenance_grade"] == "exact"

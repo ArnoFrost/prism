@@ -438,6 +438,11 @@ def test_record_decision_can_supersede_and_authorize_artifacts():
         body="被授权计划。",
         next_artifact_id=fake_artifact_id,
     )
+    replacement_evidence = _confirmed_evidence(
+        store,
+        target_ref="decision:d02",
+        ref="clarify:c91",
+    )
 
     decision_id, _invocation_id, _consumed = record_decision(
         store,
@@ -445,7 +450,7 @@ def test_record_decision_can_supersede_and_authorize_artifacts():
         body="新决策。",
         supersedes=(old_decision_id,),
         authorizes=(plan_id,),
-        authority_evidence=old_decision_id,
+        authority_evidence=replacement_evidence.id,
         next_artifact_id=fake_artifact_id,
     )
 

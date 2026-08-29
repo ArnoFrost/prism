@@ -11,7 +11,7 @@ by the CLI for compatibility and are not a stable application contract.
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import replace as _dataclass_replace
 
 from .core import (
@@ -61,6 +61,22 @@ DEFAULT_ARTIFACT_METADATA: dict[str, dict[str, str]] = {
 # artifact-to-artifact 子集）。references / derived-from 在 Core 语义中专指
 # Invocation 关联，由 invoke 自动创建，不开放为手写 relation。
 RELATION_KINDS = ("supersedes", "authorizes", "supports", "projects")
+
+INPUT_PROVENANCE_EXACT = "exact"
+INPUT_PROVENANCE_UNAVAILABLE = "declared-unavailable"
+
+
+def _input_provenance_metadata(
+    input_refs: tuple[str, ...] | None,
+) -> dict[str, str]:
+    """Keep exact-empty distinct from inputs that were not declared."""
+    return {
+        "input_provenance_grade": (
+            INPUT_PROVENANCE_EXACT
+            if input_refs is not None
+            else INPUT_PROVENANCE_UNAVAILABLE
+        )
+    }
 
 
 def topic_artifacts(
@@ -197,7 +213,12 @@ def record_review(
             "created_at": utc_now_iso(),
         },
     )
-    invocation = store.invoke(review_capability(), inputs=inputs, outputs=(findings,))
+    invocation = store.invoke(
+        review_capability(),
+        inputs=inputs,
+        outputs=(findings,),
+        metadata=_input_provenance_metadata(input_refs),
+    )
     _add_relations(store, findings.id, "supersedes", supersedes)
     return findings.id, invocation.id
 
@@ -348,7 +369,12 @@ def record_clarify(
                 metadata=evidence_meta,
             )
         )
-    invocation = store.invoke(clarify_capability(), inputs=inputs, outputs=outputs)
+    invocation = store.invoke(
+        clarify_capability(),
+        inputs=inputs,
+        outputs=outputs,
+        metadata=_input_provenance_metadata(input_refs),
+    )
     return [output.id for output in outputs], invocation.id
 
 
@@ -396,7 +422,10 @@ def record_plan(
         },
     )
     invocation = store.invoke(
-        plan_capability(), inputs=inputs, outputs=(plan_artifact,)
+        plan_capability(),
+        inputs=inputs,
+        outputs=(plan_artifact,),
+        metadata=_input_provenance_metadata(input_refs),
     )
     # supersedes 经共享 relation matrix 验证（同 role / 同 Topic / 非 historical /
     # 无环）；不自动枚举 current Plan（decision:d03）。
@@ -518,6 +547,7 @@ def record_decision(
         record_decision_operation(authority_required=authority),
         inputs=inputs,
         outputs=(decision_artifact,),
+        metadata=_input_provenance_metadata(input_refs),
     )
     _add_relations(store, decision_artifact.id, "supersedes", supersedes)
     _add_relations(store, decision_artifact.id, "authorizes", authorizes)
@@ -534,6 +564,7 @@ def validate_authority_evidence(
     evidence_ref: str,
     target_ref: str,
     topic_id: str,
+    _seen: frozenset[str] = frozenset(),
 ) -> dict[str, str]:
     """typed authority evidence validator（decision:d05）。
 
@@ -554,18 +585,13 @@ def validate_authority_evidence(
             raise PrismProtocolError(
                 f"authority evidence Decision is not committed: {evidence_ref}"
             )
-        if artifact.topic_id != topic_id:
-            has_explicit_grant = any(
-                relation.kind == "authorizes"
-                and relation.source_ref == evidence_ref
-                and relation.target_ref == target_ref
-                for relation in store.relations
+        _validate_committed_decision_authority(store, artifact, _seen=_seen)
+        if not _decision_explicitly_authorizes(store, artifact, target_ref):
+            raise PrismProtocolError(
+                "authority evidence Decision does not explicitly authorize "
+                f"target {target_ref} through an authorizes relation or scope_refs: "
+                f"{evidence_ref}"
             )
-            if not has_explicit_grant:
-                raise PrismProtocolError(
-                    "authority evidence Decision belongs to another topic and "
-                    f"does not explicitly authorize {target_ref}: {evidence_ref}"
-                )
         return {"kind": "committed-decision", "ref": evidence_ref}
 
     payload = store.payloads.get(evidence_ref)
@@ -604,6 +630,74 @@ def validate_authority_evidence(
     return {"kind": evidence_kind, "ref": evidence_ref}
 
 
+def _decision_explicitly_authorizes(
+    store: ReferenceStore, decision: Artifact, target_ref: str
+) -> bool:
+    if any(
+        relation.kind == "authorizes"
+        and relation.source_ref == decision.id
+        and relation.target_ref == target_ref
+        for relation in store.relations
+    ):
+        return True
+    scope = decision.metadata.get("scope_refs") or []
+    if isinstance(scope, str):
+        scope = [scope]
+    return target_ref in {str(ref) for ref in scope}
+
+
+def _validate_committed_decision_authority(
+    store: ReferenceStore,
+    decision: Artifact,
+    *,
+    _seen: frozenset[str] = frozenset(),
+) -> None:
+    """Validate a committed Decision's own authority chain.
+
+    Grandfathering is not inferred from a missing field. A later, itself valid
+    committed Decision must explicitly list the legacy refs in ``grandfathers``.
+    This keeps the d01–d04 exception narrow without baking a Workspace topic id
+    into the protocol implementation.
+    """
+    if decision.id in _seen:
+        raise PrismProtocolError(
+            f"authority evidence cycle includes Decision: {decision.id}"
+        )
+    seen = frozenset((*_seen, decision.id))
+    evidence_ref = str(decision.metadata.get("authority_evidence") or "").strip()
+    if evidence_ref:
+        validate_authority_evidence(
+            store,
+            evidence_ref=evidence_ref,
+            target_ref=decision.id,
+            topic_id=decision.topic_id,
+            _seen=seen,
+        )
+        return
+
+    for grant in store.artifacts.values():
+        if grant.id == decision.id or grant.role != "decision":
+            continue
+        if grant.topic_id != decision.topic_id:
+            continue
+        if str(grant.metadata.get("evolution") or "") != "committed":
+            continue
+        targets = grant.metadata.get("grandfathers") or []
+        if isinstance(targets, str):
+            targets = [targets]
+        if decision.id not in {str(ref) for ref in targets}:
+            continue
+        if not str(grant.metadata.get("authority_evidence") or "").strip():
+            continue
+        _validate_committed_decision_authority(store, grant, _seen=seen)
+        return
+
+    raise PrismProtocolError(
+        f"committed Decision is missing authority evidence and is not covered "
+        f"by a valid grandfathering Decision: {decision.id}"
+    )
+
+
 def validate_relation(
     store: ReferenceStore,
     *,
@@ -619,7 +713,7 @@ def validate_relation(
     plan / intent / decision，同 Topic。
     projects：source 为 Brief，target 为同 Topic artifact。
     generic `relation add` 与 record aliases（经 `_add_relations`）共用本
-    validator。
+    validator；`authorizes` 只能在 Decision authority gate 内原子写入。
     """
     source_artifact = store.artifacts.get(source_ref)
     target_artifact = store.artifacts.get(target_ref)
@@ -679,7 +773,15 @@ def validate_relation(
             raise PrismProtocolError(
                 f"supports target must be a plan, intent, or decision artifact: {target_ref}"
             )
-        if not source_is_payload and source_artifact.topic_id != target_artifact.topic_id:
+        if source_is_payload:
+            source_topic_id = str(
+                store.payloads[source_ref].metadata.get("topic_id") or ""
+            ).strip()
+            if not source_topic_id or source_topic_id != target_artifact.topic_id:
+                raise PrismProtocolError(
+                    f"supports source must belong to the same topic: {source_ref}"
+                )
+        elif source_artifact.topic_id != target_artifact.topic_id:
             raise PrismProtocolError(
                 f"supports source must belong to the same topic: {source_ref}"
             )
@@ -794,9 +896,8 @@ def plan_state(store: ReferenceStore, plan_ref: str) -> dict[str, bool]:
 def validate_store(store: ReferenceStore) -> list[str]:
     """全库合同校验：relation matrix + committed Decision evidence 链。
 
-    d01–d04 grandfathered：无结构化 evidence 字段的 committed Decision 视为
-    legacy 形态继续有效（decision:d05），但一旦声明了 evidence ref 就必须
-    通过验证——声明的证据不可解析比缺失更危险。
+    d01–d04 grandfathering 由一个自身 authority 有效的 committed Decision
+    通过 ``grandfathers`` 明确列举；缺 evidence 不再被推断为 legacy。
     """
     problems: list[str] = []
     for relation in store.relations:
@@ -816,18 +917,53 @@ def validate_store(store: ReferenceStore) -> list[str]:
             continue
         if str(artifact.metadata.get("evolution") or "") != "committed":
             continue
-        evidence_ref = artifact.metadata.get("authority_evidence")
+        try:
+            _validate_committed_decision_authority(store, artifact)
+        except PrismProtocolError as error:
+            problems.append(str(error))
+    for artifact in store.artifacts.values():
+        if artifact.role != "plan" or "acceptance" not in artifact.metadata:
+            continue
+        acceptance = artifact.metadata.get("acceptance")
+        if not isinstance(acceptance, Mapping):
+            problems.append(f"{artifact.id} acceptance must be a mapping")
+            continue
+        if str(acceptance.get("status") or "") != "accepted":
+            problems.append(
+                f"{artifact.id} acceptance has unsupported status: "
+                f"{acceptance.get('status') or 'missing'}"
+            )
+            continue
+        evidence_ref = str(acceptance.get("evidence") or "").strip()
         if not evidence_ref:
+            problems.append(f"{artifact.id} acceptance is missing evidence")
             continue
         try:
-            validate_authority_evidence(
+            info = validate_authority_evidence(
                 store,
-                evidence_ref=str(evidence_ref),
+                evidence_ref=evidence_ref,
                 target_ref=artifact.id,
                 topic_id=artifact.topic_id,
             )
+            expected_granted_by = (
+                "human"
+                if info["kind"] == "human-choice"
+                else "delegated-policy"
+                if info["kind"] == "delegated-context"
+                else "decision"
+            )
+            if str(acceptance.get("evidence_kind") or "") != info["kind"]:
+                problems.append(
+                    f"{artifact.id} acceptance evidence_kind does not match "
+                    f"evidence {evidence_ref}"
+                )
+            if str(acceptance.get("granted_by") or "") != expected_granted_by:
+                problems.append(
+                    f"{artifact.id} acceptance granted_by does not match "
+                    f"evidence {evidence_ref}"
+                )
         except PrismProtocolError as error:
-            problems.append(str(error))
+            problems.append(f"{artifact.id} acceptance: {error}")
     return problems
 
 
@@ -912,13 +1048,31 @@ def add_explicit_relation(
 ) -> Relation:
     """显式 relation 写入：语义关系由调用方选择，合法性由共享 matrix 验证。
 
-    generic `relation add` 与 record aliases（_add_relations）共用本入口，
-    保证所有 relation 写入路径接受同一组语义前置校验（f06 F3）。
+    `authorizes` 会扩张 Decision authority scope，因此不暴露在通用
+    operation；它由通过 evidence guard 的 record_decision 原子写入。
     """
     if kind not in RELATION_KINDS:
         raise PrismProtocolError(
             f"unknown relation kind: {kind} (known: {', '.join(RELATION_KINDS)})"
         )
+    if kind == "authorizes":
+        raise PrismProtocolError(
+            "authorizes is authority-sensitive; create it atomically through "
+            "decision record --authorizes with valid authority evidence"
+        )
+    return _add_validated_relation(
+        store, source_ref=source_ref, kind=kind, target_ref=target_ref
+    )
+
+
+def _add_validated_relation(
+    store: ReferenceStore,
+    *,
+    source_ref: str,
+    kind: str,
+    target_ref: str,
+) -> Relation:
+    """Internal relation writer used after the operation-level authority gate."""
     if source_ref not in store.artifacts and source_ref not in store.payloads:
         raise PrismProtocolError(f"relation source does not exist: {source_ref}")
     if target_ref not in store.artifacts and target_ref not in store.payloads:
@@ -982,6 +1136,7 @@ def _add_relations(
     for target_ref in target_refs:
         if not target_ref.strip():
             raise PrismProtocolError(f"{kind} target must be non-empty")
-        add_explicit_relation(
-            store, source_ref=source_ref, kind=kind, target_ref=target_ref.strip()
+        writer = (
+            _add_validated_relation if kind == "authorizes" else add_explicit_relation
         )
+        writer(store, source_ref=source_ref, kind=kind, target_ref=target_ref.strip())

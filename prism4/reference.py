@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from .core import (
     Artifact,
@@ -64,6 +64,7 @@ class ReferenceStore:
         capability: CapabilitySpec,
         inputs: Iterable[StoreItem],
         outputs: Iterable[StoreItem],
+        metadata: Mapping[str, object] | None = None,
     ) -> Invocation:
         input_items = list(inputs)
         output_items = list(outputs)
@@ -87,6 +88,7 @@ class ReferenceStore:
             input_refs=tuple(item.id for item in input_items),
             output_refs=tuple(item.id for item in recorded_outputs),
             policy=capability.policy,
+            metadata=dict(metadata or {}),
         )
         self.invocations[invocation.id] = invocation
 

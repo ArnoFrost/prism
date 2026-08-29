@@ -368,6 +368,54 @@ def test_brief_scopes_clarify_payloads_to_topic_lineage():
     assert "无关问题？" not in child_brief.body
 
 
+def test_brief_excludes_confirmed_authority_evidence_from_pending():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_payload(
+        SemanticPayload(
+            id="clarify:c01",
+            type="evidence-reference",
+            body="用户已经确认。",
+            metadata={
+                "topic_id": topic.id,
+                "question": "是否确认长期合同？",
+                "status": "confirmed",
+                "evidence_kind": "human-choice",
+                "target_ref": "decision:d01",
+            },
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+
+    open_section = brief.body.split("## 风险与未决")[1].split("## 下一步")[0]
+    next_section = brief.body.split("## 下一步")[1].split("## Topic 完成条件")[0]
+    assert "是否确认长期合同" not in open_section
+    assert "未晋升澄清" not in next_section
+
+
+def test_brief_keeps_unconfirmed_authority_evidence_pending():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_payload(
+        SemanticPayload(
+            id="clarify:c01",
+            type="evidence-reference",
+            body="等待确认。",
+            metadata={
+                "topic_id": topic.id,
+                "question": "是否确认长期合同？",
+                "status": "proposed",
+                "evidence_kind": "human-choice",
+                "target_ref": "decision:d01",
+            },
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+    assert "是否确认长期合同？" in brief.body
+
+
 def test_project_brief_without_plan_uses_honest_empty_state():
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))
@@ -791,6 +839,43 @@ def test_project_brief_projects_current_plan_phase_and_action_map():
     assert "2. 标注 Child Findings 来源" in nxt
     assert "写失败测试" not in nxt
     assert "校准措辞" not in nxt
+
+
+def test_phase_status_does_not_treat_active_word_in_closed_description_as_current():
+    store = ReferenceStore()
+    topic = store.add_topic(Topic(id="topic:demo", title="示例"))
+    store.add_artifact(
+        Artifact(
+            id="plan:p01",
+            topic_id=topic.id,
+            role="plan",
+            title="分阶段计划",
+            body="""## 步骤
+
+### P2 — Consumer closeout
+
+**状态**：implementation complete / acceptance passed（active CLI Contract 已冻结）
+**验证**：consumer tests 通过。
+
+1. 已完成：冻结 active CLI Contract
+
+### P3 — Method hardening
+
+**状态**：unblocked
+**验证**：方法质量不低于 baseline。
+
+1. 加固 Review 方法
+2. 加固 Plan 方法
+""",
+        )
+    )
+
+    brief = project_brief(store, topic.id)
+    stage = brief.body.split("## 当前阶段")[1].split("## 本阶段完成信号")[0]
+    nxt = brief.body.split("## 下一步")[1].split("## Topic 完成条件")[0]
+    assert "当前：P3 — Method hardening（unblocked）" in stage
+    assert "1. 加固 Review 方法" in nxt
+    assert "冻结 active CLI Contract" not in nxt
 
 
 def test_project_brief_phase_projection_falls_back_for_thin_plan():
