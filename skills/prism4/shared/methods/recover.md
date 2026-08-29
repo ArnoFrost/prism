@@ -1,6 +1,6 @@
 # Method — Recover（零写入恢复）
 
-> P4 `/prism` facade 的 lazy-load 单元；投影礼仪见 [`../../prism-brief/SKILL.md`](../../prism-brief/SKILL.md)。
+> 当前 P5 `/prism` facade 的 lazy-load 单元；旧 wrapper 中的投影礼仪见 [`../../prism-brief/SKILL.md`](../../prism-brief/SKILL.md)。
 
 | 项 | 内容 |
 |----|------|

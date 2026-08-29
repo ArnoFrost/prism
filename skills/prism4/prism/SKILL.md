@@ -1,18 +1,18 @@
 ---
 name: prism
-description: "Prism 4.0 状态操作的 thin facade：先判 effect，再按需路由 Recover、Topic、Clarify、Maintain 或结论固化。Use when: 显式 shadow 调用 /prism、恢复 Topic、创建 Topic、单问澄清、对齐整理、吸收结论"
-description_zh: "Prism 4.0 状态操作的显式 shadow facade；先判 effect，再按需加载一个最小 method。"
+description: "Prism 4.0 状态操作的 thin facade：先判 effect，再按需路由 Recover、Topic、Clarify、Maintain 或结论固化。Use when: P5 optimistic dogfood、显式调用 /prism、恢复 Topic、创建 Topic、单问澄清、对齐整理、吸收结论"
+description_zh: "Prism 4.0 P5 optimistic dogfood 的状态操作 facade；先判 effect，再按需加载一个最小 method。"
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: dev-02
 visibility: dev
 stability: experimental
 user_invocable: true
 ---
 # Prism — 状态操作 Facade
 
-这是 P4 的 **explicit-only shadow facade**。它减少状态操作的入口负担，但不新增 Core Capability，不替代 `/prism-review` 或 `/prism-plan`，也不改变现有六个 control Skills。
+`/prism` 是当前 **P5 optimistic dogfood** 默认分发的状态操作 facade。当前 `prism4` profile 分发 `/prism`、`/prism-review`、`/prism-plan`；本 Skill 仍为 experimental / dev，并通过 harness policy 保持 explicit-only。这是可回退的实验安装面，不是 P6 最终 cutover 或长期 Protocol Decision。
 
 协议级不变量见 [`../shared/kernel.md`](../shared/kernel.md)。本 facade 只识别意图、先判 effect、只加载一个最小 method reference，并在发生写入前执行 Shared authority guard；不要把所有 method 或 Artifact Contract 一次性加载进上下文。
 
@@ -43,11 +43,12 @@ user_invocable: true
 - 需要独立多视角证据、反证与 Merge gates 时，建议显式使用 `/prism-review`；不在 facade 内模拟 Review。
 - 需要候选路线、critical path、可逆性排序与 verification strategy 时，建议显式使用 `/prism-plan`；不在 facade 内模拟 Plan。
 - 不把 state route、Review、Clarify、Plan 自动串成 workflow。
-- `/prism-topic`、`/prism-brief`、`/prism-clarify`、`/prism-compress`、`/prism-review`、`/prism-plan` 继续作为 P5 controls 与兼容 aliases；本阶段不替换默认入口。
+- `/prism-review` 与 `/prism-plan` 是当前 profile 中独立的专业 cognition 入口。
+- 旧 `/prism-topic`、`/prism-brief`、`/prism-clarify`、`/prism-compress` wrappers 仍保留在 SDK，作为 control / compatibility / rollback source，但不属于当前默认 distribution profile。
 
-## Shadow observation
+## P5 dogfood observation
 
-只有用户明确要求 dogfood / trace，或当前实验 Plan 要求记录 P4/P5 对照时，才读取 [`shadow-observation.md`](references/shadow-observation.md)。普通调用不因“要收集 telemetry”而额外落盘。
+只有用户明确要求 dogfood / trace，或当前 P5 实验 Plan 要求记录对照时，才读取 [`shadow-observation.md`](references/shadow-observation.md)。普通调用不因“要收集 telemetry”而额外落盘。
 
 ## 输出
 

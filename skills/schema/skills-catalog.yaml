@@ -2,6 +2,7 @@
 # Owns Skill identity, visibility, stability, source, review and lifecycle
 # metadata. It does not define the current distribution profile; that authority
 # belongs only to dist-whitelist.yaml.
+# 不定义当前 distribution profile；分发权威仅为 dist-whitelist.yaml。
 
 version: "1.0.0"
 

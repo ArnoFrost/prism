@@ -1,6 +1,6 @@
 # Method — Clarify（单问澄清）
 
-> P4 `/prism` facade 的 lazy-load 单元；完整纪律见 [`../../prism-clarify/SKILL.md`](../../prism-clarify/SKILL.md)。capability id 恒为 `prism:clarify`，不随 packaging 变化。
+> 当前 P5 `/prism` facade 的 lazy-load 单元；旧 wrapper 中的完整纪律见 [`../../prism-clarify/SKILL.md`](../../prism-clarify/SKILL.md)。capability id 恒为 `prism:clarify`，不随 packaging 变化。
 
 | 项 | 内容 |
 |----|------|

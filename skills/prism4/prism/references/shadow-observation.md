@@ -1,11 +1,11 @@
-# Shadow observation — `/prism` P4/P5 对照记录
+# Dogfood observation — `/prism` P5 optimistic 对照记录
 
-仅在显式 dogfood / trace 请求下读取。本记录衡量 facade 路由与 effect 保真，**不是 Invocation**、Artifact 或新的 runtime telemetry 系统；Capability provenance 仍遵循 Shared kernel §8。
+仅在显式 dogfood / trace 请求下读取。本记录衡量当前三入口实验面的 facade 路由与 effect 保真，**不是 Invocation**、Artifact 或新的 runtime telemetry 系统；Capability provenance 仍遵循 Shared kernel §8。旧 wrappers 只作为 control / rollback source，不属于当前默认 distribution profile。
 
 默认只在回复中给出，不写文件：
 
 ```yaml
-shadow_observation:
+dogfood_observation:
   requested_as: <用户原始意图的紧凑转述>
   selected_route: recover | topic | clarify | maintain-preview | maintain-apply | absorb-commit | review-handoff | plan-handoff
   effect_declared: read | project | create | preview | mutate | guarded-commitment | handoff
