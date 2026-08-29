@@ -68,6 +68,16 @@ def test_facade_routes_effect_before_one_lazy_method() -> None:
         assert f"../shared/methods/{method}.md" in skill
 
 
+def test_facade_preserves_deterministic_sdk_method_fallback() -> None:
+    skill = _read(FACADE / "SKILL.md")
+
+    assert "Method 解析 fallback" in skill
+    assert "prism.local.yaml" in skill
+    assert "sdk_path" in skill
+    assert "<sdk_path>/skills/prism4/shared/" in skill
+    assert "不要为定位 method 展开目录探查" in skill
+
+
 def test_recover_and_maintain_preserve_effect_boundaries() -> None:
     skill = _read(FACADE / "SKILL.md")
 
