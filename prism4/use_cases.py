@@ -109,7 +109,7 @@ def create_topic(
                 id=next_artifact_id(store, "intent"),
                 topic_id=topic.id,
                 role="intent",
-                title=f"{topic.title} Intent",
+                title=_intent_title(topic.title),
                 body=readable_intent,
                 metadata={
                     "authority": "authoritative",
@@ -119,6 +119,14 @@ def create_topic(
             )
         )
     return topic.id
+
+
+def _intent_title(topic_title: str) -> str:
+    title = topic_title.rstrip()
+    normalized = title.casefold()
+    if normalized == "intent" or normalized.endswith(" intent"):
+        return title
+    return f"{title} Intent"
 
 
 def _initial_intent_body(body: str) -> str:

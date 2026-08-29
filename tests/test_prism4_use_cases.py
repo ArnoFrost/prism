@@ -88,6 +88,60 @@ def test_create_topic_writes_authoritative_intent():
     assert "## 当前落点" not in intent.body
 
 
+def test_create_topic_appends_intent_suffix_to_plain_title():
+    store = _topic_store()
+    intent = next(
+        artifact
+        for artifact in store.artifacts.values()
+        if artifact.role == "intent"
+    )
+
+    assert intent.title == "Demo Intent"
+
+
+def test_create_topic_does_not_duplicate_existing_intent_suffix():
+    store = ReferenceStore()
+    create_topic(
+        store,
+        topic_id="topic:already-suffixed",
+        title="Already Suffixed Intent",
+        intent_body="Keep the generated title idempotent.",
+        next_artifact_id=fake_artifact_id,
+    )
+    intent = next(
+        artifact
+        for artifact in store.artifacts.values()
+        if artifact.role == "intent"
+    )
+
+    assert intent.title == "Already Suffixed Intent"
+
+
+def test_create_topic_intent_suffix_is_token_aware_and_case_insensitive():
+    cases = (
+        ("Lowercase intent", "Lowercase intent"),
+        ("Intentional", "Intentional Intent"),
+    )
+
+    for index, (title, expected) in enumerate(cases, start=1):
+        store = ReferenceStore()
+        topic_id = f"topic:title-case-{index}"
+        create_topic(
+            store,
+            topic_id=topic_id,
+            title=title,
+            intent_body="Keep suffix detection token-aware.",
+            next_artifact_id=fake_artifact_id,
+        )
+        intent = next(
+            artifact
+            for artifact in store.artifacts.values()
+            if artifact.topic_id == topic_id and artifact.role == "intent"
+        )
+
+        assert intent.title == expected
+
+
 def test_create_topic_preserves_structured_intent_body():
     store = ReferenceStore()
     body = "## 为什么做\n\n已有结构。\n\n## 完成条件\n\n可验证。"
