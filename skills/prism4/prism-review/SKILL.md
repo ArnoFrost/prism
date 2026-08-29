@@ -16,6 +16,8 @@ user_invocable: true
 
 ## 能力边界
 
+> 协议级不变量（Findings materiality、吸收 / supersession、authority、兼容边界）见 [`../shared/kernel.md`](../shared/kernel.md)；本技能只承载多视角审视的方法，不复述协议纪律。
+
 - Review 是一个 Capability：输入当前协作上下文，输出 Findings。它不定义自己在流程中的位置，不自动衔接其他能力。
 - **多视角与总分总（Align → Explore → Merge）是 Review 能力内部的执行方法论**，不是跨能力 workflow 编排；保留它们不违反 4.0 语义。
 - Findings 是建议性的。它们不授权实施、不修改 Intent，也不构成 Decision。
@@ -141,5 +143,4 @@ prism review record <topic_id> --root <topic_dir> --body "<finding body>"
 
 ## 边界
 
-- 不创建 3.x 的 `reviews/rXX.md`、`review.index.md`、dXX、scope/focus、task 或 wave 产物。
 - Align / Explore / Merge 是 Review 的内部方法，不是对其他能力的编排承诺。

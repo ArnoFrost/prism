@@ -31,13 +31,15 @@ Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组
 
 ## 规则
 
+> 协议级不变量（吸收转写、Projection discipline、落盘权限基线、兼容边界）见 [`../shared/kernel.md`](../shared/kernel.md)；本技能只承载低频整理的工作流，不复述协议纪律。
+
 - 默认 **preview**：先给自检清单和拟写范围，`writes=0`。用户明确要求对齐/apply 后才写盘。
 - **不 hard delete**。过期澄清、被吸收的候选进 `archive/`；旧 Plan / Findings / Decision 留在原目录，通过 `absorbed`、`supersedes` 或 `historical` 收敛。
 - **不改承诺**。Intent / Decision 的语义改写需要新的授权。本技能只做中文校准、归档假待办、规整 Plan 当前态、再生成 Brief。
 - **不制造第二套 relation 写入面**。`supersedes` / `authorizes` 走现有 `record` 命令参数或本地 adapter；不要把 authority transition 新逻辑塞进 Compress。
 - **不默认新增 Plan**。当前轮普通下一步由 Agent 局部感知即可；只有跨 session 恢复、handoff、后续 Review 或授权承接需要 durable snapshot 时，才写 Plan Artifact。
-- 正文用中文；协议原语保留英文（见 `d04` 语言策略，若该 Topic 有）。
-- 不要创建 3.x `scope.md` / `focus.md` / `task` / `wave`，不要调用 `workflow-tidy` / `workflow-compact`。
+- 正文用中文；协议原语保留英文。
+- 不要创建 3.x `scope.md` / `focus.md` / `task` / `wave`，不要调用 `workflow-tidy` / `workflow-compact`（兼容边界统一见 [`../shared/kernel.md`](../shared/kernel.md) §9）。
 
 ## 何时用
 
@@ -47,7 +49,7 @@ Compress **不是** Core Artifact Role，也 **不是** Core Capability。它组
 | `clarifications/` 里是已吸收的假待办 | 归档，不硬塞进 Decision |
 | Plan / Findings 夹杂英文叙述 | 中文校准，保留协议原语 |
 | 刚结束一个阶段，当前 Plan 仍是 historical | 先判断是否只需局部 planning；需要恢复锚点时才写 durable Plan snapshot |
-| 同一 Topic 出现多个 active Plan | 收敛为唯一 current effective Plan：写新 snapshot 时默认 supersede 旧 active；不写新 Plan 时把已吸收/过期者标 historical |
+| 同一 Topic 出现多个 active Plan | 先判断正文范围是否重叠：重叠才收敛（写新 snapshot 用 `--supersedes` 显式指定被替代者；不写新 Plan 时把已吸收/过期者标 historical）；范围互斥的 sibling Plan 合法并存，不收敛 |
 | 每次回复前都想瘦身 | **不要**。用 Brief 恢复；Compress 低频 |
 | 活跃 topic 面膨胀，要收窄（如「只保留最近 N 个」） | Topic 归档，见下节 |
 
@@ -98,7 +100,7 @@ archive_topics:
 ### 自检清单
 
 - Intent 是否仍有北极星与完成条件？Brief 能否投影出目标与验收？
-- 当前有效 Plan 是否唯一？是否反映最新 Decision？还是只有 historical 计划？
+- 当前 Plan 集是否只剩重叠或过期项？是否反映最新 Decision？范围互斥的 sibling 并存是否已在正文声明？
 - 普通下一步是否能由 Agent 局部规划完成？是否真的需要 durable Plan snapshot？
 - `clarifications/` 是否只剩真正未晋升候选？
 - 仍占「未决」的 Findings 是否其实已被 supersede / 吸收？

@@ -16,6 +16,8 @@ user_invocable: true
 
 ## 规则
 
+> 协议级不变量（Projection discipline、Intent–Plan SSOT、兼容边界）见 [`../shared/kernel.md`](../shared/kernel.md)；本技能只承载恢复投影的方法，不复述协议纪律。
+
 - Brief 是投影，不是事实源。当出现冲突时，Intent、权威 Decision 以及当前未被 supersede 的 Artifact 优先于 Brief。
 - Brief 可随时从当前 Topic 状态重新生成。
 - 优先使用规范 CLI：
@@ -28,7 +30,6 @@ prism brief project <topic_id> --root <topic_dir>
 - Brief 太空时，不要手写一份私货 Brief。应补充源工件：Intent 给边界，Plan 给当前推进结构，Findings 给风险/缺口，Decision 给承诺；阅读面漂移时用 `/prism-compress`。
 - Intent 与 Plan 只读取当前 Topic 自己的有效工件；允许冒泡的 Child Findings / Decision / Clarify 必须标明来源。缺少 Topic provenance 的 payload 不得视为全局未决项。
 - 若 Brief 投影不出「当前阶段」「本阶段完成信号」或「下一步」，优先检查当前 Plan 是否缺 `## 目标`、`## 步骤` / `## 行动结构`、`## 验证`，或是否只是指向 `references/` 的一段摘要。修源工件，不手写 Brief 补洞。
-- 不要从本技能创建 3.x `focus.md` 或改写旧 workflow 文件。
 - Brief 写法以 [`../artifact-contracts/brief.md`](../artifact-contracts/brief.md) 为准。本技能只投影，不归档假待办、不改历史件。阅读面漂移时改用 `/prism-compress`。
 - 固定的 projection / authority 提示在开头说一次即可。正文直接交付边界、阶段、风险和下一步，不在每个章节重复解释 Prism 协议。
 

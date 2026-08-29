@@ -20,6 +20,8 @@ Plan 会根据当前可用的协作状态主动设计下一段行动结构；它
 
 ## 能力边界
 
+> 协议级不变量（Intent–Plan SSOT、authority / acceptance、吸收 / supersession、兼容边界）见 [`../shared/kernel.md`](../shared/kernel.md)；本技能只承载行动结构设计的方法，不复述协议纪律。
+
 - Plan 设计可执行的行动路线；默认在当前对话中给出行动结构，不自动产出持久 Plan Artifact。
 - Plan Artifact 是必要时外化的当前实施模型 / recovery anchor，不是每次“想一下怎么做”都要新增的文件。
 - Plan 设计行动；Clarify 消除阻塞歧义；Review 评估状态；Decision 固化权威承诺；Execution 执行工作。
@@ -124,7 +126,7 @@ Plan 不需要实时充当任务账本。普通动作完成后不为“同步一
 
 仅在用户要求、或当前 Prism 上下文需要持久工件（durable artifact）时持久化 Plan。持久化机制属于当前 adapter，不属于 Plan 语义。
 
-落盘前先检查当前 Topic 是否已有等价 Plan。只有行动结构发生实质变化、或需要保留 replanning 历史时才新建 Plan；这种情况应说明新 Plan 如何 supersede 旧 Plan。参考 CLI 默认会让新 Plan supersede 当前 active Plan；并行候选必须是有意选择，而不是默认行为。
+落盘前先检查当前 Topic 是否已有等价 Plan。只有行动结构发生实质变化、或需要保留 replanning 历史时才新建 Plan；这种情况应说明新 Plan 如何 supersede 旧 Plan。CLI 的 supersedes 只经显式 `--supersedes` 提交：重写同一行动模型时显式指定被替代的 Plan；目标正交、范围互斥的 sibling Plan 并存是有意选择，不是需要规避的异常。
 
 ## 自检（Self-review）
 
