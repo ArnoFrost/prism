@@ -7,14 +7,11 @@ version: "4.0.0"
 
 profiles:
   prism4:
-    description: "4.0 canary 分发 — semantic skills only，不携带 3.x workflow 技能面"
+    description: "P5 乐观 dogfood 分发 — thin facade + 独立 Review / Plan；P4 基线见 tag p4-shadow-baseline"
     skills:
-      - prism-topic
-      - prism-brief
+      - prism
       - prism-review
-      - prism-clarify
       - prism-plan
-      - prism-compress
     include_shared: false
 
 # 永远排除（dev 工具 + 个人固化版）

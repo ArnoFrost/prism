@@ -25,7 +25,7 @@ def _catalog_entry(skill_id: str) -> str:
     return text.split(f"  - id: {skill_id}", 1)[1].split("  - id:", 1)[0]
 
 
-def test_facade_is_explicit_only_shadow_skill() -> None:
+def test_facade_is_explicit_only_optimistic_dogfood_skill() -> None:
     skill = _read(FACADE / "SKILL.md")
     policy = _read(FACADE / "agents" / "openai.yaml")
 
@@ -38,7 +38,16 @@ def test_facade_is_explicit_only_shadow_skill() -> None:
     prism4_profile = whitelist.split("  prism4:", 1)[1].split(
         "always_exclude:", 1
     )[0]
-    assert "      - prism\n" not in prism4_profile
+    assert "      - prism\n" in prism4_profile
+    assert "      - prism-review\n" in prism4_profile
+    assert "      - prism-plan\n" in prism4_profile
+    for retired_control in (
+        "prism-topic",
+        "prism-brief",
+        "prism-clarify",
+        "prism-compress",
+    ):
+        assert f"      - {retired_control}\n" not in prism4_profile
 
 
 def test_facade_routes_effect_before_one_lazy_method() -> None:
