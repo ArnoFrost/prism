@@ -128,8 +128,8 @@ compress_plan:
 1. 归档假待办澄清（写 `archive/`，从 `clarifications/` 移除）。
 2. 中文化列出的历史件；不补造新章节。
 3. 规整 Plan 当前态：
-   - 多个 active Plan 不再继续追加同级 Plan；先决定唯一 current effective Plan。
-   - 若需要 durable snapshot，用 `prism plan record`（advanced）写入新 Plan；默认 auto-supersede 当前 active Plan。
+   - 只有正文范围重叠的 Plan 才收敛；目标正交、范围互斥的 sibling Plan 合法并存，不收敛。
+   - 若需要 durable snapshot，用 `prism plan record`（advanced）写入新 Plan；supersedes 只经显式 `--supersedes` 提交。
    - 若不需要新 snapshot，只把已吸收/过期且不再作为当前依据的 Plan 标 `historical`。
    - 不能判断哪个 Plan 仍有效时停下，交给用户 Clarify。
 4. 已被吸收的 Findings 标 `status: absorbed`，尽量填写 `absorbed_by` / `absorbed_at`；保留 `supersedes`。只有真正过时、证伪或不再具备引用价值的历史件才标 `evolution: historical`。
@@ -141,7 +141,7 @@ compress_plan:
 ```bash
 prism plan record <topic_id> --root <topic_dir> --title "..." --body "..."
 # 长 Plan 正文：--body - 或 --body @path
-# 默认会替代当前 active Plan；并行候选只在用户明确要求时用 --no-auto-supersede
+# 不自动替代任何 Plan；重写时用 --supersedes 显式指定被替代的 Plan
 prism brief project <topic_id> --root <topic_dir> --save
 ```
 

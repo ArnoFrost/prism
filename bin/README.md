@@ -155,15 +155,16 @@ prism brief project <topic_id>
 prism review record <topic_id> --body "<审视输入>"
 prism review record <topic_id> --body - --json   # stdin；成功输出 {ok, ids}
 prism clarify record <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
-prism decision record <topic_id> --body "<决策>"
+prism decision record <topic_id> --body "<决策>" --authority-evidence "<授权证据 ref>"
 ```
 
 `bin/prism` 是 bash 壳，exec `prism4/cli.py`。寻址问题走 `bin/doctor --scope cli --fix`（写 rc 锚点 + 建 `~/.local/bin/prism` symlink）。
 
 4.0 Interaction Contract（薄；不是 3.x envelope）：
 
-- 落盘：`prism review/clarify/decision record`（persist ≠ authorize）
-- 高级持久快照：`prism plan record <topic_id> --body "<行动结构>"`；默认 auto-supersede 当前 active Plan。普通当前轮 planning 优先由 Agent 局部感知，不默认落盘。
+- 落盘：`prism review/clarify/decision record`（persist ≠ authorize）。Decision commit 需要 `--authority-evidence`（指向 human-choice 记录、Decision 或委托上下文的 ref）；缺证据时拒绝写入、durable writes = 0——`--authority` 是 requirement，不是 evidence。
+- 高级持久快照：`prism plan record <topic_id> --body "<行动结构>"`；supersedes 仅经显式 `--supersedes` 提交，命令不自动替代 current Plan。普通当前轮 planning 优先由 Agent 局部感知，不默认落盘。
+- Provenance 等级：本地 Markdown store 不落盘 Invocation（溯源由工件 frontmatter 的 `capability` / `created_at` 承载），因此 record 输出不含 invocation id（weak-provenance）；JSON 参考存储完整持久化 Invocation 并回显其 id。
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
 - 3.x：已随 prism-4 分支剔除。已知 3.x 动词统一报「已剔除 + tag 指引」（exit 2）。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`dist` 仅保留退役提示。历史 3.x envelope 见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)。

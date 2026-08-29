@@ -112,7 +112,7 @@ Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-cla
 
 `--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；Decision authorizes 后才形成可执行承诺。
 
-普通 planning 优先由 Agent 结合当前上下文局部完成，不默认落盘。只有需要跨 session 恢复、handoff、后续 Review 或授权承接时，才使用 advanced `prism plan record` 保存 durable Plan snapshot；该命令默认 auto-supersede 当前 active Plan，避免一个 Topic 内出现多个并列当前行动结构。
+普通 planning 优先由 Agent 结合当前上下文局部完成，不默认落盘。只有需要跨 session 恢复、handoff、后续 Review 或授权承接时，才使用 advanced `prism plan record` 保存 durable Plan snapshot；supersedes 仅经显式 `--supersedes` 提交，命令不自动替代任何 current Plan，目标正交、范围互斥的 sibling Plan 可以并存。
 
 旧 3.x workflow 已随 prism-4 分支剔除；历史文档见 `docs/historical/`。
 

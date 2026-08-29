@@ -25,8 +25,9 @@
 #                     --body - 读 stdin；--body @path 读文件；--json 输出 {ok, ids}
 #   clarify record    transitional：持久化 Clarify 结果 → semantic payloads
 #                     （候选，不是 Decision）。下版退役，日常直写 clarifications/。
-#   plan record       advanced：持久化 durable Plan snapshot（默认替代当前 active Plan）
-#   decision record   advanced：记录被授权的 Decision
+#   plan record       advanced：持久化 durable Plan snapshot（supersedes 仅经显式
+#                     --supersedes targets 提交，不自动替代 current Plan）
+#   decision record   advanced：记录被授权的 Decision（commit 需 --authority-evidence）
 #   doctor          委托 bin/doctor
 #   relink          委托 bin/relink
 #   update          委托 bin/update

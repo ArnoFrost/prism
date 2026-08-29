@@ -372,6 +372,7 @@ def test_plan_format_matches_reference_record_plan_semantics() -> None:
     assert "durable snapshot / recovery anchor" in artifact_format
     assert "当前有效 Plan 指同一 Topic 内未被 `supersedes`" in artifact_format
     assert "`prism plan record` 是 advanced durable snapshot 入口" in artifact_format
+    assert "supersedes 仅经显式 `--supersedes` 提交" in artifact_format
 
 
 def test_compress_guidance_converges_plan_instead_of_appending_by_default() -> None:
@@ -381,8 +382,8 @@ def test_compress_guidance_converges_plan_instead_of_appending_by_default() -> N
 
     assert "不把普通下一步规划自动持久化为 Plan Artifact" in compress_skill
     assert "不默认新增 Plan" in compress_skill
-    assert "收敛为唯一 current effective Plan" in compress_skill
-    assert "默认 auto-supersede 当前 active Plan" in compress_skill
+    assert "范围互斥的 sibling Plan 合法并存" in compress_skill
+    assert "supersedes 只经显式 `--supersedes` 提交" in compress_skill
     assert "只有需要 durable Plan snapshot 时才调用" in compress_skill
 
 

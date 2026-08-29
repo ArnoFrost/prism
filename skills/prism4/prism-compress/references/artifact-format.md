@@ -158,7 +158,7 @@ Plan 不是旧 3.x Scope 的替身，也不是 Projection：它不定义协作�
 
 frontmatter：当前件 `authority: "advisory"`；过期件 `evolution: "historical"` 或通过 `supersedes` 退出当前态。当前有效 Plan 指同一 Topic 内未被 `supersedes`、且 `evolution` 非 `historical` 的 Plan；正常情况下应只有一份。Plan 可以描述当前采用的行动结构，但执行授权来自 Intent、Decision 或人类明确指示，不由 Plan 自身产生。
 
-`prism plan record` 是 advanced durable snapshot 入口；默认会替代当前 active Plan，避免一个 Topic 内不断积累多个并列当前行动结构。并行 Plan 候选只有在用户明确需要比较方案时才保留。
+`prism plan record` 是 advanced durable snapshot 入口；supersedes 仅经显式 `--supersedes` 提交，不自动替代任何 current Plan。目标正交、范围互斥的 sibling Plan 合法并存；正文范围重叠的重写用 `--supersedes` 显式指定被替代的 Plan。
 
 当前有效 Plan 的正文必须足够让 Brief 投影出「当前阶段 / 本阶段完成信号 / 下一步」。不要只写一句摘要并把行动结构放进 `references/fix-plan.md` 一类资料；references 可以承载 diff、证据、风险矩阵或长分析，但不能替代 Plan 正文的 `## 目标`、`## 步骤`、`## 验证`。
 
