@@ -76,6 +76,8 @@ def test_facade_preserves_deterministic_sdk_method_fallback() -> None:
     assert "sdk_path" in skill
     assert "<sdk_path>/skills/prism4/shared/" in skill
     assert "不要为定位 method 展开目录探查" in skill
+    assert "P5 compatibility mechanism" in skill
+    assert "P6 前只根据真实 dogfood" in skill
 
 
 def test_recover_and_maintain_preserve_effect_boundaries() -> None:
@@ -84,10 +86,13 @@ def test_recover_and_maintain_preserve_effect_boundaries() -> None:
     assert "Recover" in skill and "read / project" in skill and "writes=0" in skill
     assert "Maintain" in skill and "preview" in skill
     assert "Maintain apply" in skill and "显式授权" in skill
+    assert "Clarify" in skill and "默认不落盘" in skill
 
     recover = _read(ROOT / "skills" / "prism4" / "shared" / "methods" / "recover.md")
+    maintain = _read(ROOT / "skills" / "prism4" / "shared" / "methods" / "maintain.md")
     assert "artifact-contracts/decision.md" not in recover
     assert "--authority-evidence" not in recover
+    assert "preview（`writes=0`）" in maintain
 
 
 def test_clarify_keeps_capability_identity_and_explicit_addressability() -> None:

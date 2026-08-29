@@ -230,7 +230,7 @@ def _as_bullets(text: str, fallback: str) -> list[str]:
 
 def _boundary_lines(intent: Artifact | None) -> list[str]:
     if intent is None:
-        # decision:d01：Core 允许 capture-first 无 Intent Topic；Brief 诚实降级，
+        # Alignment §5.1：Core 允许 capture-first 无 Intent Topic；Brief 诚实降级，
         # 不伪造边界，也不把缺 Intent 报成错误。
         return [
             "- 尚无当前 Intent：本 Topic 为 capture-first 状态（Core 允许）。",

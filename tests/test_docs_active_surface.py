@@ -69,6 +69,26 @@ def test_active_docs_do_not_reintroduce_fixed_pipeline_or_old_clarify_terms() ->
             assert phrase not in text, f"{phrase!r} leaked into {path}"
 
 
+def test_plan_supersede_contract_stays_aligned_across_active_consumers() -> None:
+    alignment = (ROOT / "docs" / "prism-4-refoundation-alignment.md").read_text(
+        encoding="utf-8"
+    )
+    kernel = (ROOT / "skills" / "prism4" / "shared" / "kernel.md").read_text(
+        encoding="utf-8"
+    )
+    user_docs = {
+        path: path.read_text(encoding="utf-8")
+        for path in (ROOT / "README.md", ROOT / "docs" / "onboarding.md")
+    }
+
+    assert "supersedes 只能由调用方显式提交" in alignment
+    assert "sibling Plan 并存规则" in kernel
+    for path, text in user_docs.items():
+        assert "显式" in text and "supersedes" in text, path
+        assert "sibling Plan" in text and ("共存" in text or "并存" in text), path
+        assert "默认替代" not in text and "唯一 current Plan" not in text, path
+
+
 def test_active_docs_use_nested_public_narrative() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")

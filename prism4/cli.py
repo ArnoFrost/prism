@@ -277,8 +277,8 @@ def configure_clarify_record(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--evidence-target",
         help=(
-            "record a typed authority-evidence payload (decision:d05) bound "
-            "to this target ref, e.g. the pre-allocated decision id"
+            "record a typed authority-evidence payload bound to this target "
+            "ref, e.g. the pre-allocated decision id"
         ),
     )
     parser.add_argument(
@@ -522,7 +522,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan_accept_parser = plan_sub.add_parser(
         "accept",
         help=(
-            "record Plan acceptance (decision:d03): evidence must be a typed "
+            "record Plan acceptance: evidence must be a typed "
             "authority-evidence payload or committed Decision bound to this Plan"
         ),
         parents=[json_parent],

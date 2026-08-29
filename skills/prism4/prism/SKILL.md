@@ -38,6 +38,8 @@ user_invocable: true
 5. Clarify 继续使用 `capability_id: prism:clarify`；需要 provenance 时，`invoked_via: prism` 只能作为 optional adapter metadata。Clarify 不自动进入 Plan，不把 candidate 当 Decision。
 6. Method 解析 fallback：分发侧不携带 `shared/`，`../shared/` 引用不可达时（method 或 kernel 文件缺失），按 SDK 源解析——`sdk_path` 读 `prism.local.yaml`（缺省 `~/prism`），打开 `<sdk_path>/skills/prism4/shared/` 下对应文件；不要为定位 method 展开目录探查，也不要因此放弃按需加载而改用猜测。
 
+该 fallback 是 **P5 compatibility mechanism**，不是新的 Method Resolver 架构。P6 前只根据真实 dogfood 中的 method 缺失、Harness 差异、路径理解成本或用户可见摩擦，决定是否下沉到 packaging / runtime；没有重复摩擦时不继续优化。
+
 ## 强 cognition 与兼容入口
 
 - 需要独立多视角证据、反证与 Merge gates 时，建议显式使用 `/prism-review`；不在 facade 内模拟 Review。

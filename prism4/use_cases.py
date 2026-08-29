@@ -41,11 +41,11 @@ ARTIFACT_ROLE_BY_NAMESPACE = {
     "plan": "plan",
 }
 
-# authority-sensitive roles 不经 generic write 创建或更新（decision:d05）：
+# authority-sensitive roles 不经 generic write 创建或更新（Alignment §6.1）：
 # decision 走 guarded `decision record`，intent 是边界 SSOT，brief 是可再生投影。
 AUTHORITY_SENSITIVE_ROLES = frozenset({"decision", "intent", "brief"})
 
-# typed authority evidence 的 payload 类型（decision:d05 / clarify:c02 形态）。
+# typed authority evidence 的 payload 类型（Alignment §6.1 / §12）。
 EVIDENCE_PAYLOAD_TYPE = "evidence-reference"
 
 # 各角色新建时的默认 authority / evolution；调用方之后可用 relation/archive 演进。
@@ -194,7 +194,7 @@ def record_review(
             "review body appears to contain a persisted Findings artifact; "
             "rewrite the body or supersede the existing Findings instead"
         )
-    # exact-input 合同（decision:d04 / f06 F4）：调用方未声明 exact inputs 时
+    # exact-input 合同（Alignment §11）：调用方未声明 exact inputs 时
     # 记空表（declared-unavailable），不按 Topic role sweep 推断因果输入。
     inputs = (
         _resolve_input_items(store, input_refs)
@@ -359,7 +359,7 @@ def record_clarify(
             )
         )
     if evidence_target:
-        # typed authority-evidence 记录（decision:d05 / clarify:c02 形态）：
+        # typed authority-evidence 记录（Alignment §6.1 / §12）：
         # status 只有在用户本次交互中明确确认时才为 confirmed。
         evidence_meta = dict(clarify_metadata)
         evidence_meta.update(
@@ -436,7 +436,7 @@ def record_plan(
         metadata=_input_provenance_metadata(input_refs),
     )
     # supersedes 经共享 relation matrix 验证（同 role / 同 Topic / 非 historical /
-    # 无环）；不自动枚举 current Plan（decision:d03）。
+    # 无环）；不自动枚举 current Plan（Alignment §5.5）。
     _add_relations(store, plan_artifact.id, "supersedes", supersedes)
     return plan_artifact.id, invocation.id
 
@@ -482,7 +482,7 @@ def record_decision(
     active payload set. Adapter archival of the consumed payload is a
     W1 CLI transitional exception, not this function's job.
 
-    committed write 需要显式 typed authority evidence（decision:d05）：
+    committed write 需要显式 typed authority evidence（Alignment §6.1 / §12）：
     confirmed human-choice 记录、覆盖本次目标的 committed Decision、或 scope
     有效的 delegated context。evidence 的 target_ref 必须绑定本次 Decision
     的最终 id（调用方先经 `artifact next-id --role decision` 预分配）；
@@ -501,7 +501,7 @@ def record_decision(
     if candidate_id and authority_evidence == candidate_id:
         raise PrismProtocolError(
             "decision candidate cannot self-authorize: the candidate being "
-            "consumed is not its own confirmation record (decision:d05)"
+            "consumed is not its own confirmation record (Alignment §6.1)"
         )
     # id 先于验证确定，使 evidence 的 target 绑定始终可严格校验。
     resolved_id = artifact_id or next_artifact_id(store, "decision")
@@ -574,7 +574,7 @@ def validate_authority_evidence(
     topic_id: str,
     _seen: frozenset[str] = frozenset(),
 ) -> dict[str, str]:
-    """typed authority evidence validator（decision:d05）。
+    """typed authority evidence validator（Alignment §6.1 / §12）。
 
     合法证据仅三类：confirmed human-choice 记录、覆盖本次目标的 committed
     Decision、scope 覆盖本次操作的 delegated authority context。candidate
@@ -833,7 +833,7 @@ def accept_plan(
     plan_ref: str,
     evidence_ref: str,
 ) -> str:
-    """Plan acceptance（decision:d03 / plan-state 合同）：target-bound typed payload。
+    """Plan acceptance（Alignment §5.5 / §6.1）：target-bound typed payload。
 
     acceptance 附着于 Plan；evidence 经同一 authority validator（目标绑定到
     该 Plan）。Plan 被 supersede 或退档时 acceptance 随旧 Plan 保留为历史，
@@ -996,7 +996,7 @@ def write_artifact(
     if role in AUTHORITY_SENSITIVE_ROLES:
         raise PrismProtocolError(
             f"generic write cannot create or update authority-sensitive role "
-            f"'{role}' (decision:d05): decisions go through `decision record` "
+            f"'{role}' (Alignment §6.1): decisions go through `decision record` "
             "with authority evidence; intent is the boundary SSOT; brief is "
             f"a regenerable projection: {ref}"
         )

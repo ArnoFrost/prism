@@ -5,6 +5,7 @@ from prism4.reference import ReferenceStore
 from prism4.use_cases import (
     create_topic,
     infer_review_title,
+    plan_state,
     persist_brief,
     record_clarify,
     record_decision,
@@ -329,6 +330,8 @@ def test_record_plan_can_supersede_existing_plan():
         and relation.target_ref == old_id
         for relation in store.relations
     )
+    assert plan_state(store, old_id)["current"] is False
+    assert plan_state(store, new_id)["current"] is True
 
 
 def test_record_plan_does_not_supersede_current_plan_by_default():
@@ -348,11 +351,13 @@ def test_record_plan_does_not_supersede_current_plan_by_default():
     )
 
     assert not any(
-        relation.source_ref == new_id
-        and relation.kind == "supersedes"
-        and relation.target_ref == old_id
+        relation.kind == "supersedes"
+        and relation.source_ref in (old_id, new_id)
+        and relation.target_ref in (old_id, new_id)
         for relation in store.relations
     )
+    assert plan_state(store, old_id)["current"] is True
+    assert plan_state(store, new_id)["current"] is True
 
 
 def test_record_plan_rejects_wrapping_persisted_plan_artifact():

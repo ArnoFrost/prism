@@ -159,7 +159,7 @@ Protocol Core 保持很小：
 | 主动设计行动结构 | `/prism-plan`（默认局部规划） |
 | 吸收已获授权的结果 | `/prism`（Absorb） |
 | 低频校准阅读面 | `/prism`（Maintain，先 preview） |
-| 持久化行动结构快照 | advanced `prism plan record`（默认替代当前 active Plan） |
+| 持久化行动结构快照 | advanced `prism plan record`；新 Plan 默认与其他未失效 sibling Plan 共存，仅显式 `--supersedes` 才使目标退出 current set |
 | 记录已授权 Decision | `prism decision record` |
 | 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
 
