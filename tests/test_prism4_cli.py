@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from shutil import copy2, copytree, ignore_patterns
 
+import pytest
+
 """CLI interaction tests: parse, stdout, exit, stdin, @file, JSON, aliases.
 
 Application policy and Adapter persistence contracts live in
@@ -35,6 +37,22 @@ def _env() -> dict[str, str]:
     env = os.environ.copy()
     env["PRISM_FALLBACK_QUIET"] = "1"
     return env
+
+
+def _run_prism(
+    *args: str, root: Path | None = None, input_text: str | None = None
+) -> subprocess.CompletedProcess[str]:
+    command = [str(BIN_PRISM), *args]
+    if root is not None:
+        command.extend(("--root", str(root)))
+    return subprocess.run(
+        command,
+        input=input_text,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
 
 
 def _seed_json_store(root: Path) -> Path:
@@ -452,91 +470,58 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     root = tmp_path / "state"
     root.mkdir()
 
-    topic = subprocess.run(
-        [
-            str(BIN_PRISM),
-            "topic",
-            "new",
-            "topic:prism-4-dev-process",
-            "--title",
-            "Prism 4.0 Dev Process",
-            "--intent",
-            "用 Prism 4.0 语义演进 Prism 4.0 自身的开发流程规范。",
-            "--root",
-            str(root),
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
+    topic = _run_prism(
+        "topic",
+        "new",
+        "topic:prism-4-dev-process",
+        "--title",
+        "Prism 4.0 Dev Process",
+        "--intent",
+        "用 Prism 4.0 语义演进 Prism 4.0 自身的开发流程规范。",
+        root=root,
     )
     assert topic.returncode == 0, topic.stderr
     assert "topic:prism-4-dev-process" in topic.stdout
 
-    plan = subprocess.run(
-        [
-            str(BIN_PRISM),
-            "plan",
-            "record",
-            "topic:prism-4-dev-process",
-            "--root",
-            str(root),
-            "--id",
-            "plan:p01",
-            "--body",
-            "1. 修 CLI 漂移。2. 中文化 Brief 投影。3. 用 Findings 记录实现痛点。",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
+    plan = _run_prism(
+        "plan",
+        "record",
+        "topic:prism-4-dev-process",
+        "--id",
+        "plan:p01",
+        "--body",
+        "1. 修 CLI 漂移。2. 中文化 Brief 投影。3. 用 Findings 记录实现痛点。",
+        root=root,
     )
     assert plan.returncode == 0, plan.stderr
     assert "plan:p01" in plan.stdout
 
-    evidence = subprocess.run(
-        [
-            str(BIN_PRISM),
-            "clarify",
-            "record",
-            "topic:prism-4-dev-process",
-            "--root",
-            str(root),
-            "--question",
-            "是否确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
-            "--evidence-target",
-            "decision:d01",
-            "--evidence-confirmed",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
+    evidence = _run_prism(
+        "clarify",
+        "record",
+        "topic:prism-4-dev-process",
+        "--question",
+        "是否确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
+        "--evidence-target",
+        "decision:d01",
+        "--evidence-confirmed",
+        root=root,
     )
     assert evidence.returncode == 0, evidence.stderr
 
-    record = subprocess.run(
-        [
-            str(BIN_PRISM),
-            "decision",
-            "record",
-            "topic:prism-4-dev-process",
-            "--root",
-            str(root),
-            "--id",
-            "decision:d01",
-            "--authority",
-            "human-required",
-            "--authority-evidence",
-            "clarify:c01",
-            "--body",
-            "已确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
+    record = _run_prism(
+        "decision",
+        "record",
+        "topic:prism-4-dev-process",
+        "--id",
+        "decision:d01",
+        "--authority",
+        "human-required",
+        "--authority-evidence",
+        "clarify:c01",
+        "--body",
+        "已确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
+        root=root,
     )
     assert record.returncode == 0, record.stderr
     assert "decision:d01" in record.stdout
@@ -556,94 +541,42 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
 def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
     root = tmp_path / "state"
     root.mkdir()
-    subprocess.run(
-        [
-            str(BIN_PRISM),
-            "topic",
-            "new",
-            "topic:relations",
-            "--title",
-            "Relations",
-            "--root",
-            str(root),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    subprocess.run(
-        [
-            str(BIN_PRISM),
+    commands = [
+        ("topic", "new", "topic:relations", "--title", "Relations"),
+        (
             "plan",
             "record",
             "topic:relations",
-            "--root",
-            str(root),
             "--id",
             "plan:p01",
             "--body",
             "旧计划。",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    plan = subprocess.run(
-        [
-            str(BIN_PRISM),
+        ),
+        (
             "plan",
             "record",
             "topic:relations",
-            "--root",
-            str(root),
             "--id",
             "plan:p02",
             "--body",
             "新计划。",
             "--supersedes",
             "plan:p01",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert plan.returncode == 0, plan.stderr
-
-    evidence = subprocess.run(
-        [
-            str(BIN_PRISM),
+        ),
+        (
             "clarify",
             "record",
             "topic:relations",
-            "--root",
-            str(root),
             "--question",
             "是否确认授权新计划。",
             "--evidence-target",
             "decision:d01",
             "--evidence-confirmed",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert evidence.returncode == 0, evidence.stderr
-
-    decision = subprocess.run(
-        [
-            str(BIN_PRISM),
+        ),
+        (
             "decision",
             "record",
             "topic:relations",
-            "--root",
-            str(root),
             "--id",
             "decision:d01",
             "--body",
@@ -652,13 +585,11 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
             "clarify:c01",
             "--authorizes",
             "plan:p02",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert decision.returncode == 0, decision.stderr
+        ),
+    ]
+    for command in commands:
+        result = _run_prism(*command, root=root)
+        assert result.returncode == 0, result.stderr
 
     store = LocalFileStoreAdapter(root).load()
     assert any(
@@ -684,61 +615,30 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
 def test_plan_record_keeps_parallel_candidate_without_relations(tmp_path):
     root = tmp_path / "state"
     root.mkdir()
-    subprocess.run(
-        [
-            str(BIN_PRISM),
-            "topic",
-            "new",
-            "topic:parallel-plan",
-            "--title",
-            "Parallel Plan",
-            "--root",
-            str(root),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    subprocess.run(
-        [
-            str(BIN_PRISM),
+    commands = [
+        ("topic", "new", "topic:parallel-plan", "--title", "Parallel Plan"),
+        (
             "plan",
             "record",
             "topic:parallel-plan",
-            "--root",
-            str(root),
             "--id",
             "plan:p01",
             "--body",
             "当前计划。",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    parallel = subprocess.run(
-        [
-            str(BIN_PRISM),
+        ),
+        (
             "plan",
             "record",
             "topic:parallel-plan",
-            "--root",
-            str(root),
             "--id",
             "plan:p02",
             "--body",
             "并行候选。",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert parallel.returncode == 0, parallel.stderr
+        ),
+    ]
+    for command in commands:
+        result = _run_prism(*command, root=root)
+        assert result.returncode == 0, result.stderr
 
     store = LocalFileStoreAdapter(root).load()
     assert not any(
@@ -752,23 +652,10 @@ def test_plan_record_keeps_parallel_candidate_without_relations(tmp_path):
 def test_review_record_infers_readable_title_for_local_file_store(tmp_path):
     root = tmp_path / "state"
     root.mkdir()
-    subprocess.run(
-        [
-            str(BIN_PRISM),
-            "topic",
-            "new",
-            "topic:review-title",
-            "--title",
-            "Review Title",
-            "--root",
-            str(root),
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
+    created = _run_prism(
+        "topic", "new", "topic:review-title", "--title", "Review Title", root=root
     )
+    assert created.returncode == 0, created.stderr
     body = (
         "## 摘要\n\n"
         "Brief 索引提示需要从下一步改为投影导航。\n\n"
@@ -776,23 +663,15 @@ def test_review_record_infers_readable_title_for_local_file_store(tmp_path):
         "### F1 风险·中 — 空 Topic 索引提示容易误导\n"
     )
 
-    result = subprocess.run(
-        [
-            str(BIN_PRISM),
-            "review",
-            "record",
-            "topic:review-title",
-            "--root",
-            str(root),
-            "--id",
-            "finding:f01",
-            "--body",
-            body,
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
+    result = _run_prism(
+        "review",
+        "record",
+        "topic:review-title",
+        "--id",
+        "finding:f01",
+        "--body",
+        body,
+        root=root,
     )
 
     assert result.returncode == 0, result.stderr
@@ -975,6 +854,60 @@ def test_review_record_json_is_small_ok_ids_not_legacy_envelope(tmp_path):
     assert lead_payload["ids"][0] == "finding:f-json-lead"
 
 
+def test_mechanical_primitives_are_reachable_via_cli(tmp_path: Path) -> None:
+    root = tmp_path / "state"
+    root.mkdir()
+
+    commands = [
+        ("topic", "new", "topic:prim", "--title", "Prim"),
+        (
+            "artifact",
+            "write",
+            "finding:f01",
+            "--topic",
+            "topic:prim",
+            "--title",
+            "机械写入",
+            "--body",
+            "初始正文。",
+        ),
+        ("artifact", "write", "finding:f01", "--body", "更新后的正文。"),
+    ]
+    for command in commands:
+        result = _run_prism(*command, root=root)
+        assert result.returncode == 0, result.stderr
+
+    plan = _run_prism(
+        "--json",
+        "plan",
+        "record",
+        "topic:prim",
+        "--id",
+        "plan:p01",
+        "--body",
+        "计划。",
+        root=root,
+    )
+    assert plan.returncode == 0, plan.stderr
+    assert json.loads(plan.stdout)["ids"] == ["plan:p01"]
+
+    commands = [
+        ("relation", "add", "--from", "finding:f01", "--kind", "supports", "--to", "plan:p01"),
+        ("artifact", "archive", "plan:p01"),
+        ("store", "validate"),
+        ("store", "regenerate-index"),
+    ]
+    for command in commands:
+        result = _run_prism(*command, root=root)
+        assert result.returncode == 0, result.stderr
+
+    findings_text = next((root / "findings").glob("f01*.md")).read_text(encoding="utf-8")
+    plan_text = next((root / "plans").glob("p01*.md")).read_text(encoding="utf-8")
+    assert "更新后的正文。" in findings_text
+    assert "supports:" in findings_text
+    assert 'evolution: "historical"' in plan_text
+
+
 def test_clarify_rejects_two_stdin_options(tmp_path):
     root = tmp_path / "state"
     _seed_json_store(root)
@@ -1003,39 +936,18 @@ def test_clarify_rejects_two_stdin_options(tmp_path):
     assert "only one option can read stdin" in result.stderr
 
 
-def test_retired_topic_verb_is_hard_rejected() -> None:
-    result = subprocess.run(
-        [str(BIN_PRISM), "sniff", str(SDK_ROOT)],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert result.returncode == 2
-    assert "已从 prism-4 分支剔除" in result.stderr
-    assert result.stdout == ""
-
-
-def test_retired_topic_verb_json_prefix_is_hard_rejected() -> None:
-    result = subprocess.run(
-        [str(BIN_PRISM), "--json", "sniff", str(SDK_ROOT)],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert result.returncode == 2
-    assert "已从 prism-4 分支剔除" in result.stderr
-
-
-def test_legacy_prefix_is_retired_regardless_of_args() -> None:
-    result = subprocess.run(
-        [str(BIN_PRISM), "legacy", "sniff", "--help"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
+@pytest.mark.parametrize(
+    "args",
+    [
+        pytest.param(("sniff", str(SDK_ROOT)), id="topic-verb"),
+        pytest.param(("--json", "sniff", str(SDK_ROOT)), id="json-prefix"),
+        pytest.param(("legacy", "sniff", "--help"), id="legacy-prefix"),
+        pytest.param(("sync", "--help"), id="sync"),
+        pytest.param(("manifest",), id="manifest"),
+    ],
+)
+def test_retired_surfaces_are_hard_rejected(args: tuple[str, ...]) -> None:
+    result = _run_prism(*args)
     assert result.returncode == 2
     assert "已从 prism-4 分支剔除" in result.stderr
 
@@ -1050,30 +962,6 @@ def test_surface_legacy_verbs_remain_on_default_prism() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert "doctor" in result.stdout.lower() or "用法" in result.stdout
-
-
-def test_sync_is_retired_with_the_legacy_tree() -> None:
-    result = subprocess.run(
-        [str(BIN_PRISM), "sync", "--help"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert result.returncode == 2
-    assert "已从 prism-4 分支剔除" in result.stderr
-
-
-def test_manifest_is_hard_rejected() -> None:
-    result = subprocess.run(
-        [str(BIN_PRISM), "manifest"],
-        capture_output=True,
-        text=True,
-        timeout=10,
-        env=_env(),
-    )
-    assert result.returncode == 2
-    assert "已从 prism-4 分支剔除" in result.stderr
 
 
 def test_json_help_uses_bash_surface() -> None:

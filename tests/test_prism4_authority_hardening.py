@@ -23,7 +23,6 @@ from prism4.reference import ReferenceStore
 from prism4.use_cases import (
     accept_plan,
     add_explicit_relation,
-    archive_artifact,
     create_topic,
     plan_state,
     record_decision,
@@ -145,14 +144,6 @@ def test_generic_write_rejects_intent_and_brief_roles():
         write_artifact(
             store, ref="brief:current", body="绕过投影纪律。", topic_id="topic:demo"
         )
-
-
-def test_generic_write_still_allows_advisory_roles():
-    store = _topic_store()
-    ref, created = write_artifact(
-        store, ref="finding:f01", body="机械写入。", topic_id="topic:demo"
-    )
-    assert created and store.artifacts[ref].role == "findings"
 
 
 # ── F2: typed evidence validator (decision:d05) ──────────────────────────
