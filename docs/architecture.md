@@ -98,18 +98,15 @@ Prism 通过 `.local` 后缀软链接将 backend 中的 Workspace 挂载到工�
 
 ## 4.0 Semantic Skills
 
-Prism 4.0 的默认分发面不是固定 workflow，而是围绕协议原语组织的可组合能力：
+当前 **P5 optimistic dogfood** 的 Distribution Profile 只开放三个可组合入口：
 
 | Skill | 触发 | 职责 |
 |-------|------|------|
-| `prism-topic` | `/prism-topic` | 管理 Topic 边界；child Topic 表达耐久子问题 |
-| `prism-brief` | `/prism-brief` | 生成 Brief projection，用于 context recovery |
+| `prism` | `/prism` | Topic / Recover / Clarify / Absorb / Maintain 状态操作门面 |
 | `prism-review` | `/prism-review` | 运行 Review 能力，输出 Findings |
-| `prism-clarify` | `/prism-clarify` | 单问澄清，输出候选 payload |
 | `prism-plan` | `/prism-plan` | 主动设计 advisory 行动结构，不定义边界或授权 |
-| `prism-compress` | `/prism-compress` | 低频对齐压缩阅读面，再生成 Brief |
 
-`bin/relink` 的分发面只有 `prism4`；`--skill-profile legacy/all` 会诚实报错并指向 git tag。
+这是可回滚的 experimental 验证，不代表 P6。`prism-topic / prism-brief / prism-clarify / prism-compress` 仍保留为 SDK control / compatibility / rollback source，但不属于当前 Distribution Profile。Profile 的唯一权威是 `skills/schema/dist-whitelist.yaml`，`bin/relink` 只消费该文件；Catalog 只管理身份与治理元数据。`--skill-profile legacy/all` 会诚实报错并指向 git tag。
 
 能力按需组合，不预设固定顺序。Review 产出 Findings 后弱衔接（告知洞察与是否要 Clarify），不自动调用其他能力。
 
@@ -191,12 +188,13 @@ prism/
 │   │   └── dist-whitelist.yaml
 │   ├── templates/
 │   │   └── SKILL.template.md
-│   ├── prism4/                      # ★ 4.0-canary 默认分发面
+│   ├── prism4/                      # 4.0 SDK skill sources（目录存在 ≠ 当前分发）
+│   │   ├── prism/                   # P5 profile：状态操作门面
 │   │   ├── prism-topic/
 │   │   ├── prism-brief/
-│   │   ├── prism-review/
+│   │   ├── prism-review/            # P5 profile
 │   │   ├── prism-clarify/
-│   │   ├── prism-plan/
+│   │   ├── prism-plan/              # P5 profile
 │   │   └── prism-compress/
 │   └── README.md
 ├── tests/                           # 4.0 reference adapter / docs / setup guards

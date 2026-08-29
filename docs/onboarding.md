@@ -32,14 +32,14 @@ cd ~/prism
 
 ```text
 setup.sh init → prism --version 验收 → relink / 桥接
-             → /prism-topic（先 probe）→ update / doctor / relink 维护
+             → /prism（Topic 路由，先 probe）→ update / doctor / relink 维护
 ```
 
 | 阶段 | 人类常用 | 说明 |
 |------|----------|------|
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
 | **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 分发 |
-| **topic** | `prism topic list` · `/prism-topic` | 4.0 协作边界与当前状态入口 |
+| **topic** | `prism topic list` · `/prism` | 4.0 协作边界与当前状态入口 |
 | **升级** | `prism update` · `./setup.sh update` | pull + core doctor + code-only relink |
 | **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope；`--json` 为 flat passthrough |
 | **旧包维护** | `prism dist --adapter-info` | experimental；mini/full 仅 legacy maintenance-only |
@@ -60,7 +60,8 @@ setup.sh init → prism --version 验收 → relink / 桥接
 **判断口诀**：
 
 - 动 **本机环境 / 软链 / 全仓 skill** → `prism relink` 或 `./setup.sh relink`
-- 动 **4.0 Topic / Brief / Findings / Clarify payload** → `prism topic` · `prism brief` · `prism review record` / `prism clarify record` 或 `/prism-*`
+- 动 **4.0 Topic / Brief / Clarify / Absorb / Maintain 状态** → `/prism` 或对应 `prism <verb>`
+- 做 **Review / Plan 认知加工** → `/prism-review` · `/prism-plan`
 - 动 **旧 3.x topic 的 reviews / decisions / scope** → 本分支只读；要操作请切 3.x 分支或 `legacy-3x-final` tag
 
 ---
@@ -108,7 +109,7 @@ prism clarify record <topic_id> --question "..." --proposed-patch "..."
 prism decision record <topic_id> --body "..." --authorizes plan:p02
 ```
 
-Agent slash：`/prism-topic` · `/prism-brief` · `/prism-review` · `/prism-clarify` · `/prism-plan` · `/prism-compress`。
+Agent slash（当前 P5 optimistic dogfood）：`/prism` · `/prism-review` · `/prism-plan`。这仍是 experimental 验证，不代表 P6；旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 作为 controls / compatibility / rollback source，**不属于当前默认分发面**。
 
 `--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；Decision authorizes 后才形成可执行承诺。
 

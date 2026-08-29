@@ -46,18 +46,17 @@ Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议�
 
 **Projection 口径**：Brief / Roadmap / Status / Index 是从有效状态与 repository reality 再生成的投影，解决"怎么看得懂"，不承担"什么是真相"。Roadmap 是 Reference Projection，不作为 authoritative + living 的事实源。
 
-## 4.0 默认技能
+## P5 optimistic 默认分发面
 
-当前默认协作面是 `skills/prism4/*`：
+当前 `dist-whitelist.yaml` Distribution Profile 只分发三个入口：
 
 | 技能 | 触发 | 职责 |
 |------|------|------|
-| `prism-topic` | `/prism-topic` | Topic 边界；先 `prism topic probe`；未桥接用 `prism host attach` |
-| `prism-brief` | `/prism-brief` | Brief 投影；可再生成 |
+| `prism` | `/prism` | Topic / Recover / Clarify / Absorb / Maintain 状态操作门面 |
 | `prism-review` | `/prism-review` | Findings，不自动授权 |
-| `prism-clarify` | `/prism-clarify` | 单问澄清；候选 ≠ Decision |
 | `prism-plan` | `/prism-plan` | 主动设计 advisory 行动结构；不定义边界、不授权 |
-| `prism-compress` | `/prism-compress` | 低频对齐阅读面 |
+
+这是 P5 optimistic dogfood，仍属 experimental，不代表 P6。旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 作为 control / compatibility / rollback source，不属于当前默认 Distribution Profile。
 
 3.x `workflow-*` 与 `workspace-init` 已随 prism-4 分支剔除；终态由 git tag `legacy-3x-final` 保管。旧 topic 在本分支只读。
 
@@ -179,7 +178,7 @@ Workspace backend/
 - 保持状态与逻辑分离。
 - 保持本地优先与可迁移性。
 - 不做不必要的目录接管和结构改造。
-- 4.0 入口是 `/prism-topic`，用 child Topic 表达耐久子问题。Findings 不授权；候选 payload 不是 Decision。
+- 当前状态操作入口是 `/prism`，用 child Topic 表达耐久子问题。Review 与 Plan 保持独立认知入口；Findings 不授权，候选 payload 不是 Decision。
 
 ---
 
@@ -285,14 +284,14 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 ## Mandatory skill usage
 
-> 以下规则为默认工作流指引，用户可随时否决（如「不用 prism-topic，直接开始」）。Agent 应提醒但不强制。
+> 以下规则为默认工作流指引，用户可随时否决（如「不用 prism，直接开始」）。Agent 应提醒但不强制。
 
 | 条件 | 动作 |
 |------|------|
-| 需要创建或定位 4.0 Topic | 使用 `/prism-topic`；先 `prism topic probe`，未桥接则 `prism host attach --code CODE`，不要调用 `workspace-init` |
-| 需要恢复当前上下文 | 使用 `/prism-brief` 或 `prism brief project` |
-| 阅读面漂移、假待办堆积、进度与现状不对齐 | 使用 `/prism-compress`；先 preview，低频对齐，不要实时压缩 |
+| 需要创建或定位 4.0 Topic | 使用 `/prism` 的 Topic 路由；先 `prism topic probe`，未桥接则 `prism host attach --code CODE`，不要调用 `workspace-init` |
+| 需要恢复当前上下文 | 使用 `/prism` 的 Recover 路由或 `prism brief project` |
+| 阅读面漂移、假待办堆积、进度与现状不对齐 | 使用 `/prism` 的 Maintain 路由；先 preview，低频对齐，不要实时压缩 |
 | 需要审视现状、暴露风险/缺口/取舍 | 使用 `/prism-review`；Findings 不自动授权 |
-| 下一步被一个人类取舍阻塞 | 使用 `/prism-clarify`；候选 payload 不等于 Decision |
+| 下一步被一个人类取舍阻塞 | 使用 `/prism` 的 Clarify 路由；候选 payload 不等于 Decision |
 | 需要主动设计行动结构、执行路线、拆解顺序或验证策略 | 使用 `/prism-plan`；Plan 不定义 Intent、不提交 Decision、不执行工作 |
 | 需要旧 3.x topic 兼容 | 本分支只读；要操作切 3.x 分支或 `legacy-3x-final` tag |

@@ -33,7 +33,7 @@ Prism Protocol revolves around **Topic / Artifact / Capability / Invocation**, w
 - 不是知识库替代品。
 - 不是重型运行时。
 
-**当前发行**：4.0-canary。`prism` 默认进入 4.0 reference adapter；部分 4.0 verb 仍标记为 experimental。3.x 实现已从本分支剔除，终态见 git tag `legacy-3x-final`；旧 topic 在本分支只读。
+**当前发行**：4.0-canary。当前处于 **P5 optimistic dogfood**：默认 Distribution Profile 只分发 `/prism`、`/prism-review`、`/prism-plan` 三个入口，仍属 experimental，不代表 P6 稳定切换。旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 中作为 control / compatibility / rollback source，**不属于当前默认分发面**。3.x 实现已从本分支剔除，终态见 git tag `legacy-3x-final`；旧 topic 在本分支只读。
 
 ---
 
@@ -106,7 +106,7 @@ Prism 的默认接入方式是本地优先、软链接桥接，不要求改造�
 | 本地优先 | 默认 local backend + `workspace.{code}.local` bridge | 协作状态留在用户控制范围内 | [快速开始](#快速开始) |
 | 无侵入接入 | 软链接 + `.local` 约定 + 全局 gitignore | 不接管业务仓库目录结构 | [会创建什么](#会创建什么) |
 | Small protocol surface | Topic / Artifact / Capability / Invocation + Decision Semantics | 不绑定某个 Agent harness 或文件格式 | [核心概念](#核心概念) |
-| 能力可组合 | `/prism-*` skills 按需使用 | 不预设固定治理管线 | [日常使用](#日常使用) |
+| 能力可组合 | `/prism` 状态操作 + `/prism-review`、`/prism-plan` 认知入口 | 不预设固定治理管线 | [日常使用](#日常使用) |
 | 授权边界清楚 | Findings / Plan 是 advisory；Decision records authorized commitment | AI 建议不等于已批准变更 | [核心概念](#核心概念) |
 | Brief 可再生成 | Brief 是 context recovery projection | 跨会话恢复更轻，不把切片当事实源 | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
 | 部署可选 | Skills、Env、Vault/Git backend 都在 Core 外 | Prism repository + `uv` 即可跑通 | [docs/architecture.md](docs/architecture.md) |
@@ -150,13 +150,15 @@ Protocol Core 保持很小：
 
 | 你想做什么 | 入口 |
 |------------|------|
-| 查看当前项目是否已桥接 | `prism topic probe` |
-| 创建或列出 Topic | `prism topic new` · `prism topic list` |
+| 查看当前项目是否已桥接 | `/prism`（Topic）· `prism topic probe` |
+| 创建或列出 Topic | `/prism`（Topic）· `prism topic new` · `prism topic list` |
 | 查看 Artifact 正文 | `prism artifact show` |
-| 生成上下文恢复切片 | `prism brief project` · `/prism-brief` |
+| 生成上下文恢复切片 | `/prism`（Recover）· `prism brief project` |
 | 留下审视结果 | `prism review record` · `/prism-review` |
-| 澄清一个阻塞歧义 | `prism clarify record` · `/prism-clarify` |
+| 澄清一个阻塞歧义 | `/prism`（Clarify）· `prism clarify record` |
 | 主动设计行动结构 | `/prism-plan`（默认局部规划） |
+| 吸收已获授权的结果 | `/prism`（Absorb） |
+| 低频校准阅读面 | `/prism`（Maintain，先 preview） |
 | 持久化行动结构快照 | advanced `prism plan record`（默认替代当前 active Plan） |
 | 记录已授权 Decision | `prism decision record` |
 | 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
@@ -165,14 +167,11 @@ Use what the situation needs:
 
 | Skill | 用途 |
 |-------|------|
-| `/prism-topic` | 创建或定位协作边界 |
-| `/prism-brief` | 恢复当前上下文切片 |
+| `/prism` | Topic / Recover / Clarify / Absorb / Maintain 状态操作门面 |
 | `/prism-review` | 审视现状并输出 Findings |
-| `/prism-clarify` | 只澄清一个阻塞取舍 |
 | `/prism-plan` | 主动设计 advisory 行动结构 |
-| `/prism-compress` | 低频对齐阅读面并再生成 Brief |
 
-这些 skills 是能力菜单，不是顺序管线。Review 不自动进入 Clarify，Plan 不自动获得授权，Decision 才记录承诺。
+这是当前 P5 optimistic dogfood 的三入口表面，不是顺序管线，也不代表 P6。旧 wrappers 仍可在 SDK 源码中用于对照、兼容和回滚，但不属于当前默认 Distribution Profile。Review 不自动进入 Clarify，Plan 不自动获得授权，Decision 才记录承诺。
 Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不是 Brief/Roadmap 一类投影；边界看 Intent，授权看 Decision 或当前明确的人类指令。
 
 完整 CLI 面看：
