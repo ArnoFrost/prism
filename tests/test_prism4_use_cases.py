@@ -249,7 +249,7 @@ def test_record_plan_can_supersede_existing_plan():
     )
 
 
-def test_record_plan_auto_supersedes_current_plan_by_default():
+def test_record_plan_does_not_supersede_current_plan_by_default():
     store = _topic_store()
     old_id, _ = record_plan(
         store,
@@ -262,31 +262,6 @@ def test_record_plan_auto_supersedes_current_plan_by_default():
         store,
         topic_id="topic:demo",
         body="新计划。",
-        next_artifact_id=fake_artifact_id,
-    )
-
-    assert any(
-        relation.source_ref == new_id
-        and relation.kind == "supersedes"
-        and relation.target_ref == old_id
-        for relation in store.relations
-    )
-
-
-def test_record_plan_can_keep_parallel_candidate_when_explicit():
-    store = _topic_store()
-    old_id, _ = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="当前计划。",
-        next_artifact_id=fake_artifact_id,
-    )
-
-    new_id, _ = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="并行候选。",
-        auto_supersede_current=False,
         next_artifact_id=fake_artifact_id,
     )
 
@@ -383,10 +358,17 @@ def test_persist_brief_keeps_parent_and_child_briefs_distinct():
 
 def test_record_decision_defaults_to_human_required_authoritative():
     store = _topic_store()
+    evidence_id, _ = record_review(
+        store,
+        topic_id="topic:demo",
+        body="用户裁决记录：接受该承诺。",
+        next_artifact_id=fake_artifact_id,
+    )
     decision_id, _invocation_id, consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="Authorize record for persist.",
+        authority_evidence=evidence_id,
         next_artifact_id=fake_artifact_id,
     )
     decision = store.artifacts[decision_id]
@@ -394,16 +376,24 @@ def test_record_decision_defaults_to_human_required_authoritative():
     assert decision.metadata["authority"] == "authoritative"
     assert decision.metadata["evolution"] == "committed"
     assert decision.metadata["authority_required"] == "human-required"
+    assert decision.metadata["authority_evidence"] == evidence_id
     assert consumed is None
 
 
 def test_record_decision_accepts_delegated_authority():
     store = _topic_store()
+    evidence_id, _ = record_review(
+        store,
+        topic_id="topic:demo",
+        body="委托授权上下文记录。",
+        next_artifact_id=fake_artifact_id,
+    )
     decision_id, _invocation_id, _consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="Delegated recording is still a Decision.",
         authority="delegated",
+        authority_evidence=evidence_id,
         next_artifact_id=fake_artifact_id,
     )
     assert store.artifacts[decision_id].metadata["authority_required"] == "delegated"
@@ -411,10 +401,17 @@ def test_record_decision_accepts_delegated_authority():
 
 def test_record_decision_can_supersede_and_authorize_artifacts():
     store = _topic_store()
+    evidence_id, _ = record_review(
+        store,
+        topic_id="topic:demo",
+        body="用户裁决记录：接受旧承诺。",
+        next_artifact_id=fake_artifact_id,
+    )
     old_decision_id, _invocation_id, _consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="旧决策。",
+        authority_evidence=evidence_id,
         next_artifact_id=fake_artifact_id,
     )
     plan_id, _ = record_plan(
@@ -430,6 +427,7 @@ def test_record_decision_can_supersede_and_authorize_artifacts():
         body="新决策。",
         supersedes=(old_decision_id,),
         authorizes=(plan_id,),
+        authority_evidence=old_decision_id,
         next_artifact_id=fake_artifact_id,
     )
 
@@ -449,12 +447,19 @@ def test_record_decision_can_supersede_and_authorize_artifacts():
 
 def test_record_decision_rejects_invalid_authority():
     store = _topic_store()
+    evidence_id, _ = record_review(
+        store,
+        topic_id="topic:demo",
+        body="用户裁决记录。",
+        next_artifact_id=fake_artifact_id,
+    )
     try:
         record_decision(
             store,
             topic_id="topic:demo",
             body="This must not become a Decision.",
             authority="none",
+            authority_evidence=evidence_id,
             next_artifact_id=fake_artifact_id,
         )
     except PrismProtocolError as error:
@@ -472,11 +477,18 @@ def test_record_decision_consumes_candidate_without_archiving():
         metadata={"question": "verb?"},
     )
     store.add_payload(payload)
+    evidence_id, _ = record_review(
+        store,
+        topic_id="topic:demo",
+        body="用户裁决记录：采纳该候选。",
+        next_artifact_id=fake_artifact_id,
+    )
     decision_id, _invocation_id, consumed = record_decision(
         store,
         topic_id="topic:demo",
         body="Authorize record for persist.",
         candidate_id="clarify:c01",
+        authority_evidence=evidence_id,
         next_artifact_id=fake_artifact_id,
     )
     assert store.artifacts[decision_id].role == "decision"

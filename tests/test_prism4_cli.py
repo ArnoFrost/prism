@@ -494,6 +494,25 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     assert plan.returncode == 0, plan.stderr
     assert "plan:p01" in plan.stdout
 
+    review = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "review",
+            "record",
+            "topic:prism-4-dev-process",
+            "--root",
+            str(root),
+            "--body",
+            "用户裁决记录：技能说明使用中文，协议原语术语保留英文 SSOT。",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert review.returncode == 0, review.stderr
+
     record = subprocess.run(
         [
             str(BIN_PRISM),
@@ -506,6 +525,8 @@ def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
             "decision:d01",
             "--authority",
             "human-required",
+            "--authority-evidence",
+            "finding:f01",
             "--body",
             "已确认：技能说明使用中文，协议原语术语保留英文 SSOT。",
         ],
@@ -580,6 +601,8 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
             "plan:p02",
             "--body",
             "新计划。",
+            "--supersedes",
+            "plan:p01",
         ],
         capture_output=True,
         text=True,
@@ -587,6 +610,25 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
         env=_env(),
     )
     assert plan.returncode == 0, plan.stderr
+
+    review = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "review",
+            "record",
+            "topic:relations",
+            "--root",
+            str(root),
+            "--body",
+            "用户裁决记录：授权新计划。",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert review.returncode == 0, review.stderr
 
     decision = subprocess.run(
         [
@@ -600,6 +642,8 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
             "decision:d01",
             "--body",
             "授权新计划。",
+            "--authority-evidence",
+            "finding:f01",
             "--authorizes",
             "plan:p02",
         ],
@@ -631,7 +675,7 @@ def test_record_surfaces_write_supersedes_and_authorizes_relations(tmp_path):
     assert 'authorizes: ["plan:p02"]' in decision_text
 
 
-def test_plan_record_can_keep_parallel_candidate_with_explicit_flag(tmp_path):
+def test_plan_record_keeps_parallel_candidate_without_relations(tmp_path):
     root = tmp_path / "state"
     root.mkdir()
     subprocess.run(
@@ -682,7 +726,6 @@ def test_plan_record_can_keep_parallel_candidate_with_explicit_flag(tmp_path):
             "plan:p02",
             "--body",
             "并行候选。",
-            "--no-auto-supersede",
         ],
         capture_output=True,
         text=True,

@@ -150,9 +150,25 @@ def flatten_record_ids(*parts: object) -> list[str]:
     return ids
 
 
-def emit_record(*parts: object, json_output: bool = False) -> None:
-    """Print recorded identifiers. invocation ids are diagnostic compatibility."""
+def _adapter_persists_invocations(adapter) -> bool:
+    """Markdown adapter 不落盘 Invocation（weak-provenance）；JSON 参考存储完整持久化。"""
+    return not isinstance(adapter, LocalFileStoreAdapter)
+
+
+def emit_record(
+    *parts: object,
+    json_output: bool = False,
+    include_invocations: bool = True,
+) -> None:
+    """Print recorded identifiers.
+
+    invocation ids are diagnostic compatibility output. Adapters that do
+    not persist Invocations (local Markdown, weak-provenance grade) must
+    not emit them: an id the store cannot resolve back is dishonest output.
+    """
     ids = flatten_record_ids(*parts)
+    if not include_invocations:
+        ids = [item for item in ids if not str(item).startswith("invocation:")]
     if json_output:
         print(json.dumps({"ok": True, "ids": ids}, ensure_ascii=False))
         return
@@ -256,14 +272,8 @@ def configure_plan_record(parser: argparse.ArgumentParser) -> None:
         "--supersedes",
         action="append",
         default=[],
-        help="plan ref this Plan supersedes; may be repeated",
-    )
-    parser.add_argument(
-        "--no-auto-supersede",
-        action="store_false",
-        dest="auto_supersede_current",
-        default=True,
-        help="advanced: keep this as a parallel advisory Plan candidate instead of superseding current active Plan",
+        help="plan ref this Plan supersedes; may be repeated; explicit targets "
+        "only — recording never supersedes other current Plans on its own",
     )
     add_root_arg(parser)
     parser.set_defaults(func=cmd_plan_record)
@@ -397,7 +407,10 @@ def build_parser() -> argparse.ArgumentParser:
         subparsers,
         "plan",
         noun_help="record a durable Plan model (advisory; advanced)",
-        record_help="persist durable Plan snapshot; default supersedes the active Plan",
+        record_help=(
+            "persist durable Plan snapshot; supersedes only via explicit "
+            "--supersedes targets (no automatic supersede)"
+        ),
         configure=configure_plan_record,
         json_parent=json_parent,
     )
@@ -419,6 +432,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="decision body; '-' reads stdin, '@path' reads a file",
     )
     decision_record.add_argument("--candidate", help="decision-candidate payload ref as input")
+    decision_record.add_argument(
+        "--authority-evidence",
+        required=True,
+        help=(
+            "authority evidence ref backing this Decision (human-choice "
+            "record, Decision, or delegated context); commit is refused "
+            "without it — --authority is a requirement, not evidence"
+        ),
+    )
     decision_record.add_argument(
         "--authority",
         default="human-required",
@@ -599,7 +621,11 @@ def cmd_review_record(args: argparse.Namespace) -> int:
             next_artifact_id=adapter.next_artifact_id,
         )
 
-    emit_record(adapter.update(mutate), json_output=wants_json(args))
+    emit_record(
+        adapter.update(mutate),
+        json_output=wants_json(args),
+        include_invocations=_adapter_persists_invocations(adapter),
+    )
     return 0
 
 
@@ -620,7 +646,11 @@ def cmd_clarify_record(args: argparse.Namespace) -> int:
             next_payload_id=adapter.next_payload_id,
         )
 
-    emit_record(adapter.update(mutate), json_output=wants_json(args))
+    emit_record(
+        adapter.update(mutate),
+        json_output=wants_json(args),
+        include_invocations=_adapter_persists_invocations(adapter),
+    )
     return 0
 
 
@@ -636,11 +666,14 @@ def cmd_plan_record(args: argparse.Namespace) -> int:
             title=args.title,
             artifact_id=args.artifact_id,
             supersedes=tuple(args.supersedes),
-            auto_supersede_current=args.auto_supersede_current,
             next_artifact_id=adapter.next_artifact_id,
         )
 
-    emit_record(adapter.update(mutate), json_output=wants_json(args))
+    emit_record(
+        adapter.update(mutate),
+        json_output=wants_json(args),
+        include_invocations=_adapter_persists_invocations(adapter),
+    )
     return 0
 
 
@@ -655,6 +688,7 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
             body=args.body,
             title=args.title,
             authority=args.authority,
+            authority_evidence=args.authority_evidence,
             artifact_id=args.artifact_id,
             candidate_id=args.candidate,
             supersedes=tuple(args.supersedes),
@@ -669,7 +703,11 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
                 archive(consumed)
         return decision_id, invocation_id
 
-    emit_record(adapter.update(mutate), json_output=wants_json(args))
+    emit_record(
+        adapter.update(mutate),
+        json_output=wants_json(args),
+        include_invocations=_adapter_persists_invocations(adapter),
+    )
     return 0
 
 
