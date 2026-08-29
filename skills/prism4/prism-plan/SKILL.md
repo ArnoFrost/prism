@@ -5,7 +5,7 @@ description_zh: "Prism 4.0 Plan 能力：主动设计行动结构、执行路线
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-01
+  version: dev-02
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -55,6 +55,14 @@ Existing Plan 可作为 replanning 输入，用于修订、细化或 supersede �
 
 先从 authoritative / applicable context 提取规划框架，不重新界定问题。
 
+### 复杂度 Gate
+
+先判断行动模型需要 thin Plan 还是 structured Plan，再决定规划深度：
+
+- 单一可行路线、可逆、低不确定、依赖短且失败成本低时，用 thin Plan：直接给行动、必要顺序与成功信号。**thin Plan 不制造候选路线**，也不为了形式完整扩写阶段。
+- 存在两条以上实质可行路线、共享关键依赖、高成本 / 不可逆动作、高不确定、大爆炸半径或 material choice 时，用 **structured Plan**，显式处理 candidate routes、critical path、可逆性、verification coverage 和 decision gates。
+- 只有一条路线实际可行时，说明其他实质替代为何被排除；**不得编造伪候选**来证明“做过比较”。
+
 始终检查并保留：
 
 - Intent 对齐
@@ -71,6 +79,14 @@ Existing Plan 可作为 replanning 输入，用于修订、细化或 supersede �
 - 风险与可逆性
 - 人类维护成本
 - 回滚路径
+
+### Structured Plan 方法 Gates
+
+1. **Candidate routes 与收敛**：候选必须在架构、顺序、风险承担或成本上有实质差异。比较维度必须来自 Intent、适用 Decisions 与真实约束，例如正确性、依赖、可逆性、验证成本和维护负担；不套通用打分表。收敛后写清采用路线为什么更适合，以及为什么不采用实质替代路线。
+2. **Critical dependencies / path**：区分“必须先完成才能放行后续”的 gate 与只是书写顺序的普通步骤。只有无共享可变状态、失败可独立归因、且不破坏后续验证的工作才并行；其余按 critical path 排序。
+3. **可逆性影响排序**：把低成本、可逆的 probe / contract test 前置，用它们减少后续不确定；推迟不可逆动作，直到证据、依赖与必要 authority 都就绪。对高风险步骤写出 rollback / containment，不只在“风险”节列一句担忧。
+4. **Verification coverage**：把每个关键结果、风险或 contract 映射到可观测证据；根据风险选择正向、反向或失败路径，不用“测试通过”代替覆盖说明。一个 Phase 只有在其成功信号可定位、且关键反例有处置时才可放行。
+5. **Decision gates**：每个 decision gate 都要写清需要人选什么、各候选的实质取舍、何时必须决定，以及未决时哪些工作仍可安全进行。只为 material commitment 留 Human gate，不把普通实施选择升级为 Human gate。
 
 普通规划不确定性可以在 Plan 内记录为 known assumptions、open assumptions、validation needed 或 decision gates。只有当继续规划必须猜测 authoritative boundary、覆盖已有 Decision、作出 material commitment，或关键未知使执行结构无法合理成立时，才暴露 blocker。
 

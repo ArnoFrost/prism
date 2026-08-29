@@ -5,7 +5,7 @@ description_zh: "Prism 4.0 Review 能力：多视角独立审视 + 总分总收�
 license: MIT
 metadata:
   author: ArnoFrost
-  version: dev-03
+  version: dev-04
 visibility: dev
 stability: experimental
 user_invocable: true
@@ -29,20 +29,28 @@ user_invocable: true
 
 - 活跃状态不清晰时，先 `prism brief project <topic_id> --root <topic_dir>` 恢复上下文。
 - 收集审查输入：Brief / Intent / Plan / Decisions / 相关 Findings。
+- 先写出一个可被证据回答的 **review question**：审什么对象、什么边界、依据什么判定。若一句话无法说清，先拆小范围，不让后续视角各审一题。
+- 在展开前声明 **stopping criterion**：哪些关键 claim / 失败面要有证据，什么反例一旦成立就应停止放行。它可在调查中因新证据收紧，但不能事后为迎合结论降低。
 - 缺关键上下文时，不输出全局判断：缩小审查范围，或明确说明所基于的假设。
 
 ### Explore — 多视角独立审视（分）
 
 - 按审查对象动态选择 2-5 个评估视角（例如：风险 / 完整性 / 架构 / 进度偏差 / 用户体验）。不同审查用不同视角组合，不套固定角色清单。
+- 每个视角先写一句 **perspective rationale**：它要捕捉哪个与其他视角可区分的失败面，以及为什么当前对象值得检查它。只有不同名称而没有不同失败面的角色不算独立视角。
+- 每个视角要获取自己的 **独立 evidence**，并在看到其他视角的结论前先形成各自的 provisional observation。串行降级时也要先固定当前视角的证据与初判，再转下一视角，避免后者只复述前者。
+- 每个高强度判断都要主动找它的**最强 counterevidence**，记录证据上限，并校准强度 / 置信度。找不到反证不等于反证不存在；搜索面受限时必须直说。
 - 每个视角独立产出观察。harness 支持 subagent 时真实并发执行；不支持时诚实串行降级，并在 Findings 中说明降级原因。
 - **不得把同一响应内的角色切换伪装成并行。**
+- 进入 Merge 前做一次**共享偏差检查**：多个视角是否共同依赖同一来源、假设或问题 framing，是否只在同一证据链上换了标签。若是，补一次异源证据 / 反向框架检查；无法补时降低置信度，不把“多视角同意”当成独立发现。
 - Subagent / 视角中途稿默认不落盘。只有在高风险、多视角冲突、需要审计/复盘，或单个视角产出可复用调研材料时，才把独立视角摘要放入 `references/`，最终 Findings 引用它；checkpoint 不是 Decision，也不是默认 Artifact。
+
+Explore 的 stopping criterion 同时满足以下条件时才结束：预定关键失败面已覆盖；高强度 claim 有可定位 evidence 与 counterevidence 交代；真实分歧已记录；新增一轮视角的边际信息已不再改变结论强度或行动建议。若出现一个已证实的高风险阻断反例，可提前停止“是否放行”，但仍要保留影响修正范围的必要证据。不得用文件数量、角色数量或篇幅作为完成证据。
 
 ### Merge — 收敛为 Findings（总）
 
-- 去重、解释分歧、仲裁冲突，合并为一个 Findings 集。
-- 说明独立发现率：多个视角同时发现的问题通常更关键。
-- 当视角间结论冲突时，呈现分歧而非强行统一。
+- **Merge gate**：先区分重复观察、互补证据与真实冲突，再决定哪些合并、哪些保留并列。合并后的每个高强度 Finding 必须能指回 evidence、counterevidence / 证据上限与置信度。
+- 说明独立发现率：多个视角同时发现的问题通常更关键，但只有证据链或失败面真正独立时才计为独立发现。
+- 当视角间结论冲突时，呈现真实分歧、各自证据与区分所需的下一条证据，而非强行统一或替人裁决。
 - 收敛产物仍是 advisory Findings：只保留尚未被 Intent / Plan / Decision 吸收的重要悬置判断，或未来仍值得引用的关键证据 / 验证结论，不替人拍板。
 
 ## 输出
