@@ -332,7 +332,7 @@ Reference creates provenance.
 Acceptance creates authority.
 ```
 
-Plan 在 authority 上仍可能是 advisory：被 Review、Clarify 或其他 Invocation 读取的 Plan，可能因为 provenance 获得 historical value，但不会自动获得执行权威。只有被 Decision、Intent 边界或当前明确人类指令接受的 Plan，才成为 operative。Phase / Step 只是 Plan 内部文本结构，不进入 Protocol Core。
+Plan 在 authority 上仍可能是 advisory：被 Review、Clarify 或其他 Invocation 读取的 Plan，可能因为 provenance 获得 historical value，但不会自动获得执行权威。current Plan 获得适用 authority 的有效 acceptance 后才成为 operative；acceptance evidence 可以来自 confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context，不要求为每次 Plan acceptance 新建 Decision。只有效力超出单一 Plan 生命周期、即使 Plan 被完整重写后仍需保留的承诺，才形成 Decision。Phase / Step 只是 Plan 内部文本结构，不进入 Protocol Core。
 
 Plan 的 current set 由有效状态推导：未被显式 supersede 且未进入 historical 的 Plan 保持 current；supersedes 只能由调用方显式提交。目标正交、范围互斥的 sibling Plan 可以并存，不因时间更新或新 Plan 产生而自动互相替代。
 

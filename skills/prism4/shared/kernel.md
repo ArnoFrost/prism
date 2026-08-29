@@ -25,6 +25,7 @@
 
 - Production does not imply acceptance or commitment：产物生成不等于被接受。
 - Plan 初始 advisory；operative = current + valid acceptance。current set 推导、显式 supersedes 与 sibling Plan 并存规则见 Alignment §5.5。
+- Plan acceptance 不要求新建 Decision；confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context 都可提供有效证据。Decision 只保留效力超出单一 Plan 生命周期的 durable commitment。
 - Decision 的 committed write 需要与目标及作用域绑定的 typed authority evidence（confirmed human-choice / committed Decision / delegated authority context）；candidate 不得自证，所有写入路径共用同一 guard；`human-required` 是 requirement，不是 evidence（Alignment §6.1）。
 
 ## 5. Absorption / supersession

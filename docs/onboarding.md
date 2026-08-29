@@ -111,7 +111,7 @@ prism decision record <topic_id> --body "..." --authorizes plan:p02
 
 Agent slash（当前 P5 optimistic dogfood）：`/prism` · `/prism-review` · `/prism-plan`。这仍是 experimental 验证，不代表 P6；旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 作为 controls / compatibility / rollback source，**不属于当前默认分发面**。
 
-`--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；Decision authorizes 后才形成可执行承诺。
+`--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；current Plan 获得有效 acceptance 后才成为 operative，confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context 都可提供证据。Plan acceptance 不要求新建 Decision；只有超出单一 Plan 生命周期的 durable commitment 才形成 Decision。
 
 普通 planning 优先由 Agent 结合当前上下文局部完成，不默认落盘。只有需要跨 session 恢复、handoff、后续 Review 或授权承接时，才使用 advanced `prism plan record` 保存 durable Plan snapshot；supersedes 仅经显式 `--supersedes` 提交，命令不自动替代任何 current Plan，目标正交、范围互斥的 sibling Plan 可以并存。
 

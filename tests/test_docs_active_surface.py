@@ -89,6 +89,31 @@ def test_plan_supersede_contract_stays_aligned_across_active_consumers() -> None
         assert "默认替代" not in text and "唯一 current Plan" not in text, path
 
 
+def test_plan_acceptance_is_not_conflated_with_decision_commitment() -> None:
+    surfaces = {
+        path: path.read_text(encoding="utf-8")
+        for path in (
+            ROOT / "docs" / "prism-4-refoundation-alignment.md",
+            ROOT / "skills" / "prism4" / "shared" / "kernel.md",
+            ROOT / "README.md",
+            ROOT / "docs" / "onboarding.md",
+        )
+    }
+
+    for path, text in surfaces.items():
+        assert "current" in text and "operative" in text, path
+        assert "acceptance" in text and "不要求" in text, path
+        assert "Decision authorizes 后才" not in text, path
+
+    alignment = surfaces[ROOT / "docs" / "prism-4-refoundation-alignment.md"]
+    for evidence_kind in (
+        "confirmed human choice",
+        "committed Decision",
+        "delegated authority context",
+    ):
+        assert evidence_kind in alignment
+
+
 def test_active_docs_use_nested_public_narrative() -> None:
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")

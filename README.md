@@ -171,8 +171,8 @@ Use what the situation needs:
 | `/prism-review` | 审视现状并输出 Findings |
 | `/prism-plan` | 主动设计 advisory 行动结构 |
 
-这是当前 P5 optimistic dogfood 的三入口表面，不是顺序管线，也不代表 P6。旧 wrappers 仍可在 SDK 源码中用于对照、兼容和回滚，但不属于当前默认 Distribution Profile。Review 不自动进入 Clarify，Plan 不自动获得授权，Decision 才记录承诺。
-Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不是 Brief/Roadmap 一类投影；边界看 Intent，授权看 Decision 或当前明确的人类指令。
+这是当前 P5 optimistic dogfood 的三入口表面，不是顺序管线，也不代表 P6。旧 wrappers 仍可在 SDK 源码中用于对照、兼容和回滚，但不属于当前默认 Distribution Profile。Review 不自动进入 Clarify，Plan 被引用也不等于被接受。
+Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不是 Brief/Roadmap 一类投影；current Plan 获得有效 acceptance 后才成为 operative，证据可以来自 confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context，不要求每次 acceptance 都新建 Decision。只有效力超出单一 Plan 生命周期、Plan 重写后仍需保留的承诺，才形成 Decision。
 
 完整 CLI 面看：
 
