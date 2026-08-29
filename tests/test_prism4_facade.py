@@ -99,11 +99,13 @@ def test_review_and_plan_remain_independent_cognition_routes() -> None:
     assert "自动串成 workflow" in skill
 
 
-def test_shadow_observation_is_not_invocation_or_implicit_write() -> None:
+def test_p5_dogfood_observation_is_not_invocation_or_implicit_write() -> None:
     skill = _read(FACADE / "SKILL.md")
     observation = _read(FACADE / "references" / "shadow-observation.md")
 
     assert "shadow-observation.md" in skill
+    assert "P5 dogfood observation" in skill
+    assert "dogfood_observation:" in observation
     assert "不是 Invocation" in observation
     assert "writes: 0" in observation
     assert "用户明确要求" in observation

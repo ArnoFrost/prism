@@ -1,7 +1,7 @@
 """Shared kernel contract tests (plan:p01 P2).
 
 Guards: shared/ stays a non-public reference layer (relink skips it, catalog
-does not list it, six skills reference it), and kernel.md does not become a
+does not list it, SDK skills reference it), and kernel.md does not become a
 fourth SSOT by copying artifact frontmatter contracts or CLI parameter maps.
 """
 
@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SHARED = ROOT / "skills" / "prism4" / "shared"
 SKILL_IDS = (
+    "prism",
     "prism-topic",
     "prism-brief",
     "prism-review",
@@ -52,7 +53,7 @@ def test_kernel_does_not_copy_artifact_frontmatter_contracts() -> None:
         assert yaml_value not in kernel, f"kernel 复制了合同细节：{yaml_value}"
 
 
-def test_six_public_skills_reference_shared_kernel() -> None:
+def test_sdk_skills_reference_shared_kernel() -> None:
     for skill_id in SKILL_IDS:
         skill = (
             ROOT / "skills" / "prism4" / skill_id / "SKILL.md"

@@ -78,7 +78,7 @@ def test_alignment_absorbs_released_intent_plan_and_authority_semantics() -> Non
     assert "Core 允许 capture-first 的无 Intent Topic" in alignment
     assert "范围互斥的 sibling Plan 可以并存" in alignment
     assert "typed authority evidence" in alignment
-    assert "human-required 只是 requirement，不是 authority evidence" in alignment
+    assert "`human-required` 只是 requirement，不是 authority evidence" in alignment
 
 
 def test_cli_contract_marks_implemented_surface() -> None:

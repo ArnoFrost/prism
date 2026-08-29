@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PILOT = ROOT / "docs" / "historical" / "3.2-pilot.md"
 CATALOG = ROOT / "skills" / "schema" / "skills-catalog.yaml"
+WHITELIST = ROOT / "skills" / "schema" / "dist-whitelist.yaml"
 README = ROOT / "README.md"
 ONBOARDING = ROOT / "docs" / "onboarding.md"
 TAXONOMY = ROOT / "docs" / "historical" / "skill-taxonomy.md"
@@ -52,14 +53,17 @@ def test_pilot_entry_is_discoverable_from_public_docs() -> None:
     assert "prism-4-dogfood-plan" not in l1
     assert "FrostAtlas" not in readme
     assert "开源生态" not in readme
-    assert "/prism-clarify" in _read(ONBOARDING)
+    assert "/prism" in _read(ONBOARDING)
     assert "docs/historical/" in _read(ONBOARDING)
 
 
-def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:
+def test_catalog_governs_inventory_while_whitelist_owns_current_surface() -> None:
     catalog = _read(CATALOG)
-    assert "Prism 4.0 canary skills" in catalog
+    whitelist = _read(WHITELIST)
+    assert "governance metadata SSOT" in catalog
+    assert "does not define the current distribution profile" in catalog
     for skill_id in (
+        "prism",
         "prism-topic",
         "prism-brief",
         "prism-review",
@@ -70,6 +74,12 @@ def test_catalog_current_surface_does_not_reintroduce_old_story() -> None:
         entry = _catalog_entry(skill_id)
         assert "visibility: dev" in entry
         assert "stability: experimental" in entry
+    assert "Distribution Profile SSOT" in whitelist
+    profile = whitelist.split("  prism4:", 1)[1].split("always_exclude:", 1)[0]
+    for skill_id in ("prism", "prism-review", "prism-plan"):
+        assert f"      - {skill_id}" in profile
+    for skill_id in ("prism-topic", "prism-brief", "prism-clarify", "prism-compress"):
+        assert f"      - {skill_id}" not in profile
     for skill_id in ("workflow-intake", "workflow-scope", "workflow-tidy"):
         assert f"  - id: {skill_id}" not in catalog
 
