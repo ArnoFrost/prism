@@ -1,8 +1,11 @@
 """In-memory use-case tests. No subprocess, no Markdown, no Adapter ids."""
 
+import pytest
+
 from prism4.core import Artifact, PrismProtocolError, SemanticPayload
 from prism4.reference import ReferenceStore
 from prism4.use_cases import (
+    accept_plan,
     create_topic,
     plan_state,
     persist_brief,
@@ -47,7 +50,7 @@ def _topic_store() -> ReferenceStore:
     return store
 
 
-def _confirmed_evidence(store: ReferenceStore, target_ref: str, ref: str = "clarify:c90", evidence_kind: str = "human-choice", scope_refs: list[str] | None = None):
+def _confirmed_evidence(store: ReferenceStore, target_ref: str, ref: str = "clarify:c90", evidence_kind: str = "human-choice", scope_refs: list[str] | None = None, target_refs: list[str] | None = None):
     """d05 形态的 typed authority evidence：confirmed、target 绑定。"""
     metadata = {
         "topic_id": "topic:demo",
@@ -57,6 +60,8 @@ def _confirmed_evidence(store: ReferenceStore, target_ref: str, ref: str = "clar
     }
     if scope_refs is not None:
         metadata["scope_refs"] = scope_refs
+    if target_refs is not None:
+        metadata["target_refs"] = target_refs
     payload = SemanticPayload(
         id=ref,
         type="evidence-reference",
@@ -392,6 +397,50 @@ def test_record_decision_rejects_invalid_authority():
         assert "human-required or delegated" in str(error)
     else:
         raise AssertionError("expected PrismProtocolError")
+
+
+def test_multi_target_human_choice_evidence_covers_each_target_precisely():
+    """一次人类回答确认多个目标：同一 evidence 逐个精确绑定 plan accept 与
+    decision record；未被覆盖的 target 拒绝（不做模糊 scope）。"""
+    store = _topic_store()
+    plan_id = "plan:p01"
+    store.add_artifact(
+        Artifact(
+            id=plan_id,
+            topic_id="topic:demo",
+            role="plan",
+            title="被确认的计划",
+            body="计划。",
+        )
+    )
+    evidence = _confirmed_evidence(
+        store, target_ref="decision:d01", target_refs=["decision:d01", plan_id]
+    )
+
+    accept_plan(store, plan_ref=plan_id, evidence_ref=evidence.id)
+    assert plan_state(store, plan_id)["operative"]
+
+    decision_id, _inv, _consumed = record_decision(
+        store,
+        topic_id="topic:demo",
+        body="已确认的承诺。",
+        authority_evidence=evidence.id,
+        next_artifact_id=fake_artifact_id,
+    )
+    assert store.artifacts[decision_id].metadata["evolution"] == "committed"
+
+    other_plan = "plan:p02"
+    store.add_artifact(
+        Artifact(
+            id=other_plan,
+            topic_id="topic:demo",
+            role="plan",
+            title="未被确认的计划",
+            body="计划。",
+        )
+    )
+    with pytest.raises(PrismProtocolError, match="not bound to target"):
+        accept_plan(store, plan_ref=other_plan, evidence_ref=evidence.id)
 
 
 def test_record_decision_consumes_candidate_without_archiving():

@@ -427,7 +427,21 @@ def validate_authority_evidence(
         raise PrismProtocolError(
             f"authority evidence has unknown evidence_kind '{evidence_kind}': {evidence_ref}"
         )
-    if str(meta.get("target_ref") or "") != target_ref:
+    # target 绑定支持两种形态：单数 target_ref（单目标确认），或精确
+    # target_refs 列表（一次人类回答确认多个目标）。逐个精确匹配，
+    # 不做模糊 scope——列表里没有本次 target 就是不覆盖。
+    bound_refs = meta.get("target_refs")
+    if bound_refs is not None:
+        targets = (
+            [str(item).strip() for item in bound_refs]
+            if isinstance(bound_refs, list)
+            else []
+        )
+        if target_ref not in targets:
+            raise PrismProtocolError(
+                f"authority evidence is not bound to target {target_ref}: {evidence_ref}"
+            )
+    elif str(meta.get("target_ref") or "") != target_ref:
         raise PrismProtocolError(
             f"authority evidence is not bound to target {target_ref}: {evidence_ref}"
         )
