@@ -1,10 +1,11 @@
 name: CI
 
-# Phase H-2 P1 B0 — Prism SDK 持续集成闸门：
+# Prism SDK 持续集成闸门：
 #   1. uv 已装（astral-sh/setup-uv）
 #   2. bin/* 可执行 + bin/prism --version 启动正常（doctor --scope ci）
 #   3. skills frontmatter 合规（doctor --scope ci 内含 skill 阶段）
-#   4. pytest tests/ 全绿（4.0 主线 + setup smoke + relink + release metadata）
+#   4. pytest tests/ 全绿（4.0 主线 + setup smoke + release metadata）；
+#      bin/ 的 bash 用例单独一步调用（pytest 不收集 .sh）
 #   5. release gate：版本元数据一致；BREAKING 变更必须同步 CHANGELOG.md + docs/migration.md
 #      （bin/release_gate.py；3.x 时代的 check_cli_contract_sync 已随 legacy 树剔除）
 # 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
@@ -82,7 +83,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         # 显式 shell: bash 启用 pipefail（GHA 默认 `bash -e {0}` 不带 pipefail），
         # 否则 `release_gate.py … | tee` 中上游脚本非零退出会被 `tee` 吞成功，
-        # 导致 breaking 提交可在无文档同步的情况下静默合入。来源：r02 F-P0-1。
+        # 导致 breaking 提交可在无文档同步的情况下静默合入。
         shell: bash
         run: |
           uv run python bin/release_gate.py \
