@@ -109,6 +109,58 @@ def test_save_keeps_artifact_when_case_only_paths_collide(tmp_path: Path) -> Non
     assert (tmp_path / "findings" / "f21_CurrentOnlyCut.md").exists()
 
 
+def _filesystem_is_normalization_insensitive(path: Path) -> bool:
+    """APFS 一类文件系统对 Unicode 归一化不敏感：NFC 与 NFD 名字指向同一物理文件。"""
+    probe_dir = path / "_normalization_probe"
+    probe_dir.mkdir(parents=True, exist_ok=True)
+    nfc = probe_dir / ("caf" + "\u00e9")
+    nfd = probe_dir / ("cafe" + "\u0301")
+    nfc.write_text("x", encoding="utf-8")
+    try:
+        return nfd.exists() and nfc.samefile(nfd)
+    except OSError:
+        return False
+
+
+def test_save_keeps_artifact_when_only_normalization_differs(tmp_path: Path) -> None:
+    """文件名只在 Unicode 归一化形式上不同时，prune 不得删除工件。
+
+    归一化不敏感文件系统上，NFC 与 NFD 两个名字是同一物理文件（samefile 为
+    真），但字符串与 casefold 都不相等。若身份判定被任何字符串归一键 gate
+    住，就只有大小写这一种等价形式受保护，归一化差异会走到删除分支。
+
+    触发场景是真实的：文件名由 Agent 手工落盘，canonical 名由 frontmatter
+    标题推导，两者来自不同源头时归一化形式可能不一致。
+    """
+    if not _filesystem_is_normalization_insensitive(tmp_path):
+        pytest.skip("归一化等价只发生在归一化不敏感文件系统上（如 APFS）")
+
+    title_nfd = "Cafe" + "\u0301" + " Cut"
+    name_nfc = "f22_Caf" + "\u00e9" + "Cut.md"
+
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f22",
+            topic_id="topic:demo",
+            role="findings",
+            title=title_nfd,
+            body="不可安全重建的发现。",
+        )
+    )
+    LocalFileStoreAdapter(tmp_path).save(store)
+
+    written = next((tmp_path / "findings").glob("f22_*.md"))
+    # 模拟 Agent 用另一种归一化形式的文件名落盘：同一物理文件，字符串不同。
+    written.rename(tmp_path / "findings" / name_nfc)
+
+    LocalFileStoreAdapter(tmp_path).save(LocalFileStoreAdapter(tmp_path).load())
+
+    survivors = [path for path in (tmp_path / "findings").glob("f22_*.md")]
+    assert len(survivors) == 1, survivors
+    assert "finding:f22" in survivors[0].read_text(encoding="utf-8")
+
+
 def test_save_fails_closed_when_expected_document_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -113,22 +113,19 @@ _SEQUENCE_PATTERN = re.compile(r"^([a-z])(\d+)$")
 _FILENAME_STRIP = re.compile(r'[<>:"/\\|?*\s、，。；：！？（）()\[\]{}“”‘’\'`~!@#$%^&+=,.;]+')
 
 
-def _case_insensitive_key(path: Path) -> tuple[str, ...]:
-    """路径的归一形态：在大小写不敏感文件系统上标识同一物理文档。"""
-    return tuple(part.casefold() for part in path.parts)
+def _document_identity(path: Path) -> tuple[int, int] | None:
+    """物理文档身份（设备号 + inode），路径不存在时返回 None。
 
-
-def _is_same_document(left: Path, right: Path) -> bool:
-    """判断两个路径是否指向同一物理文件。
-
-    大小写不敏感文件系统（macOS 默认）上，canonical 路径与磁盘目录项可能
-    只差大小写；用文件系统身份而非字符串比较，避免把同一份工件误判为
-    stale 而删除。大小写敏感文件系统上两个独立文件仍会被正确区分。
+    大小写不敏感或归一化不敏感的文件系统（macOS 默认）上，同一物理文件可以
+    有多个互不相等的路径字符串：只差大小写、只差 Unicode 归一化形式、或经
+    由链接到达。判断两个路径是否为同一份文档，只能依据文件系统给出的身份，
+    不能用任何字符串归一键——大小写只是其中一种等价形式，覆盖不全。
     """
     try:
-        return left.exists() and right.exists() and left.samefile(right)
+        stat = path.stat()
     except OSError:
-        return False
+        return None
+    return (stat.st_dev, stat.st_ino)
 
 
 class LocalFileStoreAdapter:
@@ -273,20 +270,23 @@ class LocalFileStoreAdapter:
         的文档视为并发写入，不得静默删除。未 load 直接 save 仍是整库替换，
         会清掉所有不在 store 里的托管文档。
 
-        大小写不敏感文件系统上，expected 的 canonical 路径与磁盘目录项可能
-        只差大小写但指向同一物理文件；先按归一路径与文件系统身份识别同一
-        文档，避免把刚写入的工件当作 stale 删除。
+        大小写不敏感或归一化不敏感的文件系统上，expected 的 canonical 路径
+        与磁盘目录项可能字符串不同而指向同一物理文件（只差大小写、只差
+        Unicode 归一化形式）。按文件系统身份识别同一文档，避免把刚写入的工
+        件当作 stale 删除——字符串相等只作为免系统调用的快速路径。
         """
-        expected_by_fold: dict[tuple[str, ...], Path] = {}
-        for path in expected:
-            expected_by_fold.setdefault(_case_insensitive_key(path), path)
+        expected_identities = {
+            identity
+            for identity in (_document_identity(path) for path in expected)
+            if identity is not None
+        }
 
         known = self._known_owned
         for existing in self._owned_markdown():
             if existing in expected:
                 continue
-            folded = expected_by_fold.get(_case_insensitive_key(existing))
-            if folded is not None and _is_same_document(existing, folded):
+            identity = _document_identity(existing)
+            if identity is not None and identity in expected_identities:
                 continue
             if known is not None and existing not in known:
                 continue
