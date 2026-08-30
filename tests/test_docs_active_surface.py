@@ -10,6 +10,51 @@ RETIRED_VISUALS = (
     "-".join(("cognitive-entropy", "flow")) + ".png",
 )
 
+# 已从 CLI 退役的 noun，以及从未存在过的 prism 子命令——后者是 bin/ 维护脚本。
+# 它们一旦回到活文档或三入口技能，Agent 照做就会得到 argparse failure。
+RETIRED_CLI_ENTRIES = (
+    "prism review record",
+    "prism clarify record",
+    "prism plan record",
+    "prism artifact write",
+    "prism artifact archive",
+    "prism relation add",
+    "prism dist",
+    "prism doctor",
+    "prism relink",
+    "prism update",
+)
+
+
+def _prism4_skill_documents() -> list[Path]:
+    return sorted((ROOT / "skills" / "prism4").rglob("*.md"))
+
+
+def test_active_surfaces_do_not_advertise_retired_cli_entries() -> None:
+    """退役 noun 与不存在的 prism 子命令不得回到活文档与三入口技能。"""
+    surfaces = [
+        ROOT / "README.md",
+        ROOT / "docs" / "onboarding.md",
+        ROOT / "docs" / "testing-contract.md",
+    ]
+    surfaces.extend(_prism4_skill_documents())
+
+    for path in surfaces:
+        text = path.read_text(encoding="utf-8")
+        for entry in RETIRED_CLI_ENTRIES:
+            assert entry not in text, (str(path.relative_to(ROOT)), entry)
+
+
+def test_skill_surface_drops_legacy_wrapper_narrative() -> None:
+    """三入口内部不得再把旧 wrappers 描述为 control / rollback source。
+
+    旧 wrapper 已物理退出活树，这类叙事会让 /prism 指涉不存在的对象。
+    """
+    for path in _prism4_skill_documents():
+        text = path.read_text(encoding="utf-8")
+        assert "旧 wrappers" not in text, str(path.relative_to(ROOT))
+        assert "rollback source" not in text, str(path.relative_to(ROOT))
+
 
 def test_retired_visuals_are_absent_and_unreferenced() -> None:
     text_surfaces = [ROOT / "README.md"]
