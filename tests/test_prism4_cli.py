@@ -424,6 +424,34 @@ def test_bin_prism_topic_new_and_decision_record(tmp_path):
     assert "技能说明使用中文" in decisions[0].read_text(encoding="utf-8")
 
 
+def test_bin_prism_topic_new_reports_plan_scope_lines(tmp_path):
+    """真实回归：方案级行不进 Intent 并被报告；已表达维度正确分节。"""
+    root = tmp_path / "state"
+    result = _run_prism(
+        "topic",
+        "new",
+        "topic:intent-shaping",
+        "--title",
+        "Intent Shaping",
+        "--intent",
+        "目标：迁移播放内核。\n非目标：不重写 UI。\n当前阶段：联调中。",
+        root=root,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "方案级内容未写入 Intent" in result.stdout
+    assert "联调中" in result.stdout
+
+    store = LocalFileStoreAdapter(root).load()
+    intent = store.artifacts["intent:i01"]
+    assert "迁移播放内核" in intent.body.split("## 为什么做")[1]
+    assert "不重写 UI" in intent.body.split("## 明确不做什么")[1]
+    assert "联调中" not in intent.body
+    gaps = intent.body.split("## 尚未声明")[1]
+    assert "- 关键约束" in gaps
+    assert "- 北极星" not in gaps
+    assert "- 明确不做什么" not in gaps
+
+
 def test_bin_prism_brief_save_overwrites_existing(tmp_path):
     root = tmp_path / "state"
     root.mkdir()

@@ -41,8 +41,10 @@ ARTIFACT_ROLE_BY_NAMESPACE = {
     "plan": "plan",
 }
 
-# authority-sensitive roles 不经 generic write 创建或更新（Alignment §6.1）：
-# decision 走 guarded `decision record`，intent 是边界 SSOT，brief 是可再生投影。
+# authority-sensitive roles 没有通用写入路径（Alignment §6.1）：
+# decision 走 guarded `decision record`；intent 是边界 SSOT，语义保持型
+# 整理由已授权的 Agent 直接编辑 intent.md 后 `store validate`，边界修订
+# 先取得授权再走 supersedes；brief 是可再生投影。
 AUTHORITY_SENSITIVE_ROLES = frozenset({"decision", "intent", "brief"})
 
 # typed authority evidence 的 payload 类型（Alignment §6.1 / §12）。
@@ -100,10 +102,11 @@ def create_topic(
     parent_id: str | None = None,
     intent_body: str | None = None,
     next_artifact_id: NextArtifactId,
+    plan_scope_out: list[str] | None = None,
 ) -> str:
     topic = store.add_topic(Topic(id=topic_id, title=title, parent_id=parent_id))
     if intent_body:
-        readable_intent = _initial_intent_body(intent_body)
+        readable_intent = _initial_intent_body(intent_body, plan_scope_out)
         store.add_artifact(
             Artifact(
                 id=next_artifact_id(store, "intent"),
@@ -129,22 +132,110 @@ def _intent_title(topic_title: str) -> str:
     return f"{title} Intent"
 
 
-def _initial_intent_body(body: str) -> str:
+# 用户在 --intent 里可能已经表达多类边界信息。机械成形只做可靠的结构化
+# 识别：「标签：」前缀行进入对应章节，裸段落视为动机表达；未表达的维度
+# 诚实保留为缺口，不反向罗列已有内容，也绝不发明完成条件。当前阶段、
+# 实施顺序等方案级内容归 Plan，不写入长期 Intent。
+_INTENT_DIMENSION_LABELS: dict[str, tuple[str, ...]] = {
+    "goal": ("目标", "北极星", "愿景", "goal"),
+    "non_goal": ("非目标", "不做", "不做什么", "排除", "non-goal", "out of scope"),
+    "constraint": ("约束", "关键约束", "限制", "constraint"),
+    "completion": ("完成条件", "验收", "完成判据", "done when"),
+    "plan_scope": (
+        "阶段",
+        "当前阶段",
+        "实施",
+        "实施顺序",
+        "步骤",
+        "安装",
+        "方案",
+        "计划",
+        "phase",
+        "plan",
+    ),
+}
+_INTENT_DIMENSION_HEADINGS = {
+    "non_goal": "明确不做什么",
+    "constraint": "关键约束",
+}
+_INTENT_DIMENSION_GAP_LABELS = {
+    "goal": "北极星",
+    "non_goal": "明确不做什么",
+    "constraint": "关键约束",
+}
+
+
+def _intent_dimension_of(line: str) -> tuple[str, str] | None:
+    """识别「标签：内容」行；标签不可识别时按裸行处理。"""
+    stripped = line.strip().lstrip("-*•").strip()
+    for sep in ("：", ":"):
+        label, found, content = stripped.partition(sep)
+        if not found:
+            continue
+        label_key = label.strip().casefold()
+        for dimension, labels in _INTENT_DIMENSION_LABELS.items():
+            if any(label_key == item or label_key.startswith(item) for item in labels):
+                return dimension, content.strip()
+        return None
+    return None
+
+
+def _initial_intent_body(
+    body: str, plan_scope_out: list[str] | None = None
+) -> str:
     text = body.strip()
     if "\n## " in f"\n{text}":
+        # 已结构化的 Intent 原样保留：机械层不做语义重排。
         return text
-    return (
-        "## 为什么做\n\n"
-        f"{text}\n\n"
-        "## 边界内\n\n"
-        "围绕本 Topic 的协作问题空间展开。\n\n"
+
+    dimensions: dict[str, list[str]] = {
+        "goal": [],
+        "non_goal": [],
+        "constraint": [],
+        "completion": [],
+    }
+    why_lines: list[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        matched = _intent_dimension_of(line)
+        if matched is None:
+            why_lines.append(line)
+            continue
+        dimension, content = matched
+        if dimension == "plan_scope":
+            if plan_scope_out is not None:
+                plan_scope_out.append(content or line)
+            continue
+        dimensions[dimension].append(content or line)
+
+    sections: list[str] = []
+    why = why_lines + dimensions["goal"]
+    if why:
+        sections.append("## 为什么做\n\n" + "\n".join(why))
+    for dimension in ("non_goal", "constraint"):
+        if dimensions[dimension]:
+            sections.append(
+                f"## {_INTENT_DIMENSION_HEADINGS[dimension]}\n\n"
+                + "\n".join(dimensions[dimension])
+            )
+    sections.append(
         "## 完成条件\n\n"
-        "未声明。\n\n"
-        "## 尚未声明\n\n"
-        "- 北极星\n"
-        "- 明确不做什么\n"
-        "- 关键约束"
+        + ("\n".join(dimensions["completion"]) if dimensions["completion"] else "尚未形成。")
     )
+
+    gaps: list[str] = []
+    if not why:
+        gaps.append(_INTENT_DIMENSION_GAP_LABELS["goal"])
+    for dimension in ("non_goal", "constraint"):
+        if not dimensions[dimension]:
+            gaps.append(_INTENT_DIMENSION_GAP_LABELS[dimension])
+    if gaps:
+        sections.append(
+            "## 尚未声明\n\n" + "\n".join(f"- {gap}" for gap in gaps)
+        )
+    return "\n\n".join(sections)
 
 
 def persist_brief(

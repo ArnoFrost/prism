@@ -205,7 +205,14 @@ def build_parser() -> argparse.ArgumentParser:
     topic_new.add_argument("topic_id", help="topic id, e.g. topic:prism-4-dev-process")
     topic_new.add_argument("--title", required=True, help="topic title")
     topic_new.add_argument("--parent", dest="parent_id", help="parent topic id for a Child Topic")
-    topic_new.add_argument("--intent", help="optional initial Intent body for the new Topic")
+    topic_new.add_argument(
+        "--intent",
+        help=(
+            "optional initial Intent body; '标签：' lines (目标/非目标/约束/"
+            "完成条件) are sectioned into the Intent, plan-scope lines "
+            "(阶段/实施顺序) are kept out and reported"
+        ),
+    )
     add_root_arg(topic_new)
     topic_new.set_defaults(func=cmd_topic_new)
 
@@ -406,6 +413,7 @@ def cmd_default(args: argparse.Namespace) -> int:
 
 def cmd_topic_new(args: argparse.Namespace) -> int:
     adapter = open_adapter(topic_new_root(args))
+    plan_scope_lines: list[str] = []
 
     def mutate(store):
         return create_topic(
@@ -415,10 +423,15 @@ def cmd_topic_new(args: argparse.Namespace) -> int:
             parent_id=args.parent_id,
             intent_body=args.intent,
             next_artifact_id=adapter.next_artifact_id,
+            plan_scope_out=plan_scope_lines,
         )
 
     print(adapter.update(mutate))
     print(adapter.root)
+    if plan_scope_lines:
+        print("方案级内容未写入 Intent（归 Plan 承载）：")
+        for line in plan_scope_lines:
+            print(f"  {line}")
     return 0
 
 

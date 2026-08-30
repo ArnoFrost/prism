@@ -43,7 +43,9 @@ probe 给出的 `next_number` 与编号倒序的 `recent:` 用于定位；不做
 | 当前 Topic 下的子问题 | `prism topic new topic:foo.child --title "..." --parent topic:foo` |
 | 测试 / 无 Workspace 的孤立 store | 显式 `--root <dir>`（协议允许，日常协作不用） |
 
-`--intent` 收到普通单段输入时，CLI 会把尚未提供的北极星、明确非目标与关键约束收进「尚未声明」区域——这表示缺口仍然存在，不是替用户补齐边界。已有结构化 Intent 保持其事实强度与边界，不为套模板重写；不要把 current progress、active Plan 或下一步写回 Intent。
+`--intent` 的机械成形按行识别「标签：」前缀：目标 / 非目标 / 约束 / 完成条件进入对应章节；阶段、实施顺序等方案级行不写入 Intent（CLI 会单独报告，归 Plan 承载）；未表达的维度诚实保留为「尚未声明」缺口——不会一边记录已表达内容、一边又把它列为未声明。已有 `## ` 结构的 Intent 原样保留，不为套模板重写。
+
+创建后的 Intent 编辑分两类（完整口径见 `artifact-contracts/intent.md`「修改授权口径」）：语义保持型整理（重分节、修矛盾）在已授权整理该 Topic 时由 Agent 直接编辑 `intent.md` + `store validate`；新增或改变边界语义才是边界修订，需要授权与 supersedes。不要把 current progress、active Plan 或下一步写回 Intent。
 
 ## 输出
 

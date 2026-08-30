@@ -79,9 +79,12 @@ def test_create_topic_writes_authoritative_intent():
     assert "## 为什么做" in intent.body
     assert "Keep the core thin." in intent.body
     assert "## 完成条件" in intent.body
+    assert "尚未形成" in intent.body
     assert "## 尚未声明" in intent.body
-    assert "## 北极星" not in intent.body
-    assert "- 北极星" in intent.body
+    # 动机已表达时北极星不再是缺口；未表达的维度才进入尚未声明。
+    assert "- 北极星" not in intent.body
+    assert "- 明确不做什么" in intent.body
+    assert "- 关键约束" in intent.body
     assert "## 当前落点" not in intent.body
 
 
@@ -156,6 +159,95 @@ def test_create_topic_preserves_structured_intent_body():
         if artifact.role == "intent"
     )
     assert intent.body == body
+
+
+def test_initial_intent_sections_expanded_dimensions():
+    """已表达的目标/非目标/约束/完成条件必须分节，
+    不得一边记录一边又列入「尚未声明」；方案级行不进入长期 Intent。"""
+    store = ReferenceStore()
+    plan_scope: list[str] = []
+    create_topic(
+        store,
+        topic_id="topic:shaped",
+        title="Shaped",
+        intent_body=(
+            "目标：把歌曲库迁移到新播放内核。\n"
+            "非目标：不重写 UI 层。\n"
+            "关键约束：安卓最低 API 24。\n"
+            "完成条件：全量曲库在新内核可播。\n"
+            "当前阶段：内核联调中，安装方式走侧载。"
+        ),
+        next_artifact_id=fake_artifact_id,
+        plan_scope_out=plan_scope,
+    )
+    intent = next(
+        artifact for artifact in store.artifacts.values() if artifact.role == "intent"
+    )
+
+    why = intent.body.split("## 为什么做")[1].split("## 明确不做什么")[0]
+    assert "把歌曲库迁移到新播放内核" in why
+    non_goals = intent.body.split("## 明确不做什么")[1].split("## 关键约束")[0]
+    assert "不重写 UI 层" in non_goals
+    constraints = intent.body.split("## 关键约束")[1].split("## 完成条件")[0]
+    assert "安卓最低 API 24" in constraints
+    completion = intent.body.split("## 完成条件")[1]
+    assert "全量曲库在新内核可播" in completion
+    assert "尚未形成" not in completion
+    # 已表达维度不得出现在尚未声明；本例全部已表达 → 该节不生成。
+    assert "## 尚未声明" not in intent.body
+    # 方案级内容不进长期 Intent，由调用方收到收集结果。
+    assert "内核联调中" not in intent.body
+    assert plan_scope and "内核联调中" in plan_scope[0]
+
+
+def test_initial_intent_keeps_unexpressed_dimensions_honest():
+    """普通单段是动机表达；未表达维度诚实列为缺口，完成条件绝不发明。"""
+    store = ReferenceStore()
+    plan_scope: list[str] = []
+    create_topic(
+        store,
+        topic_id="topic:plain",
+        title="Plain",
+        intent_body="把现有目录的播放链路迁到新内核。",
+        next_artifact_id=fake_artifact_id,
+        plan_scope_out=plan_scope,
+    )
+    intent = next(
+        artifact for artifact in store.artifacts.values() if artifact.role == "intent"
+    )
+
+    assert "把现有目录的播放链路迁到新内核" in intent.body
+    assert "尚未形成" in intent.body.split("## 完成条件")[1]
+    gaps = intent.body.split("## 尚未声明")[1]
+    assert "- 北极星" not in gaps
+    assert "- 明确不做什么" in gaps
+    assert "- 关键约束" in gaps
+    assert "完成条件" not in gaps
+    assert plan_scope == []
+
+
+def test_initial_intent_all_plan_scope_leaves_boundary_honest():
+    """输入只有方案级行时，Intent 不记录方案内容，边界维度全部诚实缺口。"""
+    store = ReferenceStore()
+    plan_scope: list[str] = []
+    create_topic(
+        store,
+        topic_id="topic:scope-only",
+        title="Scope Only",
+        intent_body="当前阶段：内核联调中。\n实施顺序：先迁移单曲播放。",
+        next_artifact_id=fake_artifact_id,
+        plan_scope_out=plan_scope,
+    )
+    intent = next(
+        artifact for artifact in store.artifacts.values() if artifact.role == "intent"
+    )
+
+    assert "内核联调" not in intent.body
+    assert "先迁移单曲播放" not in intent.body
+    gaps = intent.body.split("## 尚未声明")[1]
+    for gap in ("- 北极星", "- 明确不做什么", "- 关键约束"):
+        assert gap in gaps
+    assert len(plan_scope) == 2
 
 
 def test_persist_brief_rejects_non_brief_id_collision():

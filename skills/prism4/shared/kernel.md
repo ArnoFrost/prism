@@ -14,6 +14,7 @@
 - Intent 是目标与边界的唯一事实源；Plan 是当前实施方案的唯一事实源。
 - Plan 无权改 Intent：边界变化先显式修订 Intent（supersedes），再校准 Plan。
 - 跨方案有效的约束归 Intent；仅本方案有效的约束归 Plan。
+- Intent 的语义保持型整理（重分节、修重复与矛盾）不是边界修订：已授权整理该 Topic 的 Agent 可直接编辑后校验；新增或改变边界语义才需要授权与 supersedes。
 
 ## 3. Reconstructability / persistence
 

@@ -48,3 +48,12 @@ updated_at: "YYYY-MM-DD"    # 边界修订时更新
 
 - Plan 发现边界需要变 → **先显式修 Intent（supersedes），再重新校准 Plan**；Plan 无权自行改 Intent。
 - 边界修订走 supersedes + 归档，保证"目标曾经是什么、为什么改"可追溯。
+
+## 修改授权口径
+
+Intent 的编辑分两类，不要混同：
+
+- **语义保持型整理**：对已有目标、非目标、约束做重分节，修复重复、错位和矛盾，不新增或改变任何边界语义。当前任务已授权整理该 Topic 时，Agent 直接编辑 `intent.md` 后 `store validate` 即可，不需要新授权，也不要向用户制造伪 gate。
+- **边界修订**：新增或改变目标、非目标、长期约束、完成条件。必须有人类确认或明确的 delegated authority；需要保留历史时走 supersedes 生命周期，旧版归档。
+
+通用机械面对 Intent 的拒绝只说明 CLI 无法判断边界权限，不代表 Intent 没有合法写入路径；不存在专门的 "authority CLI 通道"。
