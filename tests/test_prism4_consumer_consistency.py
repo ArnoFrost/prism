@@ -15,7 +15,7 @@ def test_kernel_names_alignment_as_single_semantic_source() -> None:
     kernel = KERNEL.read_text(encoding="utf-8")
     assert "唯一来源" in kernel
     assert "prism-4-refoundation-alignment.md" in kernel
-    # f08 F1：不得把 AGENTS.md 与 Alignment 并列为二源。
+    # 不得把 AGENTS.md 与 Alignment 并列为二源。
     assert "与此二源冲突" not in kernel
     assert "derived project contract" in kernel
 

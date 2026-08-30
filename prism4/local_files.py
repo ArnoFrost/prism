@@ -14,8 +14,8 @@
       findings/f01_<标题>.md
       findings/finding.index.md          发现链索引（投影，自动重建）
       decisions/d01_<标题>.md
-      decisions/decision.index.md        决策链索引（投影，自动重建）
-      clarifications/c01_<标题>.md       尚未晋升的候选
+      decisions/decision.index.md        决策索引（投影，自动重建）
+      clarifications/c01_<标题>.md       尚未吸收的 typed payload
       plans/p01_<标题>.md
       children/<slug>/topic.md           子 Topic 执行内聚
       children/<slug>/intent.md
@@ -234,7 +234,7 @@ class LocalFileStoreAdapter:
         return self.root
 
     def archive_payload(self, payload: SemanticPayload) -> Path:
-        """把已晋升的澄清写到 archive/。该目录不受 prune 管理。"""
+        """把已消费的 payload 留存在 archive/；该目录不受 prune 管理。"""
         target = self.root / ARCHIVE_DIRECTORY / _payload_filename(payload)
         _write_document(
             target,
@@ -348,8 +348,7 @@ class LocalFileStoreAdapter:
             raise PrismProtocolError(
                 "unsupported early 4.x layout (writes=0): "
                 f"{self.root / LEGACY_TOPIC_DIRECTORY}; current adapter expects "
-                "topic.md at the store root; view history via the "
-                "p4-shadow-baseline / p5-natural-dogfood-baseline git tags"
+                "topic.md at the store root; view earlier layouts through Git history"
             )
         raise PrismProtocolError(f"主题文档不存在：{self.root / TOPIC_FILENAME}")
 
@@ -360,10 +359,10 @@ class LocalFileStoreAdapter:
         return ReferenceStore()
 
     def load_topics(self) -> dict[str, Topic]:
-        """只读取主题文档（含子 Topic），不加载工件与澄清。
+        """只读取主题文档（含子 Topic），不加载工件与 payload。
 
         供只需 Topic 结构的操作（新建前查重、列 Topic）使用：
-        无关工件的问题不会阻断这类轻量操作。
+        无关工件或 payload 的问题不会阻断这类轻量操作。
         """
         if (self.root / TOPIC_FILENAME).is_file():
             documents = _iter_topic_documents(self.root)
@@ -401,7 +400,7 @@ class LocalFileStoreAdapter:
         artifact_documents_for: Callable[[ReferenceStore], list[tuple[Path, str]]],
         payload_documents: list[Path],
     ) -> ReferenceStore:
-        """按主题 → 工件 → 澄清 → 关系的顺序解析，全部问题一次报出。
+        """按主题 → 工件 → payload → 关系的顺序解析，全部问题一次报出。
 
         聚合而不是遇到第一个问题即停：一次修复全部，避免「修一个暴露一个」。
         写入路径必须经过这里完整校验，因为 prune 会删除不在 store 中的托管文档。
@@ -727,12 +726,12 @@ def _aggregated_load_error(problems: list[str]) -> PrismProtocolError:
     lines.extend(f"  - {problem}" for problem in problems)
     lines.append(
         "修法提示：核心工件 frontmatter 需要 id + topic（role 可省略，由所在目录推导）；"
-        "澄清工件需要 id + type（放 clarifications/）。"
+        "clarification payload 需要 id + type（放 clarifications/）。"
     )
     return PrismProtocolError("\n".join(lines))
 
 
-# ── 工件与澄清 ──────────────────────────────────────────────────────────
+# ── 工件与 typed payload ─────────────────────────────────────────────────
 
 
 def _artifact_frontmatter(
@@ -920,18 +919,18 @@ def _render_decision_index(
         'kind: "projection"',
         "---",
         "",
-        f"# 决策链索引 — {_primary_title(store)}",
+        f"# 决策索引 — {_primary_title(store)}",
         "",
-        "> 本索引是从 decisions 与 clarifications 工件再生成的投影，不是事实源。",
-        "> 决策链反映人机协作的交互过程：澄清暴露取舍，决策固化承诺。",
+        "> 本索引从 Decision 工件与尚未吸收的 clarification payload 再生成，不是事实源。",
+        "> Payload 只是待消费的 typed input / evidence envelope；持久化不会把它变成 Artifact Role。",
         "",
     ]
 
-    lines.extend(["## 澄清链", ""])
+    lines.extend(["## 尚未吸收的输入", ""])
     if clarifications:
         lines.extend(
             [
-                "| 编号 | 阻塞问题 | 归属 Topic | 产出类型 | 记录时间 |",
+                "| 编号 | 摘要 | 归属 Topic | 产出类型 | 记录时间 |",
                 "|:----:|---------|------------|:--------:|:--------:|",
             ]
         )
@@ -945,11 +944,11 @@ def _render_decision_index(
                 f"| {label} | [{question}]({link}) | `{topic_id}` | `{payload.type}` | {created} |"
             )
         lines.append("")
-        lines.append(f"共 {len(clarifications)} 条澄清。候选 payload 不等于 Decision。")
+        lines.append(f"共 {len(clarifications)} 条待处理 payload；解决后应吸收或归档。")
     else:
-        lines.append("_暂无澄清记录。_")
+        lines.append("_暂无尚未吸收的 payload。_")
 
-    lines.extend(["", "## 决策链", ""])
+    lines.extend(["", "## 已提交的决策", ""])
     if decisions:
         lines.extend(
             [

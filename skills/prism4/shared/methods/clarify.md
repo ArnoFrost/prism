@@ -5,16 +5,17 @@
 | 项 | 内容 |
 |----|------|
 | 触发 | 「这里没想明白」「被一个取舍卡住」；自然语言显式模式（「先别规划，只澄清这个取舍」）或 expert shortcut `/prism clarify` |
-| effect | investigate（read）+ 单问；durable output 可选（clarification payload） |
+| effect | investigate（read）+ 单问；必要时暂存尚未吸收的 typed payload |
 | guard | 先调查事实，只问无法安全推断的一个问题；候选 ≠ Decision；不自动进入 Plan；`decision record` 需 authority evidence |
 | 输出 | 推荐答案 + 那一个阻塞性问题；用户回答后复述变化与剩余阻塞 |
 | on-demand | [`../kernel.md`](../kernel.md) §4（authority / acceptance）、§6（materiality）；`artifact-contracts/decision.md` |
 
-## 候选 payload 的承载与流转
+## Payload 的暂存边界与流转
 
-- 默认不落盘：澄清是讨论过程，不天然制造持久文件。仅当用户要求、或当前阻塞必须跨 session 保留时，把未晋升候选写到 `clarifications/`（序号 cXX 由适配器分配，自动进入 decision.index 澄清链）。
-- 候选是 semantic payload，**不是 Artifact Role**；序号与索引只解决可读性，不构成把 payload 晋升为 Core 概念的理由。
-- 授权写成 Decision 之后：必要理由并入对应 `dXX`，`decision record ... --candidate <id>` 把原 cXX 移入 `archive/`；尚未晋升的候选继续留在 `clarifications/`，并尽快被 Intent / Plan / Finding / Decision 吸收。
+- 默认不落盘：澄清是讨论过程，不天然制造持久文件。只有 exact options、target 或 provenance 必须跨 session 保留、且尚不能安全吸收时，才把它暂存到 `clarifications/`；用户只要求继续推进，不等于要求保存澄清过程。
+- `clarifications/` 承载的是尚未吸收的 typed input / evidence envelope，**不是 Artifact Role 或独立事实源**。cXX、索引和归档只解决 Adapter 定位、消费与留痕，不构成独立 lifecycle。
+- 先按已有五类状态吸收：目标或边界未知写入 Intent 的 explicit unknown / boundary gap；不可忘的悬置判断写入 Finding；当前方案假设或实施取舍写入 Plan；已经发生的人类选择捕获为 target-bound `evidence-reference`；跨 Plan 有效的承诺写入 Decision。
+- 授权写成 Decision 之后：必要理由并入对应 `dXX`，`decision record ... --candidate <id>` 把已消费的 cXX 移入 `archive/`。其他暂存 payload 在问题解决后也必须吸收或归档，不能作为平行状态链长期堆积。
 - 一行式候选的阅读结构（阻塞问题 / 推荐答案 / 用户选择 / 产出）是阅读建议而非写法合同；转为 Finding 或 Decision 时，分别遵循对应 artifact contract。
 - 已提交的 Decision 需要明确授权：除非授权边界清晰，否则不把答案、建议或候选 payload 当作 Decision。
 

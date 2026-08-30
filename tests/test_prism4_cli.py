@@ -532,7 +532,7 @@ def test_bin_prism_brief_save_overwrites_existing(tmp_path):
     assert (root / "brief.md").is_file()
 
 
-def test_surface_legacy_verbs_remain_on_default_prism() -> None:
+def test_doctor_maintenance_verb_remains_on_default_prism() -> None:
     result = subprocess.run(
         [str(BIN_PRISM), "doctor", "--help"],
         capture_output=True,

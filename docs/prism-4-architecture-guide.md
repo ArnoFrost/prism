@@ -372,12 +372,12 @@ flowchart LR
   B0 --> R1
   I0 --> R1
   F1 -->|"derived-from"| R1
-  F1 -->|"input-to"| C1
+  F1 --> C1
   U1 -->|"derived-from"| C1
   DC1 -->|"derived-from"| C1
-  DC1 -->|"input-to"| RD1
+  DC1 --> RD1
   D1 -->|"derived-from"| RD1
-  D1 -->|"authorizes patch"| I0
+  D1 -->|"authorizes"| I0
   I0 --> P1
   D1 --> P1
 ```
@@ -420,7 +420,7 @@ When drawing Prism 4.0 diagrams:
 - Show `Brief` as a projection, not as a database or fact source.
 - Show `Decision` as authority, not as ordinary generated text.
 - Show `Child Topic` through `parent` relation, not a separate Task box.
-- Draw arrows as actual relations: input, output, supports, supersedes, authorizes, projects, invokes.
+- Use unlabeled arrows for Invocation input / output flow; label semantic relations only with the starter vocabulary.
 - Avoid pipeline diagrams unless explicitly showing one example trace.
 
 ## 9. Design Review Checklist

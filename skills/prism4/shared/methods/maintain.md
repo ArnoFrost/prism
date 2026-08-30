@@ -12,7 +12,7 @@
 
 - **低频**：只在阅读面漂移、假待办堆积或进度与现状不对齐时执行；不实时压缩，不替代 Brief。
 - preview 先给自检清单和拟写范围（`writes=0`）；用户明确要求 apply 后才写盘。
-- apply 自检维度：Intent 北极星与完成条件是否完整；Plan 集是否只剩重叠或过期项；`clarifications/` 是否只剩真正未晋升候选；仍占「未决」的 Findings 是否已被吸收或 supersede；正文是否中文（协议原语保留英文）；索引能否区分当前有效与已消化。
+- apply 自检维度：Intent 北极星与完成条件是否完整；Plan 集是否只剩重叠或过期项；`clarifications/` 是否只剩确需跨 session 的未吸收 payload；仍占「未决」的 Findings 是否已被吸收或 supersede；正文是否中文（协议原语保留英文）；索引能否区分当前有效与已消化。
 
 ## Plan 当前态收敛
 

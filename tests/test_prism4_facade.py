@@ -1,7 +1,7 @@
 """Experimental facade and distribution contract tests.
 
 The facade reduces public routing cost without changing Capability identity,
-authority, effects, or the rollback source retained in the SDK.
+authority, effects, or shared method packaging.
 """
 
 import os
@@ -20,7 +20,7 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_facade_is_explicit_only_optimistic_dogfood_skill() -> None:
+def test_facade_is_explicit_experimental_dogfood_skill() -> None:
     skill = _read(FACADE / "SKILL.md")
     policy = _read(FACADE / "agents" / "openai.yaml")
     catalog = _read(CATALOG)

@@ -551,8 +551,8 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
             input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
             next_artifact_id=adapter.next_artifact_id,
         )
-        # W1 transitional exception: semantic consumption already happened
-        # in record_decision; this only persists the Markdown archive/.
+        # Semantic consumption already happened in record_decision; this only
+        # retains the consumed Markdown payload outside the active set.
         if consumed is not None:
             archive = getattr(adapter, "archive_payload", None)
             if archive is not None:
@@ -661,8 +661,8 @@ def find_store_containing(bridge: Path, topic_id: str) -> Path | None:
 def store_topics(root: Path) -> dict:
     """只加载 Topic 结构。
 
-    工件与澄清不参与校验：`topic new` 查重与 `topic list` 是轻量操作，
-    不能被无关 store 里的坏工件阻断。
+    工件与 payload 不参与校验：`topic new` 查重与 `topic list` 是轻量操作，
+    不能被无关 store 里的坏状态阻断。
     """
     adapter = open_adapter(root)
     loader = getattr(adapter, "load_topics", None)
@@ -675,16 +675,14 @@ def open_adapter(root: Path):
     """返回与磁盘形态匹配的参考适配器。
 
     唯一 current 形态是本地 Markdown 文档（store 根含 topic.md）。
-    旧 JSON 参考存储不再被识别或写入（writes=0）；需要回看时切换
-    p4-shadow-baseline / p5-natural-dogfood-baseline 历史标签。
+    旧 JSON 参考存储不再被识别或写入（writes=0）；需要回看时使用 Git 历史。
     """
     root = Path(root)
     legacy_state = root / STATE_FILENAME
     if legacy_state.is_file():
         raise PrismProtocolError(
             f"legacy JSON reference stores are unsupported (writes=0): {legacy_state}; "
-            "current adapter is local Markdown; view history via the "
-            "p4-shadow-baseline / p5-natural-dogfood-baseline git tags"
+            "current adapter is local Markdown; view earlier layouts through Git history"
         )
     return LocalFileStoreAdapter(root)
 

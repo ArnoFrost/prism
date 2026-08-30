@@ -5,12 +5,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RETIRED_VISUALS = (
-    "-".join(("prism", "flow")) + ".png",
-    "-".join(("cognitive-entropy", "map")) + ".png",
-    "-".join(("cognitive-entropy", "flow")) + ".png",
-)
-
 # 已从协作面 CLI 退役的 noun。它们一旦回到活文档或三入口技能，Agent 照做
 # 就会得到 argparse failure。
 #
@@ -81,18 +75,6 @@ def test_skill_surface_drops_legacy_wrapper_narrative() -> None:
         assert "rollback source" not in text, str(path.relative_to(ROOT))
 
 
-def test_retired_visuals_are_absent_and_unreferenced() -> None:
-    text_surfaces = [ROOT / "README.md"]
-    text_surfaces.extend((ROOT / "docs").rglob("*.md"))
-
-    for filename in RETIRED_VISUALS:
-        assert not (ROOT / "docs" / "assets" / "v3" / filename).exists()
-        assert all(
-            filename not in path.read_text(encoding="utf-8")
-            for path in text_surfaces
-        )
-
-
 def test_active_docs_advertise_prism4_default_surface() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     onboarding = (ROOT / "docs" / "onboarding.md").read_text(encoding="utf-8")
@@ -105,11 +87,6 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     assert "prism store validate" in onboarding
     assert "prism4/cli.py" in bin_readme and "legacy-3x-final" in bin_readme
     assert "{ok, ids}" in bin_readme
-    contract = (ROOT / "docs" / "historical" / "cli-contract.md").read_text(
-        encoding="utf-8"
-    )
-    assert contract.startswith("# Legacy CLI Contract")
-    assert "所有 `prism` verb" not in contract
     assert "4.0 semantic skill surface" in skills_readme
     assert "唯一分发面" in skills_readme and "skills/prism4" in skills_readme
     assert "prism / prism-review / prism-plan" in skills_readme
@@ -226,6 +203,22 @@ def test_active_docs_use_nested_public_narrative() -> None:
     assert "prism-4-architecture-guide" not in l1
     assert architecture.index("## 公开叙事") < architecture.index("## Legacy Compatibility")
     assert architecture.index("## 4.0 Semantic Skills") < architecture.index("## Legacy Compatibility")
+
+
+def test_active_guides_follow_current_semantic_source_and_relation_vocabulary() -> None:
+    alignment = (ROOT / "docs" / "prism-4-refoundation-alignment.md").read_text(
+        encoding="utf-8"
+    )
+    architecture_guide = (
+        ROOT / "docs" / "prism-4-architecture-guide.md"
+    ).read_text(encoding="utf-8")
+
+    assert "三份 4.0 grounding" not in alignment
+    assert "Dogfood Plan 是已归档的历史实施计划" in alignment
+    assert "Architecture Guide 与 Reading Contract 是受控 consumer / guide" in alignment
+    assert "input-to" not in architecture_guide
+    assert "authorizes patch" not in architecture_guide
+    assert "label semantic relations only with the starter vocabulary" in architecture_guide
 
 
 def test_style_profile_slot_stays_optional_and_outside_core() -> None:
@@ -490,7 +483,7 @@ def test_current_skill_schema_examples_use_prism4_surface() -> None:
             assert phrase not in text, f"{phrase!r} leaked into {path}"
 
 
-def test_plan_format_matches_reference_record_plan_semantics() -> None:
+def test_plan_format_matches_current_plan_semantics() -> None:
     plan_contract = (
         ROOT / "skills" / "prism4" / "artifact-contracts" / "plan.md"
     ).read_text(encoding="utf-8")

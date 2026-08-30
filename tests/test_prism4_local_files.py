@@ -204,7 +204,7 @@ topic: "topic:demo"
 def test_direct_write_survives_regenerate_index(tmp_path: Path) -> None:
     """直写非 canonical 文件名后 regenerate-index，工件存活且索引不断链。
 
-    这是 P4 之后的主流程：Agent 直写 Markdown → store validate →
+    这是 current 主流程：Agent 直写 Markdown → store validate →
     regenerate-index。prune 的任何误判都会在这个流程里放大成数据丢失。
     """
     store = _store()
@@ -472,8 +472,10 @@ def test_indexes_are_generated_as_projections(tmp_path: Path) -> None:
     assert "`topic:demo.child`" in finding_index
 
     decision_index = (tmp_path / "decisions" / "decision.index.md").read_text(encoding="utf-8")
-    assert "决策链索引" in decision_index
-    assert "## 澄清链" in decision_index and "## 决策链" in decision_index
+    assert "决策索引" in decision_index
+    assert "## 尚未吸收的输入" in decision_index
+    assert "## 已提交的决策" in decision_index
+    assert "不会把它变成 Artifact Role" in decision_index
     assert "c01" in decision_index and "选哪个载体？" in decision_index
     assert "d01" in decision_index and "首个决策" in decision_index
     assert "归属 Topic" in decision_index

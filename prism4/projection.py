@@ -479,7 +479,7 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
             if _is_open_step(raw):
                 lines.append(f"- {raw.strip()}")
     if pending:
-        lines.append("- 有未晋升澄清，适合 `/prism clarify` 或自然语言澄清")
+        lines.append("- 有尚未吸收的澄清输入，适合 `/prism clarify` 或自然语言澄清")
     elif findings and not lines:
         if all_phased_plans_closed:
             lines.append(
@@ -509,18 +509,18 @@ def _navigation_lines(
     unscoped_payload_count: int = 0,
 ) -> list[str]:
     if decisions or pending:
-        decision_line = "- Decision / Clarify 投影索引：`decisions/decision.index.md`"
+        decision_line = "- Decision / 待处理 payload 投影索引：`decisions/decision.index.md`"
     else:
-        decision_line = "- 暂无 Decision / Clarify；record 后会生成 `decisions/decision.index.md`"
+        decision_line = "- 暂无 Decision / 待处理 payload；出现对应状态后会生成 `decisions/decision.index.md`"
     if findings:
         finding_line = "- Findings 投影索引：`findings/finding.index.md`"
     else:
-        finding_line = "- 暂无 Findings；record 后会生成 `findings/finding.index.md`"
+        finding_line = "- 暂无 Findings；出现 Findings 后会生成 `findings/finding.index.md`"
     lines = [decision_line, finding_line]
     if unscoped_payload_count:
         lines.append(
             "- 诊断："
-            f"{unscoped_payload_count} 条历史 Clarify 缺少 Topic provenance，"
+            f"{unscoped_payload_count} 条无 Topic provenance 的 payload "
             "未纳入本 Brief。"
         )
     return lines
@@ -539,7 +539,7 @@ def _open_lines(pending, findings: list[Artifact], *, topic_id: str) -> list[str
             f"- `{item.id}` {item.title or item.id}"
             f"{_origin_suffix(topic_id, item.topic_id)}"
         )
-    return lines or ["- 暂无未决澄清或仍有效 Findings。"]
+    return lines or ["- 暂无尚未吸收的澄清输入或仍有效 Findings。"]
 
 
 def _digested_lines(artifacts: list[Artifact], *, topic_id: str) -> list[str]:

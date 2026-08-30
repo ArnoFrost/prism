@@ -42,7 +42,7 @@
 
 ## 7. Projection discipline
 
-- Brief、发现链 / 决策链索引都是投影：可随时再生成，不是事实源；与 Intent / Decision / 源工件冲突时以后者为准。
+- Brief、发现索引 / 决策索引都是投影：可随时再生成，不是事实源；与 Intent / Decision / 源工件冲突时以后者为准。
 - 投影缺内容时修源工件，不手写投影补洞；不把投影扩写成历史综述。
 
 ## 8. Capability / Invocation identity

@@ -21,7 +21,7 @@ from prism4 import (
 from prism4.core import new_id
 
 
-def test_core_roles_are_the_frozen_mvp_baseline():
+def test_core_roles_are_the_current_baseline():
     assert CORE_ARTIFACT_ROLES == ("intent", "brief", "findings", "decision", "plan")
 
 

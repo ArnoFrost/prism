@@ -51,7 +51,7 @@ def _topic_store() -> ReferenceStore:
 
 
 def _confirmed_evidence(store: ReferenceStore, target_ref: str, ref: str = "clarify:c90", evidence_kind: str = "human-choice", scope_refs: list[str] | None = None, target_refs: list[str] | None = None):
-    """d05 形态的 typed authority evidence：confirmed、target 绑定。"""
+    """构造 confirmed、target-bound 的 typed authority evidence。"""
     metadata = {
         "topic_id": "topic:demo",
         "status": "confirmed",

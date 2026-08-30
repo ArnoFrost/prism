@@ -1,6 +1,6 @@
 """Minimal Prism 4.0 protocol model.
 
-The module encodes only the invariants frozen by the grounding documents.
+The module encodes only the invariants defined by the Alignment SSOT.
 It does not define a runtime, workflow engine, storage schema, or CLI.
 """
 

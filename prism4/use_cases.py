@@ -285,8 +285,8 @@ def record_decision(
     """Record a Decision and consume an optional candidate.
 
     Semantic effect: the candidate is an input and is removed from the
-    active payload set. Adapter archival of the consumed payload is a
-    W1 CLI transitional exception, not this function's job.
+    active payload set. Adapter retention of the consumed payload is not this
+    function's job.
 
     committed write 需要显式 typed authority evidence（Alignment §6.1 / §12）：
     confirmed human-choice 记录、覆盖本次目标的 committed Decision、或 scope
@@ -480,13 +480,7 @@ def _validate_committed_decision_authority(
     *,
     _seen: frozenset[str] = frozenset(),
 ) -> None:
-    """Validate a committed Decision's own authority chain.
-
-    Grandfathering is not inferred from a missing field. A later, itself valid
-    committed Decision must explicitly list the legacy refs in ``grandfathers``.
-    This keeps legacy exceptions narrow without baking Workspace-local
-    provenance or artifact ids into the protocol implementation.
-    """
+    """Validate a committed Decision's own typed authority chain."""
     if decision.id in _seen:
         raise PrismProtocolError(
             f"authority evidence cycle includes Decision: {decision.id}"
@@ -502,27 +496,8 @@ def _validate_committed_decision_authority(
             _seen=seen,
         )
         return
-
-    for grant in store.artifacts.values():
-        if grant.id == decision.id or grant.role != "decision":
-            continue
-        if grant.topic_id != decision.topic_id:
-            continue
-        if str(grant.metadata.get("evolution") or "") != "committed":
-            continue
-        targets = grant.metadata.get("grandfathers") or []
-        if isinstance(targets, str):
-            targets = [targets]
-        if decision.id not in {str(ref) for ref in targets}:
-            continue
-        if not str(grant.metadata.get("authority_evidence") or "").strip():
-            continue
-        _validate_committed_decision_authority(store, grant, _seen=seen)
-        return
-
     raise PrismProtocolError(
-        f"committed Decision is missing authority evidence and is not covered "
-        f"by a valid grandfathering Decision: {decision.id}"
+        f"committed Decision is missing authority evidence: {decision.id}"
     )
 
 
@@ -722,11 +697,7 @@ def plan_state(store: ReferenceStore, plan_ref: str) -> dict[str, bool]:
 
 
 def validate_store(store: ReferenceStore) -> list[str]:
-    """全库合同校验：relation matrix + committed Decision evidence 链。
-
-    Legacy grandfathering 由一个自身 authority 有效的 committed Decision
-    通过 ``grandfathers`` 明确列举；缺 evidence 不再被推断为 legacy。
-    """
+    """全库合同校验：relation matrix + committed Decision evidence 链。"""
     problems: list[str] = []
     for relation in store.relations:
         if relation.kind not in RELATION_KINDS:

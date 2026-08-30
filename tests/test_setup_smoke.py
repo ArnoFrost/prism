@@ -276,7 +276,7 @@ def _path_without(*binaries: str) -> str:
 
 
 def test_bin_prism_falls_back_to_python3_when_uv_missing(tmp_path):
-    """r10 A2: bin/prism 缺 uv 时应使用 python3 fallback 启动并退出 0。"""
+    """bin/prism 缺 uv 时应使用 python3 fallback 启动并退出 0。"""
     if not PRISM.exists():
         pytest.skip("bin/prism 不存在")
 
@@ -301,7 +301,7 @@ def test_bin_prism_falls_back_to_python3_when_uv_missing(tmp_path):
 
 
 def test_bin_prism_emits_uv_missing_hint(tmp_path):
-    """r10 A2: bin/prism 在缺 uv 时必须把 fallback 状态打到 stderr，引导跑 bin/setup。"""
+    """缺 uv 时必须把 fallback 状态打到 stderr，引导跑 bin/setup。"""
     if not PRISM.exists():
         pytest.skip("bin/prism 不存在")
 
@@ -485,7 +485,7 @@ def test_relink_default_prism4_profile_prunes_legacy_sdk_skills(tmp_path):
 
 
 def test_bin_prism_header_has_python3_fallback():
-    """r10 A2: 静态保证 bin/prism 的 _run_python 包含 python3 fallback 分支。"""
+    """静态保证 bin/prism 的 _run_python 包含 python3 fallback 分支。"""
     content = PRISM.read_text(encoding="utf-8")
     assert "exec python3" in content, "bin/prism 缺少 python3 fallback exec 分支"
     assert "command -v python3" in content, "bin/prism 缺少 python3 可用性检查"

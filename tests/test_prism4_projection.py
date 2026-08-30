@@ -391,7 +391,7 @@ def test_brief_excludes_confirmed_authority_evidence_from_pending():
     open_section = brief.body.split("## 风险与未决")[1].split("## 下一步")[0]
     next_section = brief.body.split("## 下一步")[1].split("## Topic 完成条件")[0]
     assert "是否确认长期合同" not in open_section
-    assert "未晋升澄清" not in next_section
+    assert "尚未吸收的澄清输入" not in next_section
 
 
 def test_brief_keeps_unconfirmed_authority_evidence_pending():
@@ -439,7 +439,7 @@ def test_project_brief_without_plan_uses_honest_empty_state():
 
 
 def test_single_topic_brief_excludes_unscoped_payload_with_diagnostic():
-    """缺 provenance 的历史澄清不做 sole-topic 推断：排除并给出诊断。"""
+    """缺 provenance 的 payload 不做 sole-topic 推断：排除并给出诊断。"""
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))
     store.add_payload(
@@ -455,10 +455,10 @@ def test_single_topic_brief_excludes_unscoped_payload_with_diagnostic():
 
     open_section = brief.body.split("## 风险与未决")[1].split("## 下一步")[0]
     assert "历史问题？" not in open_section
-    assert "1 条历史 Clarify 缺少 Topic provenance，未纳入本 Brief" in brief.body
+    assert "1 条无 Topic provenance 的 payload 未纳入本 Brief" in brief.body
 
 
-def test_multi_topic_brief_excludes_legacy_unscoped_payload_with_diagnostic():
+def test_multi_topic_brief_excludes_unscoped_payload_with_diagnostic():
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))
     store.add_topic(Topic(id="topic:demo.child", title="子问题", parent_id=topic.id))
@@ -475,7 +475,7 @@ def test_multi_topic_brief_excludes_legacy_unscoped_payload_with_diagnostic():
 
     open_section = brief.body.split("## 风险与未决")[1].split("## 下一步")[0]
     assert "不能猜归属的问题？" not in open_section
-    assert "1 条历史 Clarify 缺少 Topic provenance，未纳入本 Brief" in brief.body
+    assert "1 条无 Topic provenance 的 payload 未纳入本 Brief" in brief.body
 
 
 def test_child_topic_brief_uses_distinct_default_id():
@@ -557,7 +557,7 @@ def test_project_brief_separates_active_from_superseded():
     assert "## 已承诺" in brief.body
     assert "## 当前阶段" in brief.body
     assert "## 历史与导航" in brief.body
-    assert "record 后会生成 `decisions/decision.index.md`" in brief.body
+    assert "出现对应状态后会生成 `decisions/decision.index.md`" in brief.body
 
 
 def test_project_brief_treats_absorbed_findings_as_digested():
@@ -583,7 +583,7 @@ def test_project_brief_treats_absorbed_findings_as_digested():
     open_section = brief.body.split("## 风险与未决", 1)[1].split("## 下一步", 1)[0]
     history_section = brief.body.split("## 历史与导航", 1)[1]
     assert "已吸收发现" not in open_section
-    assert "暂无未决澄清或仍有效 Findings" in open_section
+    assert "暂无尚未吸收的澄清输入或仍有效 Findings" in open_section
     assert "已吸收发现" in history_section
 
 
@@ -709,7 +709,7 @@ def test_project_brief_keeps_indexes_visible_for_digested_governance_artifacts()
     brief = project_brief(store, topic.id)
 
     navigation = brief.body.split("**索引**", 1)[1]
-    assert "Decision / Clarify 投影索引" in navigation
+    assert "Decision / 待处理 payload 投影索引" in navigation
     assert "Findings 投影索引" in navigation
     assert "暂无 Decision / Clarify" not in navigation
     assert "暂无 Findings" not in navigation
@@ -728,9 +728,9 @@ def test_project_brief_next_steps_ignore_completed_deferred_and_rejected_actions
                 [
                     "## 步骤",
                     "",
-                    "1. 已完成：补 relation 写入面",
-                    "2. 暂缓 reference record CLI 设计",
-                    "3. rejected: 恢复 3.x workflow",
+                    "1. 已完成：补 relation 校验",
+                    "2. 暂缓可选审计适配设计",
+                    "3. rejected: 扩大 relation ontology",
                     "4. 修 Brief semantic correctness",
                     "10. 验证任意编号步骤",
                 ]
@@ -742,9 +742,9 @@ def test_project_brief_next_steps_ignore_completed_deferred_and_rejected_actions
 
     next_section = brief.body.split("## 下一步")[1].split("## Topic 完成条件")[0]
     stage_section = brief.body.split("## 当前阶段")[1].split("## 本阶段完成信号")[0]
-    assert "补 relation 写入面" not in next_section
-    assert "reference record" not in next_section
-    assert "恢复 3.x workflow" not in next_section
+    assert "补 relation 校验" not in next_section
+    assert "可选审计适配" not in next_section
+    assert "扩大 relation ontology" not in next_section
     assert "4. 修 Brief semantic correctness" in next_section
     assert "10. 验证任意编号步骤" in next_section
     assert "`plan:p01` 当前推进" in stage_section

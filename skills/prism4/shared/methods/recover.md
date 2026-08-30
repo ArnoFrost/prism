@@ -25,6 +25,6 @@
 | 索引 | 位置 | 内容 |
 |------|------|------|
 | 发现链 | `findings/finding.index.md` | fXX 时序表：标题、来源能力、时间、权威性 |
-| 决策链 | `decisions/decision.index.md` | 澄清链（未晋升的 cXX）+ 决策链（dXX） |
+| 决策索引 | `decisions/decision.index.md` | 尚未吸收的 typed payload（cXX）+ 已提交的 Decision（dXX） |
 
-Topic 根是 `topic.md`（机械门牌，不是事实源），当前边界是 `intent.md`，恢复切片是 `brief.md`；子 Topic 在 `children/<slug>/`，序号越大越新。快速定位时先读索引再读具体工件；已授权的澄清读对应 `dXX` 的「澄清过程」，不去 `clarifications/` 找全文副本。
+Topic 根是 `topic.md`（机械门牌，不是事实源），当前边界是 `intent.md`，恢复切片是 `brief.md`；子 Topic 在 `children/<slug>/`，序号越大越新。快速定位时先读索引再读具体工件；由澄清形成的承诺读对应 `dXX` 的「澄清过程」，不去 `clarifications/` 找全文副本。

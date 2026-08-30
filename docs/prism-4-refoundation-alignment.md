@@ -3,7 +3,7 @@ status: current
 target: Prism 4.0
 type: alignment
 created: 2026-08-14
-updated: 2026-08-29
+updated: 2026-08-30
 ---
 
 # Prism 4.0 语义地基
@@ -51,23 +51,9 @@ from authoritative state plus repository reality?
 
 若重建成本、误解风险或未来交接价值高于维护成本，才值得持久化；否则保持为 projection、对话过程或临时证据。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
 
-## 2.1 Grounding Documents
+## 2.1 文档责任
 
-三份 4.0 grounding 文档职责分离：
-
-| Document | Responsibility |
-|----------|----------------|
-| `prism-4-refoundation-alignment.md` | 说明 Prism 4.0 是什么、什么属于 Core、概念如何定义、3.x 概念如何迁移 |
-| `prism-4-architecture-guide.md` | 说明协议应如何被图示和表达、哪些语义关系稳定、哪些视觉暗示应避免 |
-| `prism-4-dogfood-plan.md` | 说明如何用最小实现验证协议、按什么顺序施工、哪些内容刻意延后 |
-
-若三个文件对同一概念存在不同说法：
-
-```text
-Alignment is semantic source.
-Architecture Guide mirrors it.
-Dogfood Plan consumes it.
-```
+本 Alignment 是 Protocol Semantics SSOT。Architecture Guide 与 Reading Contract 是受控 consumer / guide，不与 Alignment 并列定义语义；Dogfood Plan 是已归档的历史实施计划，不参与 current positive contract。
 
 ## 3. 核心边界
 
@@ -200,6 +186,8 @@ and cross-invocation reference.
 ```
 
 不要因为实现方便、文件方便或某个 CLI 命令方便，就预先扩展 Core ontology。实现不便先记录为 Findings。
+
+Reference Experience 可以把尚未吸收、但必须跨 session 保留精确目标与来源的 typed input / evidence envelope 暂存到 `clarifications/`。持久路径、序号、索引与消费后归档都是 Adapter 行为，不赋予 payload 独立事实源或 Artifact Role 地位。问题一旦解决，状态必须回到现有承载者：目标或边界缺口归 Intent，悬置判断归 Findings，当前方案假设或取舍归 Plan，已发生的人类选择归 target-bound `Evidence Reference`，跨 Plan 有效的承诺归 Decision。不能满足这一暂存判据的澄清只留在对话中。
 
 ### 4.5 Terminology Grammar Checkpoint
 

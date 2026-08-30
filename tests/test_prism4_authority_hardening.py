@@ -4,9 +4,8 @@ These tests guard typed authority evidence as a long-term contract and attack
 the public surface the way an unauthorized writer would; every rejection keeps
 durable writes = 0.
 
-Legacy committed Decisions without structured ``authority_evidence`` are
-accepted only when a valid committed Decision explicitly lists their refs;
-new committed writes must carry typed, target-bound evidence.
+Committed Decisions must carry typed, target-bound authority evidence. Missing
+evidence remains a fail-closed historical input, not a compatibility path.
 """
 
 import os
@@ -89,7 +88,7 @@ def _put_plan(
     supersedes: tuple[str, ...] = (),
     next_artifact_id=None,
 ) -> tuple[str, None]:
-    """直构 Plan（record_plan 面退役后 Acceptance 测试的载具）。"""
+    """直构 Plan，作为 Acceptance 测试载具。"""
     used = {a.id for a in store.artifacts.values()}
     if ref is None:
         number = 1
@@ -151,7 +150,7 @@ def _confirmed_evidence(store: ReferenceStore, target_ref: str) -> SemanticPaylo
     return _evidence_payload(store, target_ref=target_ref)
 
 
-# ── F1: generic write must not bypass the Decision authority gate ────────
+# ── Generic write must not bypass the Decision authority gate ────────────
 
 
 def test_findings_artifact_is_not_authority_evidence():
@@ -324,7 +323,7 @@ def test_committed_decision_requires_explicit_scope_for_target():
 
 
 def test_human_choice_evidence_targeting_the_decision_is_accepted():
-    """d05/c02 形态：confirmed human-choice、target 绑定本次 Decision。"""
+    """Confirmed human-choice evidence must target this exact Decision."""
     store = _topic_store()
     evidence = _confirmed_evidence(store, target_ref="decision:d01")
     decision_id, _inv, _consumed = record_decision(
@@ -337,56 +336,8 @@ def test_human_choice_evidence_targeting_the_decision_is_accepted():
     assert store.artifacts[decision_id].metadata["authority_evidence"] == evidence.id
 
 
-def test_grandfathered_decisions_load_and_validate_without_structured_evidence():
-    """显式 grandfathered 的 legacy Decision 可没有结构化 evidence。"""
-    store = ReferenceStore()
-    create_topic(
-        store,
-        topic_id="topic:skill-surface-contract",
-        title="Skill Surface",
-        next_artifact_id=fake_artifact_id,
-    )
-    grant = _evidence_payload(
-        store,
-        ref="clarify:c02",
-        target_ref="decision:d05",
-        topic_id="topic:skill-surface-contract",
-    )
-    record_decision(
-        store,
-        topic_id="topic:skill-surface-contract",
-        artifact_id="decision:d05",
-        body="结构化授权 legacy d01–d04。",
-        authority_evidence=grant.id,
-        next_artifact_id=fake_artifact_id,
-    )
-    store.artifacts["decision:d05"].metadata["grandfathers"] = [
-        "decision:d01",
-        "decision:d02",
-        "decision:d03",
-        "decision:d04",
-    ]
-    store.add_artifact(
-        Artifact(
-            id="decision:d01",
-            topic_id="topic:skill-surface-contract",
-            role="decision",
-            body="# 授权来源\n\nHuman。legacy 承诺正文记录授权来源。",
-            metadata={
-                "authority": "authoritative",
-                "evolution": "committed",
-                "authority_required": "human-required",
-            },
-        )
-    )
-    from prism4.use_cases import validate_store
-
-    problems = validate_store(store)
-    assert problems == []
-
-
-def test_store_validate_rejects_unlisted_no_evidence_decision():
-    """grandfathering 必须由有效 Decision 明确列举，不能泛化为所有缺 evidence 工件。"""
+def test_store_validate_rejects_committed_decision_without_evidence():
+    """早期无 evidence 形态只作 fail-closed 输入，不再提供正向兼容。"""
     store = _topic_store()
     store.add_artifact(
         Artifact(
@@ -429,7 +380,7 @@ def test_store_validate_reports_unbacked_new_committed_decision():
     assert any("does not exist" in problem for problem in problems)
 
 
-# ── F3: relation legality matrix ─────────────────────────────────────────
+# ── Relation legality matrix ──────────────────────────────────────────────
 
 
 def test_supersedes_rejects_cross_role_relation():
@@ -558,7 +509,7 @@ def test_record_decisions_reuses_relation_matrix():
     assert not [a for a in store.artifacts.values() if a.role == "decision"]
 
 
-# ── F5: Plan acceptance closed loop ──────────────────────────────────────
+# ── Plan acceptance closed loop ───────────────────────────────────────────
 
 
 def test_accept_plan_with_valid_evidence_and_operative_derivation():
@@ -647,7 +598,7 @@ def test_store_validate_reports_invalid_persisted_plan_acceptance():
     assert any("plan:p01 acceptance" in problem and "does not exist" in problem for problem in problems)
 
 
-# ── F4: exact input refs, no role sweep ──────────────────────────────────
+# ── Exact input refs, no role sweep ───────────────────────────────────────
 
 
 def test_record_uses_explicit_input_refs_when_provided():
@@ -669,7 +620,7 @@ def test_record_uses_explicit_input_refs_when_provided():
 
 
 def test_record_without_input_refs_declares_unavailable_instead_of_role_sweep():
-    """d05/DG4：调用方未声明 exact inputs 时空表诚实降级，不按 role sweep 伪造因果。"""
+    """未声明 exact inputs 时诚实降级，不按 role sweep 伪造因果。"""
     store = _topic_store()
     evidence = _confirmed_evidence(store, target_ref="decision:d01")
     _decision_id, inv, _consumed = record_decision(
@@ -686,7 +637,7 @@ def test_record_without_input_refs_declares_unavailable_instead_of_role_sweep():
     )
 
 
-# ── CLI surface: same guard on every entry (d05) ─────────────────────────
+# ── CLI surface: same guard on every entry ───────────────────────────────
 
 
 def _run_prism(*cli_args: str, root: Path) -> subprocess.CompletedProcess:
@@ -699,5 +650,3 @@ def _run_prism(*cli_args: str, root: Path) -> subprocess.CompletedProcess:
         timeout=10,
         env=env,
     )
-
-
