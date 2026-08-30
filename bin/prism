@@ -25,6 +25,8 @@
 #   plan accept     记录 Plan acceptance（typed authority evidence guard）
 #   decision record 持久化已授权 Decision（--authority-evidence 必填；
 #                   --body - 读 stdin；--body @path 读文件；--json 输出 {ok, ids}）
+#
+# 维护动词由 bin/ 同名脚本承担，不经协作面 CLI：
 #   doctor          委托 bin/doctor
 #   relink          委托 bin/relink
 #   update          委托 bin/update
@@ -114,6 +116,16 @@ fi
 # ── --version ───────────────────────────
 if [[ "$1" == "--version" || "$1" == "-V" ]]; then
   _run_python "$CLI_SCRIPT" --version
+fi
+
+# ── 维护动词：转发到 bin/ 同名脚本 ────────
+# doctor / relink / update 承担环境体检、技能分发与 SDK 升级，与协作面
+# （topic / artifact / store / brief / plan / decision / host）分层，因此
+# 不走 prism4/cli.py 的 noun 面——它们的实现本来就是 bin/ 下的 bash 脚本。
+if [[ "$1" == "doctor" || "$1" == "relink" || "$1" == "update" ]]; then
+  maintenance_verb="$1"
+  shift
+  exec "$SCRIPT_DIR/$maintenance_verb" "$@"
 fi
 
 # ── 前置检查：CLI 脚本必须存在 ──────────
