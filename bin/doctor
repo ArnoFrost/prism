@@ -74,7 +74,7 @@ done
 # release scope 聚合全部 4 个阶段（env/skill/cli/config）；
 # ci scope 聚合 skill + ci_health（自包含：bin/* +x、bin/prism --version 可启动），
 #   跳过 env（依赖 prism.local.yaml）/ cli（依赖 ~/.local/bin / PATH 锚点）
-#   / config（依赖 vault_path 等本机字段）—— CI runner 无 prism.local.yaml 也能跑通；
+#   / config（依赖 named workspaces 等本机字段）—— CI runner 无 prism.local.yaml 也能跑通；
 # 普通 scope 只激活同名阶段
 _in_scope() {
   [[ -z "$SCOPE" ]] && return 0
@@ -391,120 +391,77 @@ _stage_config() {
     return 0
   fi
 
-  # 配置完整性 — 内联顶层键 parser（自包含，不依赖外部脚本）
+  # 配置完整性 — 与 Host / relink 共用 current-only resolver，避免解析漂移。
   local report
-  report=$(run_python - "$config_path" <<'PYEOF' 2>/dev/null || echo "parse_error"
-import json, os, re, shutil, sys
+  report=$(run_python - "$config_path" "$PRISM_DIR/bin/workspace_resolve.py" <<'PYEOF' 2>/dev/null || echo "parse_error"
+import importlib.util
+import json
+import os
+import shutil
+import sys
 
-path = sys.argv[1]
-try:
-    with open(path, "r", encoding="utf-8") as f:
-        raw = f.read()
-except OSError as e:
-    print(json.dumps({"err": 1, "warn": 0, "lines": [f"\u2717 \u8bfb\u53d6\u5931\u8d25: {e}"]}))
-    sys.exit(0)
-
-config = {}
-in_projects = False
-for line in raw.splitlines():
-    stripped = line.rstrip()
-    if not stripped or stripped.lstrip().startswith("#"):
-        continue
-    if stripped == "projects:":
-        in_projects = True
-        continue
-    if in_projects:
-        if line and line[0] not in (" ", "\t"):
-            in_projects = False
-        else:
-            continue
-    if ":" not in stripped:
-        continue
-    key, _, val = stripped.partition(":")
-    config[key.strip()] = val.strip().strip('"').strip("'")
+config_path, resolver_path = sys.argv[1:]
+spec = importlib.util.spec_from_file_location("prism_workspace_resolve", resolver_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+resolved = module.resolve_prism_config(config_path)
 
 err = 0
 warn = 0
 lines = []
+if not resolved:
+    print(json.dumps({
+        "err": 1,
+        "warn": 0,
+        "lines": ["\u2717 \u4ec5\u652f\u6301 current named-workspaces \u683c\u5f0f\uff0c\u4e14 default_workspace \u5fc5\u987b\u5b58\u5728"],
+    }, ensure_ascii=False))
+    raise SystemExit(0)
 
-storage_root = config.get("workspace_root") or config.get("vault_path")
-for field in ("device_id", "sdk_path", "workspace_subdir"):
-    if field not in config or not config[field]:
+parsed = resolved["parsed"]
+for field in ("device_id", "sdk_path", "default_workspace"):
+    if not parsed.get(field):
         lines.append(f"\u2717 \u7f3a\u5fc5\u586b\u5b57\u6bb5: {field}")
         err += 1
 
-if not storage_root:
-    lines.append("\u2717 \u7f3a\u5fc5\u586b\u5b57\u6bb5: workspace_root \u6216 vault_path")
+sdk_path = resolved.get("sdk_path")
+if not sdk_path or not os.path.isabs(sdk_path):
+    lines.append(f"\u2717 sdk_path \u975e\u7edd\u5bf9\u8def\u5f84: {sdk_path or ''}")
+    err += 1
+elif not os.path.isdir(sdk_path):
+    lines.append(f"\u2717 sdk_path \u76ee\u5f55\u4e0d\u5b58\u5728: {sdk_path}")
     err += 1
 
-# deprecated key 检测
-if config.get("vault_path") and not config.get("workspace_root"):
-    lines.append("\u26a0 deprecated: vault_path \u2192 workspace_root\uff08bin/setenv --migrate-config\uff09")
-    warn += 1
-if config.get("obs_vault_personal") and not config.get("obs_vault"):
-    lines.append("\u26a0 deprecated: obs_vault_personal \u2192 obs_vault\uff08bin/setenv --migrate-config\uff09")
-    warn += 1
-for old_key, new_key in (("vault_path", "workspace_root"), ("obs_vault_personal", "obs_vault")):
-    if config.get(old_key) and config.get(new_key) and config[old_key] != config[new_key]:
-        lines.append(f"\u2717 \u51b2\u7a81: {old_key} \u4e0e {new_key} \u503c\u4e0d\u4e00\u81f4")
-        err += 1
-
-# 路径可达性
-if config.get("sdk_path"):
-    p = os.path.expanduser(config["sdk_path"])
-    if not p.startswith("/"):
-        lines.append(f"\u2717 sdk_path \u975e\u7edd\u5bf9\u8def\u5f84: {p}")
-        err += 1
-    elif not os.path.isdir(p):
-        lines.append(f"\u2717 sdk_path \u76ee\u5f55\u4e0d\u5b58\u5728: {p}")
-        err += 1
-
-if storage_root:
-    p = os.path.expanduser(storage_root)
-    if not p.startswith("/"):
-        lines.append(f"\u2717 workspace_root \u975e\u7edd\u5bf9\u8def\u5f84: {p}")
-        err += 1
-    elif not os.path.isdir(p):
-        lines.append(f"\u26a0 workspace_root \u4e0d\u53ef\u8fbe (iCloud \u672a\u540c\u6b65?): {p}")
-        warn += 1
-
-skills_path = config.get("skills_path", "")
-if skills_path:
-    p = os.path.expanduser(skills_path)
-    if not p.startswith("/"):
-        lines.append(f"\u26a0 skills_path \u975e\u7edd\u5bf9\u8def\u5f84\uff08\u53ef\u9009\u6269\u5c55\uff09: {p}")
-        warn += 1
-    elif not os.path.isdir(p):
-        lines.append(f"\u26a0 skills_path \u76ee\u5f55\u4e0d\u5b58\u5728\uff08\u53ef\u9009\u6269\u5c55\uff09: {p}")
-        warn += 1
-
-# workspace_git × iCloud 互斥 WARN
-wg_enabled = False
-in_wg = False
-for line in raw.splitlines():
-    s = line.rstrip()
-    if re.match(r"^workspace_git:\s*$", s):
-        in_wg = True
-        continue
-    if in_wg:
-        if line and line[0] not in (" ", "\t"):
-            break
-        m = re.match(r"^\s+enabled:\s*(true|false)", s)
-        if m:
-            wg_enabled = m.group(1) == "true"
-            break
-
 icloud_markers = ("Mobile Documents", "iCloud~md~obsidian")
-if wg_enabled and storage_root and any(m in storage_root for m in icloud_markers):
-    lines.append("\u26a0 workspace_git.enabled \u4e0e iCloud \u534f\u4f5c\u6839\u540c\u8def\u5f84\uff1agit/icloud \u4e92\u65a5\u98ce\u9669\uff08\u89c1 migration spec \u00a75\uff09")
+for workspace_id, workspace in resolved["workspaces"].items():
+    root = workspace.get("workspace_root")
+    subdir = workspace.get("workspace_subdir")
+    if not root or not os.path.isabs(root):
+        lines.append(f"\u2717 workspace {workspace_id} root \u975e\u7edd\u5bf9\u8def\u5f84: {root or ''}")
+        err += 1
+    elif not os.path.isdir(root):
+        lines.append(f"\u26a0 workspace {workspace_id} root \u4e0d\u53ef\u8fbe: {root}")
+        warn += 1
+    if not subdir or os.path.isabs(subdir):
+        lines.append(f"\u2717 workspace {workspace_id} workspace_subdir \u5fc5\u987b\u662f\u76f8\u5bf9\u8def\u5f84")
+        err += 1
+    git_config = workspace.get("workspace_git") or {}
+    if git_config.get("enabled") and root and any(marker in root for marker in icloud_markers):
+        lines.append(f"\u26a0 workspace {workspace_id} \u540c\u65f6\u542f\u7528 Git \u4e0e iCloud backend\uff0c\u5b58\u5728\u4e92\u65a5\u98ce\u9669")
+        warn += 1
+
+skills_path = resolved.get("skills_path")
+if skills_path and not os.path.isabs(skills_path):
+    lines.append(f"\u26a0 skills_path \u975e\u7edd\u5bf9\u8def\u5f84\uff08\u53ef\u9009\u6269\u5c55\uff09: {skills_path}")
+    warn += 1
+elif skills_path and not os.path.isdir(skills_path):
+    lines.append(f"\u26a0 skills_path \u76ee\u5f55\u4e0d\u5b58\u5728\uff08\u53ef\u9009\u6269\u5c55\uff09: {skills_path}")
     warn += 1
 
 if shutil.which("uv") is None:
-    lines.append("\u2717 uv \u672a\u5b89\u88c5\uff08core contract \u5fc5\u9700\uff09")
+    lines.append("\u2717 uv \u672a\u5b89\u88c5\uff08Minimal Reference Installation \u5fc5\u9700\uff09")
     err += 1
-
 if err == 0 and warn == 0:
-    lines.append("\u2713 core \u5fc5\u586b\u5b57\u6bb5\u9f50\u5907\uff0c\u8def\u5f84\u4e0e uv \u5747\u53ef\u7528")
+    lines.append("\u2713 current named-workspaces \u914d\u7f6e\u3001\u8def\u5f84\u4e0e uv \u5747\u53ef\u7528")
 
 print(json.dumps({"err": err, "warn": warn, "lines": lines}, ensure_ascii=False))
 PYEOF

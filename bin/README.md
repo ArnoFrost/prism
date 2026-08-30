@@ -187,28 +187,31 @@ prism --help
 `prism.local.yaml`（项目根目录，不入库）记录本地路径状态：
 
 ```yaml
+device_id: MY-MAC
 sdk_path: /Users/xuxin/prism
-workspace_root: /Users/xuxin/.local/share/prism
-workspace_subdir: Prism/Workspace
-
-# 可选：外部 Skills 扩展仓库
 skills_path: /Users/xuxin/prism-skills
+default_workspace: work
+workspaces:
+  work:
+    workspace_root: /Users/xuxin/.local/share/prism
+    workspace_subdir: Prism/Workspace
 
 projects:
-  PRISM: /Users/xuxin/prism
-  MYAPP: /Users/xuxin/Projects/myapp
+  PRISM:
+    path: /Users/xuxin/prism
+    workspace: work
 ```
 
-> **受控最小 schema**：`prism.local.yaml` 当前仅支持上述扁平 key-value 格式。不支持 YAML 引号值、行内注释、嵌套结构、多行值。内容由 `bin/setenv --init` 生成为准，手动编辑请保持 `KEY: value` 格式，路径始终使用绝对路径（不使用 `~`）。
+> **current-only schema**：`prism.local.yaml` 只支持 named workspaces。旧扁平格式不迁移、不猜测，在当前分支 fail closed。内容以 `bin/setenv --init` 生成为准，项目通过 `prism host attach --code CODE` 注册。
 
 | 字段 | 必填 | 说明 |
 |------|:----:|------|
+| `device_id` | ✅ | 当前设备标识 |
 | `sdk_path` | ✅ | Prism SDK 仓库绝对路径 |
 | `skills_path` | — | Skills 独立仓库绝对路径（可选，不配置则跳过外部技能分发） |
-| `workspace_root` | ✅ | Workspace backend 物理根；默认本地，可选 Vault |
-| `vault_path` | — | deprecated 兼容键，迁移到 `workspace_root` |
-| `workspace_subdir` | ✅ | backend 内 Workspace 子目录（相对路径） |
-| `projects` | — | 注册项目映射（CODE: 绝对路径），手动追加 |
+| `default_workspace` | ✅ | 默认 Workspace ID，必须存在于 `workspaces` |
+| `workspaces` | ✅ | backend 映射；每项含 `workspace_root` 与 `workspace_subdir` |
+| `projects` | — | 项目映射；每项含 `path` 与 `workspace` |
 
 完整 schema 定义见 [`prism-local-schema.yaml`](./prism-local-schema.yaml)。可通过 `bin/setenv --validate` 校验。
 
@@ -216,5 +219,5 @@ projects:
 
 - 脚本应保持幂等（多次执行结果一致）
 - 失败时应给出明确的错误信息而非静默跳过
-- 路径参数优先从 prism.local.yaml 读取，fallback 到合理默认值
+- 配置只由 `workspace_resolve.py` 解释；解析失败时拒绝猜测
 - 支持 `--check` / `--dry-run` 安全模式

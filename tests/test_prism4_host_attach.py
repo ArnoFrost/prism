@@ -51,6 +51,11 @@ def _query_config(config: Path, *, resolver: Path | None = None) -> dict:
 def _isolated_sdk(tmp_path: Path, *, with_resolver: bool) -> Path:
     sdk = tmp_path / "sdk"
     (sdk / "bin").mkdir(parents=True)
+    (sdk / "skills" / "schema").mkdir(parents=True)
+    (sdk / "skills" / "schema" / "dist-whitelist.yaml").write_text(
+        "profiles:\n  prism4:\n    skills:\n      - prism\n",
+        encoding="utf-8",
+    )
     shutil.copy(SDK_ROOT / "bin" / "relink", sdk / "bin" / "relink")
     (sdk / "bin" / "relink").chmod(0o755)
     if with_resolver:
@@ -66,7 +71,7 @@ def _isolated_sdk(tmp_path: Path, *, with_resolver: bool) -> Path:
 def _isolated_named(
     sdk: Path, tmp_path: Path
 ) -> tuple[Path, Path, Path, Path, Path, Path]:
-    """Named/map yaml plus decoy top-level roots that bash yaml_get would trust."""
+    """Current named-workspaces yaml for isolated real-relink tests."""
     work_root = tmp_path / "work-store"
     personal_root = tmp_path / "personal-store"
     decoy_root = tmp_path / "decoy-store"
@@ -82,8 +87,6 @@ def _isolated_named(
         (
             "device_id: TEST\n"
             f"sdk_path: {sdk}\n"
-            f"workspace_root: {decoy_root}\n"
-            "workspace_subdir: Workspace\n"
             "default_workspace: personal\n"
             "workspaces:\n"
             "  work:\n"
@@ -137,7 +140,9 @@ def _named_config(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
             "  PRISM:\n"
             f"    path: {existing_project}\n"
             "    workspace: personal\n"
-            "  TVKMM: /code/tvkmm\n"
+            "  TVKMM:\n"
+            "    path: /code/tvkmm\n"
+            "    workspace: work\n"
             "\n"
             "# trailing comment must survive attach\n"
         ),
@@ -209,7 +214,7 @@ def test_attach_appends_map_entry_without_touching_existing_bindings(
     assert (project / "workspace.demo.local").resolve() == instance.resolve()
 
 
-def test_attach_flat_yaml_keeps_string_bindings(tmp_path: Path) -> None:
+def test_attach_flat_yaml_fails_closed_without_writes(tmp_path: Path) -> None:
     storage = tmp_path / "legacy-store"
     (storage / "Sub").mkdir(parents=True)
     old_project = tmp_path / "old"
@@ -227,19 +232,43 @@ def test_attach_flat_yaml_keeps_string_bindings(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    attach_workspace(
-        code="DEMO",
-        project_path=project,
-        config_path=config,
-        skip_relink=True,
-    )
+    before = config.read_text(encoding="utf-8")
+    with pytest.raises(PrismProtocolError, match="无法解析配置"):
+        attach_workspace(
+            code="DEMO",
+            project_path=project,
+            config_path=config,
+            skip_relink=True,
+        )
 
-    payload = _query_config(config)
-    assert payload["projects_style"] == "flat"
-    by_code = {item["code"]: item for item in payload["projects"]}
-    assert by_code["OLD"]["path"] == str(old_project)
-    assert by_code["DEMO"]["path"] == str(project)
-    assert (storage / "Sub" / "DEMO" / "topics").is_dir()
+    assert config.read_text(encoding="utf-8") == before
+    assert not (storage / "Sub" / "DEMO").exists()
+
+
+def test_attach_named_yaml_with_inline_project_binding_fails_closed(
+    tmp_path: Path,
+) -> None:
+    config, _, _, _ = _named_config(tmp_path)
+    text = config.read_text(encoding="utf-8")
+    text = text.replace(
+        "  TVKMM:\n    path: /code/tvkmm\n    workspace: work\n",
+        "  TVKMM: /code/tvkmm\n",
+    )
+    config.write_text(text, encoding="utf-8")
+    project = tmp_path / "fresh"
+    project.mkdir()
+    before = config.read_text(encoding="utf-8")
+
+    with pytest.raises(PrismProtocolError, match="无法解析配置"):
+        attach_workspace(
+            code="DEMO",
+            project_path=project,
+            config_path=config,
+            skip_relink=True,
+        )
+
+    assert config.read_text(encoding="utf-8") == before
+    assert not (project / "workspace.demo.local").exists()
 
 
 def test_attach_is_idempotent_and_preserves_legacy_topic_files(
@@ -459,7 +488,7 @@ def test_host_runtime_does_not_reference_workflow_resolver() -> None:
 def test_workspace_resolve_named_map_binding(tmp_path: Path) -> None:
     config, _, personal_root, existing_project = _named_config(tmp_path)
     payload = _query_config(config)
-    assert payload["projects_style"] == "map"
+    assert payload["schema"] == "named-workspaces"
     assert payload["default_workspace"] == "personal"
     prism = next(item for item in payload["projects"] if item["code"] == "PRISM")
     assert prism["path"] == str(existing_project)

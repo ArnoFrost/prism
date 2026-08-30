@@ -280,10 +280,10 @@ echo -e "\n${CYAN}[2/5 配置]${NC}"
 if [[ -f "$CONFIG" ]]; then
   log_ok "prism.local.yaml 存在"
 
-  echo -e "  ${CYAN}Profile: core contract${NC}"
+  echo -e "  ${CYAN}Profile: current named-workspaces${NC}"
 
   # 校验必填字段
-  REQUIRED_FIELDS="device_id sdk_path"
+  REQUIRED_FIELDS="device_id sdk_path default_workspace"
   MISSING=""
   for field in $REQUIRED_FIELDS; do
     val=$(yaml_get "$field")
@@ -292,13 +292,7 @@ if [[ -f "$CONFIG" ]]; then
     fi
   done
 
-  WORKSPACE_ROOT=$(yaml_get workspace_root)
-  [[ -z "$WORKSPACE_ROOT" ]] && WORKSPACE_ROOT=$(yaml_get vault_path)
-  WORKSPACE_SUBDIR=$(yaml_get workspace_subdir)
-  if ! grep -q '^workspaces:' "$CONFIG" 2>/dev/null; then
-    [[ -z "$WORKSPACE_ROOT" ]] && MISSING="$MISSING workspace_root/vault_path"
-    [[ -z "$WORKSPACE_SUBDIR" ]] && MISSING="$MISSING workspace_subdir"
-  fi
+  grep -q '^workspaces:' "$CONFIG" 2>/dev/null || MISSING="$MISSING workspaces"
 
   if [[ -n "$MISSING" ]]; then
     log_err "缺失必填字段:$MISSING"
@@ -306,35 +300,34 @@ if [[ -f "$CONFIG" ]]; then
       print_init_guidance
     fi
   else
-    if grep -q '^workspaces:' "$CONFIG" 2>/dev/null; then
-      log_ok "配置字段完整: device_id, sdk_path, named workspaces"
-    else
-      log_ok "配置字段完整: device_id, sdk_path, workspace backend, workspace_subdir"
-    fi
+    log_ok "配置字段完整: device_id, sdk_path, default_workspace, workspaces"
   fi
 
   # 可选扩展字段只报告，不阻塞 core contract。
   SKILLS_PATH=$(yaml_get skills_path)
   ENV_PATH=$(yaml_get env_path)
-  OBS_PATH=$(yaml_get obs_vault_personal)
+  OBS_PATH=$(yaml_get obs_vault)
   [[ -n "$SKILLS_PATH" ]] && log_ok "外部 Skills 扩展已配置" || log_info "外部 Skills 扩展: 未配置（可选）"
   [[ -n "$ENV_PATH" ]] && log_ok "Env 扩展已配置" || log_info "Env 扩展: 未配置（可选）"
   [[ -n "$OBS_PATH" ]] && log_ok "个人知识库扩展已配置" || log_info "个人知识库扩展: 未配置（可选）"
 
-  # 路径有效性
-  VAULT_PATH=$(yaml_get workspace_root)
-  [[ -z "$VAULT_PATH" ]] && VAULT_PATH=$(yaml_get vault_path)
-  WS_SUBDIR=$(yaml_get workspace_subdir)
-  if [[ -n "$VAULT_PATH" && -d "$VAULT_PATH" ]]; then
-    log_ok "Workspace backend 有效: ${DIM}$(basename "$VAULT_PATH")${NC}"
-  elif [[ -n "$VAULT_PATH" ]]; then
-    log_warn "Workspace backend 不存在: $VAULT_PATH（首次 relink 时创建）"
-  fi
-
-  if [[ -n "$VAULT_PATH" && -n "$WS_SUBDIR" && -d "$VAULT_PATH/$WS_SUBDIR" ]]; then
-    log_ok "Workspace 路径有效: ${DIM}${WS_SUBDIR}${NC}"
-  elif [[ -n "$VAULT_PATH" && -n "$WS_SUBDIR" ]]; then
-    log_warn "Workspace 路径不存在: $VAULT_PATH/$WS_SUBDIR"
+  # 路径有效性由 current-only resolver 解析，避免在 setup 复制 YAML 语义。
+  RESOLVED_CONFIG=$(run_python "$PRISM_DIR/bin/workspace_resolve.py" --config "$CONFIG" --config-tsv 2>/dev/null || true)
+  if [[ -z "$RESOLVED_CONFIG" ]]; then
+    log_err "配置无法按 current named-workspaces 合同解析"
+  else
+    VAULT_PATH=$(echo "$RESOLVED_CONFIG" | awk -F '\t' '$1 == "VAULT_PATH" {print $2}')
+    WS_SUBDIR=$(echo "$RESOLVED_CONFIG" | awk -F '\t' '$1 == "WS_SUBDIR" {print $2}')
+    if [[ -d "$VAULT_PATH" ]]; then
+      log_ok "默认 Workspace backend 有效: ${DIM}$(basename "$VAULT_PATH")${NC}"
+    else
+      log_warn "默认 Workspace backend 不存在: $VAULT_PATH（首次 relink 时创建）"
+    fi
+    if [[ -d "$VAULT_PATH/$WS_SUBDIR" ]]; then
+      log_ok "默认 Workspace 路径有效: ${DIM}${WS_SUBDIR}${NC}"
+    else
+      log_warn "默认 Workspace 路径不存在: $VAULT_PATH/$WS_SUBDIR"
+    fi
   fi
 
 else
@@ -489,7 +482,7 @@ if [[ -f "$CONFIG" ]]; then
   if [[ $PROJECT_COUNT -gt 0 ]]; then
     log_ok "已注册 ${PROJECT_COUNT} 个项目"
   else
-    log_info "无注册项目（可通过 bin/setenv --sync 同步）"
+    log_info "无注册项目（可通过 prism host attach --code CODE 注册）"
   fi
 fi
 

@@ -51,7 +51,7 @@ Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`；3.x 实现�
 | **optional deployment** | 外部 Skills、Env、Vault/Git backend 按需组合 | 缺失不阻断 SDK/CLI |
 | **legacy mini/full** | 历史 zip profile；活跃 4.0 工作树不再维护 | Git 历史 / `legacy-3x-final` |
 
-可选部署回答「状态和扩展落在哪里」。4.0 默认交付是版本化 SDK 源码；`prism dist` 仅保留退役提示，旧 packer 已归档。
+可选部署回答「状态和扩展落在哪里」。4.0 默认交付是版本化 SDK 源码；旧 packer 只存在于 Git 历史。
 
 ---
 
@@ -81,18 +81,6 @@ Prism 通过 `.local` 后缀软链接将 backend 中的 Workspace 挂载到工�
 ```
 
 `.local` 后缀 = 本地个人文件，不提交到版本控制。推荐将 Prism 的 `.local` 模式配置在全局 gitignore 中，接入项目无需修改自身 `.gitignore`——真正的零侵入。详见 [AGENTS.md](../AGENTS.md)「无侵入原则」。
-
-<details>
-<summary>兼容模式（迁移期）</summary>
-
-```
-工作仓库/
-└── ai-task.local              → AI-TASK vault projects/{CODE}/
-```
-
-两种模式可共存，`workspace.{code}.local` 优先。
-
-</details>
 
 ---
 

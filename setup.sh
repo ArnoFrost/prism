@@ -14,7 +14,6 @@
 #   PRISM_SDK_PATH    默认本仓库根目录
 #   PRISM_WORKSPACE_ROOT  可选；默认 ~/.local/share/prism
 #   PRISM_WS_SUBDIR       默认 Workspace
-#   PRISM_VAULT_PATH      兼容别名；使用 Vault backend 时传入
 #   PRISM_SKILLS_PATH / PRISM_ENV_PATH  可选
 
 set -euo pipefail
@@ -38,7 +37,6 @@ setup.sh — Prism 仓库根入口（人类一键 init）
 首次 init 环境变量:
   PRISM_WORKSPACE_ROOT  可选；默认 ~/.local/share/prism
   PRISM_WS_SUBDIR       默认 Workspace
-  PRISM_VAULT_PATH      兼容别名；使用 Vault backend 时传入
   PRISM_SDK_PATH        默认本仓库根
 EOF
 }
@@ -46,7 +44,7 @@ EOF
 run_init() {
   if [[ ! -f "$ROOT/prism.local.yaml" ]]; then
     export PRISM_SDK_PATH="${PRISM_SDK_PATH:-$ROOT}"
-    export PRISM_WORKSPACE_ROOT="${PRISM_WORKSPACE_ROOT:-${PRISM_VAULT_PATH:-$HOME/.local/share/prism}}"
+    export PRISM_WORKSPACE_ROOT="${PRISM_WORKSPACE_ROOT:-$HOME/.local/share/prism}"
     export PRISM_WS_SUBDIR="${PRISM_WS_SUBDIR:-Workspace}"
     "$ROOT/bin/setenv" --init --non-interactive
   fi

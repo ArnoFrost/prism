@@ -97,10 +97,10 @@ load_profile_skills() {
   local whitelist="$SDK_PATH/skills/schema/dist-whitelist.yaml"
   local skill
 
-  # Older/minimal SDK fixtures may not carry the schema. Preserve their
-  # historical enumerate-all behavior; a real distribution with a whitelist
-  # must obey it.
-  [[ -f "$whitelist" ]] || return 0
+  if [[ ! -f "$whitelist" ]]; then
+    echo -e "${RED}✗ 缺少 current Distribution Profile: ${whitelist}${NC}" >&2
+    return 1
+  fi
 
   while IFS= read -r skill; do
     [[ -n "$skill" ]] && PROFILE_SKILLS+=("$skill")
@@ -129,8 +129,6 @@ profile_includes_skill() {
   local skill_name="$1"
   local allowed
 
-  # Compatibility fallback when a minimal/older SDK has no whitelist file.
-  [[ ${#PROFILE_SKILLS[@]} -eq 0 ]] && return 0
   for allowed in "${PROFILE_SKILLS[@]}"; do
     [[ "$allowed" == "$skill_name" ]] && return 0
   done
@@ -193,9 +191,8 @@ if [[ -f "$CONFIG" ]]; then
   DEVICE_ID=$(yaml_get device_id)
   SDK_PATH=$(yaml_get sdk_path)
   SKILLS_PATH=$(yaml_get skills_path)
-  VAULT_PATH=$(yaml_get workspace_root)
-  [[ -z "$VAULT_PATH" ]] && VAULT_PATH=$(yaml_get vault_path)
-  WS_SUBDIR=$(yaml_get workspace_subdir)
+  VAULT_PATH=""
+  WS_SUBDIR=""
   ENV_PATH=$(yaml_get env_path)
 else
   DEVICE_ID=""
@@ -224,7 +221,7 @@ _missing=""
 [[ -z "$SDK_PATH" ]]   && _missing="$_missing sdk_path"
 if [[ "$SKIP_WORKSPACE" != true ]]; then
   [[ -z "$DEVICE_ID" ]]  && _missing="$_missing device_id"
-  [[ -z "$VAULT_PATH" ]] && _missing="$_missing workspace_root/vault_path"
+  [[ -z "$VAULT_PATH" ]] && _missing="$_missing default workspace_root"
   [[ -z "$WS_SUBDIR" ]]  && _missing="$_missing workspace_subdir"
 fi
 

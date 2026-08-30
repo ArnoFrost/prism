@@ -15,6 +15,7 @@ SETUP = SDK_ROOT / "bin" / "setup"
 LOCAL_CONFIG = SDK_ROOT / "prism.local.yaml"
 DOCTOR = SDK_ROOT / "bin" / "doctor"
 PRISM = SDK_ROOT / "bin" / "prism"
+SETENV = SDK_ROOT / "bin" / "setenv"
 PRISM_GITIGNORE_PATTERNS = [
     "AGENTS.local.md",
     "AGENTS.*.local.md",
@@ -22,6 +23,66 @@ PRISM_GITIGNORE_PATTERNS = [
     "workspace.*.local/",
     "prism.local.yaml",
 ]
+
+
+def test_setenv_example_exposes_only_current_named_workspaces() -> None:
+    result = subprocess.run(
+        [str(SETENV), "--example"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "default_workspace: work" in result.stdout
+    assert "workspaces:" in result.stdout
+    assert "--sync" not in result.stdout
+
+
+def test_setenv_non_interactive_init_writes_resolvable_current_config(tmp_path):
+    sdk = tmp_path / "sdk"
+    (sdk / "bin").mkdir(parents=True)
+    shutil.copy(SETENV, sdk / "bin" / "setenv")
+    shutil.copy(SDK_ROOT / "bin" / "workspace_resolve.py", sdk / "bin" / "workspace_resolve.py")
+    (sdk / "bin" / "setenv").chmod(0o755)
+    backend = tmp_path / "backend"
+    backend.mkdir()
+    env = os.environ.copy()
+    env.update(
+        {
+            "HOME": str(tmp_path / "home"),
+            "PRISM_SDK_PATH": str(sdk),
+            "PRISM_WORKSPACE_ROOT": str(backend),
+            "PRISM_WS_SUBDIR": "Workspace",
+        }
+    )
+
+    result = subprocess.run(
+        [str(sdk / "bin" / "setenv"), "--init", "--non-interactive"],
+        cwd=str(sdk),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    resolved = subprocess.run(
+        [
+            "python3",
+            str(sdk / "bin" / "workspace_resolve.py"),
+            "--config",
+            str(sdk / "prism.local.yaml"),
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert resolved.returncode == 0, resolved.stdout + resolved.stderr
+    payload = json.loads(resolved.stdout)
+    assert payload["schema"] == "named-workspaces"
+    assert payload["default_workspace"] == "work"
+    assert payload["workspaces"]["work"]["workspace_root"] == str(backend)
 
 
 def test_setup_check_non_interactive_with_temp_home(tmp_path):
@@ -274,7 +335,7 @@ def test_setup_sh_help():
     )
     assert result.returncode == 0
     assert "PRISM_WORKSPACE_ROOT" in result.stdout
-    assert "PRISM_VAULT_PATH" in result.stdout
+    assert "PRISM_VAULT_PATH" not in result.stdout
     assert "relink" in result.stdout
 
 
@@ -351,10 +412,15 @@ def test_relink_no_workspace_does_not_require_vault_config(tmp_path):
     """relink --no-workspace 应允许只刷新代码层，不要求 vault/workspace 字段。"""
     tmp_sdk = tmp_path / "sdk"
     (tmp_sdk / "bin").mkdir(parents=True)
+    (tmp_sdk / "skills/schema").mkdir(parents=True)
     shutil.copy(SDK_ROOT / "bin" / "relink", tmp_sdk / "bin" / "relink")
     (tmp_sdk / "bin" / "relink").chmod(0o755)
     (tmp_sdk / "prism.local.yaml").write_text(
         f"device_id: test\nsdk_path: {tmp_sdk}\n",
+        encoding="utf-8",
+    )
+    (tmp_sdk / "skills/schema/dist-whitelist.yaml").write_text(
+        "profiles:\n  prism4:\n    skills:\n      - prism\n",
         encoding="utf-8",
     )
 
@@ -378,6 +444,7 @@ def test_relink_default_prism4_profile_prunes_legacy_sdk_skills(tmp_path):
     tmp_sdk = tmp_path / "sdk"
     codex_skills = tmp_path / "home" / ".codex" / "skills"
     (tmp_sdk / "bin").mkdir(parents=True)
+    (tmp_sdk / "skills/schema").mkdir(parents=True)
     (tmp_sdk / "skills/prism4/prism-review").mkdir(parents=True)
     (tmp_sdk / "skills/workflow/workflow-review").mkdir(parents=True)
     codex_skills.mkdir(parents=True)
@@ -390,6 +457,10 @@ def test_relink_default_prism4_profile_prunes_legacy_sdk_skills(tmp_path):
     )
     (tmp_sdk / "skills/workflow/workflow-review" / "SKILL.md").write_text(
         "---\nname: workflow-review\n---\n",
+        encoding="utf-8",
+    )
+    (tmp_sdk / "skills/schema/dist-whitelist.yaml").write_text(
+        "profiles:\n  prism4:\n    skills:\n      - prism-review\n",
         encoding="utf-8",
     )
     (codex_skills / "workflow-review").symlink_to(

@@ -101,7 +101,7 @@ audience: maintainer
 
 - 小改动优先跟随现有模块，不引入新抽象。
 - CLI 行为变更需要同步 `bin/README.md`、相关迁移文档和测试；3.x 历史契约只在 `docs/historical/cli-contract.md` 中维护。
-- 4.0 发布以版本化 SDK 源码与安装合同为准；`prism dist` 是退役提示，不在活跃分支恢复 mini/full packer。
+- 4.0 发布以版本化 SDK 源码与安装合同为准；旧 mini/full packer 只从 Git 历史查阅，不在活跃分支恢复。
 - 破坏性变化必须同步 `CHANGELOG.md` 与 `docs/migration.md`。
 - 涉及默认用户面的治理扫描变更，需要跑对应扫描器或测试。
 

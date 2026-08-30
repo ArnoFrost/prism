@@ -2,31 +2,32 @@
 
 ### Fixed
 
+- **current config 控制面** — 修复 `bin/setenv --init / --example` dispatch 存在但实现缺失导致的 exit 127；setenv、setup、doctor、relink 与 Host 统一消费 `bin/workspace_resolve.py`，避免同一配置被多套 parser 得出不同结论。
 - **CLI 健壮性校准（workspace 加载链路）** — load 阶段由「遇错即停」改为聚合报错：一次列出全部不合规文档（每条带文件路径、原因、合法取值），不再「修一个暴露一个」；工件/澄清/主题的校验异常统一补上文件路径定位。`topic new` 查重与 `topic list` 改用仅主题结构的惰性加载（`load_topics`），无关 store 里的坏工件不再阻断新建 Topic 与列 Topic；写入路径仍做全量校验（prune 语义要求）。
 - **frontmatter 解析容错** — 支持手写 YAML 单引号值与块列表（键后跟 `- 条目`），此前这两种合法写法会让整个 store 加载失败。
 
 ### Removed
 
-- **capability run hidden alias** — `prism capability run review/clarify/plan` 隐藏兼容面退役，argparse 直接报 invalid choice；日常入口为 `prism review/clarify/plan/decision record` 或 Harness 直写 Artifact。
+- **4.0 中间 CLI facade** — `capability run` hidden alias、`review / clarify / plan record`、generic artifact / relation mutation 与 `dist` tombstone 全部退出；未知或退役命令统一 argparse failure。普通语义工件按合同直写 Markdown 后 `store validate`，仅 Plan acceptance / Decision commitment 保留 typed guard。
+- **旧本机配置与桥接 fallback** — 扁平 `prism.local.yaml`、字符串 project binding、旧 config alias、`setenv --sync` 与 `ai-task.local` 当前叙事退出活树；当前分支只接受 named workspaces + 对象式 project binding，旧输入 fail closed 且 writes=0。
 - **旧维护 Skills 退役** — `prism-dist` / `prism-doctor` / `prism-pull` / `prism-push` 从活跃分发面归档；干净代码层更新使用 `prism doctor` / `prism update [--skills]` / `prism relink`；个人多端 SDK、Skills、Env 与已启用 Workspace Git 的双向同步和冲突处理收敛到外部 `prism-maintain`。
-- **legacy dist packer** — `prism dist` 改为退役提示；mini/full zip 实现仅由 Git 历史与 `legacy-3x-final` 保管。
+- **legacy dist packer** — mini/full zip 实现与退役 tombstone 均退出活树，仅由 Git 历史与 `legacy-3x-final` 保管。
 - **3.x 可执行历史剔除** — `skills/workflow/`、`skills/workspace/`、`workspace/` 系统层、`prism legacy` adapter 与 3.x topic 动词全部从 prism-4 分支物理删除；`sync` 随树退场。旧 topic 只读；3.x 终态由 git tag `legacy-3x-final` 保管。迁移口径见 [docs/migration.md](docs/migration.md)。
 - **legacy 测试面** — `skills/workflow/shared/tests/`（约 2.5M）与 `tests/test_sniff.py` 随树删除；CI 不再覆盖该路径。
 
 ### Changed
 
-- **机械面强化** — 新增 `prism artifact next-id`（按 Topic 内递增预分配工件 id，替代手算编号）与 `prism artifact locate`（ref → 文档路径，与 save 落盘推导同源），补齐 record 面收窄后的定位能力。
-- **record 面分档标注** — `review record` / `clarify record` 标 transitional（下版退役；日常直写 `findings/` / `clarifications/`，格式以 `artifact-contracts/` 为准）；`plan record` / `decision record` 标 advanced（durable snapshot 与授权承接保留）。`artifact show` / `topic list` / `brief project` 评估为机械/投影面保留。
-- **4.0 record 表面** — 日常入口改为 `prism review/clarify/plan/decision record`（persist semantic output，不等于授权）。旧 `capability run` 仍作 hidden alias。
+- **机械面强化** — `prism artifact next-id` 按 store-global role prefix 递增预分配工件 id，避免 parent / child 裸 ref 碰撞；`prism artifact locate` 提供 ref → 文档路径并与 save 落盘推导同源。
+- **4.0 写入表面收口** — Review / Clarify / Plan 输出由三入口按 Artifact Contracts 直写；CLI 只保留机械事实、投影、校验及 guarded commitment。
 - **Host 运行时独立** — `host attach` 与 `bin/relink` 经 subprocess 调用自包含的 `bin/workspace_resolve.py`，运行时不再依赖 `skills/workflow/**`。resolver 缺失或失败时 fail-closed，禁止 bash 猜测 named/map yaml。
-- **运维动词直调 bin/** — `prism doctor` / `relink` / `update` / `dist` 直调 `bin/` 同名脚本，不再经过 `prism_cli.py`。`bin/update`、`bin/dist` 为新增自包含脚本；dist 的 packer 定位只认 `prism.local.yaml` 的 `skills_path`。
-- **bin/ 清理** — `bin/doctor` 摘掉 sync 阶段，config 阶段收敛为内联 parser；`bin/setenv --validate` 委托 `bin/doctor --scope config`，migrate 子命令移除；`bin/setenv --export` / `show` 改走 `bin/workspace_resolve.py`（修复多 workspace 配置的既有误读）；`bin/relink --skill-profile` 只认 `prism4`。
+- **运维动词直调 bin/** — `prism doctor` / `relink` / `update` 直调 `bin/` 同名脚本，不再经过协作面 CLI parser。
+- **bin/ 清理** — doctor 摘掉 sync 阶段并与 setenv / relink / Host 共用 current resolver；`bin/setenv --validate` 委托 doctor，migrate / sync 子命令移除；`bin/relink --skill-profile` 只认 `prism4`。
 - **文档面** — 3.x 系列说明归档 `docs/historical/`；`docs/migration.md` 改写为 3.x→4.0 迁移入口；`cli-contract.md` / `cli-json-schema.json` / `glossary.md` 移入 historical。
 - **CI** — `release_gate.py` 迁 `bin/`；prism-4 分支纳入 CI 覆盖（此前无覆盖，导致既有红不可见）。
 - **prism-skills 自包含** — `~/prism-skills/shared` 由指向本仓库的软链接改为真实目录，自带 prism-pull/push 所需脚本。
 - **`topic probe` 列出最近目录** — 已桥接时打印编号倒序的 topic 目录名与 `next_number`，不做亲和匹配建议。
 - **Host 边界** — Topic 发现收回 `host.py`；配置查询不再进程内 import sniff。
-- **4.0 机器面** — `--body -` / `@path` 读长文本；record `--json` 输出 `{ok, ids}`，不使用 3.x outer schema。
+- **4.0 机器面** — guarded commitment 支持 `--body -` / `@path` 长文本；成功 JSON 使用 `{ok, ids}`，不使用 3.x outer schema。
 - **CLI 收尾** — use-case 测试钉住 Plan / Decision authority，并不再依赖 Markdown 序号函数；`docs/cli-contract.md` 明确为 3.x Legacy CLI Contract（现已归档 historical/）。
 
 ## [4.0-canary] — 2026-08-14

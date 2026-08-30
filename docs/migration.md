@@ -16,13 +16,14 @@
 
 | 变化 | 3.x 行为 | 4.0 行为 | 迁移方式 |
 |------|----------|----------|----------|
-| 默认 topic 动词 | `prism sniff / validate / finalize / status …` 直接可用 | 3.x 实现已从分支剔除，统一报「已剔除 + tag 指引」（exit 2） | 4.0 原语重写协作；旧操作切 3.x 分支 |
+| 默认 topic 动词 | `prism sniff / validate / finalize / status …` 直接可用 | 3.x 实现已从分支剔除，未知动词统一 argparse failure | 4.0 原语重写协作；旧操作切 3.x 分支 |
 | 项目接入 | `workspace-init` 技能建骨架 | `prism host attach --code CODE` 登记 + 桥接 | 未桥接时先 attach，不要 workspace-init |
 | Topic 工件 | `scope.md` / `focus.md` / `task.index.md` / `wave` | Intent / Brief / Findings / Plan / Decision（`topic.md` 承载） | 旧工件原样保留；4.0 Topic 不创建或改写它们 |
 | 默认 skill 面 | `workflow-*` 管线 | experimental：`prism / prism-review / prism-plan` | `dist-whitelist.yaml` 是 Distribution Profile SSOT；旧 4.0 wrappers 已从活树删除，历史形态由 Git tag（`p4-shadow-baseline` / `p5-natural-dogfood-baseline`）承载 |
 | `prism decision` | 3.x decision 动词 | 4.0 入口，需 `decision record` | 3.x 语义随分支剔除 |
+| 本机配置 | 扁平 workspace key / 字符串 project binding 可被兼容读取 | 只接受 named workspaces + `{path, workspace}` project binding | 运行 `bin/setenv --example` 对照重写；不自动迁移，旧格式 writes=0 |
 
-保留的维护入口：`prism doctor` / `prism relink` / `prism update`（由 `bin/prism` 转发到 `bin/` 同名脚本）；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。干净设备用 `prism update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。`dist` 仅保留退役提示，旧 mini/full packer 由 Git 历史保管。
+保留的维护入口：`prism doctor` / `prism relink` / `prism update`（由 `bin/prism` 转发到 `bin/` 同名脚本）；桥接只认 `workspace.{code}.local`。干净设备用 `prism update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。旧 mini/full packer 只由 Git 历史保管。
 
 ## 升级检查清单
 
@@ -31,6 +32,7 @@
 - `prism topic probe` 在项目目录报告 `bridged: yes`（否则 `prism host attach --code CODE`）。
 - `bin/relink --check` 无意外变更；只分发 `dist-whitelist.yaml` 的 `prism4` profile 成员。
 - `bin/doctor --scope cli` 通过；旧脚本调用处已移除或改写。
+- `bin/setenv --validate` 通过；若提示格式 unsupported，按 `bin/setenv --example` 重写，不要期待 current 分支自动转换。
 
 ## 主力机切换 runbook
 
@@ -120,7 +122,7 @@ legacy_dirs: N (numbered dirs not recognized as 4.0 stores)
 
 ## 旧 topic 处置
 
-不批量迁移。3.x topic 目录由原样保留，在 prism-4 分支**只读**（4.0 adapter 可读）；`workflow-*` 操作能力随分支剔除。4.0 Topic 是新的协作边界，不为旧 topic 补写 4.0 工件。
+不批量迁移。3.x topic 目录原样保留，在 prism-4 分支作为 opaque 历史存在：4.0 adapter 不解析、不投影、不改写，只在编号探测时避免覆盖；`workflow-*` 操作能力随分支剔除。4.0 Topic 是新的协作边界，不为旧 topic 补写 4.0 工件。
 
 ## 旧调研 / temp 资产
 

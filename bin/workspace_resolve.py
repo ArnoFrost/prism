@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Neutral prism.local.yaml resolver for Host and bin/relink.
+"""Current-only prism.local.yaml resolver for Host and bin/relink.
 
-Self-contained: does not import skills/workflow/**. 3.x sniff_workspace
-keeps its own copy until Distribution converges the two.
+The only supported shape is the named ``workspaces`` map. Historical flat
+configurations fail closed; Prism 4 does not silently reinterpret or migrate
+them in the current branch.
 """
 
 from __future__ import annotations
@@ -62,11 +63,9 @@ def parse_prism_local_yaml(yaml_path: str) -> dict | None:
         "sdk_path": None,
         "skills_path": None,
         "env_path": None,
-        "vault_path": None,
         "workspace_root": None,
         "workspace_subdir": None,
         "obs_vault": None,
-        "obs_vault_personal": None,
         "default_workspace": None,
         "workspaces": {},
         "projects": {},
@@ -233,8 +232,6 @@ def _normalize_project_entry(value: str | dict | None, default_workspace: str) -
         if not path:
             return None
         return {"path": path, "workspace": workspace}
-    if isinstance(value, str) and value:
-        return {"path": value, "workspace": default_workspace}
     return None
 
 
@@ -247,16 +244,12 @@ def resolve_prism_local_paths(parsed: dict | None) -> dict:
     }
     if not parsed:
         return dict(empty)
-    storage_root = _expand_config_path(
-        parsed.get("workspace_root") or parsed.get("vault_path")
-    )
+    storage_root = _expand_config_path(parsed.get("workspace_root"))
     subdir = parsed.get("workspace_subdir")
     prism_workspace_root = None
     if storage_root and subdir:
         prism_workspace_root = os.path.join(storage_root, subdir)
-    obs_vault = _expand_config_path(
-        parsed.get("obs_vault") or parsed.get("obs_vault_personal")
-    )
+    obs_vault = _expand_config_path(parsed.get("obs_vault"))
     return {
         "storage_root": storage_root,
         "workspace_subdir": subdir,
@@ -281,19 +274,7 @@ def parse_workspaces(parsed: dict | None, yaml_path: str | None = None) -> dict[
                 "workspace_git": dict(ws.get("workspace_git") or _workspace_git_defaults()),
             }
         return out
-    paths = resolve_prism_local_paths(parsed)
-    wg = parse_workspace_git(yaml_path) if yaml_path else _workspace_git_defaults()
-    storage = _expand_config_path(paths["storage_root"])
-    subdir = paths["workspace_subdir"]
-    pwr = os.path.join(storage, subdir) if storage and subdir else None
-    return {
-        "work": {
-            "workspace_root": storage,
-            "workspace_subdir": subdir,
-            "prism_workspace_root": pwr,
-            "workspace_git": wg,
-        }
-    }
+    return {}
 
 
 def resolve_project_binding(
@@ -303,7 +284,9 @@ def resolve_project_binding(
 ) -> dict | None:
     if not parsed:
         return None
-    default_ws = parsed.get("default_workspace") or "work"
+    default_ws = parsed.get("default_workspace")
+    if not default_ws:
+        return None
     raw = parsed.get("projects", {}).get(code)
     norm = _normalize_project_entry(raw, default_ws)
     if not norm:
@@ -346,13 +329,42 @@ def resolve_prism_config(yaml_path: str) -> dict | None:
     parsed = parse_prism_local_yaml(config_path)
     if not parsed:
         return None
+    if not parsed.get("device_id") or not parsed.get("sdk_path"):
+        return None
+    # Top-level storage keys belong to the retired flat shape. Even when a
+    # named map is also present, accepting both would leave two competing
+    # interpretations in one file.
+    if parsed.get("workspace_root") or parsed.get("workspace_subdir"):
+        return None
+    if not parsed.get("workspaces"):
+        return None
     workspaces = parse_workspaces(parsed, config_path)
-    default_workspace = parsed.get("default_workspace") or "work"
+    default_workspace = parsed.get("default_workspace")
+    if not default_workspace:
+        return None
+    if default_workspace not in workspaces:
+        return None
+    for workspace in workspaces.values():
+        root = workspace.get("workspace_root")
+        subdir = workspace.get("workspace_subdir")
+        if not root or not os.path.isabs(root):
+            return None
+        if not subdir or os.path.isabs(subdir):
+            return None
+    for raw in parsed.get("projects", {}).values():
+        if not isinstance(raw, dict):
+            return None
+        project_path = _expand_config_path(raw.get("path"))
+        workspace_id = raw.get("workspace")
+        if not project_path or not os.path.isabs(project_path):
+            return None
+        if not workspace_id or workspace_id not in workspaces:
+            return None
     default = workspaces.get(default_workspace, {})
     paths = resolve_prism_local_paths(parsed)
     return {
         "config_path": config_path,
-        "schema": "named-workspaces" if parsed.get("workspaces") else "legacy-flat",
+        "schema": "named-workspaces",
         "parsed": parsed,
         "device_id": parsed.get("device_id"),
         "sdk_path": _expand_config_path(parsed.get("sdk_path")),
@@ -366,17 +378,6 @@ def resolve_prism_config(yaml_path: str) -> dict | None:
         "workspaces": workspaces,
         "projects": resolve_all_project_bindings(parsed, config_path),
     }
-
-
-def _projects_style(parsed: dict | None) -> str:
-    if not parsed:
-        return "map"
-    if parsed.get("workspaces"):
-        return "map"
-    projects = parsed.get("projects") or {}
-    if any(isinstance(value, dict) for value in projects.values()):
-        return "map"
-    return "flat"
 
 
 def _json_safe(value):
@@ -483,7 +484,6 @@ def main() -> None:
         "default_workspace": default_ws,
         "workspaces": workspaces,
         "projects": bindings,
-        "projects_style": _projects_style(parsed),
     }
     print(json.dumps(_json_safe(payload), ensure_ascii=False, indent=2))
 

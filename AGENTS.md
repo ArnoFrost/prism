@@ -113,18 +113,6 @@ Prism 采用三正交分离 + 软链接桥接：
 
 命名约定：`workspace.{code}.local`，`{code}` 为项目代号小写。
 
-### 兼容模式（迁移期保留）
-
-```
-工作仓库/
-├── ai-task.local           -> AI-TASK vault projects/{CODE}/
-└── AGENTS.local.md         -> AI-TASK vault projects/{CODE}/AGENTS.md
-```
-
-**优先级规则**：当两种模式共存时，Agent 应优先读取 `workspace.{code}.local`；仅在新模式不存在时才 fallback 到 `ai-task.local`。
-
----
-
 ## Workspace backend 结构
 
 Workspace backend 仅承载 Workspace 实例（项目状态），不存放 Skills。默认使用本地目录；iCloud/Obsidian Vault、Git 等属于可选 backend。
@@ -201,10 +189,15 @@ Workspace backend/
 ```yaml
 sdk_path: ~/prism
 skills_path: ~/prism-skills
-workspace_root: ~/.local/share/prism
-workspace_subdir: Workspace
+default_workspace: work
+workspaces:
+  work:
+    workspace_root: ~/.local/share/prism
+    workspace_subdir: Workspace
 projects:
-  PRISM: ~/prism
+  PRISM:
+    path: ~/prism
+    workspace: work
 ```
 
 由 `bin/setenv` 管理，`bin/relink` 据此刷新软链接。
@@ -243,11 +236,9 @@ prism.local.yaml        # 本地配置
 - **Prism SDK** 单独 clone + `./setup.sh init` 即可建立本地 Workspace backend；不要求配置 Skills、Env 或 Vault。
 - **Skills 仓库**（prism-skills）是**可选扩展**——提供个人工具和 git 同步，按需创建。
 - **DotFiles 仓库**（ArnoDotFiles）可以在没有 Prism 的情况下独立运行。
-- **Vault / AI-TASK** 是可选 Workspace backend，也可以在没有 Prism 的情况下独立运行。
+- **Vault** 是可选 Workspace backend，也可以在没有 Prism 的情况下独立运行。
 
 Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 + 外部可选是架构硬约束。
-
-迁移策略：`ai-task.local` 与 `workspace.{code}.local` 可共存，项目按节奏逐步迁移。新模式优先。
 
 ---
 

@@ -7,7 +7,6 @@
 #   bin/setenv --init --non-interactive  非交互创建（从参数/环境变量读取）
 #   bin/setenv --export     输出 export 语句（可 source）
 #   bin/setenv --validate   校验 prism.local.yaml 路径是否有效
-#   bin/setenv --sync       从 Workspace project.yaml 同步项目注册
 #   bin/setenv --example    输出 core contract 配置样例
 #   source <(bin/setenv --export)   注入环境变量到当前 shell
 #
@@ -15,7 +14,6 @@
 #   PRISM_SDK_PATH     SDK 路径（默认当前 Prism 目录）
 #   PRISM_SKILLS_PATH  外部 Skills 路径（可选，留空跳过）
 #   PRISM_WORKSPACE_ROOT Workspace backend 物理根（默认 ~/.local/share/prism）
-#   PRISM_VAULT_PATH   兼容别名；使用 Vault backend 时可传入
 #   PRISM_WS_SUBDIR    Workspace 子目录（默认 Workspace）
 #   PRISM_ENV_PATH     Env 层路径（可选）
 #   PRISM_OBS_PERSONAL 个人知识库 vault 路径（可选）
@@ -43,8 +41,8 @@ _resolve_config() {
   local resolver="$PRISM_DIR/bin/workspace_resolve.py"
   [[ -f "$resolver" ]] || return 1
   local runner
-  if command -v uv >/dev/null 2>&1; then runner=(uv run python)
-  elif command -v python3 >/dev/null 2>&1; then runner=(python3)
+  if command -v python3 >/dev/null 2>&1; then runner=(python3)
+  elif command -v uv >/dev/null 2>&1; then runner=(uv run python)
   else return 1
   fi
   "${runner[@]}" "$resolver" --config "$CONFIG" --config-tsv 2>/dev/null
@@ -78,13 +76,11 @@ show_config() {
   local sdk skills vault ws_sub
   sdk=$(yaml_get sdk_path)
   skills=$(yaml_get skills_path)
-  if _load_workspace_fields; then
-    vault="$VAULT"; ws_sub="$WS_SUB"
-  else
-    vault=$(yaml_get workspace_root)
-    [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
-    ws_sub=$(yaml_get workspace_subdir)
+  if ! _load_workspace_fields; then
+    echo -e "${RED}✗ prism.local.yaml 不是 current named-workspaces 格式${NC}" >&2
+    exit 1
   fi
+  vault="$VAULT"; ws_sub="$WS_SUB"
 
   local device_id
   device_id=$(yaml_get device_id)
@@ -94,7 +90,7 @@ show_config() {
   if [[ -n "$device_id" ]]; then
     echo -e "  设备 ID:       ${GREEN}${device_id}${NC}"
   else
-    echo -e "  设备 ID:       ${YELLOW}未设置（运行 bin/setenv --sync 补充）${NC}"
+    echo -e "  设备 ID:       ${YELLOW}未设置（重新运行 bin/setenv --init）${NC}"
   fi
   echo -e "  SDK 路径:       ${GREEN}${sdk}${NC}"
   if [[ -n "$skills" ]]; then
@@ -116,7 +112,6 @@ show_config() {
 
   local obs_p
   obs_p=$(yaml_get obs_vault)
-  [[ -z "$obs_p" ]] && obs_p=$(yaml_get obs_vault_personal)
   if [[ -n "$obs_p" ]]; then
     echo -e "  个人知识库:     ${GREEN}${obs_p}${NC}"
   else
@@ -140,7 +135,7 @@ show_config() {
     local line code path instance ws
     while IFS=$'\t' read -r code path instance ws; do
       [[ -n "$code" ]] && echo -e "    ${code}: ${path} ${DIM}(${ws})${NC}"
-    done < <(uv run python "$resolver" --config "$CONFIG" --tsv 2>/dev/null || python3 "$resolver" --config "$CONFIG" --tsv 2>/dev/null)
+    done < <(python3 "$resolver" --config "$CONFIG" --tsv 2>/dev/null || uv run python "$resolver" --config "$CONFIG" --tsv 2>/dev/null)
   fi
 
   echo ""
@@ -169,16 +164,12 @@ do_export() {
   skills=$(yaml_get skills_path)
 
   local vault="" ws_sub="" ws_root=""
-  if _load_workspace_fields; then
-    vault="$VAULT"; ws_sub="$WS_SUB"; ws_root="$WS_ROOT"
-  else
-    vault=$(yaml_get workspace_root)
-    [[ -z "$vault" ]] && vault=$(yaml_get vault_path)
-    ws_sub=$(yaml_get workspace_subdir)
-    ws_root="${vault}/${ws_sub}"
+  if ! _load_workspace_fields; then
+    echo "# prism.local.yaml is not current named-workspaces format" >&2
+    exit 1
   fi
+  vault="$VAULT"; ws_sub="$WS_SUB"; ws_root="$WS_ROOT"
   echo "export PRISM_WORKSPACE_ROOT=\"${vault}\""
-  echo "export PRISM_VAULT=\"${vault}\""  # deprecated compatibility alias
   echo "export PRISM_WORKSPACE=\"${ws_root}\""
   # workspace_git（定时同步脚本消费）；未配置则不输出，由调用方走默认值
   if [[ -n "$WG_ENABLED" ]]; then
@@ -209,7 +200,6 @@ do_export() {
 
   local obs_p
   obs_p=$(yaml_get obs_vault)
-  [[ -z "$obs_p" ]] && obs_p=$(yaml_get obs_vault_personal)
   if [[ -n "$obs_p" ]]; then
     echo "export PRISM_OBS_PERSONAL=\"${obs_p}\""
     echo "export PRISM_OBS_VAULT=\"${obs_p}\""
@@ -229,6 +219,96 @@ do_validate() {
   exec "$PRISM_DIR/bin/doctor" --scope config
 }
 
+do_example() {
+  cat <<EOF
+# Prism Local Configuration — current named-workspaces contract
+# 保存为 prism.local.yaml；本地路径状态，不入版本控制。
+
+device_id: $(hostname -s)
+sdk_path: ${PRISM_DIR}
+
+# 可选扩展：不存在时省略
+# skills_path: ${HOME}/prism-skills
+# env_path: ${HOME}/ArnoDotFiles
+# obs_vault: ${HOME}/Documents/Notes
+
+default_workspace: work
+workspaces:
+  work:
+    workspace_root: ${HOME}/.local/share/prism
+    workspace_subdir: Workspace
+
+projects:
+EOF
+}
+
+write_config() {
+  local sdk="$1" skills="$2" workspace_root="$3" ws_sub="$4" env_p="${5:-}" obs_p="${6:-}"
+  local device_id
+  device_id=$(hostname -s)
+  {
+    echo "# Prism Local Configuration — current named-workspaces contract"
+    echo "# 本地路径状态，不入版本控制；由 bin/setenv 初始化。"
+    echo
+    echo "device_id: ${device_id}"
+    echo "sdk_path: ${sdk}"
+    [[ -n "$skills" ]] && echo "skills_path: ${skills}"
+    [[ -n "$env_p" ]] && echo "env_path: ${env_p}"
+    [[ -n "$obs_p" ]] && echo "obs_vault: ${obs_p}"
+    echo
+    echo "default_workspace: work"
+    echo "workspaces:"
+    echo "  work:"
+    echo "    workspace_root: ${workspace_root}"
+    echo "    workspace_subdir: ${ws_sub}"
+    echo
+    echo "projects:"
+  } > "$CONFIG"
+}
+
+do_init() {
+  if [[ -f "$CONFIG" ]]; then
+    if $NON_INTERACTIVE; then
+      echo -e "${RED}✗ prism.local.yaml 已存在，非交互模式拒绝覆盖。${NC}" >&2
+      exit 1
+    fi
+    echo -e "${YELLOW}⚠ prism.local.yaml 已存在${NC}"
+    read -r -p "覆盖现有配置？已注册的 projects 将丢失 [y/N]: " confirm
+    if [[ "${confirm,,}" != "y" ]]; then
+      echo "已取消。"
+      return
+    fi
+    cp "$CONFIG" "${CONFIG}.bak.$(date +%Y%m%d%H%M%S)"
+  fi
+
+  local sdk skills workspace_root ws_sub env_p obs_p
+  if $NON_INTERACTIVE; then
+    sdk="${PRISM_SDK_PATH:-$PRISM_DIR}"
+    skills="${PRISM_SKILLS_PATH:-}"
+    workspace_root="${PRISM_WORKSPACE_ROOT:-$HOME/.local/share/prism}"
+    ws_sub="${PRISM_WS_SUBDIR:-Workspace}"
+    env_p="${PRISM_ENV_PATH:-}"
+    obs_p="${PRISM_OBS_PERSONAL:-}"
+  else
+    read -r -p "SDK 路径 [${PRISM_DIR}]: " sdk
+    sdk="${sdk:-$PRISM_DIR}"
+    read -r -p "外部 Skills 路径（可选） []: " skills
+    skills="${skills:-}"
+    read -r -p "Workspace backend 根 [${HOME}/.local/share/prism]: " workspace_root
+    workspace_root="${workspace_root:-$HOME/.local/share/prism}"
+    read -r -p "Workspace 子目录 [Workspace]: " ws_sub
+    ws_sub="${ws_sub:-Workspace}"
+    read -r -p "Env 路径（可选） []: " env_p
+    env_p="${env_p:-}"
+    read -r -p "个人知识库路径（可选） []: " obs_p
+    obs_p="${obs_p:-}"
+  fi
+
+  write_config "$sdk" "$skills" "$workspace_root" "$ws_sub" "$env_p" "$obs_p"
+  echo -e "${GREEN}✓ 已创建 current named-workspaces 配置${NC}"
+  echo -e "使用 ${CYAN}prism host attach --code CODE${NC} 注册项目，再运行 ${CYAN}bin/relink${NC}。"
+}
+
 NON_INTERACTIVE=false
 ACTION=""
 
@@ -238,17 +318,15 @@ while [[ $# -gt 0 ]]; do
     --example)          ACTION="example"; shift ;;
     --export)           ACTION="export"; shift ;;
     --validate)         ACTION="validate"; shift ;;
-    --sync)             ACTION="sync"; shift ;;
     --non-interactive)  NON_INTERACTIVE=true; shift ;;
     --help|-h)
-      echo "用法: bin/setenv [--init [--non-interactive]|--example|--export|--validate|--sync|--help]"
+      echo "用法: bin/setenv [--init [--non-interactive]|--example|--export|--validate|--help]"
       echo "  (无参数)          显示当前配置"
       echo "  --init            交互式创建 prism.local.yaml"
       echo "  --init --non-interactive  从环境变量读取路径创建配置"
       echo "  --example         输出 core contract 配置样例"
       echo "  --export          输出 export 语句（配合 source 使用）"
       echo "  --validate        校验 prism.local.yaml 字段与路径"
-      echo "  --sync            从 Workspace project.yaml 同步项目注册"
       exit 0
       ;;
     *) echo "未知参数: $1"; exit 1 ;;
@@ -260,6 +338,5 @@ case "${ACTION:-show}" in
   example)  do_example ;;
   export)   do_export ;;
   validate) do_validate ;;
-  sync)     do_sync ;;
   show)     show_config ;;
 esac

@@ -294,7 +294,7 @@ def attach_workspace(
             f"找不到 prism.local.yaml：{config_path}。先运行 bin/setenv --init。"
         )
 
-    query = _legacy_config_query(config_path)
+    query = _config_query(config_path)
 
     workspace_id = _resolve_workspace_id(query, workspace_id)
     existing = _binding_for(query, code)
@@ -315,7 +315,6 @@ def attach_workspace(
                 code=code,
                 project_path=project_path,
                 workspace_id=workspace_id,
-                style=str(query.get("projects_style") or "map"),
             )
             writes += 1
         registered = "created"
@@ -395,7 +394,7 @@ def _config_resolve_cli() -> Path:
     return SDK_ROOT / "bin" / "workspace_resolve.py"
 
 
-def _legacy_config_query(config_path: Path) -> dict:
+def _config_query(config_path: Path) -> dict:
     """Ask bin/workspace_resolve.py in a child process. Host does not import sniff."""
     resolver = _config_resolve_cli()
     if not resolver.is_file():
@@ -443,9 +442,7 @@ def _resolve_workspace_id(query: dict, requested: str | None) -> str | None:
                 f"workspace 不存在：{requested}（可选：{names}）"
             )
         return requested
-    if workspaces:
-        return default
-    return None
+    return default
 
 
 def _instance_path_for(query: dict, code: str, workspace_id: str | None) -> Path:
@@ -457,10 +454,7 @@ def _instance_path_for(query: dict, code: str, workspace_id: str | None) -> Path
                 f"无法解析 workspace {workspace_id} 的实例根路径"
             )
         return Path(ws["prism_workspace_root"]) / code
-    ws = workspaces.get("work") or next(iter(workspaces.values()), None)
-    if not ws or not ws.get("prism_workspace_root"):
-        raise PrismProtocolError("无法解析 Workspace backend 根路径")
-    return Path(ws["prism_workspace_root"]) / code
+    raise PrismProtocolError("无法解析 Workspace backend 根路径")
 
 
 def _append_project_entry(
@@ -469,22 +463,17 @@ def _append_project_entry(
     code: str,
     project_path: Path,
     workspace_id: str | None,
-    style: str,
 ) -> None:
     text = config_path.read_text(encoding="utf-8")
     if re.search(rf"^  {re.escape(code)}:", text, re.MULTILINE):
         raise PrismProtocolError(f"{code} 已存在于 {config_path}")
-    entry = _format_project_entry(
-        code, project_path, workspace_id=workspace_id, style=style
-    )
+    entry = _format_project_entry(code, project_path, workspace_id=workspace_id)
     config_path.write_text(_insert_project_entry(text, entry), encoding="utf-8")
 
 
 def _format_project_entry(
-    code: str, project_path: Path, *, workspace_id: str | None, style: str
+    code: str, project_path: Path, *, workspace_id: str | None
 ) -> str:
-    if style == "flat":
-        return f"  {code}: {project_path}\n"
     lines = [f"  {code}:\n", f"    path: {project_path}\n"]
     if workspace_id:
         lines.append(f"    workspace: {workspace_id}\n")

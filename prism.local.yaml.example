@@ -1,4 +1,4 @@
-# Prism Local Configuration — core contract example
+# Prism Local Configuration — current named-workspaces contract
 # 复制为 prism.local.yaml 并按本机路径修改；不入版本控制。
 # 生成 SSOT：bin/setenv --example
 
@@ -8,36 +8,29 @@ device_id: YOUR_DEVICE_ID
 # SDK 路径（Prism 仓库位置）
 sdk_path: ~/prism
 
-# Workspace backend 物理根（默认本地目录；也可指向 iCloud/Obsidian Vault）
-workspace_root: ~/.local/share/prism
-
-# backend 内 Workspace 子目录（相对于 workspace_root）
-workspace_subdir: Workspace
-
 # 可选：外部 Skills 扩展仓库路径
 # skills_path: ~/prism-skills
 
 # 可选：env 层路径（如 ArnoDotFiles）
 # env_path: ~/ArnoDotFiles
 
-# 可选：Workspace Git 同步（Layer 4 增强；显式 enabled: true 才启用）
-# workspace_git:
-#   enabled: false
-#   branch: master
-#   remote: origin
-#   interval_minutes: 15          # wave-2：分钟级心跳；0=仅 schedule
-#   debounce_seconds: 120         # 成功同步后 N 秒内且无 dirty/ahead 则跳过
-#   large_file_mb: 20             # 超阈值阻断 push；PRISM_SYNC_ALLOW_LARGE=1 单次 override
-#   notify_on_success: false      # 成功 push 系统通知（默认关，防疲劳）
-#   notify_on_block: true         # 大文件阻断时通知
-#   schedule:                     # 定点兜底；与 interval 可并存（单 plist 双触发器）
-#     - "9:00"
-#     - "22:00"
+default_workspace: work
+workspaces:
+  work:
+    workspace_root: ~/.local/share/prism
+    workspace_subdir: Workspace
+    # 可选：此 backend 的 Git 同步策略；显式 enabled: true 才启用。
+    # workspace_git:
+    #   enabled: false
+    #   branch: master
+    #   remote: origin
 
 # 可选：归档技能（缺省时可省略整段；bin/relink 不会自动写入）
 # archived_skills:
 #   - example-archived-skill
 
-# 注册项目（CODE: 本地路径）
+# 注册项目（由 prism host attach --code CODE 写入）
 projects:
-  PRISM: ~/prism
+  PRISM:
+    path: ~/prism
+    workspace: work

@@ -1,112 +1,74 @@
-# prism.local.yaml Schema
-# 定义 prism.local.yaml 的结构约束，供 bin/setenv --validate 参考。
-# 此文件本身不被脚本直接解析，作为人类可读的契约文档。
+# prism.local.yaml — Prism 4 current configuration contract
+# Human-readable contract. Runtime parsing is owned by bin/workspace_resolve.py.
 
 version: "4.0-canary"
+schema: named-workspaces
 
-fields:
+required:
   device_id:
     type: string
-    required: true
-    description: "当前设备标识符，用于跨设备路径解析"
-    example: "ARNOFROSTXU-MC1"
-    default: "$(hostname -s)"
-    validation:
-      - "由 setenv --init 自动从 hostname -s 生成"
-      - "可手动修改为自定义别名"
-      - "用于 project.yaml paths 的设备键匹配"
-
+    description: "当前设备标识；bin/setenv --init 默认取 hostname -s"
   sdk_path:
-    type: string
-    required: true
-    description: "Prism SDK 仓库的绝对路径"
-    example: "/Users/xuxin/prism"
-    validation:
-      - "必须是绝对路径（以 / 开头）"
-      - "目录必须存在"
-      - "目录内应包含 bin/setenv（SDK 完整性校验）"
+    type: absolute_path
+    description: "Prism SDK 仓库"
+  default_workspace:
+    type: workspace_id
+    description: "必须指向 workspaces 中已存在的条目"
+  workspaces:
+    type: map
+    value:
+      workspace_root:
+        type: absolute_path
+        required: true
+      workspace_subdir:
+        type: relative_path
+        required: true
+      workspace_git:
+        type: map
+        required: false
 
+optional:
   skills_path:
-    type: string
-    required: false
-    description: "外部 Skills 扩展仓库的绝对路径（独立 Git 仓库）；core contract 可不配置"
-    example: "/Users/xuxin/prism-skills"
-    validation:
-      - "配置时必须是绝对路径"
-      - "配置时目录建议存在"
-      - "缺省时跳过外部技能分发，仅使用 SDK 内置 prism4 semantic skills"
-
-  workspace_root:
-    type: string
-    required: true
-    description: "Workspace backend 物理根；默认本地目录，也可指向 iCloud/Obsidian Vault"
-    example: "/Users/xuxin/.local/share/prism"
-    validation:
-      - "必须是绝对路径"
-      - "首次 relink 时可自动创建"
-      - "旧 vault_path 作为 deprecated 兼容键继续读取"
-
-  vault_path:
-    type: string
-    required: false
-    deprecated: "workspace_root"
-    description: "旧版 Workspace backend 键；仅作迁移兼容"
-
-  workspace_subdir:
-    type: string
-    required: true
-    description: "backend 内 Workspace 子目录（相对于 workspace_root）"
-    example: "Workspace"
-    default: "Workspace"
-    validation:
-      - "相对路径，不以 / 开头"
-      - "首次 relink 时自动创建"
-
+    type: absolute_path
+  env_path:
+    type: absolute_path
+  obs_vault:
+    type: absolute_path
+  archived_skills:
+    type: list
   projects:
     type: map
-    required: false
-    description: "注册项目映射，key 为项目代号（大写），value 为本地路径"
-    example:
-      PRISM: "/Users/xuxin/prism"
-      MYAPP: "/Users/xuxin/Projects/myapp"
-    key_constraints:
-      - "大写字母、数字、连字符、下划线"
-      - "匹配 [A-Za-z0-9_-]+"
-    value_constraints:
-      - "绝对路径"
-      - "目录必须存在"
+    value:
+      path:
+        type: absolute_path
+        required: true
+      workspace:
+        type: workspace_id
+        required: true
 
-conventions:
-  - "此文件不入版本控制（已在 .gitignore 中排除）"
-  - "由 bin/setenv --init 生成，bin/relink 读取"
-  - "路径不使用 ~ 缩写，始终展开为绝对路径"
-  - "YAML 顶层键用 snake_case"
-  - "projects 段在文件末尾，便于追加"
-  - "device_id 紧跟注释块后、sdk_path 之前"
+example:
+  device_id: ARNOFROSTXU-MC1
+  sdk_path: /Users/xuxin/prism
+  default_workspace: work
+  workspaces:
+    work:
+      workspace_root: /Users/xuxin/.local/share/prism
+      workspace_subdir: Workspace
+  projects:
+    PRISM:
+      path: /Users/xuxin/prism
+      workspace: work
 
-multi_device:
-  description: "跨设备支持机制"
-  flow:
-    - "每台设备的 prism.local.yaml 有唯一 device_id"
-    - "Workspace 内 project.yaml 的 paths 以 device_id 为 key 存储各设备路径"
-    - "bin/setenv --sync 读取 Workspace project.yaml，按 device_id 解析本设备路径"
-    - "bin/relink 链接成功后，自动将 device_id → local_path 写回 project.yaml"
-  paths_format:
-    legacy: "list of strings（向后兼容，按路径是否存在逐个尝试）"
-    current: "map of device_id → absolute_path"
+rules:
+  - "此文件是本机状态，不入版本控制"
+  - "只接受 named-workspaces；旧扁平格式在当前分支 fail closed"
+  - "项目注册使用 prism host attach --code CODE"
+  - "bin/setenv、bin/relink、Host 与 doctor 共用 bin/workspace_resolve.py 的解释"
+  - "路径写绝对路径；~ 仅允许出现在展示样例，落盘时由 setenv 展开"
 
 tool_integration:
-  setenv_init: "生成符合此 schema 的配置文件，自动写入 device_id"
-  setenv_sync: "从 Workspace project.yaml 同步项目注册到本地 yaml"
-  setenv_validate: "校验配置文件是否符合此 schema（必填字段 + 路径可达性 + 项目注册）"
-  setenv_export: "读取配置并输出 shell export 语句"
-  relink: "读取配置刷新所有软链接，成功后回写 project.yaml paths"
-
-runtime:
-  uv:
-    required: true
-    description: "core contract 的统一 Python 脚本运行时依赖"
-    setup_behavior:
-      - "bin/setup --check 只检测并显式报错"
-      - "bin/setup 正常初始化会尝试通过官方安装脚本自动安装"
-      - "自动安装失败时提示用户手动安装"
+  setenv_init: "生成 current named-workspaces 配置"
+  setenv_validate: "委托 doctor config stage 校验"
+  setenv_export: "导出默认 Workspace 与可选扩展环境变量"
+  host_attach: "向 projects 写入 path + workspace 对象"
+  relink: "按项目绑定刷新 workspace.{code}.local"
