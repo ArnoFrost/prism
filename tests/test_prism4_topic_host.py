@@ -75,7 +75,9 @@ def test_dangling_bridge_is_associated_but_not_live(tmp_path: Path) -> None:
 def test_next_topic_number_scans_topics_and_archive(tmp_path: Path) -> None:
     workspace = tmp_path / "ws"
     (workspace / "topics" / "061_old").mkdir(parents=True)
-    (workspace / "archive" / "2026-08" / "topic" / "062_done").mkdir(parents=True)
+    (
+        workspace / "archive" / "legacy-3x" / "topic" / "062_archived"
+    ).mkdir(parents=True)
 
     assert next_topic_number(workspace) == 63
     assert topic_dir_slug("topic:Loop.Demo") == "loop-demo"

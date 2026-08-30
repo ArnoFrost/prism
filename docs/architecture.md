@@ -208,7 +208,7 @@ prism/
 3. **默认无侵入** — 不接管目录结构，`.local` 模式由全局 gitignore 统一覆盖
 4. **本地优先** — 协作状态、笔记与本地上下文保持本地化、可组合、可迁移
 5. **可选依赖可脱离** — 外部 Skills、Env、Vault/Git backend 均可独立存在
-6. **渐进迁移** — 旧桥接与 `workspace.{code}.local` 可共存，按节奏切换
+6. **current-only 桥接** — 活工作面只认 `workspace.{code}.local`；3.x Workspace 按 [迁移指南](./migration.md) 冻结归档并重建 current Topic
 7. **SDK 与 Skill 边界** — SDK 负责准备与桥接，Skill 负责协作动作
 8. **只有高频且能独立成故事的能力，才值得成为首屏 Skill**
 

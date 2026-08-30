@@ -225,7 +225,7 @@ prism.local.yaml        # 本地配置
 
 注意：**不使用 `*.local.md`**——这个通配符会误伤其他项目中合法的 `.local.md` 文件。Prism 用 `AGENTS.` 前缀限定范围，确保最小影响面。
 
-> **v1.1.4+ 老用户无感升级**：`bin/setup` / `bin/doctor --scope config --fix` 会自动清理全局 gitignore 中残留的 v1.1.1 老 pattern（`AGENT.local.md` / `AGENT.*.local.md`）；`bin/relink` 会自动 mv vault 工作区内残留的 `AGENT.md` 为 `AGENTS.md`。无需手动改任何文件。
+> `bin/setup` / `bin/doctor --scope config --fix` 会清理全局 gitignore 中残留的 v1.1.1 老 pattern（`AGENT.local.md` / `AGENT.*.local.md`）。`bin/relink` 检测到 Workspace 内旧命名 `AGENT.md` 时会 fail-fast，不再自动改名；3.x Workspace 的归档与 `AGENTS.md` 重写按 [迁移指南](docs/migration.md) 执行。
 
 ---
 

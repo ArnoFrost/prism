@@ -370,6 +370,27 @@ def test_retired_setup_guides_are_not_public_entrypoints() -> None:
         assert "SETUP_AGENT.md" not in text
 
 
+def test_workspace_migration_is_archive_then_reconstruct_contract() -> None:
+    migration = (ROOT / "docs" / "migration.md").read_text(encoding="utf-8")
+
+    required = [
+        "archive old, reconstruct current",
+        "archive/legacy-3x/topic/",
+        "不得由迁移 Agent 自行重建为 4.0 committed Decision",
+        "## 批量迁移编排",
+        "### 迁移 Agent 启动话术",
+        "### 标准迁移报告",
+        "### Phase D — 重写 Workspace AGENTS.md",
+        "## 当前入口",
+    ]
+    for phrase in required:
+        assert phrase in migration
+
+    assert "不在旧 Topic 目录内补 `topic.md / intent.md / plan.md`" in migration
+    assert "旧 Topic 不迁移，继续可读（只读）" not in migration
+    assert "4.0 adapter 不解析、不投影、不改写" not in migration
+
+
 def test_readme_open_source_doorway_contract() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
