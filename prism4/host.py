@@ -30,7 +30,6 @@ from .core import PrismProtocolError
 
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
-STATE_FILENAME = "prism4-state.json"
 TOPIC_FILENAME = "topic.md"
 CODE_PATTERN = re.compile(r"^[A-Z][A-Z0-9_-]{0,31}$")
 _TOPIC_DIR_PREFIX = re.compile(r"^(\d{3,})_")
@@ -194,10 +193,8 @@ def discover_bridged_state(base: Path) -> Path | None:
         if not bridge.is_dir():
             continue
         for depth in ("", "*/", "*/*/"):
-            for marker in (f"{depth}{TOPIC_FILENAME}", f"{depth}{STATE_FILENAME}"):
+            for marker in (f"{depth}{TOPIC_FILENAME}",):
                 for hit in bridge.glob(marker):
-                    if hit.name == STATE_FILENAME and not hit.is_file():
-                        continue
                     if hit.name == TOPIC_FILENAME and not hit.is_file():
                         continue
                     root = hit.parent
@@ -224,7 +221,6 @@ def _store_recency(root: Path) -> float:
         "*/*.md",
         "children/*/*.md",
         "topics/*.md",
-        STATE_FILENAME,
     ):
         for path in root.glob(pattern):
             newest = max(newest, path.stat().st_mtime)
@@ -258,8 +254,8 @@ def topic_dir_slug(topic_id: str) -> str:
 
 
 def is_store_root(candidate: Path) -> bool:
-    """A store root holds topic.md, a legacy topics/*.md layout, or a JSON index."""
-    if (candidate / TOPIC_FILENAME).is_file() or (candidate / STATE_FILENAME).is_file():
+    """A store root holds a topic.md at its root or a legacy topics/*.md layout."""
+    if (candidate / TOPIC_FILENAME).is_file():
         return True
     legacy = candidate / "topics"
     return legacy.is_dir() and any(legacy.glob("*.md"))

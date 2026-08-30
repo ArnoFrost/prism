@@ -20,7 +20,6 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from prism4 import (  # noqa: E402
-    JsonReferenceStoreAdapter,
     LocalFileStoreAdapter,
     PrismProtocolError,
     project_brief,
@@ -155,25 +154,17 @@ def flatten_record_ids(*parts: object) -> list[str]:
     return ids
 
 
-def _adapter_persists_invocations(adapter) -> bool:
-    """Markdown adapter 不落盘 Invocation（weak-provenance）；JSON 参考存储完整持久化。"""
-    return not isinstance(adapter, LocalFileStoreAdapter)
-
-
 def emit_record(
     *parts: object,
     json_output: bool = False,
-    include_invocations: bool = True,
 ) -> None:
     """Print recorded identifiers.
 
-    invocation ids are diagnostic compatibility output. Adapters that do
-    not persist Invocations (local Markdown, weak-provenance grade) must
-    not emit them: an id the store cannot resolve back is dishonest output.
+    本地 Markdown adapter 是 weak-provenance：不落盘 Invocation，因此
+    record 输出不带 invocation id——store 无法解析回的 id 是不诚实输出。
     """
     ids = flatten_record_ids(*parts)
-    if not include_invocations:
-        ids = [item for item in ids if not str(item).startswith("invocation:")]
+    ids = [item for item in ids if not str(item).startswith("invocation:")]
     if json_output:
         print(json.dumps({"ok": True, "ids": ids}, ensure_ascii=False))
         return
@@ -703,11 +694,6 @@ def cmd_artifact_next_id(args: argparse.Namespace) -> int:
 
 def cmd_artifact_locate(args: argparse.Namespace) -> int:
     adapter = open_adapter(resolve_root(args.root))
-    if not isinstance(adapter, LocalFileStoreAdapter):
-        raise PrismProtocolError(
-            "artifact locate only supports local Markdown stores; "
-            "JSON reference stores have logical refs, not document paths"
-        )
     store = adapter.load()
     print(locate_artifact_ref(store, args.ref))
     return 0
@@ -810,7 +796,7 @@ def cmd_review_record(args: argparse.Namespace) -> int:
     emit_record(
         adapter.update(mutate),
         json_output=wants_json(args),
-        include_invocations=_adapter_persists_invocations(adapter),
+
     )
     return 0
 
@@ -840,7 +826,7 @@ def cmd_clarify_record(args: argparse.Namespace) -> int:
     emit_record(
         adapter.update(mutate),
         json_output=wants_json(args),
-        include_invocations=_adapter_persists_invocations(adapter),
+
     )
     return 0
 
@@ -864,7 +850,7 @@ def cmd_plan_record(args: argparse.Namespace) -> int:
     emit_record(
         adapter.update(mutate),
         json_output=wants_json(args),
-        include_invocations=_adapter_persists_invocations(adapter),
+
     )
     return 0
 
@@ -878,7 +864,7 @@ def cmd_plan_accept(args: argparse.Namespace) -> int:
     emit_record(
         adapter.update(mutate),
         json_output=wants_json(args),
-        include_invocations=_adapter_persists_invocations(adapter),
+
     )
     return 0
 
@@ -913,7 +899,7 @@ def cmd_decision_record(args: argparse.Namespace) -> int:
     emit_record(
         adapter.update(mutate),
         json_output=wants_json(args),
-        include_invocations=_adapter_persists_invocations(adapter),
+
     )
     return 0
 
@@ -1023,26 +1009,20 @@ def store_topics(root: Path) -> dict:
 
 
 def open_adapter(root: Path):
-    """Pick the reference adapter that matches the on-disk representation.
+    """返回与磁盘形态匹配的参考适配器。
 
-    New topics use plain Markdown documents with no index file. A legacy
-    single-file JSON state keeps its own adapter so earlier dogfood evidence
-    stays readable.
+    唯一 current 形态是本地 Markdown 文档（store 根含 topic.md）。
+    旧 JSON 参考存储不再被识别或写入（writes=0）；需要回看时切换
+    p4-shadow-baseline / p5-natural-dogfood-baseline 历史标签。
     """
     root = Path(root)
     legacy_state = root / STATE_FILENAME
     if legacy_state.is_file():
-        try:
-            adapter_id = json.loads(legacy_state.read_text(encoding="utf-8")).get(
-                "adapter"
-            )
-        except (OSError, json.JSONDecodeError) as error:
-            raise PrismProtocolError(
-                f"cannot read reference index: {legacy_state}"
-            ) from error
-        if adapter_id == "prism4.reference-json":
-            return JsonReferenceStoreAdapter(root)
-        raise PrismProtocolError(f"unsupported adapter: {adapter_id}")
+        raise PrismProtocolError(
+            f"legacy JSON reference stores are unsupported (writes=0): {legacy_state}; "
+            "current adapter is local Markdown; view history via the "
+            "p4-shadow-baseline / p5-natural-dogfood-baseline git tags"
+        )
     return LocalFileStoreAdapter(root)
 
 

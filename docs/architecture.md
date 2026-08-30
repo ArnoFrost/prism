@@ -176,7 +176,6 @@ prism/
 │   ├── core.py
 │   ├── host.py
 │   ├── local_files.py
-│   ├── local_json.py
 │   ├── projection.py
 │   ├── use_cases.py
 │   └── reference.py

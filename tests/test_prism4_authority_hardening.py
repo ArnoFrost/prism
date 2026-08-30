@@ -9,14 +9,13 @@ accepted only when a valid committed Decision explicitly lists their refs;
 new committed writes must carry typed, target-bound evidence.
 """
 
-import json
 import os
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from prism4 import JsonReferenceStoreAdapter, LocalFileStoreAdapter
+from prism4 import LocalFileStoreAdapter
 from prism4.core import Artifact, PrismProtocolError, SemanticPayload
 from prism4.reference import ReferenceStore
 from prism4.use_cases import (
@@ -716,41 +715,6 @@ def test_record_without_input_refs_declares_unavailable_instead_of_role_sweep():
     )
 
 
-def test_json_adapter_persists_declared_inputs_only(tmp_path: Path):
-    root = tmp_path / "state"
-    root.mkdir()
-    from prism4.local_json import store_to_dict
-
-    (root / "prism4-state.json").write_text(
-        json.dumps(store_to_dict(ReferenceStore())), encoding="utf-8"
-    )
-    adapter = JsonReferenceStoreAdapter(root)
-
-    def build(store: ReferenceStore):
-        create_topic(
-            store,
-            topic_id="topic:j",
-            title="J",
-            intent_body="边界。",
-            next_artifact_id=adapter.next_artifact_id,
-        )
-        return record_plan(
-            store,
-            topic_id="topic:j",
-            body="计划。",
-            input_refs=("intent:i01",),
-            next_artifact_id=adapter.next_artifact_id,
-        )
-
-    plan_id, inv_id = adapter.update(build)
-    reloaded = JsonReferenceStoreAdapter(root).load()
-    assert reloaded.invocations[inv_id].input_refs == ("intent:i01",)
-    assert reloaded.invocations[inv_id].metadata["input_provenance_grade"] == "exact"
-    assert not any(
-        ref.startswith("brief:") for ref in reloaded.invocations[inv_id].input_refs
-    )
-
-
 # ── CLI surface: same guard on every entry (d05) ─────────────────────────
 
 
@@ -798,46 +762,4 @@ def test_relation_add_via_cli_rejects_illegal_cross_role_supersedes(tmp_path: Pa
     assert "must be a findings artifact" in result.stderr
 
 
-def test_plan_record_cli_persists_exact_input_grade_in_json_store(tmp_path: Path):
-    """Public CLI surface must preserve the same exact-input contract cross-process."""
-    root = tmp_path / "state"
-    root.mkdir()
-    from prism4.local_json import store_to_dict
 
-    (root / "prism4-state.json").write_text(
-        json.dumps(store_to_dict(ReferenceStore())), encoding="utf-8"
-    )
-    assert (
-        _run_prism(
-            "topic",
-            "new",
-            "topic:j",
-            "--title",
-            "J",
-            "--intent",
-            "边界。",
-            root=root,
-        ).returncode
-        == 0
-    )
-
-    result = _run_prism(
-        "plan",
-        "record",
-        "topic:j",
-        "--body",
-        "计划。",
-        "--input-ref",
-        "intent:i01",
-        root=root,
-    )
-    assert result.returncode == 0, result.stderr
-
-    reloaded = JsonReferenceStoreAdapter(root).load()
-    invocation = next(
-        item
-        for item in reloaded.invocations.values()
-        if "plan:p01" in item.output_refs
-    )
-    assert invocation.input_refs == ("intent:i01",)
-    assert invocation.metadata["input_provenance_grade"] == "exact"

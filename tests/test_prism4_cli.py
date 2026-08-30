@@ -16,7 +16,6 @@ test_prism4_use_cases.py and test_prism4_local_files.py.
 
 from prism4 import (
     Artifact,
-    JsonReferenceStoreAdapter,
     LocalFileStoreAdapter,
     ReferenceStore,
     Relation,
@@ -55,7 +54,7 @@ def _run_prism(
     )
 
 
-def _seed_json_store(root: Path) -> Path:
+def _seed_local_store(root: Path) -> Path:
     store = ReferenceStore()
     topic = Topic(id="topic:prism-4-refoundation", title="Prism 4.0 Refoundation")
     child = Topic(
@@ -67,36 +66,36 @@ def _seed_json_store(root: Path) -> Path:
     store.add_topic(child)
 
     intent = Artifact(
-        id="artifact:intent.foundation",
+        id="intent:i01",
         topic_id=topic.id,
         role="intent",
         title="Foundation Intent",
         body="Prism 4.0 is a lightweight governance protocol.",
     )
     findings = Artifact(
-        id="artifact:findings.initial",
+        id="finding:f01",
         topic_id=topic.id,
         role="findings",
         title="Initial Findings",
         body="Keep Core thin.",
     )
     plan = Artifact(
-        id="artifact:plan.next",
+        id="plan:p01",
         topic_id=topic.id,
         role="plan",
         title="Next Plan",
         body="## 目标\n\nKeep the reference adapter useful.\n\n## 步骤\n\n1. Verify CLI.\n",
     )
     payload = SemanticPayload(
-        id="payload:decision-candidate.adapter-choice",
+        id="clarify:c90",
         type="decision-candidate",
         body="Use explicit Decision semantics.",
     )
     decision = Artifact(
-        id="artifact:decision.json-adapter",
+        id="decision:d01",
         topic_id=topic.id,
         role="decision",
-        title="JSON Adapter Decision",
+        title="Adapter Decision",
         body="Authorize the next plan.",
     )
 
@@ -120,7 +119,7 @@ def _seed_json_store(root: Path) -> Path:
             target_ref=plan.id,
         )
     )
-    JsonReferenceStoreAdapter(root).save(store)
+    LocalFileStoreAdapter(root).save(store)
     return root
 
 
@@ -152,8 +151,8 @@ def test_bin_prism_points_to_v4_help_surface():
     assert "prism legacy" not in result.stdout
 
 
-def test_bin_prism_topic_list_reads_json_reference_state(tmp_path: Path):
-    root = _seed_json_store(tmp_path / "state")
+def test_bin_prism_topic_list_reads_local_reference_state(tmp_path: Path):
+    root = _seed_local_store(tmp_path / "state")
     result = subprocess.run(
         [str(BIN_PRISM), "topic", "list", "--root", str(root)],
         capture_output=True,
@@ -167,14 +166,14 @@ def test_bin_prism_topic_list_reads_json_reference_state(tmp_path: Path):
     assert "parent=topic:prism-4-refoundation" in result.stdout
 
 
-def test_bin_prism_artifact_show_reads_json_reference_artifact(tmp_path: Path):
-    root = _seed_json_store(tmp_path / "state")
+def test_bin_prism_artifact_show_reads_local_reference_artifact(tmp_path: Path):
+    root = _seed_local_store(tmp_path / "state")
     result = subprocess.run(
         [
             str(BIN_PRISM),
             "artifact",
             "show",
-            "artifact:intent.foundation",
+            "intent:i01",
             "--root",
             str(root),
         ],
@@ -189,7 +188,7 @@ def test_bin_prism_artifact_show_reads_json_reference_artifact(tmp_path: Path):
 
 
 def test_bin_prism_brief_project_does_not_require_saving(tmp_path: Path):
-    root = _seed_json_store(tmp_path / "state")
+    root = _seed_local_store(tmp_path / "state")
     result = subprocess.run(
         [
             str(BIN_PRISM),
@@ -213,7 +212,7 @@ def test_bin_prism_brief_project_does_not_require_saving(tmp_path: Path):
 def test_bin_prism_discovers_workspace_v4_topic_from_repo_root(tmp_path):
     """Hermetic: 桥接目录下发现 4.0 topic（不依赖本机真实 bridge）。"""
     store = tmp_path / "workspace.demo.local" / "topics" / "001_refoundation"
-    _seed_json_store(store)
+    _seed_local_store(store)
     result = subprocess.run(
         [str(BIN_PRISM), "topic", "list"],
         cwd=str(tmp_path),
@@ -296,7 +295,7 @@ def test_bin_prism_legacy_prefix_is_retired():
 
 def test_bin_prism_capability_run_is_retired(tmp_path):
     root = tmp_path / "state"
-    _seed_json_store(root)
+    _seed_local_store(root)
 
     hidden = subprocess.run(
         [
@@ -339,13 +338,13 @@ def test_bin_prism_capability_run_is_retired(tmp_path):
     assert clarify.returncode == 0, clarify.stderr
     assert "clarify:c01" in clarify.stdout
 
-    store = JsonReferenceStoreAdapter(root).load()
+    store = LocalFileStoreAdapter(root).load()
     assert "clarify:c01" in store.payloads
 
 
 def test_bin_prism_review_record_is_the_public_surface(tmp_path):
     root = tmp_path / "state"
-    _seed_json_store(root)
+    _seed_local_store(root)
 
     help_result = subprocess.run(
         [str(BIN_PRISM), "--help"],
@@ -383,7 +382,7 @@ def test_bin_prism_review_record_is_the_public_surface(tmp_path):
 
 def test_bin_prism_artifact_next_id_and_locate(tmp_path):
     root = tmp_path / "state"
-    _seed_json_store(root)
+    _seed_local_store(root)
 
     next_id = subprocess.run(
         [
@@ -402,14 +401,14 @@ def test_bin_prism_artifact_next_id_and_locate(tmp_path):
         env=_env(),
     )
     assert next_id.returncode == 0, next_id.stderr
-    assert next_id.stdout.strip() == "finding:f01"
+    assert next_id.stdout.strip() == "finding:f02"
 
-    json_locate = subprocess.run(
+    local_locate = subprocess.run(
         [
             str(BIN_PRISM),
             "artifact",
             "locate",
-            "artifact:decision.json-adapter",
+            "decision:d01",
             "--root",
             str(root),
         ],
@@ -418,8 +417,8 @@ def test_bin_prism_artifact_next_id_and_locate(tmp_path):
         timeout=10,
         env=_env(),
     )
-    assert json_locate.returncode == 2
-    assert "JSON reference stores have logical refs" in json_locate.stderr
+    assert local_locate.returncode == 0, local_locate.stderr
+    assert local_locate.stdout.strip().startswith("decisions/")
 
     local_root = tmp_path / "local-state"
     local_store = ReferenceStore()
@@ -793,7 +792,7 @@ def test_bin_prism_brief_save_overwrites_existing(tmp_path):
 
 def test_review_record_reads_body_from_stdin_and_file(tmp_path):
     root = tmp_path / "state"
-    _seed_json_store(root)
+    _seed_local_store(root)
     body_file = tmp_path / "finding.md"
     body_file.write_text("Findings from a file.\n", encoding="utf-8")
 
@@ -840,14 +839,14 @@ def test_review_record_reads_body_from_stdin_and_file(tmp_path):
     assert from_stdin.returncode == 0, from_stdin.stderr
     assert "finding:f-stdin" in from_stdin.stdout
 
-    store = JsonReferenceStoreAdapter(root).load()
+    store = LocalFileStoreAdapter(root).load()
     assert store.artifacts["finding:f-file"].body == "Findings from a file.\n"
     assert store.artifacts["finding:f-stdin"].body == "Findings from stdin.\n"
 
 
 def test_review_record_json_is_small_ok_ids_not_legacy_envelope(tmp_path):
     root = tmp_path / "state"
-    _seed_json_store(root)
+    _seed_local_store(root)
 
     trailing = subprocess.run(
         [
@@ -958,7 +957,7 @@ def test_mechanical_primitives_are_reachable_via_cli(tmp_path: Path) -> None:
 
 def test_clarify_rejects_two_stdin_options(tmp_path):
     root = tmp_path / "state"
-    _seed_json_store(root)
+    _seed_local_store(root)
     result = subprocess.run(
         [
             str(BIN_PRISM),

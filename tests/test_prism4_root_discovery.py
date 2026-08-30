@@ -1,12 +1,13 @@
 """Root discovery is adapter behavior, not protocol semantics."""
 
-import json
 import os
 from pathlib import Path
 
+import pytest
+
+from prism4 import PrismProtocolError
 from prism4.cli import open_adapter, resolve_root
 from prism4.host import discover_bridged_state, is_store_root
-from prism4 import JsonReferenceStoreAdapter, LocalFileStoreAdapter
 
 
 def _write_files_store(directory: Path) -> Path:
@@ -20,13 +21,11 @@ def _write_files_store(directory: Path) -> Path:
     return target
 
 
-def _write_legacy_json_store(directory: Path) -> Path:
+def _write_legacy_json_state(directory: Path) -> Path:
+    """旧 JSON 参考存储形态：不再被识别，也不参与发现。"""
     directory.mkdir(parents=True, exist_ok=True)
     target = directory / "prism4-state.json"
-    target.write_text(
-        json.dumps({"adapter": "prism4.reference-json", "schema_version": 1}) + "\n",
-        encoding="utf-8",
-    )
+    target.write_text('{"adapter": "prism4.reference-json"}\n', encoding="utf-8")
     return target
 
 
@@ -34,14 +33,14 @@ def test_explicit_root_wins(tmp_path: Path) -> None:
     assert resolve_root(str(tmp_path)) == tmp_path
 
 
-def test_store_root_detects_both_representations(tmp_path: Path) -> None:
+def test_store_root_requires_topic_md(tmp_path: Path) -> None:
     files_root = tmp_path / "files"
-    legacy_root = tmp_path / "legacy"
     _write_files_store(files_root)
-    _write_legacy_json_store(legacy_root)
+    legacy_json_root = tmp_path / "legacy-json"
+    _write_legacy_json_state(legacy_json_root)
 
     assert is_store_root(files_root)
-    assert is_store_root(legacy_root)
+    assert not is_store_root(legacy_json_root)
     assert not is_store_root(tmp_path / "empty")
 
 
@@ -85,11 +84,14 @@ def test_bridged_flat_layout_is_discovered(tmp_path: Path) -> None:
     assert discover_bridged_state(tmp_path) == flat
 
 
-def test_legacy_json_store_under_bridge_is_discovered(tmp_path: Path) -> None:
+def test_legacy_json_state_is_not_discovered(tmp_path: Path) -> None:
+    """旧 JSON 参考存储不参与 store 发现；显式指向时 fail-fast（writes=0）。"""
     legacy = tmp_path / "workspace.demo.local" / "topics" / "061_legacy"
-    _write_legacy_json_store(legacy)
+    _write_legacy_json_state(legacy)
 
-    assert discover_bridged_state(tmp_path) == legacy
+    assert discover_bridged_state(tmp_path) is None
+    with pytest.raises(PrismProtocolError, match="writes=0"):
+        open_adapter(legacy)
 
 
 def test_most_recently_touched_candidate_wins(tmp_path: Path) -> None:
@@ -111,14 +113,11 @@ def test_no_bridge_returns_none(tmp_path: Path) -> None:
     assert discover_bridged_state(tmp_path) is None
 
 
-def test_open_adapter_matches_on_disk_representation(tmp_path: Path) -> None:
-    legacy_root = tmp_path / "legacy"
+def test_open_adapter_returns_local_markdown_adapter(tmp_path: Path) -> None:
     files_root = tmp_path / "files"
     fresh_root = tmp_path / "fresh"
-    _write_legacy_json_store(legacy_root)
     _write_files_store(files_root)
 
-    assert isinstance(open_adapter(legacy_root), JsonReferenceStoreAdapter)
-    assert isinstance(open_adapter(files_root), LocalFileStoreAdapter)
-    # New topics default to the index-free representation.
-    assert isinstance(open_adapter(fresh_root), LocalFileStoreAdapter)
+    # New topics default to the index-free Markdown representation.
+    assert open_adapter(fresh_root).root == fresh_root
+    assert open_adapter(files_root).root == files_root

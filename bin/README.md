@@ -165,7 +165,7 @@ prism decision record <topic_id> --body "<决策>" --authority-evidence "<授权
 - 落盘：`prism review/clarify/decision record`（persist ≠ authorize）。Decision commit 需要 `--authority-evidence`（指向 human-choice 记录、明确覆盖目标的 committed Decision 或委托上下文 ref）；缺证据时拒绝写入、durable writes = 0——`--authority` 是 requirement，不是 evidence。record surfaces 用可重复的 `--input-ref` 声明实际语义输入；不传时 Invocation 标记 `declared-unavailable`，不按 Topic role 推断。
 - `authorizes` 是 authority-sensitive relation：只能在已通过授权证据校验的 `decision record --authorizes <ref>` 中原子产生；通用 `relation add` 不得事后扩张既有 Decision 的授权范围。
 - 高级持久快照：`prism plan record <topic_id> --body "<行动结构>"`；supersedes 仅经显式 `--supersedes` 提交，命令不自动替代 current Plan。普通当前轮 planning 优先由 Agent 局部感知，不默认落盘。
-- Provenance 等级：本地 Markdown store 不落盘 Invocation（溯源由工件 frontmatter 的 `capability` / `created_at` 承载），因此 record 输出不含 invocation id（weak-provenance）；JSON 参考存储完整持久化 Invocation 并回显其 id。
+- Provenance 等级：本地 Markdown store 不落盘 Invocation（溯源由工件 frontmatter 的 `capability` / `created_at` 承载），因此 record 输出不含 invocation id（weak-provenance）；不存在完整持久化 Invocation 的存储路径。
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
 - 3.x：已随 prism-4 分支剔除。已知 3.x 动词统一报「已剔除 + tag 指引」（exit 2）。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`dist` 仅保留退役提示。历史 3.x envelope 见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)。

@@ -25,7 +25,6 @@ from .core import (
     clarify_capability,
 )
 from .reference import ReferenceStore
-from .local_json import JsonReferenceStoreAdapter
 from .local_files import LocalFileStoreAdapter
 from .projection import project_brief
 
@@ -37,7 +36,6 @@ __all__ = [
     "AuthorityPolicy",
     "CapabilitySpec",
     "Invocation",
-    "JsonReferenceStoreAdapter",
     "LocalFileStoreAdapter",
     "PrismProtocolError",
     "ReferenceStore",
