@@ -254,11 +254,8 @@ def topic_dir_slug(topic_id: str) -> str:
 
 
 def is_store_root(candidate: Path) -> bool:
-    """A store root holds a topic.md at its root or a legacy topics/*.md layout."""
-    if (candidate / TOPIC_FILENAME).is_file():
-        return True
-    legacy = candidate / "topics"
-    return legacy.is_dir() and any(legacy.glob("*.md"))
+    """A store root holds a topic.md at its root; early layouts are not store roots."""
+    return (candidate / TOPIC_FILENAME).is_file()
 
 
 def bridge_target(bridge: Path) -> Path | None:

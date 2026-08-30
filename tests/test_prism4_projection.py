@@ -438,7 +438,8 @@ def test_project_brief_without_plan_uses_honest_empty_state():
     assert "见当前 Plan" not in acceptance
 
 
-def test_single_topic_brief_infers_legacy_unscoped_payload():
+def test_single_topic_brief_excludes_unscoped_payload_with_diagnostic():
+    """缺 provenance 的历史澄清不做 sole-topic 推断：排除并给出诊断。"""
     store = ReferenceStore()
     topic = store.add_topic(Topic(id="topic:demo", title="示例"))
     store.add_payload(
@@ -452,8 +453,9 @@ def test_single_topic_brief_infers_legacy_unscoped_payload():
 
     brief = project_brief(store, topic.id)
 
-    assert "`clarify:c01` 历史问题？" in brief.body
-    assert "缺少 Topic provenance" not in brief.body
+    open_section = brief.body.split("## 风险与未决")[1].split("## 下一步")[0]
+    assert "历史问题？" not in open_section
+    assert "1 条历史 Clarify 缺少 Topic provenance，未纳入本 Brief" in brief.body
 
 
 def test_multi_topic_brief_excludes_legacy_unscoped_payload_with_diagnostic():

@@ -542,20 +542,8 @@ else
 
       agents_target="${ws_target}/AGENTS.md"
       legacy_target="${ws_target}/AGENT.md"
-      if [[ -f "$legacy_target" && -f "$agents_target" ]]; then
-        log_warn "    ${code}: vault 内同时存在 AGENT.md 与 AGENTS.md，请手动确认后保留 AGENTS.md"
-      elif [[ -f "$legacy_target" && ! -f "$agents_target" ]]; then
-        if $CHECK_ONLY; then
-          log_warn "    ${code}: vault 内仍是老命名 AGENT.md（v1.1.4+ 应已迁移；运行 bin/relink 自动 mv）"
-        elif $DRY_RUN; then
-          log_fix "    ${code}: 将 mv ${legacy_target} → ${agents_target}"
-        else
-          if mv "$legacy_target" "$agents_target" 2>/dev/null; then
-            log_fix "    ${code}: 自动迁移 AGENT.md → AGENTS.md（vault 内）"
-          else
-            log_err "    ${code}: AGENT.md → AGENTS.md mv 失败（iCloud 占位符？请手动处理）"
-          fi
-        fi
+      if [[ -f "$legacy_target" ]]; then
+        log_err "    ${code}: 检测到老命名 AGENT.md（自动迁移已移除，请手动 mv 为 AGENTS.md 后重跑）"
       fi
       if [[ -f "$agents_target" ]]; then
         ensure_link "${local_path}/AGENTS.local.md" "$agents_target" "    AGENTS.local.md"

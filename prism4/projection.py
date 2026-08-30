@@ -155,20 +155,17 @@ def _scoped_payloads(
 ) -> tuple[list, int]:
     """Return applicable payloads and count ambiguous legacy payloads.
 
-    New Clarify payloads carry ``metadata.topic_id``. A legacy payload without
-    provenance can be inferred only when the store contains exactly one Topic;
-    in a multi-Topic store it is excluded rather than treated as global state.
+    New Clarify payloads carry ``metadata.topic_id``. A payload without
+    provenance is always treated as unscoped: it is excluded from the Brief
+    with a diagnostic instead of being inferred into any Topic.
     """
-    sole_topic_id = next(iter(store.topics)) if len(store.topics) == 1 else None
     pending = []
     unscoped_count = 0
     for payload in store.payloads.values():
         source_topic_id = str(payload.metadata.get("topic_id") or "").strip()
         if not source_topic_id:
-            if sole_topic_id is None:
-                unscoped_count += 1
-                continue
-            source_topic_id = sole_topic_id
+            unscoped_count += 1
+            continue
         status = str(payload.metadata.get("status") or "").strip().lower()
         if status in {"confirmed", "absorbed", "consumed", "historical"}:
             continue

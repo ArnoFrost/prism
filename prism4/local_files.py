@@ -75,31 +75,25 @@ BRIEF_FILENAME = "brief.md"
 
 
 class RoleLayout(NamedTuple):
-    """单一角色的 Adapter 呈现：id 形态 + 现行路径 + 旧目录。"""
+    """单一角色的 Adapter 呈现：id 形态 + 现行路径。"""
 
     namespace: str
     prefix: str | None
     directory: str | None = None
     filename: str | None = None
-    legacy_directory: str | None = None
 
 
 ROLE_SPEC: dict[str, RoleLayout] = {
-    "intent": RoleLayout("intent", "i", filename=INTENT_FILENAME, legacy_directory="intent"),
-    "brief": RoleLayout("brief", None, filename=BRIEF_FILENAME, legacy_directory="brief"),
-    "findings": RoleLayout("finding", "f", directory="findings", legacy_directory="findings"),
-    "decision": RoleLayout("decision", "d", directory="decisions", legacy_directory="decisions"),
-    "plan": RoleLayout("plan", "p", directory="plans", legacy_directory="plans"),
+    "intent": RoleLayout("intent", "i", filename=INTENT_FILENAME),
+    "brief": RoleLayout("brief", None, filename=BRIEF_FILENAME),
+    "findings": RoleLayout("finding", "f", directory="findings"),
+    "decision": RoleLayout("decision", "d", directory="decisions"),
+    "plan": RoleLayout("plan", "p", directory="plans"),
 }
 ROLE_TO_DIRECTORY = {
     role: spec.directory for role, spec in ROLE_SPEC.items() if spec.directory
 }
 DIRECTORY_TO_ROLE = {directory: role for role, directory in ROLE_TO_DIRECTORY.items()}
-LEGACY_ROLE_TO_DIRECTORY = {
-    role: spec.legacy_directory
-    for role, spec in ROLE_SPEC.items()
-    if spec.legacy_directory
-}
 CLARIFY_NAMESPACE = "clarify"
 CLARIFY_SEQUENCE_PREFIX = "c"
 
@@ -301,14 +295,6 @@ class LocalFileStoreAdapter:
     def _owned_markdown(self) -> set[Path]:
         owned: set[Path] = set()
         self._collect_layout_docs(self.root, owned, store_root=True)
-        for directory in (
-            LEGACY_TOPIC_DIRECTORY,
-            *LEGACY_ROLE_TO_DIRECTORY.values(),
-            CLARIFICATION_DIRECTORY,
-        ):
-            base = self.root / directory
-            if base.is_dir():
-                owned.update(base.glob("*.md"))
         return owned
 
     def _collect_layout_docs(
@@ -358,15 +344,17 @@ class LocalFileStoreAdapter:
     def load(self) -> ReferenceStore:
         if (self.root / TOPIC_FILENAME).is_file():
             return self._load_current()
-        topic_dir = self.root / LEGACY_TOPIC_DIRECTORY
-        if topic_dir.is_dir():
-            return self._load_legacy(topic_dir)
+        if (self.root / LEGACY_TOPIC_DIRECTORY).is_dir():
+            raise PrismProtocolError(
+                "unsupported early 4.x layout (writes=0): "
+                f"{self.root / LEGACY_TOPIC_DIRECTORY}; current adapter expects "
+                "topic.md at the store root; view history via the "
+                "p4-shadow-baseline / p5-natural-dogfood-baseline git tags"
+            )
         raise PrismProtocolError(f"主题文档不存在：{self.root / TOPIC_FILENAME}")
 
     def _load_or_empty(self) -> ReferenceStore:
-        if (self.root / TOPIC_FILENAME).is_file() or (
-            self.root / LEGACY_TOPIC_DIRECTORY
-        ).is_dir():
+        if (self.root / TOPIC_FILENAME).is_file():
             return self.load()
         self._known_owned = set()
         return ReferenceStore()
@@ -379,14 +367,6 @@ class LocalFileStoreAdapter:
         """
         if (self.root / TOPIC_FILENAME).is_file():
             documents = _iter_topic_documents(self.root)
-        elif (self.root / LEGACY_TOPIC_DIRECTORY).is_dir():
-            documents = [
-                document
-                for document in sorted(
-                    (self.root / LEGACY_TOPIC_DIRECTORY).glob("*.md")
-                )
-                if not document.name.endswith(INDEX_SUFFIX)
-            ]
         else:
             return {}
         topics: dict[str, Topic] = {}
@@ -412,37 +392,6 @@ class LocalFileStoreAdapter:
             artifact_documents_for=lambda store: _iter_artifact_documents(
                 self.root, store
             ),
-            payload_documents=payload_documents,
-        )
-
-    def _load_legacy(self, topic_dir: Path) -> ReferenceStore:
-        topic_documents = [
-            document
-            for document in sorted(topic_dir.glob("*.md"))
-            if not document.name.endswith(INDEX_SUFFIX)
-        ]
-        artifact_documents: list[tuple[Path, str]] = []
-        for role, directory in LEGACY_ROLE_TO_DIRECTORY.items():
-            base = self.root / directory
-            if not base.is_dir():
-                continue
-            for document in sorted(base.glob("*.md")):
-                if document.name.endswith(INDEX_SUFFIX):
-                    continue
-                artifact_documents.append((document, role))
-        clarify_dir = self.root / CLARIFICATION_DIRECTORY
-        payload_documents = (
-            [
-                document
-                for document in sorted(clarify_dir.glob("*.md"))
-                if not document.name.endswith(INDEX_SUFFIX)
-            ]
-            if clarify_dir.is_dir()
-            else []
-        )
-        return self._load_documents(
-            topic_documents=topic_documents,
-            artifact_documents_for=lambda store: artifact_documents,
             payload_documents=payload_documents,
         )
 

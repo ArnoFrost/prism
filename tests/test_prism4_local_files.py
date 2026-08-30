@@ -658,9 +658,13 @@ def test_load_requires_topic_documents(tmp_path: Path) -> None:
 
 
 def test_orphan_child_topic_is_reported(tmp_path: Path) -> None:
-    topics = tmp_path / "topics"
-    topics.mkdir()
-    (topics / "orphan.md").write_text(
+    (tmp_path / "topic.md").write_text(
+        '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
+        encoding="utf-8",
+    )
+    child_dir = tmp_path / "children" / "orphan"
+    child_dir.mkdir(parents=True)
+    (child_dir / "topic.md").write_text(
         '---\nid: "topic:orphan"\ntitle: "孤儿"\nparent: "topic:missing"\n---\n',
         encoding="utf-8",
     )
@@ -728,7 +732,8 @@ def test_superseded_intent_is_written_to_archive(tmp_path: Path) -> None:
     )
 
 
-def test_legacy_topics_directory_still_loads(tmp_path: Path) -> None:
+def test_legacy_early_layout_fails_closed(tmp_path: Path) -> None:
+    """早期 4.x 布局（topics/*.md + 顶层 role 目录）不再被解析，明确 fail-fast 且 writes=0。"""
     topics = tmp_path / "topics"
     topics.mkdir()
     (topics / "demo.md").write_text(
@@ -743,41 +748,37 @@ def test_legacy_topics_directory_still_loads(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
+    with pytest.raises(PrismProtocolError, match="writes=0"):
+        LocalFileStoreAdapter(tmp_path).load()
+
+    # fail closed：旧布局文件原样保留，不被转换或改写。
+    assert (tmp_path / "topics" / "demo.md").is_file()
+    assert (tmp_path / "intent" / "i01_地基.md").is_file()
+    assert not (tmp_path / "topic.md").exists()
+
+
+def test_legacy_role_directories_do_not_shadow_current_store(tmp_path: Path) -> None:
+    """current store 根下遗留的顶层 role 目录（旧 intent/ 布局）不参与解析或 prune。"""
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo",
+            role="findings",
+            title="发现",
+            body="正文。",
+        )
+    )
+    stale_legacy_dir = tmp_path / "intent"
+    stale_legacy_dir.mkdir()
+    stale_doc = stale_legacy_dir / "i01_旧件.md"
+    stale_doc.write_text("历史文本，不由 current adapter 管理。\n", encoding="utf-8")
+
     adapter = LocalFileStoreAdapter(tmp_path)
-    loaded = adapter.load()
-    assert "topic:demo" in loaded.topics
-    assert loaded.artifacts["intent:i01"].title == "地基"
+    adapter.save(store)
 
-    adapter.save(loaded)
+    assert stale_doc.is_file(), "历史目录不被 prune 触碰"
     assert (tmp_path / "topic.md").is_file()
-    assert (tmp_path / "intent.md").is_file()
-
-
-def test_legacy_decisions_directory_loads(tmp_path: Path) -> None:
-    topics = tmp_path / "topics"
-    topics.mkdir()
-    (topics / "demo.md").write_text(
-        '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
-        encoding="utf-8",
-    )
-    decisions = tmp_path / "decisions"
-    decisions.mkdir()
-    (decisions / "d01_决策.md").write_text(
-        '---\nid: "decision:d01"\nrole: "decision"\ntitle: "决策"\n'
-        'topic: "topic:demo"\n---\n\n已确认。\n',
-        encoding="utf-8",
-    )
-    plans = tmp_path / "plans"
-    plans.mkdir()
-    (plans / "p01_计划.md").write_text(
-        '---\nid: "plan:p01"\nrole: "plan"\ntitle: "计划"\n'
-        'topic: "topic:demo"\n---\n\n计划正文。\n',
-        encoding="utf-8",
-    )
-
-    loaded = LocalFileStoreAdapter(tmp_path).load()
-    assert loaded.artifacts["decision:d01"].title == "决策"
-    assert loaded.artifacts["plan:p01"].title == "计划"
 
 
 def test_role_spec_covers_every_core_artifact_role() -> None:
@@ -787,8 +788,7 @@ def test_role_spec_covers_every_core_artifact_role() -> None:
 def test_load_aggregates_all_document_problems(tmp_path: Path) -> None:
     """多个坏文件一次全部报出，每条带路径与修法，不再「修一个暴露一个」。"""
     topics = tmp_path / "topics"
-    topics.mkdir()
-    (topics / "demo.md").write_text(
+    (tmp_path / "topic.md").write_text(
         '---\nid: "topic:demo"\ntitle: "示例主题"\n---\n',
         encoding="utf-8",
     )
