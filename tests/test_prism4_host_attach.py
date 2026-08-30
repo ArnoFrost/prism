@@ -534,7 +534,8 @@ def test_relink_missing_resolver_is_fail_closed(tmp_path: Path) -> None:
     assert not (project / "workspace.workspace.local").exists()
 
 
-def test_legacy_cli_surface_is_retired() -> None:
+def test_legacy_cli_surface_is_plain_argparse_failure() -> None:
+    """退役 verb 无特判指引，统一 argparse failure；历史指引在 Changelog / historical。"""
     result = subprocess.run(
         [str(BIN_PRISM), "legacy", "--help"],
         capture_output=True,
@@ -542,5 +543,5 @@ def test_legacy_cli_surface_is_retired() -> None:
         timeout=10,
         env=_env(),
     )
-    assert result.returncode == 2
-    assert "已从 prism-4 分支剔除" in result.stderr
+    assert result.returncode != 0
+    assert "invalid choice" in result.stderr or "unrecognized" in result.stderr

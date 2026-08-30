@@ -16,29 +16,20 @@
 #   topic new       创建 4.0 Topic（无 --root 时写入桥接下的新专项目录）
 #   topic list      列出 4.0 Topic
 #   host attach     登记项目并桥接 workspace.{code}.local（不调用 3.x init）
-#   artifact write  generic 机械持久化：写/更新 artifact 正文（不创建 Invocation）
-#   artifact archive 生命周期退档：标 evolution: historical，不删除文档
-#   relation add    显式写入语义 relation（source/kind/target 均由调用方选择）
 #   store validate  全量加载校验，聚合报告合同问题
 #   store regenerate-index  从当前工件重建索引投影
 #   artifact show   查看 4.0 Artifact / Payload 正文
 #   artifact locate 解析 Artifact / Payload id → 文档路径（机械定位）
 #   artifact next-id 预分配下一个工件 id（store 内全局递增，ref 全局唯一）
 #   brief project   从当前状态投影 Brief
-#   review record     transitional：持久化 Review 结果 → Findings（advisory；
-#                     不等于授权）。下版退役，日常直写 findings/。
-#                     --body - 读 stdin；--body @path 读文件；--json 输出 {ok, ids}
-#   clarify record    transitional：持久化 Clarify 结果 → semantic payloads
-#                     （候选，不是 Decision）。下版退役，日常直写 clarifications/。
-#   plan record       advanced：持久化 durable Plan snapshot（supersedes 仅经显式
-#                     --supersedes targets 提交，不自动替代 current Plan）
-#   decision record   advanced：记录被授权的 Decision（commit 需 --authority-evidence）
+#   plan accept     记录 Plan acceptance（typed authority evidence guard）
+#   decision record 持久化已授权 Decision（--authority-evidence 必填；
+#                   --body - 读 stdin；--body @path 读文件；--json 输出 {ok, ids}）
 #   doctor          委托 bin/doctor
 #   relink          委托 bin/relink
 #   update          委托 bin/update
-#   dist            退役提示（旧 mini/full packer 见 Git 历史）
 #
-# record = persist semantic output；不等于授权。
+# 普通 Findings / Plan / Intent 更新走 Agent 直写 Markdown 后 `store validate`。
 #
 # 3.x 实现已从 prism-4 分支剔除（git tag legacy-3x-final）。
 #   旧 topic 只读；要操作 3.x 请切到 3.x 分支。

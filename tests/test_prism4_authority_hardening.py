@@ -730,36 +730,3 @@ def _run_prism(*cli_args: str, root: Path) -> subprocess.CompletedProcess:
     )
 
 
-def test_generic_write_via_cli_rejects_decision(tmp_path: Path):
-    root = tmp_path / "state"
-    root.mkdir()
-    assert _run_prism("topic", "new", "topic:g", "--title", "G", root=root).returncode == 0
-    result = _run_prism(
-        "artifact",
-        "write",
-        "decision:d01",
-        "--topic",
-        "topic:g",
-        "--body",
-        "绕过。",
-        root=root,
-    )
-    assert result.returncode == 2
-    assert "authority-sensitive" in result.stderr
-    assert not (root / "decisions").exists()
-
-
-def test_relation_add_via_cli_rejects_illegal_cross_role_supersedes(tmp_path: Path):
-    root = tmp_path / "state"
-    root.mkdir()
-    assert _run_prism("topic", "new", "topic:r", "--title", "R", root=root).returncode == 0
-    assert _run_prism("artifact", "write", "finding:f01", "--topic", "topic:r", "--body", "F。", root=root).returncode == 0
-    assert _run_prism("artifact", "write", "plan:p01", "--topic", "topic:r", "--body", "P。", root=root).returncode == 0
-    result = _run_prism(
-        "relation", "add", "--from", "finding:f01", "--kind", "supersedes", "--to", "plan:p01", root=root
-    )
-    assert result.returncode == 2
-    assert "must be a findings artifact" in result.stderr
-
-
-

@@ -4,7 +4,9 @@
 The CLI adapts local commands to the protocol package. It parses, dispatches,
 and prints. It does not define protocol semantics.
 
-record persists semantic output; it does not authorize.
+面 = 机械事实（probe/next-id/locate/show）+ 投影（brief/index）+ 校验
+（validate）+ guarded commitment（plan accept / decision record）。
+普通语义产物由 Agent 直写 Markdown 后 `store validate`。
 """
 
 from __future__ import annotations
@@ -38,17 +40,10 @@ from prism4.host import (  # noqa: E402
     unbridged_guidance,
 )
 from prism4.use_cases import (  # noqa: E402
-    RELATION_KINDS,
     accept_plan,
-    add_explicit_relation,
-    archive_artifact,
     create_topic,
     persist_brief,
-    record_clarify,
     record_decision,
-    record_plan,
-    record_review,
-    write_artifact,
 )
 from prism4.local_files import (  # noqa: E402
     locate_artifact_ref,
@@ -59,67 +54,19 @@ from prism4.local_files import (  # noqa: E402
 SDK_ROOT = Path(__file__).resolve().parents[1]
 VERSION_FILE = SDK_ROOT / "VERSION"
 STATE_FILENAME = "prism4-state.json"
-SURFACE_BIN_VERBS = frozenset({"doctor", "relink", "update", "dist"})
-# 3.x 实现（含 sync 与 legacy adapter 本身）已随 prism-4 分支剔除；
-# 终态由 git tag legacy-3x-final 保管。
-RETIRED_3X_VERBS = frozenset(
-    {
-        "archive",
-        "digest",
-        "finalize",
-        "legacy",
-        "manifest",
-        "migrate",
-        "reactivate",
-        "sniff",
-        "status",
-        "sync",
-        "tidy",
-        "validate",
-        "validate-trace",
-    }
-)
-FOUR_OH_DECISION_VERBS = frozenset({"record"})
-
-
-def reject_retired_3x_verb(verb: str) -> int:
-    print(
-        f"error: `{verb}` 属于 3.x 实现，已从 prism-4 分支剔除。",
-        file=sys.stderr,
-    )
-    print(
-        "      3.x 终态由 git tag `legacy-3x-final` 保管；4.0 命令面见 prism --help。",
-        file=sys.stderr,
-    )
-    return 2
-
-
-def hint_decision_noun_collision() -> int:
-    print(
-        "error: `prism decision` 是 4.0 入口，请使用: prism decision record …",
-        file=sys.stderr,
-    )
-    return 2
+SURFACE_BIN_VERBS = frozenset({"doctor", "relink", "update"})
 
 
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     json_output = False
     if args and args[0] == "--json":
-        if len(args) >= 2 and args[1] in RETIRED_3X_VERBS:
-            return reject_retired_3x_verb(args[1])
         if len(args) >= 2 and args[1] in SURFACE_BIN_VERBS:
             return run_product_bin(args[1], args)
         json_output = True
         args = args[1:]
-    if args and args[0] in RETIRED_3X_VERBS:
-        return reject_retired_3x_verb(args[0])
     if args and args[0] in SURFACE_BIN_VERBS:
         return run_product_bin(args[0], args)
-    if args and args[0] == "decision":
-        rest = args[1:]
-        if not rest or rest[0] not in FOUR_OH_DECISION_VERBS | {"--help", "-h"}:
-            return hint_decision_noun_collision()
 
     parser = build_parser()
     parsed = parser.parse_args(args)
@@ -133,9 +80,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 RECORD_MEANING = (
-    "record = persist semantic output. record != authorize. "
-    "Review record writes advisory Findings; "
-    "Decision record writes an authorized Decision."
+    "record = persist an authorized commitment. record != authorize: "
+    "Decision record writes an authorized Decision backed by typed evidence."
 )
 
 
@@ -231,121 +177,18 @@ def add_input_refs_arg(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def configure_review_record(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("topic_id")
-    parser.add_argument(
-        "--body",
-        required=True,
-        help="finding body; '-' reads stdin, '@path' reads a file",
-    )
-    parser.add_argument("--id", dest="artifact_id")
-    parser.add_argument("--title", help="Findings 标题；缺省时从正文摘要或首个发现标题推断")
-    parser.add_argument(
-        "--supersedes",
-        action="append",
-        default=[],
-        help="artifact ref this Findings supersedes; may be repeated",
-    )
-    add_input_refs_arg(parser)
-    add_root_arg(parser)
-    parser.set_defaults(func=cmd_review_record)
-
-
-def configure_clarify_record(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("topic_id")
-    parser.add_argument("--question", required=True, help="阻塞问题或歧义点")
-    parser.add_argument("--title", help="澄清标题（用于文件名与索引；缺省时取问题）")
-    parser.add_argument(
-        "--proposed-patch",
-        help="proposed-patch body; '-' reads stdin, '@path' reads a file",
-    )
-    parser.add_argument(
-        "--decision-candidate",
-        help="decision-candidate body; '-' reads stdin, '@path' reads a file",
-    )
-    parser.add_argument("--patch-id")
-    parser.add_argument("--candidate-id")
-    parser.add_argument(
-        "--evidence-target",
-        help=(
-            "record a typed authority-evidence payload bound to this target "
-            "ref, e.g. the pre-allocated decision id"
-        ),
-    )
-    parser.add_argument(
-        "--evidence-kind",
-        choices=("human-choice", "delegated-context"),
-        default="human-choice",
-        help="authority kind of the evidence record",
-    )
-    parser.add_argument(
-        "--evidence-confirmed",
-        action="store_true",
-        help=(
-            "mark the evidence confirmed — only set when the user explicitly "
-            "confirmed in this interaction; unconfirmed evidence cannot "
-            "back a Decision commit"
-        ),
-    )
-    parser.add_argument("--evidence-id", help="explicit payload id for the evidence record")
-    add_input_refs_arg(parser)
-    add_root_arg(parser)
-    parser.set_defaults(func=cmd_clarify_record)
-
-
-def configure_plan_record(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("topic_id")
-    parser.add_argument(
-        "--body",
-        required=True,
-        help="plan body; '-' reads stdin, '@path' reads a file",
-    )
-    parser.add_argument("--id", dest="artifact_id")
-    parser.add_argument("--title", default="行动结构")
-    parser.add_argument(
-        "--supersedes",
-        action="append",
-        default=[],
-        help="plan ref this Plan supersedes; may be repeated; explicit targets "
-        "only — recording never supersedes other current Plans on its own",
-    )
-    add_input_refs_arg(parser)
-    add_root_arg(parser)
-    parser.set_defaults(func=cmd_plan_record)
-
-
-def add_noun_record(
-    subparsers: argparse._SubParsersAction,
-    noun: str,
-    *,
-    noun_help: str,
-    record_help: str,
-    configure,
-    json_parent: argparse.ArgumentParser,
-) -> None:
-    parser = subparsers.add_parser(noun, help=noun_help)
-    nested = parser.add_subparsers(dest=f"{noun}_verb", required=True)
-    record = nested.add_parser(
-        "record",
-        help=record_help,
-        description=RECORD_MEANING,
-        parents=[json_parent],
-    )
-    configure(record)
-
-
 def build_parser() -> argparse.ArgumentParser:
     json_parent = json_flag_parent()
     parser = argparse.ArgumentParser(
         prog="prism",
         description=(
             "Prism 4.0 reference CLI adapter. "
-            "record persists semantic output; it does not authorize."
+            "Mechanical facts, projections, validation, and guarded commitments."
         ),
         epilog=(
-            f"{RECORD_MEANING}\n\n"
-            "Product maintenance surface includes doctor/relink/update; dist is a retired tombstone: prism --help. "
-            "3.x 实现已从 prism-4 分支剔除（git tag legacy-3x-final）。"
+            "普通 Findings / Plan / Intent 更新走 Agent 直写 Markdown 后 `store validate`；"
+            "CLI 只保留机械事实、投影、校验与 guarded commitment。"
+            "Product maintenance surface: doctor/relink/update。"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -353,7 +196,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(
         dest="verb",
-        metavar="{topic,artifact,brief,relation,store,review,clarify,plan,decision,host}",
+        metavar="{topic,artifact,brief,store,plan,decision,host}",
     )
 
     topic = subparsers.add_parser("topic", help="manage 4.0 topics")
@@ -405,47 +248,6 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(artifact_locate)
     artifact_locate.set_defaults(func=cmd_artifact_locate)
 
-    artifact_write = artifact_sub.add_parser(
-        "write",
-        help="write or update an artifact body (generic mechanical primitive)",
-    )
-    artifact_write.add_argument("ref", help="artifact ref, e.g. finding:f01")
-    artifact_write.add_argument(
-        "--topic",
-        dest="topic_id",
-        help="owning topic id; required when creating a new artifact",
-    )
-    artifact_write.add_argument("--title", help="artifact title; updates replace it, creations default to the ref local part")
-    artifact_write.add_argument(
-        "--body",
-        required=True,
-        help="artifact body; '-' reads stdin, '@path' reads a file",
-    )
-    add_root_arg(artifact_write)
-    artifact_write.set_defaults(func=cmd_artifact_write)
-
-    artifact_archive = artifact_sub.add_parser(
-        "archive",
-        help="mark an artifact historical (lifecycle archive, no deletion)",
-    )
-    artifact_archive.add_argument("ref")
-    add_root_arg(artifact_archive)
-    artifact_archive.set_defaults(func=cmd_artifact_archive)
-
-    relation = subparsers.add_parser(
-        "relation", help="manage semantic relations between artifacts"
-    )
-    relation_sub = relation.add_subparsers(dest="relation_verb", required=True)
-    relation_add = relation_sub.add_parser(
-        "add",
-        help="add an explicit relation; source, kind, and target are caller choices",
-    )
-    relation_add.add_argument("--from", dest="source_ref", required=True, help="source artifact/payload ref")
-    relation_add.add_argument("--kind", required=True, choices=RELATION_KINDS, help="relation kind")
-    relation_add.add_argument("--to", dest="target_ref", required=True, help="target artifact/payload ref")
-    add_root_arg(relation_add)
-    relation_add.set_defaults(func=cmd_relation_add)
-
     store = subparsers.add_parser(
         "store", help="validate or regenerate the local store"
     )
@@ -472,44 +274,10 @@ def build_parser() -> argparse.ArgumentParser:
     add_root_arg(brief_project)
     brief_project.set_defaults(func=cmd_brief_project)
 
-    # record 面分档：review / clarify 为 transitional（下版退役，日常直写
-    # Artifact）；plan / decision 为 advanced（durable snapshot 与授权承接保留）。
-    add_noun_record(
-        subparsers,
-        "review",
-        noun_help="record Review Findings (advisory; transitional)",
-        record_help=(
-            "persist Findings; does not authorize; "
-            "transitional: prefer writing findings/ directly"
-        ),
-        configure=configure_review_record,
-        json_parent=json_parent,
-    )
-    add_noun_record(
-        subparsers,
-        "clarify",
-        noun_help="record Clarify payloads (candidates, not Decisions; transitional)",
-        record_help=(
-            "persist semantic output; does not authorize; "
-            "transitional: prefer writing clarifications/ directly"
-        ),
-        configure=configure_clarify_record,
-        json_parent=json_parent,
-    )
     plan = subparsers.add_parser(
-        "plan", help="record a durable Plan model (advisory; advanced)"
+        "plan", help="record Plan acceptance (guarded commitment)"
     )
     plan_sub = plan.add_subparsers(dest="plan_verb", required=True)
-    plan_record = plan_sub.add_parser(
-        "record",
-        help=(
-            "persist durable Plan snapshot; supersedes only via explicit "
-            "--supersedes targets (no automatic supersede)"
-        ),
-        description=RECORD_MEANING,
-        parents=[json_parent],
-    )
-    configure_plan_record(plan_record)
     plan_accept_parser = plan_sub.add_parser(
         "accept",
         help=(
@@ -699,50 +467,6 @@ def cmd_artifact_locate(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_artifact_write(args: argparse.Namespace) -> int:
-    expand_text_options(args)
-    adapter = open_adapter(resolve_root(args.root))
-
-    def mutate(store):
-        return write_artifact(
-            store,
-            ref=args.ref,
-            body=args.body,
-            topic_id=args.topic_id,
-            title=args.title,
-        )
-
-    artifact_id, created = adapter.update(mutate)
-    print(f"{'created' if created else 'updated'}: {artifact_id}")
-    return 0
-
-
-def cmd_artifact_archive(args: argparse.Namespace) -> int:
-    adapter = open_adapter(resolve_root(args.root))
-
-    def mutate(store):
-        return archive_artifact(store, ref=args.ref)
-
-    print(f"archived: {adapter.update(mutate)}")
-    return 0
-
-
-def cmd_relation_add(args: argparse.Namespace) -> int:
-    adapter = open_adapter(resolve_root(args.root))
-
-    def mutate(store):
-        return add_explicit_relation(
-            store,
-            source_ref=args.source_ref,
-            kind=args.kind,
-            target_ref=args.target_ref,
-        )
-
-    relation = adapter.update(mutate)
-    print(f"related: {relation.source_ref} -{relation.kind}-> {relation.target_ref}")
-    return 0
-
-
 def cmd_store_validate(args: argparse.Namespace) -> int:
     store = open_adapter(resolve_root(args.root)).load()
     print(
@@ -774,84 +498,6 @@ def cmd_brief_project(args: argparse.Namespace) -> int:
 
     brief = project_brief(adapter.load(), args.topic_id, artifact_id=args.artifact_id)
     print(brief.body, end="")
-    return 0
-
-
-def cmd_review_record(args: argparse.Namespace) -> int:
-    expand_text_options(args)
-    adapter = open_adapter(resolve_root(args.root))
-
-    def mutate(store):
-        return record_review(
-            store,
-            topic_id=args.topic_id,
-            body=args.body,
-            title=args.title,
-            artifact_id=args.artifact_id,
-            supersedes=tuple(args.supersedes),
-            input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
-            next_artifact_id=adapter.next_artifact_id,
-        )
-
-    emit_record(
-        adapter.update(mutate),
-        json_output=wants_json(args),
-
-    )
-    return 0
-
-
-def cmd_clarify_record(args: argparse.Namespace) -> int:
-    expand_text_options(args)
-    adapter = open_adapter(resolve_root(args.root))
-
-    def mutate(store):
-        return record_clarify(
-            store,
-            topic_id=args.topic_id,
-            question=args.question,
-            proposed_patch=args.proposed_patch,
-            decision_candidate=args.decision_candidate,
-            title=args.title,
-            patch_id=args.patch_id,
-            candidate_id=args.candidate_id,
-            evidence_target=args.evidence_target,
-            evidence_kind=args.evidence_kind,
-            evidence_confirmed=args.evidence_confirmed,
-            evidence_id=args.evidence_id,
-            input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
-            next_payload_id=adapter.next_payload_id,
-        )
-
-    emit_record(
-        adapter.update(mutate),
-        json_output=wants_json(args),
-
-    )
-    return 0
-
-
-def cmd_plan_record(args: argparse.Namespace) -> int:
-    expand_text_options(args)
-    adapter = open_adapter(resolve_root(args.root))
-
-    def mutate(store):
-        return record_plan(
-            store,
-            topic_id=args.topic_id,
-            body=args.body,
-            title=args.title,
-            artifact_id=args.artifact_id,
-            supersedes=tuple(args.supersedes),
-            input_refs=tuple(args.input_refs) if args.input_refs is not None else None,
-            next_artifact_id=adapter.next_artifact_id,
-        )
-
-    emit_record(
-        adapter.update(mutate),
-        json_output=wants_json(args),
-
-    )
     return 0
 
 

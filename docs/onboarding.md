@@ -103,17 +103,16 @@ prism doctor --scope config --fix    # 非破坏性（如补全局 gitignore）
 prism --version
 prism topic list
 prism brief project <topic_id>
-prism review record <topic_id> --body "..."
-# 或：--body - 读 stdin；--json 输出 {ok, ids}
-prism clarify record <topic_id> --question "..." --proposed-patch "..."
-prism decision record <topic_id> --body "..." --authorizes plan:p02
+prism artifact next-id <topic_id> --role findings
+prism store validate
+prism decision record <topic_id> --body "..." --authority-evidence "<evidence ref>" --authorizes plan:p02
 ```
 
 Agent slash（当前 experimental natural dogfood）：`/prism` · `/prism-review` · `/prism-plan`。这仍是实验分发面，不构成稳定性承诺。
 
-`--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；current Plan 获得有效 acceptance 后才成为 operative，confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context 都可提供证据。Plan acceptance 不要求新建 Decision；只有超出单一 Plan 生命周期的 durable commitment 才形成 Decision。
+Findings / Plan / Intent / Clarify 等普通语义产物由 Agent 按对应写法合同直写 Markdown，落盘后 `prism store validate` 校验；CLI 不再提供通用 record / mutation 面。`--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；current Plan 获得有效 acceptance 后才成为 operative，confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context 都可提供证据。Plan acceptance 不要求新建 Decision；只有超出单一 Plan 生命周期的 durable commitment 才形成 Decision。
 
-普通 planning 优先由 Agent 结合当前上下文局部完成，不默认落盘。只有需要跨 session 恢复、handoff、后续 Review 或授权承接时，才使用 advanced `prism plan record` 保存 durable Plan snapshot；supersedes 仅经显式 `--supersedes` 提交，命令不自动替代任何 current Plan，目标正交、范围互斥的 sibling Plan 可以并存。
+普通 planning 优先由 Agent 结合当前上下文局部完成，不默认落盘。需要 durable Plan snapshot 时按 plan 写法合同直写 `plans/`，supersedes 仅经显式 frontmatter 提交，不自动替代任何 current Plan，目标正交、范围互斥的 sibling Plan 可以并存。
 
 旧 3.x workflow 已随 prism-4 分支剔除；历史文档见 `docs/historical/`。
 

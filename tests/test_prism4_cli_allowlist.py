@@ -1,12 +1,16 @@
 """CLI current allowlist 合同。
 
-本文件是 CLI 收窄的 canonical 契约：
-- KEEP：机械不变量、投影、guarded commitment 与产品运维入口，任何收窄不得触碰。
-- PENDING：普通语义产物的 record / generic mutation 面，按 current-only cut 移除；
-  收窄完成时 PENDING 必须清空，届时 parser verb 面与 KEEP 完全一致。
+本文件是 CLI 收窄的 canonical 契约：parser verb 面必须与 KEEP 完全一致；
+机械不变量、投影与 guarded commitment 入口不得被收窄触碰。
 """
 
-from prism4.cli import RETIRED_3X_VERBS, build_parser
+import subprocess
+import sys
+from pathlib import Path
+
+from prism4.cli import build_parser
+
+SDK_ROOT = Path(__file__).resolve().parents[1]
 
 # 保留面：判定依据是机械不变量与 guarded commitment，不是动词数量。
 KEEP: dict[str, set[str]] = {
@@ -19,16 +23,6 @@ KEEP: dict[str, set[str]] = {
     "host": {"attach"},
 }
 
-# 待退役面：普通 Findings / Plan / Intent / relation 走直写 Markdown + validate；
-# 收窄时逐项从 parser 删除并同步清空本清单。
-PENDING: dict[str, set[str]] = {
-    "artifact": {"write", "archive"},
-    "relation": {"add"},
-    "review": {"record"},
-    "clarify": {"record"},
-    "plan": {"record"},
-}
-
 
 def _verb_surface() -> dict[str, set[str]]:
     parser = build_parser()
@@ -39,24 +33,35 @@ def _verb_surface() -> dict[str, set[str]]:
     return surface
 
 
-def test_keep_surface_is_fully_present() -> None:
+def test_verb_surface_matches_current_allowlist() -> None:
+    """parser verb 面 == KEEP；record / generic mutation 面已全部退出。"""
     surface = _verb_surface()
+    assert set(surface) == set(KEEP), set(surface) ^ set(KEEP)
     for noun, subverbs in KEEP.items():
-        assert noun in surface, f"keep noun missing: {noun}"
-        missing = subverbs - surface[noun]
-        assert not missing, f"keep subverbs missing: {noun} {missing}"
+        assert surface[noun] == subverbs, f"{noun}: {surface[noun]} != {subverbs}"
 
 
-def test_verb_surface_matches_frozen_manifest() -> None:
-    """parser verb 面 == KEEP ∪ PENDING，不得出现清单之外的新 noun / subverb。"""
-    surface = _verb_surface()
-    expected_nouns = set(KEEP) | set(PENDING)
-    assert set(surface) == expected_nouns, set(surface) ^ expected_nouns
-    for noun, actual in surface.items():
-        expected = KEEP.get(noun, set()) | PENDING.get(noun, set())
-        assert actual == expected, f"{noun}: {actual} != {expected}"
-
-
-def test_retired_3x_verbs_do_not_collide_with_current_surface() -> None:
-    overlap = RETIRED_3X_VERBS & (set(KEEP) | set(PENDING))
-    assert not overlap, overlap
+def test_retired_generic_surface_is_plain_argparse_failure(tmp_path: Path) -> None:
+    """退役的 record / mutation / tombstone verb 不再有任何特判指引，统一 argparse failure。"""
+    for args in (
+        ("review", "record"),
+        ("clarify", "record"),
+        ("plan", "record"),
+        ("artifact", "write"),
+        ("artifact", "archive"),
+        ("relation", "add"),
+        ("dist",),
+        ("sync",),
+        ("legacy",),
+    ):
+        result = subprocess.run(
+            [sys.executable, str(SDK_ROOT / "prism4" / "cli.py"), *args],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode != 0, args
+        assert "unrecognized" in result.stderr or "invalid choice" in result.stderr, (
+            args,
+            result.stderr,
+        )

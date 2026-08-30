@@ -262,7 +262,7 @@ Prism 提供的是统一的折射层，而非不可逆的合并。SDK 自包含 
 
 工具入口可配合同名 Skill 使用，形成 "脚本 + 自然语言" 的双通道能力。
 
-3.x 实现（`workflow-*` / `workspace-init` / `prism legacy`）已随 prism-4 分支剔除，终态见 git tag `legacy-3x-final`。不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`dist` 仅保留退役提示。
+3.x 实现（`workflow-*` / `workspace-init` / `prism legacy`）已随 prism-4 分支剔除，终态见 git tag `legacy-3x-final`。不要把 `scope` / `focus` / `task` / `wave` 写进 4.0 Topic。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；未知或退役 verb 统一走 argparse failure。
 
 ---
 

@@ -25,7 +25,7 @@ Prism 的可执行工具入口。每个脚本可配合同名 Skill 使用，形�
 | `create-skill` | 从模板创建新 skill 骨架 | — | ✅ 可用 |
 | `validate-skills` | 扫描全量 skill frontmatter 合规性 | — | ✅ 可用 |
 | `clean` | relink 的逆操作，清理软链接和配置 | — | ✅ 可用 |
-| `prism` | 4.0 reference CLI；3.x verb 硬拒绝并指向 `legacy-3x-final`（含 relink / doctor / update facade） | prism-* | ✅ 可用 |
+| `prism` | 4.0 reference CLI（机械事实 / 投影 / 校验 / guarded commitment；含 relink / doctor / update facade） | prism-* | ✅ 可用 |
 
 > **`prism doctor --json`** 为 flat passthrough（非 outer envelope）；底层仍走 `bin/doctor`。
 
@@ -147,38 +147,32 @@ bin/doctor --scope <name>         # 只跑指定范围
 ```bash
 prism --help                       # 列出所有子命令
 prism --version                    # 版本信息
-prism --json topic … / record …   # 4.0 成功输出 {ok, ids}
+prism --json decision record …     # 4.0 成功输出 {ok, ids}
 prism topic new <topic_id> --title "<标题>" --intent "<意图>"
 prism topic list
 prism artifact show <artifact_id>
 prism brief project <topic_id>
-prism review record <topic_id> --body "<审视输入>"
-prism review record <topic_id> --body - --json   # stdin；成功输出 {ok, ids}
-prism clarify record <topic_id> --question "<问题>" --proposed-patch "<候选修正>"
-prism decision record <topic_id> --body "<决策>" --authority-evidence "<授权证据 ref>" --input-ref "<实际输入 ref>"
+prism store validate
+prism decision record <topic_id> --body "<决策>" --authority-evidence "<授权证据 ref>"
 ```
 
 `bin/prism` 是 bash 壳，exec `prism4/cli.py`。寻址问题走 `bin/doctor --scope cli --fix`（写 rc 锚点 + 建 `~/.local/bin/prism` symlink）。
 
-4.0 Interaction Contract（薄；不是 3.x envelope）：
+4.0 Interaction Contract：
 
-- 落盘：`prism review/clarify/decision record`（persist ≠ authorize）。Decision commit 需要 `--authority-evidence`（指向 human-choice 记录、明确覆盖目标的 committed Decision 或委托上下文 ref）；缺证据时拒绝写入、durable writes = 0——`--authority` 是 requirement，不是 evidence。record surfaces 用可重复的 `--input-ref` 声明实际语义输入；不传时 Invocation 标记 `declared-unavailable`，不按 Topic role 推断。
-- `authorizes` 是 authority-sensitive relation：只能在已通过授权证据校验的 `decision record --authorizes <ref>` 中原子产生；通用 `relation add` 不得事后扩张既有 Decision 的授权范围。
-- 高级持久快照：`prism plan record <topic_id> --body "<行动结构>"`；supersedes 仅经显式 `--supersedes` 提交，命令不自动替代 current Plan。普通当前轮 planning 优先由 Agent 局部感知，不默认落盘。
+- CLI 只承载机械事实（`topic probe` / `artifact next-id` / `artifact locate`）、投影（`brief project` / 索引重建）、校验（`store validate`）与 guarded commitment（`plan accept` / `decision record`）。Findings / Plan / Intent / Clarify 等普通语义产物由 Agent 按写法合同直写 Markdown，落盘后 `store validate`。
+- Decision commit 需要 `--authority-evidence`（指向 human-choice 记录、明确覆盖目标的 committed Decision 或委托上下文 ref）；缺证据时拒绝写入、durable writes = 0——`--authority` 是 requirement，不是 evidence。
+- `authorizes` 是 authority-sensitive relation：只能在已通过授权证据校验的 `decision record --authorizes <ref>` 中原子产生。
 - Provenance 等级：本地 Markdown store 不落盘 Invocation（溯源由工件 frontmatter 的 `capability` / `created_at` 承载），因此 record 输出不含 invocation id（weak-provenance）；不存在完整持久化 Invocation 的存储路径。
 - 长文本：`--body -` 或 `@path`；同一命令只能有一个 `-`
 - 成功 JSON：`{"ok": true, "ids": [...]}`；错误走 stderr 文本
-- 3.x：已随 prism-4 分支剔除。已知 3.x 动词统一报「已剔除 + tag 指引」（exit 2）。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`dist` 仅保留退役提示。历史 3.x envelope 见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md)。
+- 3.x：已随 prism-4 分支剔除；未知或退役 verb 统一走 argparse failure，历史指引见 [docs/historical/cli-contract.md](../docs/historical/cli-contract.md) 与 Changelog。`doctor` / `relink` / `update` 直调 `bin/` 同名脚本。
 
-当前 4.0 命令面可分为四类：
+当前 4.0 命令面可分为三类：
 
-- **Topic**：`topic new / topic list`
-- **Artifact / Projection**：`artifact show / locate / next-id / brief project`
-- **Record (transitional)**：`review record` / `clarify record`（persist semantic output；不等于授权；下版退役，日常直写 findings/ / clarifications/）
-- **Advanced Record**：`plan record`（durable Plan snapshot；supersedes 仅经显式 `--supersedes` 提交）/ `plan accept`（Plan acceptance，evidence 绑定该 Plan）/ `decision record`（记录被授权的 Decision；`--authority-evidence` 必填）
-- **Retired 3.x surface**：旧 verb 只返回剔除提示，不提供兼容 adapter
-
-旧 3.x verb（`sniff / validate / finalize / tidy / status / sync / manifest` 等）已随 `skills/workflow/` 一并剔除，不再由本分支提供。
+- **Topic / Host**：`topic probe / new / list` / `host attach`
+- **Artifact / Projection / Validation**：`artifact show / locate / next-id` / `brief project` / `store validate / regenerate-index`
+- **Guarded commitment**：`plan accept`（Plan acceptance，evidence 绑定该 Plan）/ `decision record`（记录被授权的 Decision；`--authority-evidence` 必填）
 
 如需查看当前 CLI 能力面，优先运行：
 
