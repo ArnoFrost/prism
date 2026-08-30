@@ -4,13 +4,9 @@ from prism4.core import Artifact, PrismProtocolError, SemanticPayload
 from prism4.reference import ReferenceStore
 from prism4.use_cases import (
     create_topic,
-    infer_review_title,
     plan_state,
     persist_brief,
-    record_clarify,
     record_decision,
-    record_plan,
-    record_review,
 )
 
 
@@ -162,249 +158,6 @@ def test_create_topic_preserves_structured_intent_body():
     assert intent.body == body
 
 
-def test_record_review_sets_advisory_findings_and_declares_inputs_explicitly():
-    store = _topic_store()
-    intent_id = next(
-        artifact.id
-        for artifact in store.artifacts.values()
-        if artifact.role == "intent"
-    )
-    finding_id, invocation_id = record_review(
-        store,
-        topic_id="topic:demo",
-        body="CLI was owning application semantics.",
-        input_refs=(intent_id,),
-        next_artifact_id=fake_artifact_id,
-    )
-    findings = store.artifacts[finding_id]
-    assert findings.role == "findings"
-    assert findings.metadata["authority"] == "advisory"
-    assert findings.metadata["evolution"] == "supersedable"
-    assert store.invocations[invocation_id].input_refs == (intent_id,)
-
-
-def test_record_review_without_input_refs_declares_unavailable():
-    """exact-input 合同：未声明时空表，不按 role sweep 伪造因果输入。"""
-    store = _topic_store()
-    _finding_id, invocation_id = record_review(
-        store,
-        topic_id="topic:demo",
-        body="CLI was owning application semantics.",
-        next_artifact_id=fake_artifact_id,
-    )
-    assert store.invocations[invocation_id].input_refs == ()
-
-
-def test_record_review_can_supersede_existing_findings():
-    store = _topic_store()
-    old_id, _ = record_review(
-        store,
-        topic_id="topic:demo",
-        body="旧发现。",
-        next_artifact_id=fake_artifact_id,
-    )
-
-    new_id, _ = record_review(
-        store,
-        topic_id="topic:demo",
-        body="新发现。",
-        supersedes=(old_id,),
-        next_artifact_id=fake_artifact_id,
-    )
-
-    assert any(
-        relation.source_ref == new_id
-        and relation.kind == "supersedes"
-        and relation.target_ref == old_id
-        for relation in store.relations
-    )
-
-
-def test_record_review_rejects_wrapping_persisted_findings_artifact():
-    store = _topic_store()
-    body = """---
-id: "finding:f01"
-role: "findings"
-title: "旧风险评审"
-topic: "topic:demo"
----
-## 摘要
-
-不要把整份 Findings 再包一层。
-"""
-
-    try:
-        record_review(
-            store,
-            topic_id="topic:demo",
-            body=body,
-            next_artifact_id=fake_artifact_id,
-        )
-    except PrismProtocolError as error:
-        assert "persisted Findings artifact" in str(error)
-    else:
-        raise AssertionError(
-            "record_review should reject nested persisted Findings bodies"
-        )
-
-
-def test_record_review_infers_title_from_summary_when_omitted():
-    store = _topic_store()
-    body = (
-        "## 摘要\n\n"
-        "TVKMM references 语义缺口需要校准。\n\n"
-        "## 发现\n\n"
-        "### F1 缺失·高 — references 需要轻量语义\n"
-    )
-
-    finding_id, _invocation_id = record_review(
-        store,
-        topic_id="topic:demo",
-        body=body,
-        next_artifact_id=fake_artifact_id,
-    )
-
-    assert store.artifacts[finding_id].title == "TVKMM references 语义缺口需要校准"
-
-
-def test_infer_review_title_falls_back_to_first_finding_heading():
-    body = "## 发现\n\n### F1 风险·中 — Brief 索引提示容易误导\n"
-
-    assert infer_review_title(body) == "Brief 索引提示容易误导"
-
-
-def test_infer_review_title_skips_readability_headings():
-    body = (
-        "## 问题脉络\n\n"
-        "这里先解释背景。\n\n"
-        "## 发现地图\n\n"
-        "| ID | 判断 |\n"
-        "|----|------|\n"
-        "## 发现\n\n"
-        "### F1 风险·中 — Findings 可读性需要先给总判断\n"
-    )
-
-    assert infer_review_title(body) == "Findings 可读性需要先给总判断"
-
-
-def test_record_plan_sets_advisory_supersedable_and_declares_inputs_explicitly():
-    store = _topic_store()
-    intent_id = next(
-        artifact.id for artifact in store.artifacts.values() if artifact.role == "intent"
-    )
-    plan_id, invocation_id = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="1. Lock use-case tests. 2. Stop splitting CLI.",
-        input_refs=(intent_id,),
-        next_artifact_id=fake_artifact_id,
-    )
-    plan = store.artifacts[plan_id]
-    assert plan.role == "plan"
-    assert plan.metadata["authority"] == "advisory"
-    assert plan.metadata["evolution"] == "supersedable"
-    assert plan.metadata["capability"] == "prism:plan"
-    assert store.invocations[invocation_id].input_refs == (intent_id,)
-
-
-def test_record_plan_can_supersede_existing_plan():
-    store = _topic_store()
-    old_id, _ = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="旧计划。",
-        next_artifact_id=fake_artifact_id,
-    )
-
-    new_id, _ = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="新计划。",
-        supersedes=(old_id,),
-        next_artifact_id=fake_artifact_id,
-    )
-
-    assert any(
-        relation.source_ref == new_id
-        and relation.kind == "supersedes"
-        and relation.target_ref == old_id
-        for relation in store.relations
-    )
-    assert plan_state(store, old_id)["current"] is False
-    assert plan_state(store, new_id)["current"] is True
-
-
-def test_record_plan_does_not_supersede_current_plan_by_default():
-    store = _topic_store()
-    old_id, _ = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="旧计划。",
-        next_artifact_id=fake_artifact_id,
-    )
-
-    new_id, _ = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="新计划。",
-        next_artifact_id=fake_artifact_id,
-    )
-
-    assert not any(
-        relation.kind == "supersedes"
-        and relation.source_ref in (old_id, new_id)
-        and relation.target_ref in (old_id, new_id)
-        for relation in store.relations
-    )
-    assert plan_state(store, old_id)["current"] is True
-    assert plan_state(store, new_id)["current"] is True
-
-
-def test_record_plan_rejects_wrapping_persisted_plan_artifact():
-    store = _topic_store()
-    body = """---
-id: "plan:p01"
-role: "plan"
-title: "旧行动结构"
-topic: "topic:demo"
----
-# Plan: 旧行动结构
-
-## 目标
-
-不要把整份 Plan 再包一层。
-"""
-
-    try:
-        record_plan(
-            store,
-            topic_id="topic:demo",
-            body=body,
-            next_artifact_id=fake_artifact_id,
-        )
-    except PrismProtocolError as error:
-        assert "persisted Plan artifact" in str(error)
-    else:
-        raise AssertionError("record_plan should reject nested persisted Plan bodies")
-
-
-def test_record_clarify_increments_payload_ids_without_explicit_ids():
-    store = _topic_store()
-    ids, _invocation_id = record_clarify(
-        store,
-        topic_id="topic:demo",
-        question="Which verb?",
-        proposed_patch="Use record.",
-        decision_candidate="Freeze record for persist.",
-        next_payload_id=fake_payload_id,
-    )
-    assert ids == ["clarify:c01", "clarify:c02"]
-    assert store.payloads["clarify:c01"].type == "proposed-patch"
-    assert store.payloads["clarify:c02"].type == "decision-candidate"
-    assert store.payloads["clarify:c01"].metadata["topic_id"] == "topic:demo"
-    assert store.payloads["clarify:c02"].metadata["topic_id"] == "topic:demo"
-
-
 def test_persist_brief_rejects_non_brief_id_collision():
     store = _topic_store()
     store.add_artifact(
@@ -491,11 +244,15 @@ def test_record_decision_can_supersede_and_authorize_artifacts():
         authority_evidence=evidence.id,
         next_artifact_id=fake_artifact_id,
     )
-    plan_id, _ = record_plan(
-        store,
-        topic_id="topic:demo",
-        body="被授权计划。",
-        next_artifact_id=fake_artifact_id,
+    plan_id = "plan:p01"
+    store.add_artifact(
+        Artifact(
+            id=plan_id,
+            topic_id="topic:demo",
+            role="plan",
+            title="被授权计划",
+            body="被授权计划。",
+        )
     )
     replacement_evidence = _confirmed_evidence(
         store,

@@ -19,15 +19,12 @@ from prism4 import LocalFileStoreAdapter
 from prism4.core import Artifact, PrismProtocolError, SemanticPayload
 from prism4.reference import ReferenceStore
 from prism4.use_cases import (
+    _add_validated_relation,
     accept_plan,
-    add_explicit_relation,
     create_topic,
     plan_state,
     record_decision,
-    record_plan,
-    record_review,
     validate_authority_evidence,
-    write_artifact,
 )
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
@@ -64,10 +61,64 @@ def _topic_store() -> ReferenceStore:
 
 
 def _finding(store: ReferenceStore, body: str = "一个发现。") -> str:
-    ref, _ = record_review(
-        store, topic_id="topic:demo", body=body, next_artifact_id=fake_artifact_id
+    ref = "finding:f01"
+    number = 1
+    used = {a.id for a in store.artifacts.values()}
+    while ref in used:
+        number += 1
+        ref = f"finding:f{number:02d}"
+    store.add_artifact(
+        Artifact(
+            id=ref,
+            topic_id="topic:demo",
+            role="findings",
+            title="发现",
+            body=body,
+            metadata={"authority": "advisory", "evolution": "supersedable"},
+        )
     )
     return ref
+
+
+def _put_plan(
+    store: ReferenceStore,
+    *,
+    topic_id: str = "topic:demo",
+    body: str = "计划。",
+    ref: str | None = None,
+    supersedes: tuple[str, ...] = (),
+    next_artifact_id=None,
+) -> tuple[str, None]:
+    """直构 Plan（record_plan 面退役后 Acceptance 测试的载具）。"""
+    used = {a.id for a in store.artifacts.values()}
+    if ref is None:
+        number = 1
+        ref = "plan:p01"
+        while ref in used:
+            number += 1
+            ref = f"plan:p{number:02d}"
+    store.add_artifact(
+        Artifact(
+            id=ref,
+            topic_id=topic_id,
+            role="plan",
+            title="计划",
+            body=body,
+            metadata={"authority": "advisory", "evolution": "supersedable"},
+        )
+    )
+    for target in supersedes:
+        _add_validated_relation(
+            store, source_ref=ref, kind="supersedes", target_ref=target
+        )
+    return ref, None
+
+
+def _rel(store: ReferenceStore, *, source_ref: str, kind: str, target_ref: str):
+    """relation matrix 合同的测试入口（通用 relation CLI 已退役）。"""
+    return _add_validated_relation(
+        store, source_ref=source_ref, kind=kind, target_ref=target_ref
+    )
 
 
 def _evidence_payload(
@@ -101,50 +152,6 @@ def _confirmed_evidence(store: ReferenceStore, target_ref: str) -> SemanticPaylo
 
 
 # ── F1: generic write must not bypass the Decision authority gate ────────
-
-
-def test_generic_write_rejects_decision_ref(tmp_path: Path = None):
-    store = _topic_store()
-    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
-        write_artifact(
-            store,
-            ref="decision:d01",
-            body="绕过 authority gate 的承诺。",
-            topic_id="topic:demo",
-        )
-    assert not [
-        a for a in store.artifacts.values() if a.role == "decision"
-    ]
-
-
-def test_generic_write_rejects_updating_existing_decision():
-    store = _topic_store()
-    evidence = _confirmed_evidence(store, target_ref="decision:d01")
-    decision_id, _inv, _consumed = record_decision(
-        store,
-        topic_id="topic:demo",
-        body="合法承诺。",
-        authority_evidence=evidence.id,
-        next_artifact_id=fake_artifact_id,
-    )
-    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
-        write_artifact(store, ref=decision_id, body="原地改写承诺。")
-    assert store.artifacts[decision_id].body == "合法承诺。"
-
-
-def test_generic_write_rejects_intent_and_brief_roles():
-    store = _topic_store()
-    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
-        write_artifact(
-            store, ref="intent:i09", body="绕过 Intent 语义。", topic_id="topic:demo"
-        )
-    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
-        write_artifact(
-            store, ref="brief:current", body="绕过投影纪律。", topic_id="topic:demo"
-        )
-
-
-# ── Typed evidence validator ─────────────────────────────────────────────
 
 
 def test_findings_artifact_is_not_authority_evidence():
@@ -428,38 +435,38 @@ def test_store_validate_reports_unbacked_new_committed_decision():
 def test_supersedes_rejects_cross_role_relation():
     store = _topic_store()
     finding_id = _finding(store)
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     with pytest.raises(PrismProtocolError, match="must be a findings artifact"):
-        add_explicit_relation(
+        _rel(
             store, source_ref=finding_id, kind="supersedes", target_ref=plan_id
         )
 
 
 def test_supersedes_rejects_cross_topic_relation():
     store = _topic_store()
-    own_plan, _ = record_plan(
+    own_plan, _ = _put_plan(
         store, topic_id="topic:demo", body="本 Topic 计划。", next_artifact_id=fake_artifact_id
     )
     create_topic(
         store, topic_id="topic:other", title="Other", next_artifact_id=fake_artifact_id
     )
-    other_plan, _ = record_plan(
+    other_plan, _ = _put_plan(
         store, topic_id="topic:other", body="别的计划。", next_artifact_id=fake_artifact_id
     )
     with pytest.raises(PrismProtocolError, match="same topic"):
-        add_explicit_relation(
+        _rel(
             store, source_ref=own_plan, kind="supersedes", target_ref=other_plan
         )
 
 
 def test_supersedes_rejects_direct_and_transitive_cycles():
     store = _topic_store()
-    plan_a, _ = record_plan(
+    plan_a, _ = _put_plan(
         store, topic_id="topic:demo", body="A。", next_artifact_id=fake_artifact_id
     )
-    plan_b, _ = record_plan(
+    plan_b, _ = _put_plan(
         store,
         topic_id="topic:demo",
         body="B。",
@@ -467,10 +474,10 @@ def test_supersedes_rejects_direct_and_transitive_cycles():
         next_artifact_id=fake_artifact_id,
     )
     with pytest.raises(PrismProtocolError, match="cycle"):
-        add_explicit_relation(
+        _rel(
             store, source_ref=plan_a, kind="supersedes", target_ref=plan_b
         )
-    plan_c, _ = record_plan(
+    plan_c, _ = _put_plan(
         store,
         topic_id="topic:demo",
         body="C。",
@@ -478,63 +485,23 @@ def test_supersedes_rejects_direct_and_transitive_cycles():
         next_artifact_id=fake_artifact_id,
     )
     with pytest.raises(PrismProtocolError, match="cycle"):
-        add_explicit_relation(
+        _rel(
             store, source_ref=plan_a, kind="supersedes", target_ref=plan_c
         )
 
 
-def test_generic_authorizes_relation_is_authority_sensitive():
-    store = _topic_store()
-    plan_id, _ = record_plan(
-        store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
-    )
-    finding_id = _finding(store)
-    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
-        add_explicit_relation(
-            store, source_ref=finding_id, kind="authorizes", target_ref=plan_id
-        )
-
-
-def test_generic_relation_add_cannot_expand_committed_decision_authority():
-    """A legal source/target shape is not authority to mutate a Decision's scope."""
-    store = _topic_store()
-    plan_id, _ = record_plan(
-        store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
-    )
-    evidence = _confirmed_evidence(store, target_ref="decision:d01")
-    decision_id, _inv, _consumed = record_decision(
-        store,
-        topic_id="topic:demo",
-        body="只承诺 A。",
-        authority_evidence=evidence.id,
-        next_artifact_id=fake_artifact_id,
-    )
-
-    with pytest.raises(PrismProtocolError, match="authority-sensitive"):
-        add_explicit_relation(
-            store,
-            source_ref=decision_id,
-            kind="authorizes",
-            target_ref=plan_id,
-        )
-    assert not any(
-        relation.kind == "authorizes" and relation.target_ref == plan_id
-        for relation in store.relations
-    )
-
-
 def test_supports_rejects_plan_source_and_non_authority_target():
     store = _topic_store()
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     finding_id = _finding(store)
     with pytest.raises(PrismProtocolError, match="source must be"):
-        add_explicit_relation(
+        _rel(
             store, source_ref=plan_id, kind="supports", target_ref=finding_id
         )
     with pytest.raises(PrismProtocolError, match="target must be"):
-        add_explicit_relation(
+        _rel(
             store, source_ref=finding_id, kind="supports", target_ref=finding_id
         )
 
@@ -547,7 +514,7 @@ def test_supports_rejects_cross_topic_payload_source():
         title="Other",
         next_artifact_id=fake_artifact_id,
     )
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store,
         topic_id="topic:other",
         body="其他 Topic 的计划。",
@@ -555,7 +522,7 @@ def test_supports_rejects_cross_topic_payload_source():
     )
     _evidence_payload(store, target_ref=plan_id, topic_id="topic:demo")
     with pytest.raises(PrismProtocolError, match="same topic"):
-        add_explicit_relation(
+        _rel(
             store,
             source_ref="clarify:c90",
             kind="supports",
@@ -567,7 +534,7 @@ def test_projects_requires_brief_source():
     store = _topic_store()
     finding_id = _finding(store)
     with pytest.raises(PrismProtocolError, match="source must be a Brief"):
-        add_explicit_relation(
+        _rel(
             store, source_ref=finding_id, kind="projects", target_ref=finding_id
         )
 
@@ -576,7 +543,7 @@ def test_record_decisions_reuses_relation_matrix():
     """alias 路径复用同一 matrix：decision supersedes plan 被拒绝且 durable writes = 0。"""
     store = _topic_store()
     evidence = _confirmed_evidence(store, target_ref="decision:d01")
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     with pytest.raises(PrismProtocolError, match="must be a decision artifact"):
@@ -596,7 +563,7 @@ def test_record_decisions_reuses_relation_matrix():
 
 def test_accept_plan_with_valid_evidence_and_operative_derivation():
     store = _topic_store()
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     assert plan_state(store, plan_id) == {
@@ -614,7 +581,7 @@ def test_accept_plan_with_valid_evidence_and_operative_derivation():
 
 def test_accept_plan_rejects_unconfirmed_or_misbound_evidence():
     store = _topic_store()
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     with pytest.raises(PrismProtocolError, match="does not exist"):
@@ -626,14 +593,14 @@ def test_accept_plan_rejects_unconfirmed_or_misbound_evidence():
 
 def test_superseded_plan_is_no_longer_operative_but_keeps_historical_acceptance():
     store = _topic_store()
-    plan_a, _ = record_plan(
+    plan_a, _ = _put_plan(
         store, topic_id="topic:demo", body="A。", next_artifact_id=fake_artifact_id
     )
     evidence = _evidence_payload(store, target_ref=plan_a)
     accept_plan(store, plan_ref=plan_a, evidence_ref=evidence.id)
     assert plan_state(store, plan_a)["operative"]
 
-    record_plan(
+    _put_plan(
         store,
         topic_id="topic:demo",
         body="B 重写。",
@@ -648,7 +615,7 @@ def test_superseded_plan_is_no_longer_operative_but_keeps_historical_acceptance(
 
 def test_acceptance_survives_markdown_roundtrip(tmp_path: Path):
     store = _topic_store()
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
     )
     evidence = _evidence_payload(store, target_ref=plan_id)
@@ -662,7 +629,7 @@ def test_acceptance_survives_markdown_roundtrip(tmp_path: Path):
 
 def test_store_validate_reports_invalid_persisted_plan_acceptance():
     store = _topic_store()
-    plan_id, _ = record_plan(
+    plan_id, _ = _put_plan(
         store,
         topic_id="topic:demo",
         body="计划。",
@@ -685,28 +652,32 @@ def test_store_validate_reports_invalid_persisted_plan_acceptance():
 
 def test_record_uses_explicit_input_refs_when_provided():
     store = _topic_store()
-    plan_id, _ = record_plan(
-        store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
+    evidence = _confirmed_evidence(store, target_ref="decision:d01")
+    intent_id = next(
+        artifact.id for artifact in store.artifacts.values() if artifact.role == "intent"
     )
-    _invocation_id = None
-    from prism4.use_cases import record_plan as rp
-
-    plan_b, inv = rp(
+    _decision_id, inv, _consumed = record_decision(
         store,
         topic_id="topic:demo",
-        body="B。",
-        input_refs=(plan_id,),
+        body="承诺。",
+        authority_evidence=evidence.id,
+        input_refs=(intent_id,),
         next_artifact_id=fake_artifact_id,
     )
-    assert store.invocations[inv].input_refs == (plan_id,)
+    assert store.invocations[inv].input_refs == (intent_id,)
     assert store.invocations[inv].metadata["input_provenance_grade"] == "exact"
 
 
 def test_record_without_input_refs_declares_unavailable_instead_of_role_sweep():
     """d05/DG4：调用方未声明 exact inputs 时空表诚实降级，不按 role sweep 伪造因果。"""
     store = _topic_store()
-    _plan_id, inv = record_plan(
-        store, topic_id="topic:demo", body="计划。", next_artifact_id=fake_artifact_id
+    evidence = _confirmed_evidence(store, target_ref="decision:d01")
+    _decision_id, inv, _consumed = record_decision(
+        store,
+        topic_id="topic:demo",
+        body="承诺。",
+        authority_evidence=evidence.id,
+        next_artifact_id=fake_artifact_id,
     )
     assert store.invocations[inv].input_refs == ()
     assert (
