@@ -48,6 +48,7 @@ from prism4.use_cases import (  # noqa: E402
 from prism4.local_files import (  # noqa: E402
     locate_artifact_ref,
     next_artifact_id,
+    next_payload_id,
 )
 
 
@@ -241,8 +242,8 @@ def build_parser() -> argparse.ArgumentParser:
     artifact_next_id.add_argument(
         "--role",
         required=True,
-        choices=("intent", "findings", "decision", "plan"),
-        help="artifact role to allocate the id for",
+        choices=("intent", "findings", "decision", "plan", "clarify"),
+        help="artifact role, or clarify payload, to allocate the id for",
     )
     add_root_arg(artifact_next_id)
     artifact_next_id.set_defaults(func=cmd_artifact_next_id)
@@ -469,7 +470,10 @@ def cmd_artifact_next_id(args: argparse.Namespace) -> int:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
     # ref 是 store 全局唯一键，编号按 store 全局递增分配；
     # topic 参数只作存在性校验，防止 Agent 在错误 Workspace 上取号。
-    print(next_artifact_id(store, args.role))
+    if args.role == "clarify":
+        print(next_payload_id(store))
+    else:
+        print(next_artifact_id(store, args.role))
     return 0
 
 

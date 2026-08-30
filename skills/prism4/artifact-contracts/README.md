@@ -24,7 +24,7 @@
 ## 使用方式
 
 - Agent 写 / 改 Artifact 时按对应合同执行；格式疑问以本目录为准，不猜、不模仿陈旧样本。
-- 编号约定在 store 内全局递增：`intent:iNN` / `plan:pNN` / `finding:fNN` / `decision:dNN` / `clarify:cNN`。ref 是 store 全局唯一键，可用 `prism artifact next-id <topic_id> --role <role>` 机械化取号（topic 参数仅作存在性校验），避免手算幻觉与跨 Topic 碰撞。
+- 编号约定在 store 内全局递增：`intent:iNN` / `plan:pNN` / `finding:fNN` / `decision:dNN` / `clarify:cNN`。ref 是 store 全局唯一键，可用 `prism artifact next-id <topic_id> --role intent|plan|findings|decision|clarify` 机械化取号（topic 参数仅作存在性校验）；`clarify` 分配的是候选 payload id，不把 Clarify 提升为 Artifact Role。避免手算幻觉与跨 Topic 碰撞。
 - 不需要的 Artifact 不落盘（总则 2）；落盘即按合同写全，不留空壳字段。
 
 ## 工程产物语言规则

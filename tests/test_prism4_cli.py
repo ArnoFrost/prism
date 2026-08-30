@@ -308,6 +308,25 @@ def test_bin_prism_artifact_next_id_and_locate(tmp_path):
     assert next_id.returncode == 0, next_id.stderr
     assert next_id.stdout.strip() == "finding:f02"
 
+    next_clarify_id = subprocess.run(
+        [
+            str(BIN_PRISM),
+            "artifact",
+            "next-id",
+            "topic:prism-4-refoundation",
+            "--role",
+            "clarify",
+            "--root",
+            str(root),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        env=_env(),
+    )
+    assert next_clarify_id.returncode == 0, next_clarify_id.stderr
+    assert next_clarify_id.stdout.strip() == "clarify:c91"
+
     local_locate = subprocess.run(
         [
             str(BIN_PRISM),
