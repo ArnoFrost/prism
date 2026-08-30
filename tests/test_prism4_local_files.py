@@ -161,6 +161,84 @@ def test_save_keeps_artifact_when_only_normalization_differs(tmp_path: Path) -> 
     assert "finding:f22" in survivors[0].read_text(encoding="utf-8")
 
 
+def test_direct_write_of_duplicate_ref_fails_closed(tmp_path: Path) -> None:
+    """Agent 直写时未查 next-id 而复用同一 ref，必须 fail-closed。
+
+    generic write CLI 退役后，普通工件的落盘路径是直写 Markdown。编号侧
+    已是 store 全局递增（另有回归覆盖），但直写绕过了所有写入前校验，唯一
+    的保护是加载期重复 ref 检测。这条路径若失效，重复 ref 会带着错误状态
+    落盘并在后续 regenerate / Brief 里放大。
+    """
+    # 先建立合法 store 骨架，再直写工件——顺序反过来会让骨架 save 的
+    # prune 把直写文件当作非托管文档清掉。
+    LocalFileStoreAdapter(tmp_path).save(_store())
+
+    findings = tmp_path / "findings"
+    findings.mkdir(parents=True, exist_ok=True)
+    body = """---
+id: "finding:f01"
+role: "findings"
+title: "{title}"
+topic: "topic:demo"
+---
+# {title}
+
+正文。
+"""
+    first = findings / "f01_先写.md"
+    second = findings / "f01_后写.md"
+    first.write_text(body.format(title="先写的发现"), encoding="utf-8")
+    second.write_text(body.format(title="后写的发现"), encoding="utf-8")
+
+    adapter = LocalFileStoreAdapter(tmp_path)
+    with pytest.raises(PrismProtocolError) as error:
+        adapter.load()
+    assert "finding:f01" in str(error.value)
+
+    # fail-closed：不得静默去重、改写或删除任何一份文档。
+    assert first.exists() and second.exists()
+    assert "先写的发现" in first.read_text(encoding="utf-8")
+    assert "后写的发现" in second.read_text(encoding="utf-8")
+
+
+def test_direct_write_survives_regenerate_index(tmp_path: Path) -> None:
+    """直写非 canonical 文件名后 regenerate-index，工件存活且索引不断链。
+
+    这是 P4 之后的主流程：Agent 直写 Markdown → store validate →
+    regenerate-index。prune 的任何误判都会在这个流程里放大成数据丢失。
+    """
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f31",
+            topic_id="topic:demo",
+            role="findings",
+            title="Direct Write Cut",
+            body="不可安全重建的发现。",
+        )
+    )
+    LocalFileStoreAdapter(tmp_path).save(store)
+
+    canonical = tmp_path / "findings" / "f31_DirectWriteCut.md"
+    assert canonical.exists()
+
+    # 模拟 Agent 直写时用了非 canonical 的文件名。
+    canonical.rename(tmp_path / "findings" / "f31_direct write cut.md")
+
+    adapter = LocalFileStoreAdapter(tmp_path)
+    adapter.save(adapter.load())
+
+    survivors = [path for path in (tmp_path / "findings").glob("f31_*.md")]
+    assert len(survivors) == 1, survivors
+    assert "finding:f31" in survivors[0].read_text(encoding="utf-8")
+
+    index = (tmp_path / "findings" / "finding.index.md").read_text(encoding="utf-8")
+    assert "| f31 |" in index
+    # 索引里的链接必须指向真实存在的文件，不得留下断链。
+    target = index.split("| f31 |")[1].split("](")[1].split(")")[0]
+    assert (tmp_path / "findings" / target).exists()
+
+
 def test_save_fails_closed_when_expected_document_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
