@@ -210,6 +210,16 @@ def test_attach_appends_map_entry_without_touching_existing_bindings(
     assert not (instance / "scope.md").exists()
     assert not (instance / "focus.md").exists()
     assert not list(instance.rglob("task.index.md"))
+    project_yaml = (instance / "project.yaml").read_text(encoding="utf-8")
+    assert "paths:\n" in project_yaml
+    assert "paths: {}" not in project_yaml
+    agents = (instance / "AGENTS.md").read_text(encoding="utf-8")
+    assert "/prism`" in agents
+    assert "/prism-review" in agents
+    assert "/prism-plan" in agents
+    assert "Intent 是目标与边界 SSOT" in agents
+    assert "archive/legacy-3x/" in agents
+    assert "除非这是显式 legacy 项目" not in agents
     assert (project / "workspace.demo.local").is_symlink()
     assert (project / "workspace.demo.local").resolve() == instance.resolve()
 

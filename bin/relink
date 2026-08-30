@@ -404,6 +404,15 @@ ensure_link() {
 _relink_writeback_path() {
   local proj_yaml="$1" device_id="$2" local_path="$3"
   [[ -f "$proj_yaml" ]] || return 0
+
+  # 修复早期 Prism 4 host attach 生成的 inline empty map。若不先展开，
+  # 后续追加缩进条目会得到无效 YAML：`paths: {}` + `  DEVICE: ...`。
+  if grep -Eq '^paths:[[:space:]]*\{\}[[:space:]]*$' "$proj_yaml" 2>/dev/null; then
+    local normalize_tmp="${proj_yaml}.tmp.$$"
+    awk '/^paths:[[:space:]]*\{\}[[:space:]]*$/ { print "paths:"; next } { print }' \
+      "$proj_yaml" > "$normalize_tmp" && mv "$normalize_tmp" "$proj_yaml"
+  fi
+
   # 已有当前设备条目则跳过
   if grep -Fq "  ${device_id}:" "$proj_yaml" 2>/dev/null; then
     return 0

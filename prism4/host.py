@@ -5,7 +5,7 @@ explicit `--root`. Daily collaboration in a project directory requires a
 live `workspace.{code}.local` bridge.
 
 `host attach` only:
-  - appends one project to prism.local.yaml (preserves comments / 3.x keys)
+  - appends one current object-style project binding to prism.local.yaml
   - creates an empty instance (`topics/`, `docs/`, `archive/`)
   - creates the bridge symlink
 
@@ -531,7 +531,7 @@ def _ensure_instance(instance_path: Path, code: str) -> None:
             (
                 f'code: "{code}"\n'
                 f'name: "{code}"\n'
-                "paths: {}\n"
+                "paths:\n"
                 f'created: "{date.today().isoformat()}"\n'
                 "status: active\n"
             ),
@@ -542,10 +542,22 @@ def _ensure_instance(instance_path: Path, code: str) -> None:
         agents.write_text(
             (
                 f"# {code}\n\n"
-                "> Prism 4.0 Workspace 实例。创建 Topic 使用 `/prism`"
-                "（先 `prism topic probe` / `prism host attach`）。\n"
-                "> 不要在此调用 3.x `workspace-init` 或 `workflow-intake`，"
-                "除非这是显式 legacy 项目。\n"
+                "> Prism 4.0 Workspace 协作入口。当前状态只由 4.0 Topic 与有效 "
+                "Artifact 承载。\n\n"
+                "## 当前入口\n\n"
+                "- `/prism`：创建或定位 Topic、恢复、澄清与整理状态。\n"
+                "- `/prism-review`：独立评审并产出 Findings；不自动授权。\n"
+                "- `/prism-plan`：设计 advisory Plan；不改变 Intent、不授权执行。\n\n"
+                "先运行 `prism topic probe`；未桥接时使用 `prism host attach`。\n\n"
+                "## 状态纪律\n\n"
+                "- Intent 是目标与边界 SSOT；Plan 是当前实施方案 SSOT；Brief 只可重新生成。\n"
+                "- Decision 只承接超出单一 Plan 生命周期的承诺，并要求有效 authority evidence。\n"
+                "- 不调用 3.x `workspace-init` 或 `workflow-*`，不在旧 Topic 内补写 4.0 工件。\n\n"
+                "## 项目特定规则\n\n"
+                "<!-- 在这里记录仍有效的领域、仓库、测试与安全规则。 -->\n\n"
+                "## 历史边界\n\n"
+                "- 若本 Workspace 从 3.x 迁移，历史只读归档位于 "
+                "`archive/legacy-3x/`。\n"
             ),
             encoding="utf-8",
         )

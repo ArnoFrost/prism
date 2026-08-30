@@ -11,6 +11,7 @@
 #   5. paths 段在文件末尾（无后续 key）→ 正确追加
 #   6. list 格式 → 转为 map
 #   7. device_id 含连字符
+#   8. 早期 Prism 4 的 paths: {} → 修复为合法 block map
 
 set -euo pipefail
 
@@ -46,7 +47,8 @@ assert_count() {
   local desc="$1" pattern="$2" file="$3" expected_count="$4"
   ((TOTAL++)) || true
   local actual_count
-  actual_count=$(grep -c "$pattern" "$file" 2>/dev/null || echo 0)
+  actual_count=$(grep -c "$pattern" "$file" 2>/dev/null || true)
+  actual_count="${actual_count:-0}"
   if [[ "$actual_count" -eq "$expected_count" ]]; then
     echo -e "  ${GREEN}✓${NC} ${desc} (${pattern} 出现 ${actual_count} 次)"
     ((PASS++)) || true
@@ -195,6 +197,32 @@ _relink_writeback_path "$T8_FILE" "MC2" "/Users/arno/test"
 _relink_writeback_path "$T8_FILE" "MC2" "/Users/arno/test"
 assert_count "二次写入后 MC2 只出现 1 次" "  MC2: " "$T8_FILE" 1
 assert_count "paths: 只出现 1 次" "^paths:" "$T8_FILE" 1
+
+# ─── 测试 9: inline empty map 修复 ───
+echo ""
+echo "─── 测试 9: paths: {} 修复 ───"
+T9_FILE="$TMPDIR_BASE/t9_project.yaml"
+cat > "$T9_FILE" << 'EOF'
+code: "TEST"
+paths: {}
+created: "2026-08-30"
+EOF
+_relink_writeback_path "$T9_FILE" "MC2" "/Users/arno/test"
+assert_count "paths: 只出现 1 次" "^paths:" "$T9_FILE" 1
+assert_count "inline empty map 已移除" "^paths: {}" "$T9_FILE" 0
+assert_count "MC2 条目存在" "  MC2: " "$T9_FILE" 1
+
+# 已经带当前设备条目的异常文件也必须先规范化，再走幂等返回。
+T9B_FILE="$TMPDIR_BASE/t9b_project.yaml"
+cat > "$T9B_FILE" << 'EOF'
+code: "TEST"
+paths: {}
+  MC2: /Users/arno/test
+created: "2026-08-30"
+EOF
+_relink_writeback_path "$T9B_FILE" "MC2" "/Users/arno/test"
+assert_count "异常幂等文件的 inline empty map 已修复" "^paths: {}" "$T9B_FILE" 0
+assert_count "异常幂等文件的 MC2 未重复" "  MC2: " "$T9B_FILE" 1
 
 # ═══ 汇总 ═══
 echo ""
