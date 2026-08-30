@@ -66,6 +66,76 @@ def test_next_artifact_id_rejects_unknown_role() -> None:
         next_artifact_id(_store(), "briefs")
 
 
+def _filesystem_is_case_insensitive(tmp_path: Path) -> bool:
+    probe = tmp_path / "case_probe"
+    probe.write_text("x", encoding="utf-8")
+    return (tmp_path / "CASE_PROBE").exists()
+
+
+def test_save_keeps_artifact_when_case_only_paths_collide(tmp_path: Path) -> None:
+    """大小写不敏感文件系统上，case-only 路径变体是同一物理文件，不得被 prune 删除。"""
+    if not _filesystem_is_case_insensitive(tmp_path):
+        pytest.skip("case-only 碰撞只发生在大小写不敏感文件系统上")
+
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f21",
+            topic_id="topic:demo",
+            role="findings",
+            title="CurrentOnly Cut",
+            body="不可安全重建的发现。",
+        )
+    )
+    adapter = LocalFileStoreAdapter(tmp_path)
+    adapter.save(store)
+
+    canonical = tmp_path / "findings" / "f21_CurrentOnlyCut.md"
+    assert canonical.exists()
+
+    # 模拟 Agent 直写时使用 case-only 变体文件名落盘。
+    canonical.rename(tmp_path / "findings" / "f21_currentonlycut.md")
+
+    # regenerate-index 等价路径：全新 load → save。
+    LocalFileStoreAdapter(tmp_path).save(LocalFileStoreAdapter(tmp_path).load())
+
+    survivors = [path for path in (tmp_path / "findings").glob("f21_*.md")]
+    assert len(survivors) == 1, survivors
+    assert "finding:f21" in survivors[0].read_text(encoding="utf-8")
+
+    # 索引行登记了该发现，且链接指向的 canonical 路径可解析到存活的物理文件。
+    index = (tmp_path / "findings" / "finding.index.md").read_text(encoding="utf-8")
+    assert "| f21 |" in index
+    assert (tmp_path / "findings" / "f21_CurrentOnlyCut.md").exists()
+
+
+def test_save_fails_closed_when_expected_document_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """save 后任何 expected 文档缺失都必须报错，不得留下幽灵索引。"""
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo",
+            role="findings",
+            title="发现",
+            body="正文。",
+        )
+    )
+    adapter = LocalFileStoreAdapter(tmp_path)
+    original_prune = adapter._prune
+
+    def broken_prune(expected: set[Path]) -> None:
+        original_prune(expected)
+        (tmp_path / "findings" / "f01_发现.md").unlink()
+
+    monkeypatch.setattr(adapter, "_prune", broken_prune)
+
+    with pytest.raises(PrismProtocolError, match="missing after save"):
+        adapter.save(store)
+
+
 def test_locate_artifact_ref_resolves_document_paths() -> None:
     store = _store()
     store.add_artifact(

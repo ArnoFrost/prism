@@ -119,6 +119,24 @@ _SEQUENCE_PATTERN = re.compile(r"^([a-z])(\d+)$")
 _FILENAME_STRIP = re.compile(r'[<>:"/\\|?*\s、，。；：！？（）()\[\]{}“”‘’\'`~!@#$%^&+=,.;]+')
 
 
+def _case_insensitive_key(path: Path) -> tuple[str, ...]:
+    """路径的归一形态：在大小写不敏感文件系统上标识同一物理文档。"""
+    return tuple(part.casefold() for part in path.parts)
+
+
+def _is_same_document(left: Path, right: Path) -> bool:
+    """判断两个路径是否指向同一物理文件。
+
+    大小写不敏感文件系统（macOS 默认）上，canonical 路径与磁盘目录项可能
+    只差大小写；用文件系统身份而非字符串比较，避免把同一份工件误判为
+    stale 而删除。大小写敏感文件系统上两个独立文件仍会被正确区分。
+    """
+    try:
+        return left.exists() and right.exists() and left.samefile(right)
+    except OSError:
+        return False
+
+
 class LocalFileStoreAdapter:
     """把 ReferenceStore 持久化为一组可读的 Markdown 文档。"""
 
@@ -213,6 +231,14 @@ class LocalFileStoreAdapter:
 
         expected.update(self._write_indexes(store))
         self._prune(expected)
+        missing = sorted(path for path in expected if not path.exists())
+        if missing:
+            names = ", ".join(
+                str(path.relative_to(self.root)) for path in missing[:5]
+            )
+            raise PrismProtocolError(
+                f"expected documents missing after save: {names}"
+            )
         self._known_owned = self._owned_markdown()
         return self.root
 
@@ -252,10 +278,21 @@ class LocalFileStoreAdapter:
         若本次 save 之前做过 load，只删除 load 时见过的文件。load 之后才出现
         的文档视为并发写入，不得静默删除。未 load 直接 save 仍是整库替换，
         会清掉所有不在 store 里的托管文档。
+
+        大小写不敏感文件系统上，expected 的 canonical 路径与磁盘目录项可能
+        只差大小写但指向同一物理文件；先按归一路径与文件系统身份识别同一
+        文档，避免把刚写入的工件当作 stale 删除。
         """
+        expected_by_fold: dict[tuple[str, ...], Path] = {}
+        for path in expected:
+            expected_by_fold.setdefault(_case_insensitive_key(path), path)
+
         known = self._known_owned
         for existing in self._owned_markdown():
             if existing in expected:
+                continue
+            folded = expected_by_fold.get(_case_insensitive_key(existing))
+            if folded is not None and _is_same_document(existing, folded):
                 continue
             if known is not None and existing not in known:
                 continue
