@@ -2,18 +2,18 @@
 
 > 本页是 `docs/` 的**唯一索引**。正文仍在各文件中，此处只做分类与读序。
 >
-> 发行与阶段口径见仓库根 [README](../README.md) · [architecture.md](./architecture.md#当前阶段)。本页只做文档分类与读序。
+> 当前发行见仓库根 [README](../README.md) 与 [`VERSION`](../VERSION)。本页只做文档分类与读序。
 
 ---
 
 ## 建议读序（L1 使用者）
 
-1. 仓库根 [README](../README.md) — 4.0 愿景 + **`./setup.sh init`**
-2. 仓库根 [AGENTS.md](../AGENTS.md) — 协作契约与 4.0 术语
-3. [onboarding.md](./onboarding.md) — init 后日常命令与 E2E 验收
+1. 仓库根 [README](../README.md) — 产品定位 + **`./setup.sh init`**
+2. [onboarding.md](./onboarding.md) — init 后三入口、机械 CLI 与 E2E 验收
+3. 仓库根 [AGENTS.md](../AGENTS.md) — Agent / 贡献者协作契约
 4. [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) — 语义地基（Core 边界）
 
-架构图口径与施工笔记不在 L1。见下方 B 区。3.x 升级与历史见 C 区（历史归档）。
+首次使用读前两项即可；协议与架构 guide 按需下钻。3.x 升级与历史见 C 区。
 
 贡献者与协议修订 → [contributing.md](./contributing.md)（L3+）。
 
@@ -36,16 +36,16 @@
 
 ---
 
-## B — 当前 4.0 叙事（guide）
+## B — 当前语义与 Guide
 
-随 4.0-canary dogfood 演进；允许改措辞，不进 legacy vocabulary。
+Alignment 是 Protocol Semantics SSOT；其余文档是受控 consumer / guide，不并列定义 Core。
 
 | 文档 | 用途 |
 |------|------|
 | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) | 4.0 语义地基：Core 边界与术语 |
 | [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) | 4.0 架构图设计指导 |
 | [prism-4-reading-contract.md](./prism-4-reading-contract.md) | Reference Experience 阅读合同草案：认知任务、渐进展开与理解型 Eval |
-| [architecture.md](./architecture.md) | 分发/所有权视图、当前 skill 面；3.x 闭环见 C |
+| [architecture.md](./architecture.md) | Protocol Core / Reference Experience、分发所有权与当前三入口 |
 
 ## C — 历史归档（historical）
 

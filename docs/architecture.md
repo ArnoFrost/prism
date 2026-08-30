@@ -1,6 +1,6 @@
 # Prism — 架构详解
 
-> 公开叙事是三段式，不是新的 primitive。SDK / Skills / Workspace / Env 只解释「放哪」。文档分类见 [docs/README.md](./README.md)。首次使用请先读 [README](../README.md)；当前 4.0 语义见 [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md)；3.x 历史见 C 区。
+> 公开叙事只有 Protocol Core 与 Reference Experience 两层，不是新的 primitive。SDK / Skills / Workspace / Env 只解释「放哪」。首次使用请先读 [README](../README.md)；当前语义见 [Alignment](./prism-4-refoundation-alignment.md)，文档分类见 [docs/README.md](./README.md)。
 
 ---
 
@@ -15,20 +15,11 @@
 
 禁止再画一张把 Core、Skill、Profile、Workspace、Adapter 并列的总表当「Prism 是什么」。
 
-### 演进原则
-
-现行有效的两条：
-
-- **奥卡姆 / 去伪存真**：叙事历史（文档、CHANGELOG）保留；可执行历史（旧实现、shim、fallback）剔除。能由 Git 保管的，不留在工作树。
-- **分支即兼容边界**：旧版本能力用分支/tag 承接，当前分支只承载当前版本。旧 topic 只读，不就地维护双栈。
-
 ---
 
 ## 分发与所有权
 
 旧称「四层模型」。它只解释东西放在哪，嵌套在 Reference Experience 下，**不是** Protocol Core。
-
-<img src="./assets/v4/prism-layers.jpg" alt="Prism 分发与所有权四层：Protocol Core / Reference Experience / Workspace 实例 / Skills 与 Env 可选扩展" width="720">
 
 | 载体 | 职责 | 必需 | 典型落点 |
 |------|------|:----:|----------|
@@ -43,15 +34,14 @@ Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`；3.x 实现�
 
 ## 最小参考安装
 
-新表面称 **Minimal Reference Installation** = SDK + `uv`。历史文档和 `bin/setup` / doctor 仍可能写 **core contract**，含义相同，本轮不改脚本字符串。
+**Minimal Reference Installation** = SDK + `uv`。这是让 Reference Experience 跑起来的发行合同，不是 Protocol Core 的组成部分。
 
 | 术语 | 定义 | 维护方式 |
 |------|------|----------|
 | **Minimal Reference Installation** | 最小能跑：SDK + `uv`；Workspace 实例默认可落本地 backend | 发行合同，不进 Protocol Core |
 | **optional deployment** | 外部 Skills、Env、Vault/Git backend 按需组合 | 缺失不阻断 SDK/CLI |
-| **legacy mini/full** | 历史 zip profile；活跃 4.0 工作树不再维护 | Git 历史 / `legacy-3x-final` |
 
-可选部署回答「状态和扩展落在哪里」。4.0 默认交付是版本化 SDK 源码；旧 packer 只存在于 Git 历史。
+可选部署回答「状态和扩展落在哪里」。4.0 默认交付是版本化 SDK 源码。
 
 ---
 
@@ -94,52 +84,11 @@ Prism 通过 `.local` 后缀软链接将 backend 中的 Workspace 挂载到工�
 | `prism-review` | `/prism-review` | 运行 Review 能力，输出 Findings |
 | `prism-plan` | `/prism-plan` | 主动设计 advisory 行动结构，不定义边界或授权 |
 
-这是可回滚的 experimental 验证，不构成稳定性承诺。Profile 的唯一权威是 `skills/schema/dist-whitelist.yaml`，`bin/relink` 只消费该文件；Catalog 只管理身份与治理元数据。`--skill-profile legacy/all` 会诚实报错并指向 git tag。
+这是 experimental 分发面，不构成稳定性承诺。Profile 的唯一权威是 `skills/schema/dist-whitelist.yaml`，`bin/relink` 只消费该文件；Catalog 只管理身份与治理元数据。
 
 能力按需组合，不预设固定顺序。Review 产出 Findings 后弱衔接（告知洞察与是否要 Clarify），不自动调用其他能力。
 
-```mermaid
-flowchart LR
-  T["Topic"] --> A["Artifact"]
-  RV["Review"] --> FN["Findings"]
-  CL["Clarify"] --> CD["候选"]
-  PL["Plan"] --> PA["Plan Artifact"]
-  DC["Decision"]
-  BR["Brief 投影"]
-  FN --> A
-  PA --> A
-  DC --> A
-  BR -.-> A
-  CL -. "按需" .-> DC
-```
-
-## Legacy Compatibility
-
-本节不是 4.0 默认入口。3.x 实现已随 prism-4 分支剔除；本节保留为历史叙事，旧 topic 在本分支只读。
-
-### 3.x 叙事锚点：轻量认知熵管理
-
-v3.0 把上层目标写成**长期人机协作中的轻量认知熵管理**。认知熵不是 Protocol Core 术语；下表的机制列仍是 3.x 的 `intake` / `scope` / `focus` / `task`。
-
-| 熵源 | 典型表现 | 3.x 机制 |
-|------|----------|----------|
-| 输入熵 | 原始想法混沌、边界不清 | `intake` / `scope` |
-| 歧义熵 | 当前对话被一个人类取舍阻塞 | `clarify` 单问 micro-loop |
-| 分析熵 | 判断隐性化、发现不可追溯 | `review` / findings |
-| 决策熵 | 重复争论、结论漂移 | Decision Record / `decision.index` |
-| 注意力熵 | 什么都重要、当前工作集膨胀 | `focus` |
-| 结构熵 | 长期问题切片失控、目录变杂物间 | `task` / `structures` |
-| 方向熵 | 不知道下一步该做什么 | `status` + `next_actions[]`（handoff-only） |
-| 注意力熵 | 已结束 topic 仍占活跃注意力 | `archive` / `reactivate`（3.x，已剔除） |
-| 上下文熵 | 跨会话、跨设备恢复成本高 | digest / compact preview→apply（按需） |
-
-OpenSpec 更像 planning layer；3.x Prism workflow 更像 cognitive governance layer。二者可以串联。4.0 默认面用 Topic / Artifact / Capability / Decision，不再用这张熵源表定义「Prism 是什么」。
-
-### Legacy Workflow 深潜（已剔除）
-
-3.x 的 workflow 能力面（intake / scope / focus / task / wave、reviews/rXX、决策双门、痕迹义务抽检等）及其 `prism legacy` CLI 已随 prism-4 分支物理剔除。本分支不再保留其实现细节文档；叙事与契约归档在 [historical/](./historical/)（`prism-3.2.md`、`topic-lifecycle.md`、`skill-taxonomy.md`、`cli-contract.md`），可执行终态见 git tag `legacy-3x-final`。
-
-3.x 的 trace obligation / `validate-trace` 政策随 3.x 一并归档，4.0 不沿用该治理面。需要追溯旧策略时读 [`historical/cli-contract.md`](./historical/cli-contract.md) 与 [`historical/prism-3.2.md`](./historical/prism-3.2.md)；不要把它复制回 4.0 活文档或 skill。
+Clarify 产生的候选只是尚未吸收的 semantic payload，不与 Artifact 并列。Decision 是否成立由 authority evidence 与 Decision Semantics 决定，不由入口顺序决定。
 
 ---
 
@@ -149,7 +98,6 @@ OpenSpec 更像 planning layer；3.x Prism workflow 更像 cognitive governance 
 prism/
 ├── AGENTS.md                        # 协作契约（Protocol 入口）
 ├── setup.sh                         # 人类一键 init（委托 bin/setup）
-├── SETUP.md                         # 旧安装链接兼容 stub → README / onboarding
 ├── prism.local.yaml.example         # 配置样例
 ├── README.md
 ├── LICENSE
@@ -211,36 +159,3 @@ prism/
 6. **current-only 桥接** — 活工作面只认 `workspace.{code}.local`；3.x Workspace 按 [迁移指南](./migration.md) 冻结归档并重建 current Topic
 7. **SDK 与 Skill 边界** — SDK 负责准备与桥接，Skill 负责协作动作
 8. **只有高频且能独立成故事的能力，才值得成为首屏 Skill**
-
----
-
-## 图示与文字占位
-
-早期 v3 的流程与认知熵图已退场；当前职责边界以本文文字和 Mermaid 关系图为准。未来可按下列文字真源重绘：
-
-| 未来视觉 | 文字真源 |
-|----------|----------|
-| 安装与维护生命周期 | [onboarding.md](./onboarding.md) |
-| 认知熵源到可选能力（3.x） | [skill-taxonomy.md](./historical/skill-taxonomy.md) |
-| Clarify / Review / Decision 回流（4.0） | 本文「4.0 Semantic Skills」 |
-| 3.x Workflow 按需闭环 | 本文「Legacy Compatibility」 |
-| Prism ↔ SDD / OpenSpec | [现有关系图](assets/v3/prism-sdd-relation.png) |
-
-![Prism 与 SDD / OpenSpec 层关系](assets/v3/prism-sdd-relation.png)
-
----
-
-## 当前阶段
-
-本页描述**结构客观面**，不重复 GA 能力 checklist。
-
-**发行 SSOT（文档侧唯二入口）**：仓库根 [README](../README.md) 与下表「发行」行；其余 `docs/` 叙事**不写** semver，避免联动维护。
-
-| 面 | 入口 |
-|----|------|
-| 当前 4.0 语义 | [prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) |
-| 本机施工笔记 | [prism-4-dogfood-plan.md](./prism-4-dogfood-plan.md) |
-| 当前 3.x legacy 治理叙事 | [prism-3.2.md](./historical/prism-3.2.md) |
-| v3.0 GA 历史成立锚点 | [prism-3.0.md](./historical/prism-3.0.md) |
-| 文档分类与读序 | [docs/README.md](./README.md) |
-| 发行（`prism --version`） | 根目录 `VERSION` · [CHANGELOG](../CHANGELOG.md) |

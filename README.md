@@ -146,26 +146,7 @@ Protocol Core 保持很小：
 
 ## 日常使用
 
-日常优先使用 `prism <verb>`。`./setup.sh` 保留为首次 bootstrap 和本机维护入口；`bin/` 是内部适配与维护者调试面。
-
-| 你想做什么 | 入口 |
-|------------|------|
-| 查看当前项目是否已桥接 | `/prism`（Topic）· `prism topic probe` |
-| 创建或列出 Topic | `/prism`（Topic）· `prism topic new` · `prism topic list` |
-| 查看 Artifact 正文 | `prism artifact show` |
-| 生成上下文恢复切片 | `/prism`（Recover）· `prism brief project` |
-| 留下审视结果 | 直写 `findings/` · `/prism-review` |
-| 澄清一个阻塞歧义 | `/prism`（Clarify） |
-| 主动设计行动结构 | `/prism-plan`（默认局部规划） |
-| 吸收已获授权的结果 | `/prism`（Absorb） |
-| 低频校准阅读面 | `/prism`（Maintain，先 preview） |
-| 持久化行动结构快照 | 按 plan 写法合同直写 `plans/`；新 Plan 默认与其他未失效 sibling Plan 共存，仅显式 `--supersedes` 才使目标退出 current set |
-| 记录已授权 Decision | `prism decision record` |
-| 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
-
-普通语义产物（Findings / Plan / Intent / Clarify）由 Agent 直写 Markdown 后 `prism store validate` 校验；CLI 只保留机械事实、投影、校验与 guarded commitment，不再提供通用 record 面。维护动词（`doctor` / `relink` / `update`）由 `bin/prism` 转发到 `bin/` 同名脚本，与协作面分层。
-
-Use what the situation needs:
+日常协作优先从三个 Skill 入口开始：
 
 | Skill | 用途 |
 |-------|------|
@@ -174,7 +155,21 @@ Use what the situation needs:
 | `/prism-plan` | 主动设计 advisory 行动结构 |
 
 这是当前 experimental natural dogfood 的三入口表面，不是顺序管线，也不代表稳定性承诺。Review 不自动进入 Clarify，Plan 被引用也不等于被接受。
-Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不是 Brief/Roadmap 一类投影；current Plan 获得有效 acceptance 后才成为 operative，证据可以来自 confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context，不要求每次 acceptance 都新建 Decision。只有效力超出单一 Plan 生命周期、Plan 重写后仍需保留的承诺，才形成 Decision。
+
+需要精确定位、校验或提交 guarded commitment 时，再使用机械 CLI：
+
+| 机械任务 | 入口 |
+|----------|------|
+| 探测、创建或列出 Topic | `prism topic probe` · `prism topic new` · `prism topic list` |
+| 查看 Artifact / Payload | `prism artifact show` · `prism artifact locate` |
+| 投影恢复切片 | `prism brief project` |
+| 校验状态与重建索引 | `prism store validate` · `prism store regenerate-index` |
+| 接受 Plan / 记录已授权 Decision | `prism plan accept` · `prism decision record` |
+| 检查或维护本机环境 | `prism doctor` · `prism relink` · `prism update` |
+
+Findings / Plan / Intent 等 Artifact 由 Agent 按写法合同直写 Markdown；确需跨 session 暂存的 clarification payload 写入 `clarifications/`。落盘后统一运行 `prism store validate`。CLI 不提供通用 mutation / record 面；`bin/` 只作为内部适配与维护者调试面。
+
+Plan 只回答当前怎么做：行动结构、执行顺序和验证策略。它不是旧 Scope，也不是 Brief / Roadmap 一类投影；current Plan 获得有效 acceptance 后才成为 operative。范围互斥的 sibling Plan 可以共存，只有显式 `supersedes` 才使目标退出 current set。只有 Plan 被完整重写后仍需保留的承诺，才形成 Decision。完整 authority 规则见 [Alignment](docs/prism-4-refoundation-alignment.md)。
 
 完整 CLI 面看：
 
@@ -234,9 +229,8 @@ Decision Semantics governs authorization
 
 CLI 稳定性摘要：
 
-- 新增命令、可选参数和 JSON 字段可在 minor 版本落地。
-- 破坏性改名/删除遵循双 minor 保留窗口，除非已经处于 experimental 或历史迁移边界。
-- 4.0 的 `topic / artifact / brief / review / clarify / plan / decision` 等 reference verbs 仍处于 experimental。
+- 当前 Reference Experience 与三入口仍处于 experimental；不要从文档推断 `prism --help` 之外的隐藏命令或兼容 alias。
+- 稳定性承诺只覆盖明确标记为 stable 的表面；canary 阶段仍允许直接删除未成立的 ontology 与命令。
 
 发行与版本同步规则见 [docs/release-process.md](docs/release-process.md)；历史变化见 [CHANGELOG.md](CHANGELOG.md)。
 
@@ -265,7 +259,7 @@ uv run pytest
 
 ## 文档导航
 
-先读两份主线，再按需下钻。完整分类见 [docs/README.md](docs/README.md)。
+首次使用先读 README 与 onboarding；协议和维护细节按需下钻。完整分类见 [docs/README.md](docs/README.md)。
 
 | 你想了解 | 入口 |
 |----------|------|

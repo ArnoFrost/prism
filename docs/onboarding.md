@@ -1,8 +1,8 @@
 # Prism 安装后日常操作
 
-> **定位**：`./setup.sh init` 完成后的命令面与习惯路径。4.0 当前命令面看 `prism --help`；3.x 历史契约 → [historical/cli-contract.md](./historical/cli-contract.md)。
+> **定位**：`./setup.sh init` 完成后的三入口、机械 CLI 与维护路径。当前命令面看 `prism --help`；3.x Workspace 升级见 [migration.md](./migration.md)。
 >
-> **尚未 init** → 先读仓库根 [README.md](../README.md#快速上手)，再运行 `./setup.sh init`。
+> **尚未 init** → 先读仓库根 [README.md](../README.md#快速开始)，再运行 `./setup.sh init`。
 
 ---
 
@@ -28,8 +28,6 @@ cd ~/prism
 
 ## 生命周期总览
 
-> **视觉占位（待重绘）**：未来安装图应表达 init、桥接、按需治理与维护的外层生命周期，不把 workflow Skills 画成必经管线。
-
 ```text
 setup.sh init → prism --version 验收 → relink / 桥接
              → /prism（Topic 路由，先 probe）→ update / doctor / relink 维护
@@ -40,13 +38,11 @@ setup.sh init → prism --version 验收 → relink / 桥接
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
 | **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 分发 |
 | **topic** | `prism topic list` · `/prism` | 4.0 协作边界与当前状态入口 |
-| **升级** | `prism update` · `./setup.sh update` | pull + core doctor + code-only relink |
+| **升级** | `prism update` · `./setup.sh update` | pull + CI doctor + code-only relink |
 | **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope；`--json` 为 flat passthrough |
 | **桥接修复** | `prism relink` | 软链漂移时 |
 
 `doctor` / `relink` / `update` 是维护动词，由 `bin/prism` 转发到 `bin/` 同名脚本，与协作面（topic / artifact / store / brief / plan / decision / host）分层。
-
-> **`prism doctor --json`** 不是 outer envelope（历史 3.x envelope 见 [historical/cli-contract.md](./historical/cli-contract.md)）。
 
 ---
 
@@ -54,16 +50,18 @@ setup.sh init → prism --version 验收 → relink / 桥接
 
 | 层 | 入口 | 何时用 |
 |----|------|--------|
+| **Agent Skills** | `/prism` · `/prism-review` · `/prism-plan` | 日常协作、审视与行动设计 |
 | **仓库根** | `./setup.sh` | 人类 init / check / update |
 | **`bin/`** | `bin/setup` · `bin/doctor` · `bin/relink` | 底层脚本 / CI / 调试 |
-| **`prism <verb>`** | `prism topic` · `prism brief` · `prism artifact` · `prism store` | **日常首选** |
+| **机械 CLI** | `prism topic` · `prism brief` · `prism artifact` · `prism store` | 定位、投影与校验 |
 | **`prism <verb>`（维护）** | `prism doctor` · `prism relink` · `prism update` | 环境体检 / 软链 / 升级 |
 
 **判断口诀**：
 
 - 动 **本机环境 / 软链 / 全仓 skill** → `prism relink` 或 `./setup.sh relink`
-- 动 **4.0 Topic / Brief / Clarify / Absorb / Maintain 状态** → `/prism` 或对应 `prism <verb>`
+- 动 **Topic / Recover / Clarify / Absorb / Maintain 状态** → `/prism`
 - 做 **Review / Plan 认知加工** → `/prism-review` · `/prism-plan`
+- 做 **机械定位、投影、校验或 guarded commitment** → 对应 `prism <verb>`
 - 动 **旧 3.x topic 的 reviews / decisions / scope** → 本分支只读；要操作请切 3.x 分支或 `legacy-3x-final` tag
 
 ---
@@ -101,6 +99,16 @@ prism doctor --scope config --fix    # 非破坏性（如补全局 gitignore）
 
 ### topic / 4.0 semantic skills
 
+Agent 日常入口（当前 experimental natural dogfood）：
+
+| Skill | 用途 |
+|-------|------|
+| `/prism` | Topic / Recover / Clarify / Absorb / Maintain |
+| `/prism-review` | 审视现状并输出 Findings |
+| `/prism-plan` | 主动设计 advisory 行动结构 |
+
+需要精确机械操作时使用：
+
 ```bash
 prism --version
 prism topic list
@@ -110,9 +118,9 @@ prism store validate
 prism decision record <topic_id> --body "..." --authority-evidence "<evidence ref>" --authorizes plan:p02
 ```
 
-Agent slash（当前 experimental natural dogfood）：`/prism` · `/prism-review` · `/prism-plan`。这仍是实验分发面，不构成稳定性承诺。
+三入口仍是实验分发面，不构成稳定性承诺。Findings / Plan / Intent 等 Artifact 由 Agent 按写法合同直写 Markdown；确需跨 session 暂存的 clarification payload 写入 `clarifications/`。落盘后统一运行 `prism store validate`；CLI 不提供通用 record / mutation 面。
 
-Findings / Plan / Intent / Clarify 等普通语义产物由 Agent 按对应写法合同直写 Markdown，落盘后 `prism store validate` 校验；CLI 不再提供通用 record / mutation 面。`--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；current Plan 获得有效 acceptance 后才成为 operative，confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context 都可提供证据。Plan acceptance 不要求新建 Decision；只有超出单一 Plan 生命周期的 durable commitment 才形成 Decision。
+`--supersedes` / `--authorizes` 只提交已有 Relation，不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；current Plan 获得有效 acceptance 后才成为 operative。Plan acceptance 不要求新建 Decision；只有超出单一 Plan 生命周期的 durable commitment 才形成 Decision。
 
 普通 planning 优先由 Agent 结合当前上下文局部完成，不默认落盘。需要 durable Plan snapshot 时按 plan 写法合同直写 `plans/`，supersedes 仅经显式 frontmatter 提交，不自动替代任何 current Plan，目标正交、范围互斥的 sibling Plan 可以并存。
 
@@ -135,7 +143,7 @@ prism --version
 
 ## Workspace backend 与 Vault 跨设备（可选）
 
-默认 backend 为 `~/.local/share/prism/Workspace`。Vault 与 Workspace Git **均非** core contract 硬依赖；启用后仍经 `workspace.*.local` 桥接。
+默认 backend 为 `~/.local/share/prism/Workspace`。Vault 与 Workspace Git **均非** Protocol Core 硬依赖；启用后仍经 `workspace.*.local` 桥接。
 
 ---
 
@@ -148,11 +156,11 @@ prism --version
 | E3 | CLI | `prism --version` | 输出版本 |
 | E4 | 软链 | `prism relink --check` | 错误: 0 |
 | E5 | gitignore | `prism doctor --scope config --quick` | 无 blocking err |
-| E6 | uv | `uv --version` | 可用（core contract） |
+| E6 | uv | `uv --version` | Minimal Reference Installation 可用 |
 
 ---
 
 ## 参考
 
-- 4.0 当前叙事：[prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) · [architecture.md](./architecture.md)
-- 3.x 历史参考：[cli-contract.md](./historical/cli-contract.md) · [topic-lifecycle.md](./historical/topic-lifecycle.md) · [skill-taxonomy.md](./historical/skill-taxonomy.md) · [prism-3.0.md](./historical/prism-3.0.md)
+- 当前语义与结构：[prism-4-refoundation-alignment.md](./prism-4-refoundation-alignment.md) · [architecture.md](./architecture.md)
+- 3.x Workspace 升级：[migration.md](./migration.md)；其他历史材料见 [historical/](./historical/)

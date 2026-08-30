@@ -201,8 +201,23 @@ def test_active_docs_use_nested_public_narrative() -> None:
     assert "# Prism 4.0 语义地基" in alignment
     assert "AGENTS.md" in l1
     assert "prism-4-architecture-guide" not in l1
-    assert architecture.index("## 公开叙事") < architecture.index("## Legacy Compatibility")
-    assert architecture.index("## 4.0 Semantic Skills") < architecture.index("## Legacy Compatibility")
+    assert "公开叙事只有 Protocol Core 与 Reference Experience 两层" in architecture
+    assert "## Legacy Compatibility" not in architecture
+    assert "prism-4-dogfood-plan.md" not in architecture
+
+
+def test_public_docs_lead_with_three_skills_and_keep_cli_mechanical() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    onboarding = (ROOT / "docs" / "onboarding.md").read_text(encoding="utf-8")
+    docs_index = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+
+    assert readme.index("日常协作优先从三个 Skill 入口开始") < readme.index("机械 CLI")
+    assert "日常优先使用 `prism <verb>`" not in readme
+    assert "动 **Topic / Recover / Clarify / Absorb / Maintain 状态** → `/prism`" in onboarding
+    assert "`/prism` 或对应 `prism <verb>`" not in onboarding
+    assert "Findings / Plan / Intent / Clarify 等普通语义产物" not in readme
+    assert "Findings / Plan / Intent / Clarify 等普通语义产物" not in onboarding
+    assert "architecture.md#当前阶段" not in docs_index
 
 
 def test_active_guides_follow_current_semantic_source_and_relation_vocabulary() -> None:
