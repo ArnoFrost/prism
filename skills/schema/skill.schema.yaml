@@ -36,7 +36,7 @@ naming:
   rule: "basename(skill_dir) === frontmatter.name === relink link name"
   sdk_builtin:
     layout: "skills/{category}/{skill-id}/SKILL.md"
-    skill_id: "{category}-{slug} — e.g. prism-review, prism-topic"
+    skill_id: "{category}-{slug} — e.g. prism-review, prism-plan"
     anti_pattern: "skills/prism4/review/ + name: prism-review（父目录与 name 不一致，Codex 等会报错）"
   external_skills:
     layout: "~/prism-skills/{skill-id}/SKILL.md"
@@ -92,14 +92,11 @@ loading:
 # Skill categories in Prism
 categories:
   prism4:
-    description: "Prism 4.0 semantic skills for Topic / Brief / Review / Clarify / Plan / Compress"
+    description: "Prism 4.0 semantic skills: state operations facade, Review, Plan"
     examples:
-      - prism-topic
-      - prism-brief
+      - prism
       - prism-review
-      - prism-clarify
       - prism-plan
-      - prism-compress
   utility:
     description: "General-purpose tools"
     examples:

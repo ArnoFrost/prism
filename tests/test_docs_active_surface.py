@@ -43,8 +43,7 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
     assert "唯一分发面" in skills_readme and "skills/prism4" in skills_readme
     assert "prism / prism-review / prism-plan" in skills_readme
     for surface in (readme, onboarding, skills_readme):
-        assert "旧 wrappers" in surface
-        assert "不属于当前默认" in surface
+        assert "旧 wrappers" not in surface
 
 
 def test_active_public_surface_does_not_expose_rollout_phase_labels() -> None:
@@ -162,21 +161,11 @@ def test_style_profile_slot_stays_optional_and_outside_core() -> None:
     architecture_guide = (
         ROOT / "docs" / "prism-4-architecture-guide.md"
     ).read_text(encoding="utf-8")
-    artifact_format = (
-        ROOT
-        / "skills"
-        / "prism4"
-        / "prism-compress"
-        / "references"
-        / "artifact-format.md"
-    ).read_text(encoding="utf-8")
     skills_readme = (ROOT / "skills" / "README.md").read_text(encoding="utf-8")
 
     assert "### 2.1 Style Profile Slot" in architecture_guide
     assert "默认 profile 为空" in architecture_guide
     assert "不要求 Obsidian" in architecture_guide
-    assert "Style Profile 是可选槽位" in artifact_format
-    assert "未显式加载 profile" in artifact_format
     assert "Style Profile 类技能" in skills_readme
     assert "不进入 Core" in skills_readme
 
@@ -188,13 +177,11 @@ def test_state_boundary_contract_and_terminology_grammar_are_explicit() -> None:
     architecture_guide = (
         ROOT / "docs" / "prism-4-architecture-guide.md"
     ).read_text(encoding="utf-8")
-    artifact_format = (
-        ROOT
-        / "skills"
-        / "prism4"
-        / "prism-compress"
-        / "references"
-        / "artifact-format.md"
+    intent_contract = (
+        ROOT / "skills" / "prism4" / "artifact-contracts" / "intent.md"
+    ).read_text(encoding="utf-8")
+    brief_contract = (
+        ROOT / "skills" / "prism4" / "artifact-contracts" / "brief.md"
     ).read_text(encoding="utf-8")
 
     assert "### 4.5 Terminology Grammar Checkpoint" in alignment
@@ -211,41 +198,32 @@ def test_state_boundary_contract_and_terminology_grammar_are_explicit() -> None:
     assert "missing provenance never means globally applicable" in architecture_guide
     assert "There is no Briefing Capability" in architecture_guide
 
-    intent_contract = artifact_format.split("## Intent —", 1)[1].split(
-        "## Brief —", 1
-    )[0]
-    intent_template = intent_contract.split("```markdown", 1)[1].split("```", 1)[0]
-    assert "## 当前落点" not in intent_template
+    assert "| 当前落点 |" not in intent_contract
     assert "Intent 只保存稳定边界" in intent_contract
     assert "Orientation / Boundary" in intent_contract
     assert "多个只写“未声明”的空章节" in intent_contract
     assert "不是新的 Intent 语义字段" in intent_contract
-    assert "Child Intent" in artifact_format and "Child Plan" in artifact_format
-    assert "存在 Child 时分组显示当前 Topic / 相关 Child" in artifact_format
-    assert "无 Topic provenance 的 payload" in artifact_format
+    assert "Child Intent" in brief_contract and "Child Plan" in brief_contract
+    assert "存在 Child 时分组显示当前 Topic / 相关 Child" in brief_contract
+    assert "无 Topic provenance 的 payload" in brief_contract
 
 
 def test_artifact_language_rules_keep_humanizer_outside_runtime() -> None:
-    artifact_format = (
-        ROOT
-        / "skills"
-        / "prism4"
-        / "prism-compress"
-        / "references"
-        / "artifact-format.md"
+    contracts_readme = (
+        ROOT / "skills" / "prism4" / "artifact-contracts" / "README.md"
     ).read_text(encoding="utf-8")
-    brief_skill = (
-        ROOT / "skills" / "prism4" / "prism-brief" / "SKILL.md"
+    recover_method = (
+        ROOT / "skills" / "prism4" / "shared" / "methods" / "recover.md"
     ).read_text(encoding="utf-8")
     plan_skill = (
         ROOT / "skills" / "prism4" / "prism-plan" / "SKILL.md"
     ).read_text(encoding="utf-8")
 
-    assert "## 工程产物语言规则" in artifact_format
-    assert "Prism 工件先交付状态，再解释协议" in artifact_format
-    assert "不是 Prism runtime dependency" in artifact_format
-    assert "不强行加入第一人称、情绪或个性" in artifact_format
-    assert "不在每个章节重复解释 Prism 协议" in brief_skill
+    assert "## 工程产物语言规则" in contracts_readme
+    assert "Prism 工件先交付状态，再解释协议" in contracts_readme
+    assert "不是 Prism runtime dependency" in contracts_readme
+    assert "不强行加入第一人称、情绪或个性" in contracts_readme
+    assert "不在每个章节重复解释协议" in recover_method
     assert "避免用“为了实现这一目标”" in plan_skill
 
 
@@ -417,39 +395,35 @@ def test_current_skill_schema_examples_use_prism4_surface() -> None:
 
 
 def test_plan_format_matches_reference_record_plan_semantics() -> None:
-    artifact_format = (
-        ROOT
-        / "skills"
-        / "prism4"
-        / "prism-compress"
-        / "references"
-        / "artifact-format.md"
+    plan_contract = (
+        ROOT / "skills" / "prism4" / "artifact-contracts" / "plan.md"
+    ).read_text(encoding="utf-8")
+    maintain_method = (
+        ROOT / "skills" / "prism4" / "shared" / "methods" / "maintain.md"
     ).read_text(encoding="utf-8")
     use_cases = (ROOT / "prism4" / "use_cases.py").read_text(encoding="utf-8")
 
-    assert 'authority: "advisory"' in artifact_format
-    assert 'evolution: "regenerable"' not in artifact_format
+    assert 'authority: "advisory"' in plan_contract
+    assert 'evolution: "regenerable"' not in plan_contract
     assert '"authority": "advisory"' in use_cases
     assert '"evolution": "supersedable"' in use_cases
-    assert 'authority: "operative"' not in artifact_format
-    assert "Plan 不是旧 3.x Scope 的替身" in artifact_format
-    assert "references 可以承载 diff、证据、风险矩阵或长分析" in artifact_format
-    assert "durable snapshot / recovery anchor" in artifact_format
-    assert "当前有效 Plan 指同一 Topic 内未被 `supersedes`" in artifact_format
-    assert "`prism plan record` 是 advanced durable snapshot 入口" in artifact_format
-    assert "supersedes 仅经显式 `--supersedes` 提交" in artifact_format
+    assert 'authority: "operative"' not in plan_contract
+    assert "Plan 不是旧 3.x Scope 的替身" in plan_contract
+    assert "references 可以承载 diff、证据、风险矩阵或长分析" in plan_contract
+    assert "durable snapshot" in plan_contract
+    assert "当前有效 Plan 指同一 Topic 内未被 `supersedes`" in plan_contract
+    assert "直写新 Plan 文档并在 frontmatter 用显式 `supersedes` 指定被替代者" in maintain_method
 
 
-def test_compress_guidance_converges_plan_instead_of_appending_by_default() -> None:
-    compress_skill = (
-        ROOT / "skills" / "prism4" / "prism-compress" / "SKILL.md"
+def test_maintain_guidance_converges_plan_instead_of_appending_by_default() -> None:
+    maintain_method = (
+        ROOT / "skills" / "prism4" / "shared" / "methods" / "maintain.md"
     ).read_text(encoding="utf-8")
 
-    assert "不把普通下一步规划自动持久化为 Plan Artifact" in compress_skill
-    assert "不默认新增 Plan" in compress_skill
-    assert "范围互斥的 sibling Plan 合法并存" in compress_skill
-    assert "supersedes 只经显式 `--supersedes` 提交" in compress_skill
-    assert "只有需要 durable Plan snapshot 时才调用" in compress_skill
+    assert "不默认新增 Plan" in maintain_method
+    assert "普通下一步由 Agent 局部规划完成" in maintain_method
+    assert "范围互斥的 sibling Plan 合法并存" in maintain_method
+    assert "不自动替代任何 Plan" in maintain_method
 
 
 def test_plan_guidance_stays_advisory_and_not_scope() -> None:
@@ -457,13 +431,13 @@ def test_plan_guidance_stays_advisory_and_not_scope() -> None:
     review_skill = (
         ROOT / "skills" / "prism4" / "prism-review" / "SKILL.md"
     ).read_text(encoding="utf-8")
-    brief_skill = (
-        ROOT / "skills" / "prism4" / "prism-brief" / "SKILL.md"
+    recover_method = (
+        ROOT / "skills" / "prism4" / "shared" / "methods" / "recover.md"
     ).read_text(encoding="utf-8")
 
     assert "它不是旧 Scope" in readme
     assert "按 plan 合同直写刷新 Plan 正文" in review_skill
-    assert "`## 目标`、`## 步骤` / `## 行动结构`、`## 验证`" in brief_skill
+    assert "`## 目标`、`## 步骤`、`## 验证`" in recover_method
     assert "/prism-plan" in readme
     assert "/prism-plan" not in review_skill
 
@@ -523,36 +497,21 @@ def test_prism_plan_skill_is_active_but_not_workflow_or_authority() -> None:
 
 
 def test_topic_doorway_guidance_keeps_topic_md_as_navigation_not_source() -> None:
-    artifact_format = (
-        ROOT
-        / "skills"
-        / "prism4"
-        / "prism-compress"
-        / "references"
-        / "artifact-format.md"
-    ).read_text(encoding="utf-8")
-    topic_skill = (
-        ROOT / "skills" / "prism4" / "prism-topic" / "SKILL.md"
+    topic_method = (
+        ROOT / "skills" / "prism4" / "shared" / "methods" / "topic.md"
     ).read_text(encoding="utf-8")
     local_files = (ROOT / "prism4" / "local_files.py").read_text(encoding="utf-8")
 
-    assert "Topic doorway — `topic.md`" in artifact_format
-    assert "不是 Core Artifact role，也不是事实源" in artifact_format
-    assert "不要把 `topic.md` 扩写成 README、Scope 或 Brief" in artifact_format
-    assert "`topic.md` 是机械锚点与导航门牌，不是事实源" in topic_skill
-    assert "Child Topic 不是 Child Plan" in topic_skill
-    assert "测试路线、A/B、fixture、短期 spike" in topic_skill
+    assert "是机械锚点与导航门牌" in topic_method
+    assert "不是 Core Artifact role，也不是事实源" in topic_method
+    assert "不要把 `topic.md` 扩写成 README、Scope 或 Brief" in topic_method
+    assert "Child Topic 不是 Child Plan" in topic_method
     assert "## 阅读入口" in local_files
 
 
 def test_findings_format_prioritizes_human_readability_without_changing_authority() -> None:
-    artifact_format = (
-        ROOT
-        / "skills"
-        / "prism4"
-        / "prism-compress"
-        / "references"
-        / "artifact-format.md"
+    finding_contract = (
+        ROOT / "skills" / "prism4" / "artifact-contracts" / "finding.md"
     ).read_text(encoding="utf-8")
     review_skill = (
         ROOT / "skills" / "prism4" / "prism-review" / "SKILL.md"
@@ -564,11 +523,11 @@ def test_findings_format_prioritizes_human_readability_without_changing_authorit
         "## 发现地图",
         "论点 / 依据 / 影响 / 建议",
     ]:
-        assert phrase in artifact_format
+        assert phrase in finding_contract
         assert phrase in review_skill
-    assert "仍然是 advisory，不构成授权" in artifact_format
+    assert "仍然是 advisory，不构成授权" in finding_contract
     assert "先帮助人类把握局势" in review_skill
-    assert "TL;DR 不复述整张发现地图" in artifact_format
+    assert "TL;DR 不复述整张发现地图" in finding_contract
     assert "发现地图负责 Scan" in review_skill
     assert "评价标准是读者能否恢复和核实，不是总字数" in review_skill
     assert "若现有 Findings 已足够表达本轮判断，直接引用现有 Findings" in review_skill
@@ -579,20 +538,15 @@ def test_plan_snapshots_do_not_become_phase_task_logs() -> None:
     plan_skill = (
         ROOT / "skills" / "prism4" / "prism-plan" / "SKILL.md"
     ).read_text(encoding="utf-8")
-    artifact_format = (
-        ROOT
-        / "skills"
-        / "prism4"
-        / "prism-compress"
-        / "references"
-        / "artifact-format.md"
+    plan_contract = (
+        ROOT / "skills" / "prism4" / "artifact-contracts" / "plan.md"
     ).read_text(encoding="utf-8")
 
     assert "不要在 P0、P1、P2 每切换一次就各记录一份 Plan Artifact" in plan_skill
     assert "测试矩阵、A/B、fixture 和临时验证脚本" in plan_skill
     assert "Child Topic 也不是 Child Plan" in plan_skill
-    assert "不要把每个阶段状态变化都保存成新的 `pXX`" in artifact_format
-    assert "Plan phase / item 只是当前 Topic 内的行动拆解" in artifact_format
+    assert "不要把每个阶段状态变化都保存成新的 `pXX`" in plan_contract
+    assert "Plan 永远平级，层次只由 child Topic 表达" in plan_contract
 
 
 def test_open_source_readiness_review_is_historical_not_actionable() -> None:

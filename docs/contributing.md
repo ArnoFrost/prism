@@ -7,7 +7,7 @@
 | 层级 | 典型身份 | 默认入口 | 可修改范围 |
 |------|----------|----------|------------|
 | L1 使用者 | 只安装和使用 Prism | `README.md` / [onboarding.md](./onboarding.md) | 不修改仓库 |
-| L2 项目接入者 | 为某个工作仓库接入 Workspace | `prism host attach` / `/prism-topic` / `AGENTS.local.md` | 本地 `.local` 状态 |
+| L2 项目接入者 | 为某个工作仓库接入 Workspace | `prism host attach` / `/prism` / `AGENTS.local.md` | 本地 `.local` 状态 |
 | L3 贡献者 | 修改 SDK、Skills、文档或发布流程 | 本文 · [docs/README.md](./README.md) | 共享仓库内的代码与文档 |
 | L4 维护者 | 处理发布、协议修订、破坏性变更 | [docs/README.md](./README.md) · `docs/architecture.md` · `bin/README.md` | 协议、版本、CI、分发 |
 

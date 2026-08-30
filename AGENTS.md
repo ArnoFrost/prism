@@ -56,7 +56,7 @@ Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议�
 | `prism-review` | `/prism-review` | Findings，不自动授权 |
 | `prism-plan` | `/prism-plan` | 主动设计 advisory 行动结构；不定义边界、不授权 |
 
-这是 natural dogfood 使用的 experimental 分发面，不构成稳定性承诺。旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 作为 control / compatibility / rollback source，不属于当前默认 Distribution Profile。
+这是 natural dogfood 使用的 experimental 分发面，不构成稳定性承诺。
 
 3.x `workflow-*` 与 `workspace-init` 已随 prism-4 分支剔除；终态由 git tag `legacy-3x-final` 保管。旧 topic 在本分支只读。
 

@@ -9,15 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SHARED = ROOT / "skills" / "prism4" / "shared"
-SKILL_IDS = (
-    "prism",
-    "prism-topic",
-    "prism-brief",
-    "prism-review",
-    "prism-clarify",
-    "prism-plan",
-    "prism-compress",
-)
+SKILL_IDS = ("prism", "prism-review", "prism-plan")
 
 METHOD_NAMES = ("topic", "recover", "clarify", "maintain", "absorb")
 

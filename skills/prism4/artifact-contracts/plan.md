@@ -95,7 +95,7 @@ supersedes: ["plan:p00"]    # 重写链，可选
 | 新问题域目标正交、有独立验收线、原 Plan 仍在活跃执行 | 开**兄弟 Plan**；互斥范围在正文开头声明 |
 | 多 Plan 覆盖同一目标，或目标重定义 | supersedes 重写，旧版入 `plans/archive/` |
 
-Plan 永远平级，层次只由 child Topic 表达。兄弟 Plan 的范围声明写法：开头一节写明"本计划 supersedes `<plan>` 的执行口径；`<plan>` 保留为事实输入；`<plan>` 不在本计划取代范围内"。
+Plan 永远平级，层次只由 child Topic 表达。当前有效 Plan 指同一 Topic 内未被 `supersedes`、且 `evolution` 非 `historical` 的 Plan；正常情况下应只有一份。兄弟 Plan 的范围声明写法：开头一节写明"本计划 supersedes `<plan>` 的执行口径；`<plan>` 保留为事实输入；`<plan>` 不在本计划取代范围内"。
 
 ## 吸收转写范例
 

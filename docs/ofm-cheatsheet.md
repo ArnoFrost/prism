@@ -1,6 +1,6 @@
 # OFM / GFM 格式速查
 
-> 3.x historical maintenance note。4.0 Core 不依赖 Obsidian OFM，也不读取旧 `skills/workflow/shared` SSOT。当前 4.0 Topic 人类阅读面见 `skills/prism4/prism-compress/references/artifact-format.md`。
+> 3.x historical maintenance note。4.0 Core 不依赖 Obsidian OFM，也不读取旧 `skills/workflow/shared` SSOT。当前 4.0 Topic 人类阅读面见 `skills/prism4/artifact-contracts/`。
 > **心智模型**：Prism 默认 = **GitHub GFM 基线**；Obsidian 仅在 vault 内 **叠加增量**（`==` 高亮等）。
 
 ## GFM 基线（Prism 默认，全员）

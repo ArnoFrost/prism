@@ -62,18 +62,13 @@ def test_catalog_governs_inventory_while_whitelist_owns_current_surface() -> Non
     whitelist = _read(WHITELIST)
     assert "governance metadata SSOT" in catalog
     assert "does not define the current distribution profile" in catalog
-    for skill_id in (
-        "prism",
-        "prism-topic",
-        "prism-brief",
-        "prism-review",
-        "prism-clarify",
-        "prism-plan",
-        "prism-compress",
-    ):
+    for skill_id in ("prism", "prism-review", "prism-plan"):
         entry = _catalog_entry(skill_id)
         assert "visibility: dev" in entry
         assert "stability: experimental" in entry
+    # 旧 wrapper 目录已从 SDK 退出；Catalog 不得再登记这些身份。
+    for skill_id in ("prism-topic", "prism-brief", "prism-clarify", "prism-compress"):
+        assert f"  - id: {skill_id}" not in catalog
     assert "Distribution Profile SSOT" in whitelist
     profile = whitelist.split("  prism4:", 1)[1].split("always_exclude:", 1)[0]
     for skill_id in ("prism", "prism-review", "prism-plan"):

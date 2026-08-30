@@ -18,17 +18,14 @@ skills/
     ├── prism/
     ├── prism-review/
     ├── prism-plan/
-    ├── prism-topic/        # control / compatibility / rollback source
-    ├── prism-brief/        # control / compatibility / rollback source
-    ├── prism-clarify/      # control / compatibility / rollback source
-    └── prism-compress/     # control / compatibility / rollback source
+    └── shared/             # 内部 kernel + methods，不提升为第四入口
 ```
 
 ## 技能分类
 
 | 类别 | 位置 | 技能 |
 |------|------|------|
-| prism4 | `skills/prism4/` | prism / prism-review / prism-plan + 四个旧 wrappers source |
+| prism4 | `skills/prism4/` | prism / prism-review / prism-plan |
 | dev ops | `~/prism-skills` (外部) | prism-maintain（个人多端全环境同步与冲突处理） |
 | utility | `~/prism-skills` (外部) | commit, digest, learnnote, humanizer 等 |
 
@@ -42,7 +39,7 @@ skills/
 | `prism-review` | `/prism-review` | 当前材料 / 风险或校准问题 | Findings |
 | `prism-plan` | `/prism-plan` | Intent / Decisions / runtime context / optional Plan | advisory Plan |
 
-旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 仍保留在 SDK，作为 controls / compatibility / rollback source，**不属于当前默认 distribution profile**。所有 Skills 继续使用 `bin/prism` 的 4.0 reference adapter，不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
+所有 Skills 继续使用 `bin/prism` 的 4.0 reference adapter，不创建 3.x `scope.md` / `focus.md` / `task.index.md` / `wave` 工件。
 
 ## SDK 与外部技能的关系
 
@@ -75,10 +72,10 @@ SDK 内置技能只定义 canonical 语义能力与实验 packaging。个人可�
 
 | 检查项 | 规则 |
 |--------|------|
-| 父目录 | `prism-brief/`（不是 `brief/`） |
-| frontmatter `name` | `prism-brief`（与父目录一致） |
-| IDE 软链 | `~/.codex/skills/prism-brief` → 同上目录 |
-| 触发 | `/prism-brief` |
+| 父目录 | `prism-review/`（不是 `review/`） |
+| frontmatter `name` | `prism-review`（与父目录一致） |
+| IDE 软链 | `~/.codex/skills/prism-review` → 同上目录 |
+| 触发 | `/prism-review` |
 
 `bin/validate-skills` 与 Codex 均校验 **name === 父目录 basename**。外部 `prism-skills` 顶层目录同理（`commit/` → `name: commit`）。
 

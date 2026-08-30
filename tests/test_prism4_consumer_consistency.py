@@ -43,7 +43,7 @@ def test_distributed_consumers_do_not_depend_on_workspace_decision_ids() -> None
         KERNEL,
         ROOT / "skills" / "prism4" / "shared" / "README.md",
         ROOT / "skills" / "prism4" / "artifact-contracts" / "intent.md",
-        ROOT / "skills" / "prism4" / "prism-topic" / "SKILL.md",
+        ROOT / "skills" / "prism4" / "prism" / "SKILL.md",
     )
     for path in surfaces:
         text = path.read_text(encoding="utf-8")

@@ -109,7 +109,7 @@ prism clarify record <topic_id> --question "..." --proposed-patch "..."
 prism decision record <topic_id> --body "..." --authorizes plan:p02
 ```
 
-Agent slash（当前 experimental natural dogfood）：`/prism` · `/prism-review` · `/prism-plan`。这仍是实验分发面，不构成稳定性承诺；旧 wrappers `prism-topic / prism-brief / prism-clarify / prism-compress` 保留在 SDK 作为 controls / compatibility / rollback source，**不属于当前默认分发面**。
+Agent slash（当前 experimental natural dogfood）：`/prism` · `/prism-review` · `/prism-plan`。这仍是实验分发面，不构成稳定性承诺。
 
 `--supersedes` / `--authorizes` 只写入已有 Relation；它们不新增 Capability，也不把 Findings 或 Plan 变成授权。Plan 被引用不等于被接受；current Plan 获得有效 acceptance 后才成为 operative，confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context 都可提供证据。Plan acceptance 不要求新建 Decision；只有超出单一 Plan 生命周期的 durable commitment 才形成 Decision。
 

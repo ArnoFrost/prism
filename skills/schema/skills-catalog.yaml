@@ -40,20 +40,6 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-29"
     rationale: "Experimental effect-first state facade used by the natural dogfood profile; distribution remains solely owned by dist-whitelist.yaml and does not imply stable cutover."
-  - id: prism-topic
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-08-15"
-    rationale: "Prism 4.0 Topic boundary management; Host probe before create; replaces workflow-intake for canary dogfood without reusing 3.x scope/focus/task/wave semantics."
-  - id: prism-brief
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-08-14"
-    rationale: "Prism 4.0 Brief projection for context recovery; explicitly not a fact source."
   - id: prism-review
     visibility: dev
     stability: experimental
@@ -61,13 +47,6 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-14"
     rationale: "Prism 4.0 Review capability; emits Findings without authorization side effects."
-  - id: prism-clarify
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-08-14"
-    rationale: "Prism 4.0 Clarify capability; records optional proposed-patch or decision-candidate payloads without committing Decisions."
   - id: prism-plan
     visibility: dev
     stability: experimental
@@ -75,13 +54,6 @@ entries:
     reviewed_by: ArnoFrost
     reviewed_at: "2026-08-19"
     rationale: "Prism 4.0 Plan capability; actively designs advisory action structure without redefining Intent, producing Findings, committing Decisions, executing work, or implying fixed workflow order."
-  - id: prism-compress
-    visibility: dev
-    stability: experimental
-    source_repo: prism
-    reviewed_by: ArnoFrost
-    reviewed_at: "2026-08-15"
-    rationale: "Prism 4.0 occasional alignment compression; audits reading-surface format, archives stale pending clarifications, and regenerates Brief without changing Decision commitments."
 
 # ─────────────────────────────────────────────
 # External prism-skills entries（独立仓库，随其自身发布）
