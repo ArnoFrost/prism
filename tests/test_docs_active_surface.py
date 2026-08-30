@@ -380,8 +380,12 @@ def test_workspace_migration_is_archive_then_reconstruct_contract() -> None:
         "## 批量迁移编排",
         "### 迁移 Agent 启动话术",
         "### 标准迁移报告",
-        "### Phase D — 重写 Workspace AGENTS.md",
+        "### Phase D — 重写 Workspace 协作入口（AGENTS.md）",
         "## 当前入口",
+        "已迁移实例快速路径",
+        "--role intent|plan|findings|clarify",
+        "不得直写 `decisions/` 绕过 guard",
+        "<LEGACY_ARCHIVE_PATH>",
     ]
     for phrase in required:
         assert phrase in migration
