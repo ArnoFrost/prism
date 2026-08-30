@@ -31,7 +31,8 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
 
     assert "experimental natural dogfood" in readme and "prism topic list" in readme
     assert "/prism" in onboarding and "/prism-plan" in onboarding
-    assert "prism review record" in onboarding
+    # 普通语义产物的落盘入口是直写 Markdown + store validate，不是 record CLI。
+    assert "prism store validate" in onboarding
     assert "prism4/cli.py" in bin_readme and "legacy-3x-final" in bin_readme
     assert "{ok, ids}" in bin_readme
     contract = (ROOT / "docs" / "historical" / "cli-contract.md").read_text(
