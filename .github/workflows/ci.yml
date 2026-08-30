@@ -66,9 +66,15 @@ jobs:
           bin/doctor --scope ci --json | tee doctor-ci.json
           bin/doctor --scope ci
 
-      - name: pytest — SDK smoke + relink + 4.0 tests
+      - name: pytest — SDK smoke + 4.0 tests
         run: |
           uv run --with pytest python -m pytest tests/ -q
+
+      # pytest 只收集 test_*.py，这个 bash 用例守 bin/relink 的 Workspace
+      # 回写路径（含二次写入幂等与重复 paths: 防护），必须显式调用。
+      - name: relink writeback 健壮性
+        shell: bash
+        run: bash tests/test_relink_writeback.sh
 
       - name: Release gate — version metadata + breaking docs sync
         env:
