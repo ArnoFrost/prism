@@ -72,7 +72,7 @@ prism topic new topic:my-first --title "My first Prism topic" --intent "What we 
 失败后先看 [docs/onboarding.md](docs/onboarding.md)，或运行：
 
 ```bash
-bin/doctor --scope config --quick
+prism doctor --scope config --quick
 ```
 
 Agent 引导可直接使用：
@@ -161,9 +161,9 @@ Protocol Core 保持很小：
 | 低频校准阅读面 | `/prism`（Maintain，先 preview） |
 | 持久化行动结构快照 | 按 plan 写法合同直写 `plans/`；新 Plan 默认与其他未失效 sibling Plan 共存，仅显式 `--supersedes` 才使目标退出 current set |
 | 记录已授权 Decision | `prism decision record` |
-| 刷新软链接或检查环境 | `bin/relink` · `bin/doctor` |
+| 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
 
-普通语义产物（Findings / Plan / Intent / Clarify）由 Agent 直写 Markdown 后 `prism store validate` 校验；CLI 只保留机械事实、投影、校验与 guarded commitment，不再提供通用 record 面。`doctor` / `relink` / `update` 是 `bin/` 脚本，不是 `prism` 子命令。
+普通语义产物（Findings / Plan / Intent / Clarify）由 Agent 直写 Markdown 后 `prism store validate` 校验；CLI 只保留机械事实、投影、校验与 guarded commitment，不再提供通用 record 面。维护动词（`doctor` / `relink` / `update`）由 `bin/prism` 转发到 `bin/` 同名脚本，与协作面分层。
 
 Use what the situation needs:
 

@@ -1,5 +1,6 @@
 """Keep the Prism 4.0 documentation surface small and coherent."""
 
+import subprocess
 from pathlib import Path
 
 
@@ -10,8 +11,11 @@ RETIRED_VISUALS = (
     "-".join(("cognitive-entropy", "flow")) + ".png",
 )
 
-# 已从 CLI 退役的 noun，以及从未存在过的 prism 子命令——后者是 bin/ 维护脚本。
-# 它们一旦回到活文档或三入口技能，Agent 照做就会得到 argparse failure。
+# 已从协作面 CLI 退役的 noun。它们一旦回到活文档或三入口技能，Agent 照做
+# 就会得到 argparse failure。
+#
+# 不含 doctor / relink / update：这三个是维护动词，由 bin/prism 转发到
+# bin/ 同名脚本，是仍在使用的一等入口，与协作面分层而非退役。
 RETIRED_CLI_ENTRIES = (
     "prism review record",
     "prism clarify record",
@@ -20,10 +24,27 @@ RETIRED_CLI_ENTRIES = (
     "prism artifact archive",
     "prism relation add",
     "prism dist",
-    "prism doctor",
-    "prism relink",
-    "prism update",
 )
+
+# 维护动词必须由 bin/prism 转发到 bin/ 脚本。缺失分派时它们会静默退化成
+# argparse failure，因此单独守护实现而不只是守护文档。
+MAINTENANCE_VERBS = ("doctor", "relink", "update")
+
+
+def test_prism_shell_dispatches_maintenance_verbs() -> None:
+    """维护动词必须真的能跑通，而不只是写在帮助里。
+
+    缺失分派时它们会退化成协作面 CLI 的 argparse failure——帮助文本照样
+    宣传，文档照样引用，只有真正调用才暴露。
+    """
+    for verb in MAINTENANCE_VERBS:
+        result = subprocess.run(
+            [str(ROOT / "bin" / "prism"), verb, "--help"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert "invalid choice" not in result.stderr, (verb, result.stderr)
 
 
 def _prism4_skill_documents() -> list[Path]:

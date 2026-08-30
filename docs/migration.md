@@ -22,7 +22,7 @@
 | 默认 skill 面 | `workflow-*` 管线 | experimental：`prism / prism-review / prism-plan` | `dist-whitelist.yaml` 是 Distribution Profile SSOT；旧 4.0 wrappers 已从活树删除，历史形态由 Git tag（`p4-shadow-baseline` / `p5-natural-dogfood-baseline`）承载 |
 | `prism decision` | 3.x decision 动词 | 4.0 入口，需 `decision record` | 3.x 语义随分支剔除 |
 
-保留的维护入口：`doctor` / `relink` / `update` 直调 `bin/` 同名脚本（不是 `prism` 子命令）；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。干净设备用 `bin/update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。`dist` 仅保留退役提示，旧 mini/full packer 由 Git 历史保管。
+保留的维护入口：`prism doctor` / `prism relink` / `prism update`（由 `bin/prism` 转发到 `bin/` 同名脚本）；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。干净设备用 `prism update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。`dist` 仅保留退役提示，旧 mini/full packer 由 Git 历史保管。
 
 ## 升级检查清单
 
