@@ -2,7 +2,7 @@
 
 > 定位：Alignment §3.2 定义的 Skill-facing kernel。从 Protocol Semantics 受控消费跨 Skill 不变量；不是第二语义 SSOT，不定义 Artifact 格式（→ [`artifact-contracts/`](../artifact-contracts/)），不定义 CLI 参数（→ CLI Contract / `bin/README.md`）。
 >
-> **分发**：`bin/relink` 跳过本目录——Shared 不是 Public 入口。当前三入口 profile 和 SDK 中保留的旧 wrappers 都可消费本合同；`/prism` 按需加载 `methods/` 下的 method references。
+> **分发**：`bin/relink` 跳过本目录——Shared 不是 Public 入口。当前三入口（`/prism` / `/prism-review` / `/prism-plan`）消费本合同；`/prism` 按需加载 `methods/` 下的 method references。
 
 ## 结构
 

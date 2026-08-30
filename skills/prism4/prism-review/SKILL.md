@@ -140,14 +140,18 @@ Findings 落盘或口头收敛之后，**弱衔接是输出义务，不是编排
 
 ## 落盘
 
-仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘：
+仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘。按 [finding 写法合同](../artifact-contracts/finding.md) 直写 `findings/`，再用机械入口校验并重建投影：
 
 ```bash
-prism review record <topic_id> --root <topic_dir> --body "<finding body>"
-# 长文本：--body - 读 stdin，或 --body @path 读文件。机器输出：加 --json 得到 {ok, ids}。
+# 1. 预分配序号（store 内全局递增，ref 全局唯一）
+prism artifact next-id <topic_id> --role findings --root <topic_dir>
+# 2. 直写 findings/fNN_<标题>.md
+# 3. 校验并重建索引投影
+prism store validate --root <topic_dir>
+prism store regenerate-index --root <topic_dir>
 ```
 
-`review record` 是 transitional 入口（计划下版退役）：日常优先按 finding 合同直写 `findings/`，CLI record 仅作过渡。
+`finding.index.md` 由 `regenerate-index` 重建，不手工维护。CLI 不再提供 review / clarify / plan record 入口——普通语义产物一律直写后校验，只有 typed guarded commitment（`decision record`、`plan accept`）保留机械入口。
 
 ## 边界
 

@@ -1,6 +1,6 @@
 # Dogfood observation — `/prism` 实验对照记录
 
-仅在显式 dogfood / trace 请求下读取。本记录衡量当前三入口实验面的 facade 路由与 effect 保真，**不是 Invocation**、Artifact 或新的 runtime telemetry 系统；Capability provenance 仍遵循 Shared kernel §8。旧 wrappers 只作为 control / rollback source，不属于当前默认 distribution profile。
+仅在显式 dogfood / trace 请求下读取。本记录衡量当前三入口实验面的 facade 路由与 effect 保真，**不是 Invocation**、Artifact 或新的 runtime telemetry 系统；Capability provenance 仍遵循 Shared kernel §8。本记录只描述当前三入口实验面，历史形态由远端 Git tag 承载，不属于当前默认 distribution profile。
 
 默认只在回复中给出，不写文件：
 
