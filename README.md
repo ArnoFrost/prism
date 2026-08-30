@@ -72,7 +72,7 @@ prism topic new topic:my-first --title "My first Prism topic" --intent "What we 
 失败后先看 [docs/onboarding.md](docs/onboarding.md)，或运行：
 
 ```bash
-prism doctor --scope config --quick
+bin/doctor --scope config --quick
 ```
 
 Agent 引导可直接使用：
@@ -154,14 +154,16 @@ Protocol Core 保持很小：
 | 创建或列出 Topic | `/prism`（Topic）· `prism topic new` · `prism topic list` |
 | 查看 Artifact 正文 | `prism artifact show` |
 | 生成上下文恢复切片 | `/prism`（Recover）· `prism brief project` |
-| 留下审视结果 | `prism review record` · `/prism-review` |
-| 澄清一个阻塞歧义 | `/prism`（Clarify）· `prism clarify record` |
+| 留下审视结果 | 直写 `findings/` · `/prism-review` |
+| 澄清一个阻塞歧义 | `/prism`（Clarify） |
 | 主动设计行动结构 | `/prism-plan`（默认局部规划） |
 | 吸收已获授权的结果 | `/prism`（Absorb） |
 | 低频校准阅读面 | `/prism`（Maintain，先 preview） |
-| 持久化行动结构快照 | advanced `prism plan record`；新 Plan 默认与其他未失效 sibling Plan 共存，仅显式 `--supersedes` 才使目标退出 current set |
+| 持久化行动结构快照 | 按 plan 写法合同直写 `plans/`；新 Plan 默认与其他未失效 sibling Plan 共存，仅显式 `--supersedes` 才使目标退出 current set |
 | 记录已授权 Decision | `prism decision record` |
-| 刷新软链接或检查环境 | `prism relink` · `prism doctor` |
+| 刷新软链接或检查环境 | `bin/relink` · `bin/doctor` |
+
+普通语义产物（Findings / Plan / Intent / Clarify）由 Agent 直写 Markdown 后 `prism store validate` 校验；CLI 只保留机械事实、投影、校验与 guarded commitment，不再提供通用 record 面。`doctor` / `relink` / `update` 是 `bin/` 脚本，不是 `prism` 子命令。
 
 Use what the situation needs:
 

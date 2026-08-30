@@ -16,7 +16,7 @@
 | `./setup.sh check` | `bin/setup --check` | 健康检查（不修改） |
 | `./setup.sh relink` | `bin/relink` | 刷新项目/Skills 软链 |
 | `./setup.sh doctor` | `bin/doctor` | 深度体检（参数透传） |
-| `./setup.sh update` | `prism update` | pull → doctor ci → relink --no-workspace |
+| `./setup.sh update` | `bin/update` | pull → doctor ci → relink --no-workspace |
 
 ```bash
 # 首次（示例）
@@ -38,14 +38,15 @@ setup.sh init → prism --version 验收 → relink / 桥接
 | 阶段 | 人类常用 | 说明 |
 |------|----------|------|
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
-| **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 分发 |
+| **桥接** | `bin/relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 分发 |
 | **topic** | `prism topic list` · `/prism` | 4.0 协作边界与当前状态入口 |
-| **升级** | `prism update` · `./setup.sh update` | pull + core doctor + code-only relink |
-| **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope；`--json` 为 flat passthrough |
-| **旧包维护** | `prism dist --adapter-info` | experimental；mini/full 仅 legacy maintenance-only |
-| **桥接修复** | `prism relink` | 软链漂移时 |
+| **升级** | `bin/update` · `./setup.sh update` | pull + core doctor + code-only relink |
+| **诊断** | `bin/doctor --scope config\|release\|ci` | 分 scope；`--json` 为 flat passthrough |
+| **桥接修复** | `bin/relink` | 软链漂移时 |
 
-> **`prism doctor --json`** 不是 outer envelope（历史 3.x envelope 见 [historical/cli-contract.md](./historical/cli-contract.md)）。
+`doctor` / `relink` / `update` 是 `bin/` 维护脚本，不经过 `prism` 子命令面：`bin/prism` 只承载协作面（topic / artifact / store / brief / plan / decision / host）。
+
+> **`bin/doctor --json`** 不是 outer envelope（历史 3.x envelope 见 [historical/cli-contract.md](./historical/cli-contract.md)）。
 
 ---
 
@@ -55,11 +56,12 @@ setup.sh init → prism --version 验收 → relink / 桥接
 |----|------|--------|
 | **仓库根** | `./setup.sh` | 人类 init / check / update |
 | **`bin/`** | `bin/setup` · `bin/doctor` · `bin/relink` | 底层脚本 / CI / 调试 |
-| **`prism <verb>`** | `prism topic` · `prism brief` · `prism review record` · `prism update` · `prism doctor` | **日常首选** |
+| **`prism <verb>`** | `prism topic` · `prism brief` · `prism artifact` · `prism store` | **日常首选** |
+| **`bin/` 脚本** | `bin/doctor` · `bin/relink` · `bin/update` · `bin/setup` | 环境 / 软链 / 升级 / 体检 |
 
 **判断口诀**：
 
-- 动 **本机环境 / 软链 / 全仓 skill** → `prism relink` 或 `./setup.sh relink`
+- 动 **本机环境 / 软链 / 全仓 skill** → `bin/relink` 或 `./setup.sh relink`
 - 动 **4.0 Topic / Brief / Clarify / Absorb / Maintain 状态** → `/prism` 或对应 `prism <verb>`
 - 做 **Review / Plan 认知加工** → `/prism-review` · `/prism-plan`
 - 动 **旧 3.x topic 的 reviews / decisions / scope** → 本分支只读；要操作请切 3.x 分支或 `legacy-3x-final` tag
@@ -93,8 +95,8 @@ Prism 脚本运行时 = **`uv`** + Python 3.11+（见 `pyproject.toml`）。
 cd ~/prism
 ./setup.sh check
 bin/setenv --validate
-prism relink
-prism doctor --scope config --fix    # 非破坏性（如补全局 gitignore）
+bin/relink
+bin/doctor --scope config --fix    # 非破坏性（如补全局 gitignore）
 ```
 
 ### topic / 4.0 semantic skills
@@ -122,12 +124,12 @@ Findings / Plan / Intent / Clarify 等普通语义产物由 Agent 按对应写�
 ./setup.sh update
 # 等价分步：
 cd ~/prism && git pull origin main
-prism doctor --scope ci --quick
-prism relink --no-workspace
+bin/doctor --scope ci --quick
+bin/relink --no-workspace
 prism --version
 ```
 
-> `prism update` 遇 dirty working tree 会 abort。它只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
+> `bin/update` 遇 dirty working tree 会 abort。它只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
 
 ---
 
@@ -144,8 +146,8 @@ prism --version
 | E1 | init | `./setup.sh init` | 默认本地 Workspace backend，无 error |
 | E2 | 配置 | `bin/setenv --validate` | 路径可达 |
 | E3 | CLI | `prism --version` | 输出版本 |
-| E4 | 软链 | `prism relink --check` | 错误: 0 |
-| E5 | gitignore | `prism doctor --scope config --quick` | 无 blocking err |
+| E4 | 软链 | `bin/relink --check` | 错误: 0 |
+| E5 | gitignore | `bin/doctor --scope config --quick` | 无 blocking err |
 | E6 | uv | `uv --version` | 可用（core contract） |
 
 ---

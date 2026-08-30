@@ -19,10 +19,10 @@
 | 默认 topic 动词 | `prism sniff / validate / finalize / status …` 直接可用 | 3.x 实现已从分支剔除，统一报「已剔除 + tag 指引」（exit 2） | 4.0 原语重写协作；旧操作切 3.x 分支 |
 | 项目接入 | `workspace-init` 技能建骨架 | `prism host attach --code CODE` 登记 + 桥接 | 未桥接时先 attach，不要 workspace-init |
 | Topic 工件 | `scope.md` / `focus.md` / `task.index.md` / `wave` | Intent / Brief / Findings / Plan / Decision（`topic.md` 承载） | 旧工件原样保留；4.0 Topic 不创建或改写它们 |
-| 默认 skill 面 | `workflow-*` 管线 | experimental：`prism / prism-review / prism-plan` | `dist-whitelist.yaml` 是 Distribution Profile SSOT；旧 4.0 wrappers 留作 control / compatibility / rollback source |
+| 默认 skill 面 | `workflow-*` 管线 | experimental：`prism / prism-review / prism-plan` | `dist-whitelist.yaml` 是 Distribution Profile SSOT；旧 4.0 wrappers 已从活树删除，历史形态由 Git tag（`p4-shadow-baseline` / `p5-natural-dogfood-baseline`）承载 |
 | `prism decision` | 3.x decision 动词 | 4.0 入口，需 `decision record` | 3.x 语义随分支剔除 |
 
-保留的维护入口：`doctor` / `relink` / `update` 直调 `bin/` 同名脚本；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。干净设备用 `prism update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。`dist` 仅保留退役提示，旧 mini/full packer 由 Git 历史保管。
+保留的维护入口：`doctor` / `relink` / `update` 直调 `bin/` 同名脚本（不是 `prism` 子命令）；`prism.local.yaml` 与 `workspace.{code}.local` 桥接约定不变。干净设备用 `bin/update [--skills]` 更新代码层；个人多端全环境、双向同步或冲突处理使用外部 `prism-maintain`。`dist` 仅保留退役提示，旧 mini/full packer 由 Git 历史保管。
 
 ## 升级检查清单
 
