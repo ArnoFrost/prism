@@ -466,6 +466,54 @@ def test_bin_prism_artifact_next_id_and_locate(tmp_path):
     assert "record != authorize" in record_help.stdout
 
 
+def test_bin_prism_artifact_next_id_is_store_global_across_topics(tmp_path):
+    """ref 是 store 全局唯一键：父 Topic 已占用的 ref 不得分配给 Child Topic。"""
+    root = tmp_path / "state"
+    store = ReferenceStore()
+    store.add_topic(Topic(id="topic:parent", title="Parent"))
+    store.add_topic(
+        Topic(id="topic:parent.child", title="Child", parent_id="topic:parent")
+    )
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:parent",
+            role="findings",
+            title="父题发现",
+            body="父题正文。",
+        )
+    )
+    LocalFileStoreAdapter(root).save(store)
+
+    child_next = _run_prism(
+        "artifact",
+        "next-id",
+        "topic:parent.child",
+        "--role",
+        "findings",
+        root=root,
+    )
+    assert child_next.returncode == 0, child_next.stderr
+    assert child_next.stdout.strip() == "finding:f02"
+
+    write = _run_prism(
+        "artifact",
+        "write",
+        "finding:f01",
+        "--topic",
+        "topic:parent.child",
+        "--body",
+        "子题冒写。",
+        root=root,
+    )
+    assert write.returncode != 0
+    assert "cross-topic" in write.stderr
+
+    verify = _run_prism("artifact", "show", "finding:f01", root=root)
+    assert verify.returncode == 0, verify.stderr
+    assert verify.stdout.strip() == "父题正文。"
+
+
 def test_bin_prism_topic_new_with_intent_plan_and_decision_record(tmp_path):
     root = tmp_path / "state"
     root.mkdir()

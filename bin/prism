@@ -23,7 +23,7 @@
 #   store regenerate-index  从当前工件重建索引投影
 #   artifact show   查看 4.0 Artifact / Payload 正文
 #   artifact locate 解析 Artifact / Payload id → 文档路径（机械定位）
-#   artifact next-id 预分配某 Topic 下一个工件 id（Topic 内递增）
+#   artifact next-id 预分配下一个工件 id（store 内全局递增，ref 全局唯一）
 #   brief project   从当前状态投影 Brief
 #   review record     transitional：持久化 Review 结果 → Findings（advisory；
 #                     不等于授权）。下版退役，日常直写 findings/。

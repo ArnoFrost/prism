@@ -1002,6 +1002,13 @@ def write_artifact(
         )
     existing = store.artifacts.get(ref)
     if existing is not None:
+        if topic_id is not None and topic_id != existing.topic_id:
+            # ref 是 store 全局唯一键；调用方给出的 topic 与现归属不同时
+            # 只能 fail closed，否则会静默改写另一 Topic 的协作状态。
+            raise PrismProtocolError(
+                f"ref already belongs to topic '{existing.topic_id}'; "
+                f"refusing cross-topic update: {ref}"
+            )
         # Artifact 是 frozen dataclass：原地更新 = 以 replace 重建同 id 实例。
         store.artifacts[ref] = _dataclass_replace(
             existing,

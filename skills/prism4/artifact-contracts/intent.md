@@ -15,7 +15,7 @@
 ## frontmatter 合同
 
 ```yaml
-id: "intent:i01"           # intent:iNN，Topic 内递增
+id: "intent:i01"           # intent:iNN，store 内全局递增
 role: "intent"
 title: "..."
 topic: "topic:<slug>"

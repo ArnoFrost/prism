@@ -22,7 +22,7 @@
 ## frontmatter 合同
 
 ```yaml
-id: "decision:d01"           # decision:dNN，Topic 内递增
+id: "decision:d01"           # decision:dNN，store 内全局递增
 role: "decision"
 title: "..."
 topic: "topic:<slug>"

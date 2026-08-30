@@ -53,7 +53,7 @@ from prism4.use_cases import (  # noqa: E402
 )
 from prism4.local_files import (  # noqa: E402
     locate_artifact_ref,
-    next_topic_artifact_id,
+    next_artifact_id,
 )
 
 
@@ -394,7 +394,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     artifact_next_id = artifact_sub.add_parser(
         "next-id",
-        help="show the next sequenced artifact id within a Topic",
+        help="show the next sequenced artifact id for a role (store-global)",
     )
     artifact_next_id.add_argument("topic_id")
     artifact_next_id.add_argument(
@@ -695,7 +695,9 @@ def cmd_artifact_next_id(args: argparse.Namespace) -> int:
     store = open_adapter(resolve_root(args.root)).load()
     if args.topic_id not in store.topics:
         raise PrismProtocolError(f"topic does not exist: {args.topic_id}")
-    print(next_topic_artifact_id(store, args.topic_id, args.role))
+    # ref 是 store 全局唯一键，编号按 store 全局递增分配；
+    # topic 参数只作存在性校验，防止 Agent 在错误 Workspace 上取号。
+    print(next_artifact_id(store, args.role))
     return 0
 
 

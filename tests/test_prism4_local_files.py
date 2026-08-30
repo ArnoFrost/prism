@@ -21,7 +21,6 @@ from prism4.local_files import (
     locate_artifact_ref,
     next_artifact_id,
     next_payload_id,
-    next_topic_artifact_id,
 )
 
 
@@ -45,44 +44,26 @@ def _store() -> ReferenceStore:
     return store
 
 
-def test_next_topic_artifact_id_counts_within_topic() -> None:
+def test_next_artifact_id_is_store_global_across_parent_and_child() -> None:
+    """编号合同是 store 全局递增：父 Topic 已占用的 ref 不得分配给 Child。"""
     store = _store()
     store.add_artifact(
         Artifact(
             id="finding:f01",
             topic_id="topic:demo",
             role="findings",
-            title="首个发现",
-            body="发现正文。",
-        )
-    )
-    store.add_artifact(
-        Artifact(
-            id="finding:f03",
-            topic_id="topic:demo",
-            role="findings",
-            title="第三个发现",
-            body="发现正文。",
-        )
-    )
-    store.add_artifact(
-        Artifact(
-            id="finding:f02",
-            topic_id="topic:demo.child",
-            role="findings",
-            title="子题发现",
+            title="父题发现",
             body="发现正文。",
         )
     )
 
-    # 只看本 Topic 内的最大序号，不跨 Topic 跳号。
-    assert next_topic_artifact_id(store, "topic:demo", "findings") == "finding:f04"
-    assert next_topic_artifact_id(store, "topic:demo.child", "findings") == "finding:f03"
+    # Child 局部没有任何 findings，也不得返回父 Topic 已占用的 finding:f01。
+    assert next_artifact_id(store, "findings") == "finding:f02"
 
 
-def test_next_topic_artifact_id_rejects_unknown_role() -> None:
+def test_next_artifact_id_rejects_unknown_role() -> None:
     with pytest.raises(PrismProtocolError):
-        next_topic_artifact_id(_store(), "topic:demo", "briefs")
+        next_artifact_id(_store(), "briefs")
 
 
 def test_locate_artifact_ref_resolves_document_paths() -> None:

@@ -495,27 +495,6 @@ def next_payload_id(store: ReferenceStore) -> str:
     return f"{CLARIFY_NAMESPACE}:{CLARIFY_SEQUENCE_PREFIX}{number:02d}"
 
 
-def next_topic_artifact_id(
-    store: ReferenceStore, topic_id: str, role: str
-) -> str:
-    """在 Topic 内分配下一个带序号的工件 id，例如 `finding:f05`。
-
-    编号合同在 Topic 内递增；Agent 直写时的「嗅探现有样本 +1」由此函数
-    机械化，避免跨 Topic 跳号与手算编号幻觉。
-    """
-    spec = ROLE_SPEC.get(role)
-    if spec is None:
-        raise PrismProtocolError(f"未知的核心工件角色：{role}")
-    if spec.prefix is None:
-        return BRIEF_ID
-    existing = (
-        artifact.id
-        for artifact in store.artifacts.values()
-        if artifact.role == role and artifact.topic_id == topic_id
-    )
-    return f"{spec.namespace}:{spec.prefix}{_next_number(existing, spec.prefix):02d}"
-
-
 def locate_artifact_ref(store: ReferenceStore, ref: str) -> str:
     """把 Artifact / Payload ref 解析为 store 相对文档路径，供机械定位。
 

@@ -16,7 +16,7 @@
 ## frontmatter 合同
 
 ```yaml
-id: "plan:p01"             # plan:pNN，Topic 内递增
+id: "plan:p01"             # plan:pNN，store 内全局递增
 role: "plan"
 title: "..."
 topic: "topic:<slug>"

@@ -12,7 +12,7 @@
 ## frontmatter 合同
 
 ```yaml
-id: "finding:f01"          # finding:fNN，Topic 内递增
+id: "finding:f01"          # finding:fNN，store 内全局递增
 role: "findings"
 title: "..."
 topic: "topic:<slug>"

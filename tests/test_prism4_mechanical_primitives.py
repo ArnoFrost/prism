@@ -2,7 +2,7 @@
 
 import pytest
 
-from prism4.core import Artifact, PrismProtocolError
+from prism4.core import Artifact, PrismProtocolError, Topic
 from prism4.reference import ReferenceStore
 from prism4.use_cases import (
     add_explicit_relation,
@@ -59,6 +59,54 @@ def test_write_creates_and_updates_advisory_artifacts() -> None:
     assert (updated_ref, updated) == (ref, False)
     assert store.artifacts[ref].body == "原地修订。"
     assert store.artifacts[ref].title == "发现标题"
+
+
+def test_write_rejects_cross_topic_update_of_existing_ref() -> None:
+    """ref 是 store 全局唯一键：已归属他 Topic 的 ref 不得借 generic write 冒写。"""
+    store = _store()
+    store.add_topic(Topic(id="topic:demo.child", title="Child", parent_id="topic:demo"))
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo",
+            role="findings",
+            title="父题发现",
+            body="父题原文。",
+        )
+    )
+
+    with pytest.raises(PrismProtocolError, match="cross-topic"):
+        write_artifact(
+            store,
+            ref="finding:f01",
+            body="子题冒写。",
+            topic_id="topic:demo.child",
+        )
+
+    # fail closed：父题正文保持 byte-identical。
+    assert store.artifacts["finding:f01"].body == "父题原文。"
+    assert store.artifacts["finding:f01"].topic_id == "topic:demo"
+
+
+def test_write_same_topic_update_stays_allowed() -> None:
+    """同 Topic 的原地更新不受 fail-closed 护栏影响。"""
+    store = _store()
+    store.add_artifact(
+        Artifact(
+            id="finding:f01",
+            topic_id="topic:demo",
+            role="findings",
+            title="标题",
+            body="原文。",
+        )
+    )
+
+    ref, created = write_artifact(
+        store, ref="finding:f01", body="合法原地修订。", topic_id="topic:demo"
+    )
+
+    assert (ref, created) == ("finding:f01", False)
+    assert store.artifacts[ref].body == "合法原地修订。"
 
 
 @pytest.mark.parametrize(
