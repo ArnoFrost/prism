@@ -58,3 +58,23 @@ derived_from: ["finding:f02"] # 可选：provenance
 
 - 拍板前只有 **Decision candidate**（存在于 Plan 的 Decision Gates 区或 clarify payload），不得提前落 `decisions/`。
 - 落盘即 `authority: authoritative`；被 supersedes 时旧版归档保留。
+
+## authority evidence payload 合同（捕获端）
+
+人类对话中已明确发生的选择，由 Agent 忠实转录为 evidence payload（捕获方法与两分边界见 Clarify method「Conversation Choice Capture」）：
+
+```yaml
+id: "clarify:cNN"
+type: "evidence-reference"     # 唯一合法的 evidence payload 类型
+status: "confirmed"            # 仅当人类本轮明确确认
+evidence_kind: "human-choice"  # human-choice | delegated-context
+target_ref: "decision:dNN"     # 单目标
+target_refs: ["decision:dNN", "plan:pNN"]  # 多目标（与 target_ref 二选一）
+topic_id: "topic:<slug>"
+question: "人类实际选择的忠实转录"
+captured_from: "对话来源定位（可用时）；不可用时诚实说明 weak provenance"
+```
+
+- validator 对 `plan accept` / `decision record` 逐个精确匹配 target；模糊 scope 不构成覆盖。
+- `delegated-context` 另需 `scope_refs` 覆盖本次目标。
+- candidate、Finding 与 Agent 建议不能自证；缺少有效 evidence 时 durable writes = 0。

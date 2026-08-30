@@ -28,6 +28,7 @@
 - Plan 初始 advisory；operative = current + valid acceptance。current set 推导、显式 supersedes 与 sibling Plan 并存规则见 Alignment §5.5。
 - Plan acceptance 不要求新建 Decision；confirmed human choice、覆盖目标的 committed Decision 或 scope 有效的 delegated authority context 都可提供有效证据。Decision 只保留效力超出单一 Plan 生命周期的 durable commitment。
 - Decision 的 committed write 需要与目标及作用域绑定的 typed authority evidence（confirmed human-choice / committed Decision / delegated authority context）；candidate 不得自证，所有写入路径共用同一 guard；`human-required` 是 requirement，不是 evidence（Alignment §6.1）。
+- Agent 不能创造人类授权，但可以把当前对话中已明确发生的人类选择忠实捕获为 target-bound evidence-reference（不扩张目标、作用域或承诺强度）；Agent 的推断、建议、候选或未经人类明确确认的文本不构成 evidence。捕获是 Reference Experience 方法，不新增 Artifact Role 或 Core Capability。
 
 ## 5. Absorption / supersession
 
