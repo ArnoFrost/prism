@@ -1,81 +1,80 @@
 # Prism 4.0 Testing Contract
 
-Prism 4.0 的测试只守边界，不复刻协作仪式。新增测试前先判断它要保护哪条 contract；如果只是某次人工流程的完整回放，优先改成更小的 invariant。
+测试只守 current contract，不复刻历史协作仪式。本文档是面向维护者的测试控制面：每个测试文件都必须能回答它保护什么、接受哪些输入、处于什么生命周期，以及何时可以删除。
 
-本文档是验证控制面：说明每组测试守护哪条 current contract、归谁、怎么跑、什么时候该退役。协议语义本身见 `prism-4-refoundation-alignment.md`，模块归属见 `architecture.md`，历史形态映射见 `migration.md`。
+协议语义见 `prism-4-refoundation-alignment.md`，模块边界见 `architecture.md`。历史格式只允许作为“应 fail closed”的反例输入，不得成为继续支持的正向合同。
 
-## 分层
+## 生命周期
 
-| 层 | 守什么 | 权威来源 | 典型落点 |
-|----|--------|----------|----------|
-| Protocol | Topic / Artifact / Capability / Invocation / Decision Semantics 不变形；Findings 不授权；Plan 默认 advisory；Decision 才 authorizes | Alignment（Protocol Semantics SSOT） | `test_prism4_core.py` / `test_prism4_use_cases.py` |
-| Authority | typed authority guard；Plan acceptance 与 operative 推导；candidate 冒充、Agent 自证一律拒绝 | Alignment §5.5 / §6.1 | `test_prism4_authority_hardening.py` |
-| Adapter | 当前 Local Markdown 适配器的持久化边界；序号 store 全局唯一；prune 按文件系统身份判定；索引是投影 | `prism4/local_files.py` | `test_prism4_local_files.py` |
-| Projection | Brief / index 只投影 current state，可安全重建 | Alignment §7 | `test_prism4_projection.py` |
-| CLI Surface | 入口只保留机械事实、投影、校验与 guarded commitment；退役 noun 无隐藏 alias；维护动词仍可用 | CLI allowlist 合同 | `test_prism4_cli.py` / `test_prism4_cli_allowlist.py` |
-| Distribution | `dist-whitelist.yaml` 是当前分发面唯一权威；Catalog 只存治理元数据 | `skills/schema/` | `test_prism4_distribution_profile.py` |
-| Install / Release | `setup` 后命中当前 SDK；版本元数据一致；分发包可启动；doctor 可做最小健康检查 | `bin/release_gate.py` | `test_setup_smoke.py` / `test_install_e2e.py` / `test_release_metadata.py` / `test_release_gate.py` |
-| Docs / Active Surface | 活文档不漂回历史形态；公开叙事不泄露私有路径；退役入口不回到文档与三入口技能 | 本文档 + `AGENTS.md` | `test_docs_active_surface.py` |
-| Maintenance Scripts | `bin/relink` 的 Workspace 回写路径；重复 `paths:` 防护与二次写入幂等 | `bin/relink` | `test_relink_writeback.sh` |
+| 状态 | 含义 | 处理方式 |
+|------|------|----------|
+| `canonical` | 某条 current contract 的主要证明 | 变更合同前必须同步修改 |
+| `boundary` | 跨模块、失败路径或消费侧守卫 | 保持小而明确，不复制 canonical 全流程 |
+| `smoke` | 只证明入口、安装物或脚本能启动 | 不扩成语义测试 |
+| `retiring` | 合同已退出活树，等待删除 | 必须给出接管者或删除依据 |
 
 ## 契约登记表
 
-| Contract ID | 权威来源 | Owner | Primary tests | 最小运行命令 | 退役条件 |
-|-------------|----------|-------|---------------|--------------|----------|
-| C-PROTOCOL | Alignment §3–§6 | SDK | `test_prism4_core.py`、`test_prism4_use_cases.py` | `uv run --with pytest python -m pytest tests/test_prism4_core.py tests/test_prism4_use_cases.py -q` | 五原语定义变更 |
-| C-AUTHORITY | Alignment §5.5 / §6.1 | SDK | `test_prism4_authority_hardening.py` | `uv run --with pytest python -m pytest tests/test_prism4_authority_hardening.py -q` | authority 模型重定义 |
-| C-ADAPTER | `prism4/local_files.py` | SDK | `test_prism4_local_files.py` | `uv run --with pytest python -m pytest tests/test_prism4_local_files.py -q` | 更换 Workspace adapter |
-| C-PROJECTION | Alignment §7 | SDK | `test_prism4_projection.py` | `uv run --with pytest python -m pytest tests/test_prism4_projection.py -q` | Brief / index 不再是投影 |
-| C-CLI-ALLOWLIST | CLI allowlist 合同（`KEEP` 表） | SDK | `test_prism4_cli_allowlist.py` | `uv run --with pytest python -m pytest tests/test_prism4_cli_allowlist.py -q` | allowlist 判据变更 |
-| C-CLI-SURFACE | `prism4/cli.py` | SDK | `test_prism4_cli.py` | `uv run --with pytest python -m pytest tests/test_prism4_cli.py -q` | 协作面 noun 变更 |
-| C-DISTRIBUTION | `dist-whitelist.yaml` | SDK | `test_prism4_distribution_profile.py` | `uv run --with pytest python -m pytest tests/test_prism4_distribution_profile.py -q` | 分发模型变更 |
-| C-DOCS-ACTIVE | 本文档 + `AGENTS.md` | SDK | `test_docs_active_surface.py` | `uv run --with pytest python -m pytest tests/test_docs_active_surface.py -q` | 公开叙事面重定义 |
-| C-INSTALL-RELEASE | `bin/release_gate.py` | SDK | `test_setup_smoke.py`、`test_install_e2e.py`、`test_release_metadata.py`、`test_release_gate.py` | `uv run --with pytest python -m pytest tests/test_setup_smoke.py tests/test_release_metadata.py -q` | 安装分发方式变更 |
-| C-RELINK-WRITEBACK | `bin/relink` | SDK | `test_relink_writeback.sh` | `bash tests/test_relink_writeback.sh` | `bin/relink` 不再回写 Workspace |
+| Contract ID | 守护边界 | Owner | Supported inputs | Lifecycle | Primary tests | 最小运行命令 | Retirement trigger |
+|-------------|----------|-------|------------------|-----------|---------------|--------------|--------------------|
+| C-PROTOCOL | Topic / Artifact / Capability / Invocation / Decision Semantics；Findings 不授权、Plan 默认 advisory | `prism4/` | current 4.0 typed models 与 use cases | canonical | `test_prism4_core.py`、`test_prism4_use_cases.py` | `uv run pytest tests/test_prism4_core.py tests/test_prism4_use_cases.py -q` | 五原语或 use-case 边界重定义 |
+| C-AUTHORITY | authority evidence、Plan acceptance、Decision commitment 与 candidate 拒绝路径 | `prism4/use_cases.py` | current typed refs；无证据、伪证据、明确 grandfather refs | canonical | `test_prism4_authority_hardening.py` | `uv run pytest tests/test_prism4_authority_hardening.py -q` | authority 模型重定义 |
+| C-STORE | Local Markdown adapter、序号唯一、写入 guard、索引投影 | `prism4/local_files.py` | current Markdown store；历史布局仅作 fail-closed 反例 | canonical | `test_prism4_local_files.py` | `uv run pytest tests/test_prism4_local_files.py -q` | 更换持久化 adapter |
+| C-ROOT | store root discovery 不误认旧 JSON 或相邻目录 | `prism4/local_files.py` | current store roots；旧 JSON 仅作反例 | boundary | `test_prism4_root_discovery.py` | `uv run pytest tests/test_prism4_root_discovery.py -q` | root discovery 并入另一 canonical contract |
+| C-PROJECTION | Brief / index 只投影 current effective state，可安全重建 | `prism4/projection.py` | current artifacts；无 provenance 历史 payload 仅作诊断反例 | canonical | `test_prism4_projection.py` | `uv run pytest tests/test_prism4_projection.py -q` | Brief / index 不再是投影 |
+| C-HOST | Topic probe/new 与 host attach 使用 current bridge、current config、无副作用失败 | `prism4/host.py` | named-workspaces 与 `workspace.{code}.local`；旧格式只应 fail closed | canonical | `test_prism4_host_attach.py`、`test_prism4_topic_host.py` | `uv run pytest tests/test_prism4_host_attach.py tests/test_prism4_topic_host.py -q` | Host/bridge 模型重定义 |
+| C-CLI | CLI 只保留机械事实、投影、校验和 guarded commitment；退役 noun 无隐藏 alias | `prism4/cli.py`、`bin/prism` | current allowlist 与显式失败输入 | canonical | `test_prism4_cli.py`、`test_prism4_cli_allowlist.py` | `uv run pytest tests/test_prism4_cli.py tests/test_prism4_cli_allowlist.py -q` | CLI noun 或 allowlist 判据重定义 |
+| C-METHOD | 三入口 facade、shared kernel 和 method 写法质量保持一致 | `skills/prism4/` | `/prism`、`/prism-review`、`/prism-plan` 及 current shared methods | boundary | `test_prism4_facade.py`、`test_prism4_method_quality.py`、`test_prism4_shared_kernel.py` | `uv run pytest tests/test_prism4_facade.py tests/test_prism4_method_quality.py tests/test_prism4_shared_kernel.py -q` | 三入口或 method packaging 重定义 |
+| C-CONSUMER | CLI、skills、schema、活文档对同一 current contract 的消费一致 | SDK consumers | current active surfaces；不扫描 historical 文档作正向合同 | boundary | `test_prism4_consumer_consistency.py`、`test_docs_active_surface.py` | `uv run pytest tests/test_prism4_consumer_consistency.py tests/test_docs_active_surface.py -q` | 消费者被删除或并入其 canonical owner |
+| C-DISTRIBUTION | Distribution Profile 是三入口分发唯一权威 | `skills/schema/dist-whitelist.yaml` | current `prism4` profile | canonical | `test_prism4_distribution_profile.py` | `uv run pytest tests/test_prism4_distribution_profile.py -q` | 分发模型重定义 |
+| C-INSTALL | setup、安装包、版本元数据、release gate 与 doctor 最小健康合同 | `bin/`、release metadata | current SDK checkout / package；缺依赖失败路径 | smoke | `test_setup_smoke.py`、`test_install_e2e.py`、`test_release_metadata.py`、`test_release_gate.py` | `uv run pytest tests/test_setup_smoke.py tests/test_install_e2e.py tests/test_release_metadata.py tests/test_release_gate.py -q` | 安装或发布载体重定义 |
+| C-RELINK | current profile 分发、项目 bridge 回写与幂等 | `bin/relink` | named-workspaces；旧 path list 只作单向清理输入 | boundary | `test_relink_writeback.sh` | `bash tests/test_relink_writeback.sh` | relink 不再负责 bridge / writeback |
+| C-TEST-CONTROL | 所有活测试均登记，且登记表含 owner / inputs / lifecycle / retirement | 本文档 | `tests/test_*` 文件清单 | canonical | `test_testing_contract.py` | `uv run pytest tests/test_testing_contract.py -q` | 测试控制面迁移到可生成清单 |
 
-`C-RELINK-WRITEBACK` 是 bash 用例，pytest 不收集 `.sh`，由 CI 显式调用；接入口见 `.github/workflows/ci.yml`。
+`test_relink_writeback.sh` 不是 pytest 用例，由 CI 显式调用。其余 `test_*.py` 必须被 `C-TEST-CONTROL` 自动核对，不能成为无主测试。
 
-## 发布门禁
+## 分层与重复预算
 
-版本提升或分发前至少跑：
+- Protocol / Store / Projection / Authority 各自只保留一个 canonical 语义证明面。
+- CLI、Host、Consumer 只验证参数传递、边界失败和跨层一致性，不重演完整语义流程。
+- Install / Release 只做 smoke；算法行为回到 owner 层测试。
+- 历史输入只证明拒绝、隔离或显式诊断，不证明兼容执行。
+- 同一 regression 最多保留一个 owner 层断言和一个必要的消费侧断言。
+
+## 新增测试 gate
+
+新增测试文件时必须同时完成：
+
+1. 在登记表的 `Primary tests` 中归入一个 Contract ID；若没有合适合同，先说明为什么需要新增合同。
+2. 声明 `Supported inputs`，明确 current 正向输入和仅用于 fail-closed 的历史反例。
+3. 选择 lifecycle；不得把 smoke 写成完整流程回放。
+4. 写明 retirement trigger，避免“永远不敢删”。
+5. 运行 `test_testing_contract.py`，确认不存在孤儿测试。
+
+## 删除与合并判据
+
+满足以下任一条件才删除：合同已退出活树；已有更低层 canonical test 完整接管；测试只复刻实现而不守边界。删除前同步登记表；若一个文件混有 current 与历史断言，先保留 current invariant，再删历史正向兼容部分。
+
+## 常用验证
+
+完整验证：
 
 ```bash
-uv run --with pytest python -m pytest tests/ -q
+uv run pytest tests -q
 bash tests/test_relink_writeback.sh
-uv run python bin/release_gate.py --repo . --base <sha> --head <sha> --json
+bin/validate-skills --layer sdk
 bin/doctor --scope ci
-bin/prism --version
 ```
 
-若只改文档叙事，至少跑：
+配置、Host 或桥接变更：
 
 ```bash
-uv run --with pytest python -m pytest tests/test_docs_active_surface.py tests/test_release_metadata.py -q
+uv run pytest tests/test_prism4_host_attach.py tests/test_prism4_topic_host.py tests/test_setup_smoke.py -q
+bin/doctor --scope config
 ```
 
-若只改安装、分发、寻址，至少跑：
+文档或测试治理变更：
 
 ```bash
-uv run --with pytest python -m pytest tests/test_setup_smoke.py tests/test_install_e2e.py tests/test_prism4_cli.py -k "doctor or setup or version or install" -q
+uv run pytest tests/test_docs_active_surface.py tests/test_testing_contract.py -q
 ```
-
-## 新增测试规则
-
-- 一个反馈沉淀一个最小 invariant，不复制完整人工过程。
-- 能在 use case / adapter 层测清楚的，不升级成 CLI e2e。
-- CLI 测试只证明参数能抵达语义层、用户入口不会误导。
-- e2e 只守安装包能启动、doctor 能过、版本正确。
-- 避免大段 golden text；只断言关键字段、关系、路径和少量提示语。
-- 任何新增测试都要能回答：它防的是 Core 漂移、Authority 绕过、Adapter 漏洞、CLI 误导、安装失败，还是文档叙事回潮？
-- 每条语义只保留一个 canonical contract test；CLI / docs / install 层最多留必要 smoke 与关键失败路径。
-
-## 删除测试的判据
-
-删除任何一个测试前，先回答它守哪条 current contract。答不出来就归档待查，不直接删。
-
-回收顺序：
-
-1. 在契约登记表里定位它的 Contract ID。
-2. 确认该 contract 已随代码退出活树，或已由另一条 canonical test 接管。
-3. 一个文件里同时守 current contract 与历史形态时，先拆出 current 部分再删历史部分（例：`test_pilot_readiness.py` 的 catalog / whitelist 分权拆为 `test_prism4_distribution_profile.py`）。
-4. 「不在 pytest 里」不等于「没有守护价值」——`bin/` 下的 bash 用例要在 CI 里显式接入口，而不是删除。

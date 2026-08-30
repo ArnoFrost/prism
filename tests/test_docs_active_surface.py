@@ -55,8 +55,12 @@ def test_active_surfaces_do_not_advertise_retired_cli_entries() -> None:
     """退役 noun 与不存在的 prism 子命令不得回到活文档与三入口技能。"""
     surfaces = [
         ROOT / "README.md",
+        ROOT / "AGENTS.md",
         ROOT / "docs" / "onboarding.md",
+        ROOT / "docs" / "architecture.md",
+        ROOT / "docs" / "contributing.md",
         ROOT / "docs" / "testing-contract.md",
+        ROOT / "bin" / "README.md",
     ]
     surfaces.extend(_prism4_skill_documents())
 

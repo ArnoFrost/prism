@@ -17,6 +17,7 @@
 
 ### Changed
 
+- **测试控制面** — `docs/testing-contract.md` 登记全部活测试的 Contract ID、owner、supported inputs、lifecycle 与 retirement trigger；新增自动守卫，新增测试文件若未登记会直接失败。
 - **机械面强化** — `prism artifact next-id` 按 store-global role prefix 递增预分配工件 id，避免 parent / child 裸 ref 碰撞；`prism artifact locate` 提供 ref → 文档路径并与 save 落盘推导同源。
 - **4.0 写入表面收口** — Review / Clarify / Plan 输出由三入口按 Artifact Contracts 直写；CLI 只保留机械事实、投影、校验及 guarded commitment。
 - **Host 运行时独立** — `host attach` 与 `bin/relink` 经 subprocess 调用自包含的 `bin/workspace_resolve.py`，运行时不再依赖 `skills/workflow/**`。resolver 缺失或失败时 fail-closed，禁止 bash 猜测 named/map yaml。
