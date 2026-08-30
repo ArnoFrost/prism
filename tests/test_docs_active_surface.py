@@ -462,7 +462,7 @@ def test_plan_guidance_stays_advisory_and_not_scope() -> None:
     ).read_text(encoding="utf-8")
 
     assert "它不是旧 Scope" in readme
-    assert "prism plan record" in review_skill
+    assert "按 plan 合同直写刷新 Plan 正文" in review_skill
     assert "`## 目标`、`## 步骤` / `## 行动结构`、`## 验证`" in brief_skill
     assert "/prism-plan" in readme
     assert "/prism-plan" not in review_skill

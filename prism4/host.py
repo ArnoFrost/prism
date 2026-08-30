@@ -560,7 +560,7 @@ def _ensure_instance(instance_path: Path, code: str) -> None:
         agents.write_text(
             (
                 f"# {code}\n\n"
-                "> Prism 4.0 Workspace 实例。创建 Topic 使用 `/prism-topic`"
+                "> Prism 4.0 Workspace 实例。创建 Topic 使用 `/prism`"
                 "（先 `prism topic probe` / `prism host attach`）。\n"
                 "> 不要在此调用 3.x `workspace-init` 或 `workflow-intake`，"
                 "除非这是显式 legacy 项目。\n"

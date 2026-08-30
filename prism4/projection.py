@@ -482,7 +482,7 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
             if _is_open_step(raw):
                 lines.append(f"- {raw.strip()}")
     if pending:
-        lines.append("- 有未晋升澄清，适合 `/prism-clarify`")
+        lines.append("- 有未晋升澄清，适合 `/prism clarify` 或自然语言澄清")
     elif findings and not lines:
         if all_phased_plans_closed:
             lines.append(
@@ -494,13 +494,13 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
             )
         else:
             lines.append(
-                "- 有仍有效 Findings；若被取舍阻塞用 `/prism-clarify`，否则按 Plan 推进"
+                "- 有仍有效 Findings；若被取舍阻塞用 `/prism clarify`，否则按 Plan 推进"
             )
     if not lines:
         if all_phased_plans_closed:
             lines.append("- 当前 Plan 已结束；尚未形成新的行动结构。")
         else:
-            lines.append("- 当前无未完成 Plan 步骤。阅读面漂移时用 `/prism-compress`")
+            lines.append("- 当前无未完成 Plan 步骤。阅读面漂移时用 `/prism` 的整理路由")
     return lines
 
 

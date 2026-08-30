@@ -24,5 +24,18 @@
 ## 使用方式
 
 - Agent 写 / 改 Artifact 时按对应合同执行；格式疑问以本目录为准，不猜、不模仿陈旧样本。
-- 编号约定按类型递增：`intent:iNN` / `plan:pNN` / `finding:fNN` / `decision:dNN` / `clarify:cNN`，由嗅探 Topic 内现有样本 +1 得出（可用 `prism artifact next-id <topic_id> --role <role>` 机械化，避免手算幻觉）。
+- 编号约定在 store 内全局递增：`intent:iNN` / `plan:pNN` / `finding:fNN` / `decision:dNN` / `clarify:cNN`。ref 是 store 全局唯一键，可用 `prism artifact next-id <topic_id> --role <role>` 机械化取号（topic 参数仅作存在性校验），避免手算幻觉与跨 Topic 碰撞。
 - 不需要的 Artifact 不落盘（总则 2）；落盘即按合同写全，不留空壳字段。
+
+## 工程产物语言规则
+
+Prism 工件先交付状态，再解释协议。正文采用中性、直接的技术中文：
+
+- 首段先写当前判断或目的，不用"本轮将""下面来看"等路标式开场。
+- 写清主语、动作、证据和影响，少用"相关能力""综合推进""进一步提升"等抽象占位词。
+- frontmatter 已表达 role、authority、evolution 时，正文不逐段重复"不构成授权""可再生成"等协议自证。只有存在真实误读风险时才补一句边界。
+- 不为了整齐强行三段式、否定排比或同义词轮换；列表长度由事实决定。
+- 先保留事实强度、来源、assumption、风险和 Decision 边界，再调整语气。自然不等于模糊。
+- 表格、callout、粗体和标题只强化已有层级，不承担唯一语义；纯 Markdown 仍应可读。
+
+反向检出类工具（如 humanizer）可以作为清单参考，但不是 Prism runtime dependency，也不自动改写 Artifact：技术文档保持克制，不强行加入第一人称、情绪或个性；协议原语、代码符号和有用的阶段标题不因"去 AI 味"被改名。

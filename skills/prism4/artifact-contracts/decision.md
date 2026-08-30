@@ -40,6 +40,20 @@ derived_from: ["finding:f02"] # 可选：provenance
 3. **理由**：含"为何不采用替代方案"（吸收转写硬标准同样适用）。
 4. **影响范围**：约束哪些 Plan / 未来演进。
 
+## 正文阅读结构
+
+```markdown
+## 决策摘要
+
+## 决策内容
+
+## 澄清过程
+
+## 授权依据
+```
+
+「澄清过程」仅在本决策由 Clarify 晋升而来时出现。历史一句话 Decision 中文化即可，不把旧承诺扩写成新论证。
+
 ## 状态纪律
 
 - 拍板前只有 **Decision candidate**（存在于 Plan 的 Decision Gates 区或 clarify payload），不得提前落 `decisions/`。

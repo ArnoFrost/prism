@@ -13,7 +13,18 @@
 - 无 `--root` 时，`topic new` 在 `workspace.{code}.local/topics/{NNN}_{slug}/` 分配**新的** Topic 目录，而不是改写当前 Topic。
 - `topic new` 预留空 `references/`：供人工或 Agent 放置调研、证据、外部材料；不是 Core Artifact，默认不进入 Brief 投影。
 - 子 Topic 落 `children/<slug>/`，内聚 topic / intent / plans / references；findings 与 decisions 冒泡回父根。
-- `topic.md` 是机械锚点与导航门牌，不是事实源：恢复边界读 `intent.md`，恢复当前态读生成后的 `brief.md`。
+- `topic.md` 是机械锚点与导航门牌，不是 Core Artifact role，也不是事实源。它只帮助人类知道该去哪里读：
+
+  | 要看什么 | 去哪 |
+  |----------|------|
+  | 边界与完成条件 | `intent.md` |
+  | 当前恢复切片 | `brief.md`（生成后） |
+  | 行动结构 | `plans/` |
+  | 观察建议 | `findings/` |
+  | 授权承诺 | `decisions/` |
+  | 调研证据 | `references/` |
+
+  不要把 `topic.md` 扩写成 README、Scope 或 Brief。若需要更好读的边界，改 Intent；若需要恢复当前态，生成 Brief。
 
 ## 流程
 

@@ -46,7 +46,6 @@ user_invocable: true
 - 需要候选路线、critical path、可逆性排序与 verification strategy 时，建议显式使用 `/prism-plan`；不在 facade 内模拟 Plan。
 - 不把 state route、Review、Clarify、Plan 自动串成 workflow。
 - `/prism-review` 与 `/prism-plan` 是当前 profile 中独立的专业 cognition 入口。
-- 旧 `/prism-topic`、`/prism-brief`、`/prism-clarify`、`/prism-compress` wrappers 仍保留在 SDK，作为 control / compatibility / rollback source，但不属于当前默认 distribution profile。
 
 ## Dogfood observation
 
