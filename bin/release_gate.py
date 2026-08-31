@@ -20,6 +20,7 @@ from pathlib import Path
 
 
 BREAKING_HEADER_RE = re.compile(r"^[a-z]+(?:\([^)]+\))?!:")
+CANARY_RELEASE_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)-canary\.(\d+)$")
 REQUIRED_DOCS = ("CHANGELOG.md", "docs/migration.md")
 
 
@@ -104,7 +105,19 @@ def analyze(changed_files: list[str], commit_messages: list[str]) -> dict:
 
 
 def package_version_for_release(release: str) -> str:
-    return "4.0.0.dev0" if release == "4.0-canary" else release.removeprefix("v")
+    """把人类可读发行名映射成 PEP 440 包版本。
+
+    canary 走 prerelease：无序号的 ``4.0-canary`` 是当前过渡态，落到
+    ``4.0.0.dev0``；``X.Y.Z-canary.N`` 落到 ``X.Y.Z.devN``，序号与 tag 一致，
+    这样 package 与 Git tag 能一一对上。stable 形态只去掉 ``v`` 前缀。
+    """
+    if release == "4.0-canary":
+        return "4.0.0.dev0"
+    canary = CANARY_RELEASE_RE.match(release)
+    if canary:
+        major, minor, patch, index = canary.groups()
+        return f"{major}.{minor}.{patch}.dev{index}"
+    return release.removeprefix("v")
 
 
 def analyze_version_metadata(repo: Path) -> dict:

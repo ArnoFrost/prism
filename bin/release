@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""bin/release — 发行门禁、tag 创建与推送的机械面。
+
+Prism 的发行单位是不可变 annotated tag。三个动作被刻意拆开，因为它们
+的可逆性完全不同：
+
+- ``check`` 只回答「这个 HEAD 能不能发这个 tag」，不产生任何外部影响；
+- ``tag`` 只在本机创建 annotated tag，且强制先通过 check；
+- ``push`` 是唯一会产生外部写入的动作，必须显式 ``--confirm``，否则只
+  打印将要执行的命令，不碰远端。
+
+分支上的普通 commit 不是发行事件，因此 check 会要求工作树干净且与
+upstream 同步：发布点必须能被任何人重新检出同一个 commit。
+"""
+
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+SDK_ROOT = Path(__file__).resolve().parents[1]
+OK = "ok"
+WARN = "warn"
+FAIL = "fail"
+
+
+def _load_module(name: str, filename: str):
+    """按文件路径加载 bin/ 下的自包含脚本，供本入口复用其纯函数。"""
+    path = SDK_ROOT / "bin" / filename
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载 {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _git(repo: Path, args: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+
+def _step(name: str, status: str, detail: str) -> dict:
+    return {"name": name, "status": status, "detail": detail}
+
+
+def _worktree_clean(repo: Path) -> dict:
+    result = _git(repo, ["status", "--porcelain"])
+    if result.returncode != 0:
+        return _step("worktree-clean", FAIL, result.stderr.strip() or "git status 失败")
+    if result.stdout.strip():
+        return _step("worktree-clean", FAIL, "工作树有未提交变更，发布点必须可重新检出")
+    return _step("worktree-clean", OK, "工作树干净")
+
+
+def _upstream_synced(repo: Path) -> dict:
+    ahead = _git(repo, ["rev-list", "--count", "@{upstream}..HEAD"])
+    behind = _git(repo, ["rev-list", "--count", "HEAD..@{upstream}"])
+    if ahead.returncode != 0 or behind.returncode != 0:
+        return _step("upstream-synced", WARN, "当前分支没有 upstream，跳过同步校验")
+    if ahead.stdout.strip() != "0":
+        return _step("upstream-synced", FAIL, f"本地领先 upstream {ahead.stdout.strip()} 个 commit")
+    if behind.stdout.strip() != "0":
+        return _step("upstream-synced", FAIL, f"本地落后 upstream {behind.stdout.strip()} 个 commit")
+    return _step("upstream-synced", OK, "HEAD 与 upstream 同步")
+
+
+def _tag_absent(repo: Path, tag: str) -> dict:
+    local = _git(repo, ["tag", "--list", tag])
+    if local.returncode == 0 and tag in local.stdout.split():
+        return _step("tag-absent", FAIL, f"tag {tag} 已存在；已发布的 tag 不可重写")
+    return _step("tag-absent", OK, f"tag {tag} 未占用")
+
+
+def _tag_grammar(tag: str) -> dict:
+    resolver = _load_module("tag_resolve", "tag_resolve.py")
+    parsed = resolver.parse_tag(tag)
+    if parsed is None:
+        return _step(
+            "tag-grammar",
+            FAIL,
+            f"{tag} 不符合 canary vX.Y.Z-canary.N 或 stable vX.Y.Z 形态",
+        )
+    return _step(
+        "tag-grammar",
+        OK,
+        f"{tag} → {parsed['channel']} / package {parsed['package_version']}",
+    )
+
+
+def _version_metadata(repo: Path, tag: str) -> dict:
+    gate = _load_module("release_gate", "release_gate.py")
+    result = gate.scan(repo, "", "")
+    metadata = result.get("version_metadata", {})
+    if not metadata.get("ok"):
+        errors = "; ".join(item.get("message", "") for item in result.get("errors", []))
+        return _step("version-metadata", FAIL, errors or "版本元数据不一致")
+
+    resolver = _load_module("tag_resolve", "tag_resolve.py")
+    parsed = resolver.parse_tag(tag) or {}
+    release = (metadata.get("release") or "").strip()
+    expected = f"{parsed.get('major')}.{parsed.get('minor')}.{parsed.get('patch')}"
+    if parsed.get("channel") == "canary":
+        expected = f"{expected}-canary.{parsed.get('prerelease')}"
+
+    if release == expected:
+        return _step("version-metadata", OK, f"VERSION {release} 与 tag 一致")
+    # 过渡态：VERSION 还是无序号的 canary 代号，提升动作属于发行前的准备，
+    # 在这里报告而不是放行，避免以为元数据已经对齐。
+    return _step(
+        "version-metadata",
+        WARN,
+        f"元数据自洽，但 VERSION 仍是 {release}，发行前需提升为 {expected}",
+    )
+
+
+def _release_gate(repo: Path, base: str, head: str) -> dict:
+    gate = _load_module("release_gate", "release_gate.py")
+    result = gate.scan(repo, base, head)
+    if result.get("ok"):
+        return _step("release-gate", OK, "release gate 通过")
+    errors = "; ".join(item.get("message", "") for item in result.get("errors", []))
+    return _step("release-gate", FAIL, errors or "release gate 失败")
+
+
+def _command_step(name: str, command: list[str], repo: Path) -> dict:
+    completed = subprocess.run(
+        command,
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        timeout=900,
+    )
+    if completed.returncode == 0:
+        return _step(name, OK, "通过")
+    tail = (completed.stdout + completed.stderr).strip().splitlines()
+    return _step(name, FAIL, tail[-1] if tail else f"退出码 {completed.returncode}")
+
+
+def _test_surface(repo: Path) -> list[dict]:
+    return [
+        _command_step("pytest", ["uv", "run", "pytest"], repo),
+        _command_step(
+            "relink-writeback",
+            ["bash", "tests/test_relink_writeback.sh"],
+            repo,
+        ),
+        _command_step(
+            "skill-validation",
+            ["bin/validate-skills", "--layer", "sdk"],
+            repo,
+        ),
+        _command_step("setup-check", ["./setup.sh", "check"], repo),
+    ]
+
+
+def run_check(
+    repo: Path,
+    tag: str,
+    base: str = "",
+    head: str = "",
+    skip_tests: bool = False,
+) -> dict:
+    steps = [
+        _worktree_clean(repo),
+        _upstream_synced(repo),
+        _tag_absent(repo, tag),
+        _tag_grammar(tag),
+        _version_metadata(repo, tag),
+        _release_gate(repo, base, head),
+    ]
+    if not skip_tests:
+        steps.extend(_test_surface(repo))
+    return {
+        "ok": all(step["status"] != FAIL for step in steps),
+        "tag": tag,
+        "steps": steps,
+    }
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    repo = Path(args.repo).resolve()
+    result = run_check(repo, args.tag, args.base, args.head, args.skip_tests)
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False))
+    else:
+        print(f"release check {args.tag}")
+        print("─────────────────────────────────")
+        for step in result["steps"]:
+            mark = {OK: "✓", WARN: "⚠", FAIL: "✗"}[step["status"]]
+            print(f"  {mark} {step['name']}: {step['detail']}")
+        print("─────────────────────────────────")
+        print("可发布" if result["ok"] else "存在阻断项")
+    return 0 if result["ok"] else 1
+
+
+def cmd_tag(args: argparse.Namespace) -> int:
+    repo = Path(args.repo).resolve()
+    result = run_check(repo, args.tag, args.base, args.head, args.skip_tests)
+    if not result["ok"]:
+        print("check 未通过，拒绝创建 tag；先修复上面的阻断项。", file=sys.stderr)
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False))
+        return 1
+
+    message = args.message or f"Prism {args.tag}"
+    if args.dry_run:
+        print(f"[dry-run] git tag -a {args.tag} -m {message!r}")
+        return 0
+    completed = _git(repo, ["tag", "-a", args.tag, "-m", message])
+    if completed.returncode != 0:
+        print(completed.stderr.strip() or "创建 tag 失败", file=sys.stderr)
+        return completed.returncode
+    print(f"已在本机创建 annotated tag {args.tag}；推送是独立动作：bin/release push --tag {args.tag}")
+    return 0
+
+
+def cmd_push(args: argparse.Namespace) -> int:
+    repo = Path(args.repo).resolve()
+    listing = _git(repo, ["tag", "--list", args.tag])
+    if args.tag not in listing.stdout.split():
+        print(f"本机不存在 tag {args.tag}，先运行 bin/release tag。", file=sys.stderr)
+        return 1
+
+    command = ["git", "push", args.remote, args.tag]
+    if not args.confirm:
+        # 唯一会产生外部写入的动作，默认只展示，避免把它当成顺手的收尾步骤。
+        print("[dry-run] " + " ".join(command))
+        print("确认后追加 --confirm 才会真正推送。")
+        return 0
+
+    completed = _git(repo, command)
+    if completed.returncode != 0:
+        print(completed.stderr.strip() or "推送失败", file=sys.stderr)
+        return completed.returncode
+    print(f"已推送 {args.tag} 到 {args.remote}")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Prism release mechanical surface")
+    parser.add_argument("--repo", default=str(SDK_ROOT), help="SDK 仓库路径")
+    subparsers = parser.add_subparsers(dest="action", required=True)
+
+    check = subparsers.add_parser("check", help="校验某个 tag 能否发布")
+    check.add_argument("--tag", required=True)
+    check.add_argument("--base", default="", help="release gate diff 起点")
+    check.add_argument("--head", default="", help="release gate diff 终点")
+    check.add_argument("--skip-tests", action="store_true", help="跳过 pytest / relink / skill / setup 面")
+    check.add_argument("--json", action="store_true")
+    check.set_defaults(func=cmd_check)
+
+    tag = subparsers.add_parser("tag", help="通过 check 后在本机创建 annotated tag")
+    tag.add_argument("--tag", required=True)
+    tag.add_argument("--base", default="")
+    tag.add_argument("--head", default="")
+    tag.add_argument("--skip-tests", action="store_true")
+    tag.add_argument("--message", default=None, help="annotated tag 说明")
+    tag.add_argument("--dry-run", action="store_true")
+    tag.add_argument("--json", action="store_true")
+    tag.set_defaults(func=cmd_tag)
+
+    push = subparsers.add_parser("push", help="推送已创建的 tag；必须显式 --confirm")
+    push.add_argument("--tag", required=True)
+    push.add_argument("--remote", default="origin")
+    push.add_argument("--confirm", action="store_true", help="真正执行推送；不加则只打印")
+    push.set_defaults(func=cmd_push)
+
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
