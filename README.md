@@ -45,6 +45,7 @@ Reference implementation 需要 Python 3.11+ 和 `uv`。
 # 1. 获取 Prism repository
 git clone https://github.com/ArnoFrost/prism.git ~/prism
 cd ~/prism
+git switch prism-4                 # 首枚 4.0 Canary Tag 之前的临时 source 入口
 ./setup.sh init
 
 # 2. 验收当前安装
@@ -77,7 +78,7 @@ prism doctor --scope config --quick
 
 Agent 引导可直接使用：
 
-> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，执行 `./setup.sh init` 使用默认本地 Workspace backend，并用 `prism --version` 与 `./setup.sh check` 完成验收。
+> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，切换到 `prism-4` 实验分支，执行 `./setup.sh init` 使用默认本地 Workspace backend，并用 `prism --version` 与 `./setup.sh check` 完成验收。首枚 Canary Tag 发布后再按版本 Tag 安装。
 
 ---
 

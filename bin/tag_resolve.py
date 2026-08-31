@@ -97,9 +97,14 @@ def select_latest(
 
 
 def collect_tags(repo: str | Path) -> list[str]:
-    """读取仓库已有 tag；读不到时返回空列表，由调用方决定如何 fail closed。"""
+    """读取仓库已有 annotated release tag；lightweight tag 不进入产品更新面。"""
     completed = subprocess.run(
-        ["git", "tag", "--list"],
+        [
+            "git",
+            "for-each-ref",
+            "--format=%(refname:strip=2)\t%(objecttype)",
+            "refs/tags",
+        ],
         cwd=str(repo),
         capture_output=True,
         text=True,
@@ -107,7 +112,12 @@ def collect_tags(repo: str | Path) -> list[str]:
     )
     if completed.returncode != 0:
         return []
-    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    tags = []
+    for line in completed.stdout.splitlines():
+        name, separator, object_type = line.partition("\t")
+        if separator and object_type == "tag" and parse_tag(name) is not None:
+            tags.append(name)
+    return tags
 
 
 def read_channel(config_path: str | Path) -> tuple[str | None, int | None]:

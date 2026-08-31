@@ -9,7 +9,7 @@
 - **Tag-aware 产品更新** — `prism update` 不再追分支 commit：managed install 固定在 detached release tag 上，只切到本通道内更新的不可变 tag；`--check` 零写入、`--to` 精确切换、`--channel` 显式持久化通道、`--bootstrap-to` 把分支 checkout 迁进 managed 安装。分支 checkout、dirty worktree、跨通道 tag 一律 fail-closed，切换后体检失败回滚到切换前的 commit。
 - **发行机械面 `bin/release`** — check / tag / push 三步分开：check 无副作用、tag 只在本机创建 annotated tag、push 必须显式 `--confirm` 才会真正推送。
 - **更新通道配置** — `prism.local.yaml` 新增 `update_channel` / `update_series`；通道必须由安装显式选择，不从当前 Git 分支推断。
-- **两条更新链路** — 分支 checkout 可用 `prism update --track-branch` 做 commit 级跟进（`git pull --rebase` + 体检 + 重链），与 managed 安装的 tag 级更新严格分开：两条链路互斥，`--track-branch` 在 managed 安装上被拒，输出与返回都标注 commit 级 / 非发行版本。分支 checkout 上的普通 `prism update` 仍然拒绝——自动拉 commit 会让「拉分支」和「装版本」混成一个动作。
+- **两条更新链路** — 分支 checkout 可用 `prism update --track-branch` 做显式 commit 级跟进；只允许 clean behind 的 fast-forward，ahead+behind 分叉 fail-closed 并交给 `prism-maintain`。它与 managed Tag 更新互斥，输出始终标注非发行版本。
 - **发布线校验** — `bin/release check / tag` 支持 `--expect-branch`，确认 tag 打在预期的发布线上（实验线出 canary、稳定线出 stable）；不给参数就不校验，下一轮实验换分支发版不必改实现。
 
 ### Fixed
@@ -24,7 +24,7 @@
 
 - **4.0 中间 CLI facade** — `capability run` hidden alias、`review / clarify / plan record`、generic artifact / relation mutation 与 `dist` tombstone 全部退出；未知或退役命令统一 argparse failure。普通语义工件按合同直写 Markdown 后 `store validate`，仅 Plan acceptance / Decision commitment 保留 typed guard。
 - **旧本机配置与桥接 fallback** — 扁平 `prism.local.yaml`、字符串 project binding、旧 config alias、`setenv --sync` 与 `ai-task.local` 当前叙事退出活树；当前分支只接受 named workspaces + 对象式 project binding，旧输入 fail closed 且 writes=0。
-- **旧维护 Skills 退役** — `prism-dist` / `prism-doctor` / `prism-pull` / `prism-push` 从活跃分发面归档；干净代码层更新使用 `prism doctor` / `prism update [--skills]` / `prism relink`；个人多端 SDK、Skills、Env 与已启用 Workspace Git 的双向同步和冲突处理收敛到外部 `prism-maintain`。
+- **旧维护 Skills 退役** — `prism-dist` / `prism-doctor` / `prism-pull` / `prism-push` 从活跃分发面归档；SDK 产品更新使用 `prism update`，外部 Skills、Env 与已启用 Workspace Git 的双向同步和冲突处理收敛到外部 `prism-maintain`。
 - **legacy dist packer** — mini/full zip 实现与退役 tombstone 均退出活树，仅由 Git 历史与 `legacy-3x-final` 保管。
 - **3.x 可执行历史剔除** — `skills/workflow/`、`skills/workspace/`、`workspace/` 系统层、`prism legacy` adapter 与 3.x topic 动词全部从 prism-4 分支物理删除；`sync` 随树退场。旧 topic 只读；3.x 终态由 git tag `legacy-3x-final` 保管。迁移口径见 [docs/migration.md](docs/migration.md)。
 - **legacy 测试面** — `skills/workflow/shared/tests/`（约 2.5M）与 `tests/test_sniff.py` 随树删除；CI 不再覆盖该路径。

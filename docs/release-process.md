@@ -38,7 +38,7 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 ### 安装模式与更新行为
 
 - **managed install**：位于 detached release tag，由产品 updater 管理。
-- **source checkout**：位于 branch，由贡献者自行使用 Git；产品 updater **不追 branch commit**。
+- **source checkout**：位于 branch，由贡献者自行使用 Git；默认产品更新模式**不追 branch commit**。同一 CLI 下显式的 `--track-branch` 是 source maintenance 子模式，只允许 clean behind 的 fast-forward，不代表安装了发行版本。
 - 安装记录 `update_channel`（`canary` / `stable`）与 major series；新安装显式选择 channel，不从当前分支暗推断。
 - updater 只解析**当前 channel** 中更新的不可变 tag；无新匹配 tag 时 no-op，保持当前版本且零写入。
 - canary 与 stable **不自动跨 channel**：stable tag 出现不会把 canary 用户转走；channel 切换是显式用户动作。
@@ -69,11 +69,12 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 | `prism update --check` / `--channel` / `--to` | 已实现 |
 | `bin/release`（check / tag / push 机械面） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |
+| Release Tag push 后触发 CI 并校验 Tag / VERSION | 已实现 |
 | 版本元数据切到 `canary.N` 形态 | 未开始；当前为 `4.0-canary` / `4.0.0.dev0`，随首枚 canary tag 一起提升 |
 
 ## 版本提升 Checklist
 
-> 两条发布线的 `VERSION` 形态不同：实验线是 `X.Y.Z-canary.N`，稳定线是 `X.Y.Z`。提升前用 `bin/release check --expect-branch <分支>` 确认自己在正确的线上。
+> 两条发布线的 `VERSION` 形态不同：实验线是 `X.Y.Z-canary.N`，稳定线是 `X.Y.Z`。`bin/release check/tag` 必须同时给出目标 Tag、预期分支和明确的 diff range；缺任一项都不能创建 Tag。
 
 1. 改 `VERSION`。
 2. 同步 `pyproject.toml` 的 `[project].version`。
@@ -88,6 +89,22 @@ uv run pytest
 ./setup.sh check
 ```
 
+## 发行 Runbook
+
+下面以首枚 Canary 为例；`BASE` 必须是维护者确认过的上一发行 Tag 或基线 SHA，不能留空，也不要用 `HEAD` 伪造空 diff：
+
+```bash
+TAG=v4.0.0-canary.1
+BASE=legacy-3x-final  # 首枚 4.0 Canary 的已审基线；后续换成上一枚同系列发行 Tag
+
+bin/release check --tag "$TAG" --expect-branch prism-4 --base "$BASE" --head HEAD
+bin/release tag   --tag "$TAG" --expect-branch prism-4 --base "$BASE" --head HEAD
+bin/release push  --tag "$TAG"                 # dry-run，只显示将执行的 push
+bin/release push  --tag "$TAG" --confirm       # 唯一真实远端写入
+```
+
+Stable 使用同一组命令，把 `TAG` 换成 `vX.Y.Z`、`--expect-branch` 换成 `main`。`check/tag` 会验证工作树、upstream、本地与远端 Tag 占用、annotated Tag grammar、VERSION/package/docs 一致性和 diff gate；push 前再次验证本地 Tag object 与 Tag 内 VERSION。
+
 ## CI 门禁
 
 `bin/release_gate.py` 是 CI 与本地共用入口：
@@ -95,6 +112,8 @@ uv run pytest
 - 永远检查当前工作树版本元数据是否一致。
 - 当传入 `--base` / `--head` 时，额外检查 breaking commit 是否同步 `CHANGELOG.md` 与 `docs/migration.md`。
 - 无 diff 范围时只跳过 diff gate，不跳过 version gate。
+- `bin/release check/tag` 不允许省略 diff 范围；上面的“可跳过”只适用于单独运行 `release_gate.py` 做日常元数据检查。
+- `v*` Tag push 会触发 CI；Tag event 额外用 `--expected-tag` 校验 Git Tag 与 VERSION 一致。
 
 ## 不做什么
 

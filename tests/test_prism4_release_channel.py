@@ -100,6 +100,18 @@ def test_series_filter_keeps_the_updater_on_one_major() -> None:
     assert resolver.select_latest(tags, channel="stable", series=9) is None
 
 
+def test_collect_tags_excludes_lightweight_release_tags(tmp_path: Path) -> None:
+    resolver = _load("tag_resolve", "tag_resolve.py")
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    (repo / "VERSION").write_text("4.0.0-canary.1\n", encoding="utf-8")
+    _commit(repo, "release")
+    _git(repo, "tag", "v4.0.0-canary.1")
+    _git(repo, "tag", "-a", "v4.0.0-canary.2", "-m", "annotated")
+
+    assert resolver.collect_tags(repo) == ["v4.0.0-canary.2"]
+
+
 # ── 通道读写 ────────────────────────────────────────────
 
 
@@ -168,7 +180,13 @@ def _git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProc
     )
 
 
-def _seed_repo(root: Path, *, release: str, package_version: str) -> Path:
+def _seed_repo(
+    root: Path,
+    *,
+    release: str,
+    package_version: str,
+    with_remote: bool = True,
+) -> Path:
     _write_release_fixture(root, release=release, package_version=package_version)
     _git(root, "init", "-q")
     _git(root, "config", "user.email", "prism-test@example.com")
@@ -177,6 +195,9 @@ def _seed_repo(root: Path, *, release: str, package_version: str) -> Path:
     _git(root, "config", "tag.gpgsign", "false")
     _git(root, "add", "-A")
     _git(root, "commit", "-q", "-m", "initial")
+    _git(root, "branch", "-M", "main")
+    if with_remote:
+        _attach_bare_remote(root, root.parent / f"{root.name}-remote.git")
     return root
 
 
@@ -188,8 +209,11 @@ def _attach_bare_remote(repo: Path, remote: Path, branch: str = "main") -> None:
 
 
 def _run_release(repo: Path, *args: str) -> subprocess.CompletedProcess:
+    command_args = list(args)
+    if command_args and command_args[0] in {"check", "tag"} and "--base" not in command_args:
+        command_args.extend(["--base", "HEAD", "--head", "HEAD"])
     return subprocess.run(
-        [sys.executable, str(RELEASE_BIN), "--repo", str(repo), *args],
+        [sys.executable, str(RELEASE_BIN), "--repo", str(repo), *command_args],
         capture_output=True,
         text=True,
         timeout=300,
@@ -244,8 +268,8 @@ def test_release_check_passes_on_a_clean_reproducible_head(tmp_path: Path) -> No
     assert _status(payload, "release-gate") == "ok"
 
 
-def test_release_check_warns_when_version_metadata_lags_the_tag(tmp_path: Path) -> None:
-    """元数据自洽但还没提升到 tag 形态时，check 要提醒而不是放行。"""
+def test_release_check_blocks_when_version_metadata_lags_the_tag(tmp_path: Path) -> None:
+    """元数据自洽仍不够：VERSION 必须与本次目标 tag 精确一致。"""
     repo = _seed_repo(
         tmp_path / "repo", release="4.0-canary", package_version="4.0.0.dev0"
     )
@@ -253,8 +277,8 @@ def test_release_check_warns_when_version_metadata_lags_the_tag(tmp_path: Path) 
     result = _run_release(repo, "check", "--tag", "v4.0.0-canary.1", "--skip-tests", "--json")
 
     payload = json.loads(result.stdout)
-    assert result.returncode == 0
-    assert _status(payload, "version-metadata") == "warn"
+    assert result.returncode == 1
+    assert _status(payload, "version-metadata") == "fail"
 
 
 def test_release_check_accepts_the_expected_release_line(tmp_path: Path) -> None:
@@ -316,22 +340,45 @@ def test_release_push_without_confirm_writes_nothing(tmp_path: Path) -> None:
     repo = _seed_repo(
         tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
     )
-    _attach_bare_remote(repo, tmp_path / "remote.git")
     _git(repo, "tag", "-a", "v4.0.0-canary.1", "-m", "canary 1")
 
     result = _run_release(repo, "push", "--tag", "v4.0.0-canary.1")
 
     assert result.returncode == 0
     assert "dry-run" in result.stdout
-    remote_tags = _git(tmp_path / "remote.git", "tag", "--list")
+    remote_tags = _git(tmp_path / "repo-remote.git", "tag", "--list")
     assert remote_tags.stdout.strip() == ""
+
+
+def test_release_push_with_confirm_reaches_the_remote(tmp_path: Path) -> None:
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+    _git(repo, "tag", "-a", "v4.0.0-canary.1", "-m", "canary 1")
+
+    result = _run_release(repo, "push", "--tag", "v4.0.0-canary.1", "--confirm")
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    remote_tags = _git(tmp_path / "repo-remote.git", "tag", "--list")
+    assert remote_tags.stdout.strip() == "v4.0.0-canary.1"
+
+
+def test_release_push_rejects_a_lightweight_tag(tmp_path: Path) -> None:
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+    _git(repo, "tag", "v4.0.0-canary.1")
+
+    result = _run_release(repo, "push", "--tag", "v4.0.0-canary.1", "--confirm")
+
+    assert result.returncode == 1
+    assert "annotated" in result.stderr
 
 
 def test_release_check_blocks_when_head_diverges_from_upstream(tmp_path: Path) -> None:
     repo = _seed_repo(
         tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
     )
-    _attach_bare_remote(repo, tmp_path / "remote.git")
     (repo / "extra.txt").write_text("local only\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", "not published")
@@ -340,6 +387,68 @@ def test_release_check_blocks_when_head_diverges_from_upstream(tmp_path: Path) -
 
     assert result.returncode == 1
     assert _status(json.loads(result.stdout), "upstream-synced") == "fail"
+
+
+def test_release_check_blocks_without_an_upstream(tmp_path: Path) -> None:
+    repo = _seed_repo(
+        tmp_path / "repo",
+        release="4.0.0-canary.1",
+        package_version="4.0.0.dev1",
+        with_remote=False,
+    )
+
+    result = _run_release(repo, "check", "--tag", "v4.0.0-canary.1", "--skip-tests", "--json")
+
+    assert result.returncode == 1
+    assert _status(json.loads(result.stdout), "upstream-synced") == "fail"
+
+
+def test_release_check_blocks_when_diff_range_is_omitted(tmp_path: Path) -> None:
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RELEASE_BIN),
+            "--repo",
+            str(repo),
+            "check",
+            "--tag",
+            "v4.0.0-canary.1",
+            "--skip-tests",
+            "--json",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+    assert result.returncode == 1
+    assert _status(json.loads(result.stdout), "release-gate") == "fail"
+
+
+def test_release_check_reports_an_invalid_diff_range_without_crashing(tmp_path: Path) -> None:
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+
+    result = _run_release(
+        repo,
+        "check",
+        "--tag",
+        "v4.0.0-canary.1",
+        "--base",
+        "missing-ref",
+        "--head",
+        "HEAD",
+        "--skip-tests",
+        "--json",
+    )
+
+    assert result.returncode == 1
+    assert _status(json.loads(result.stdout), "release-gate") == "fail"
 
 
 # ── 产品更新（managed install）──────────────────────────
@@ -376,7 +485,7 @@ def _build_install(
     *,
     tags: list[str],
     at: str,
-    channel: str = "canary",
+    channel: str | None = "canary",
     series: int = 4,
     doctor_exit: int = 0,
 ) -> Path:
@@ -392,26 +501,29 @@ def _build_install(
     _git(repo, "checkout", "--detach", at)
 
     config = repo / "prism.local.yaml"
+    config_lines = [
+        "# local state",
+        "device_id: TEST",
+        f"sdk_path: {repo}",
+        "default_workspace: work",
+        "workspaces:",
+        "  work:",
+        f"    workspace_root: {root / 'workspace'}",
+        "    workspace_subdir: Workspace",
+    ]
+    if channel is not None:
+        config_lines.extend([f"update_channel: {channel}", f"update_series: {series}"])
+    config_lines.extend(
+        [
+            "projects:",
+            "  DEMO:",
+            "    path: /tmp/demo",
+            "    workspace: work",
+            "",
+        ]
+    )
     config.write_text(
-        "\n".join(
-            [
-                "# local state",
-                "device_id: TEST",
-                f"sdk_path: {repo}",
-                "default_workspace: work",
-                "workspaces:",
-                "  work:",
-                f"    workspace_root: {root / 'workspace'}",
-                "    workspace_subdir: Workspace",
-                f"update_channel: {channel}",
-                f"update_series: {series}",
-                "projects:",
-                "  DEMO:",
-                "    path: /tmp/demo",
-                "    workspace: work",
-                "",
-            ]
-        ),
+        "\n".join(config_lines),
         encoding="utf-8",
     )
     (root / "workspace").mkdir(parents=True, exist_ok=True)
@@ -582,6 +694,42 @@ def test_update_rolls_back_when_post_switch_checks_fail(tmp_path: Path) -> None:
     )
 
 
+def test_channel_switch_failure_rolls_back_config_and_head(tmp_path: Path) -> None:
+    repo = _build_install(
+        tmp_path,
+        tags=["v4.0.0-canary.1", "v4.0.1"],
+        at="v4.0.0-canary.1",
+        channel="canary",
+        doctor_exit=1,
+    )
+    config = repo / "prism.local.yaml"
+    before = config.read_text(encoding="utf-8")
+
+    result = _run_update(repo, "--channel", "stable", "--series", "4", "--no-fetch")
+
+    assert result.returncode == 1
+    assert config.read_text(encoding="utf-8") == before
+    assert _git(repo, "describe", "--tags", "--exact-match", "HEAD").stdout.strip() == (
+        "v4.0.0-canary.1"
+    )
+
+
+def test_post_check_exception_still_rolls_back(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0-canary.1"], at="v4.0.0-canary.1")
+    _git(repo, "checkout", "-q", "-B", "build-next")
+    (repo / "bin" / "doctor").unlink()
+    _commit(repo, "broken release without doctor")
+    _git(repo, "tag", "-a", "v4.0.0-canary.2", "-m", "broken")
+    _git(repo, "checkout", "-q", "--detach", "v4.0.0-canary.1")
+
+    result = _run_update(repo, "--no-fetch")
+
+    assert result.returncode == 1
+    assert _git(repo, "describe", "--tags", "--exact-match", "HEAD").stdout.strip() == (
+        "v4.0.0-canary.1"
+    )
+
+
 def test_update_blocks_on_a_branch_checkout_until_bootstrap(tmp_path: Path) -> None:
     """分支是贡献者的 source line，产品更新不接管，除非显式 bootstrap。"""
     repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel="stable")
@@ -597,6 +745,40 @@ def test_update_blocks_on_a_branch_checkout_until_bootstrap(tmp_path: Path) -> N
     assert json.loads(bootstrapped.stdout)["action"] == "bootstrap"
     # bootstrap 之后不再是分支 checkout。
     assert _git(repo, "symbolic-ref", "-q", "--short", "HEAD", check=False).returncode != 0
+    assert _git(repo, "describe", "--tags", "--exact-match", "HEAD").stdout.strip() == "v4.0.0"
+
+
+def test_source_check_reports_mode_without_a_channel(tmp_path: Path) -> None:
+    repo = _build_install(
+        tmp_path, tags=["v4.0.0-canary.1"], at="v4.0.0-canary.1", channel=None
+    )
+    _git(repo, "checkout", "-q", "-B", "main")
+
+    result = _run_update(repo, "--check", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["mode"] == "source"
+    assert payload["writes"] == 0
+
+
+def test_bootstrap_can_choose_channel_when_config_is_unset(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel=None)
+    _git(repo, "checkout", "-q", "-B", "main")
+
+    result = _run_update(
+        repo,
+        "--channel",
+        "stable",
+        "--series",
+        "4",
+        "--bootstrap-to",
+        "v4.0.0",
+        "--no-fetch",
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "update_channel: stable" in (repo / "prism.local.yaml").read_text(encoding="utf-8")
     assert _git(repo, "describe", "--tags", "--exact-match", "HEAD").stdout.strip() == "v4.0.0"
 
 
@@ -666,6 +848,46 @@ def test_track_branch_check_is_read_only(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert payload["writes"] == 0
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+
+
+def test_track_branch_blocks_a_clean_diverged_source(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0-canary.1"], at="v4.0.0-canary.1")
+    _git(repo, "checkout", "-q", "-B", "main")
+    remote = tmp_path / "remote.git"
+    _attach_bare_remote(repo, remote, branch="main")
+
+    (repo / "local.txt").write_text("local\n", encoding="utf-8")
+    _commit(repo, "local ahead")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    work = tmp_path / "work"
+    _git(work.parent, "clone", "-q", str(remote), str(work))
+    _init_git_repo(work)
+    (work / "remote.txt").write_text("remote\n", encoding="utf-8")
+    _commit(work, "remote ahead")
+    _git(work, "push", "-q", "origin", "HEAD:main")
+    _git(repo, "fetch", "-q", "origin")
+
+    result = _run_update(repo, "--track-branch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["action"] == "blocked"
+    assert payload["ahead"] == 1
+    assert payload["behind"] == 1
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+
+
+def test_update_no_longer_accepts_external_skills_pull() -> None:
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "bin" / "update"), "--skills"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.returncode == 2
+    assert "unrecognized arguments" in result.stderr
 
 
 def test_update_persists_an_explicit_channel_choice(tmp_path: Path) -> None:

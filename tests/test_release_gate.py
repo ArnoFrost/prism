@@ -61,6 +61,32 @@ def test_release_gate_reports_package_version_drift(tmp_path: Path) -> None:
     assert "version-lock-sync" in rules
 
 
+def test_release_gate_checks_expected_tag_against_version(tmp_path: Path) -> None:
+    gate = _load_release_gate()
+    _write_release_fixture(
+        tmp_path, release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+
+    matching = gate.scan(tmp_path, "", "", expected_tag="v4.0.0-canary.1")
+    mismatched = gate.scan(tmp_path, "", "", expected_tag="v4.0.0-canary.2")
+
+    assert matching["ok"] is True
+    assert mismatched["ok"] is False
+    assert "release-tag-version-sync" in {error["rule"] for error in mismatched["errors"]}
+
+
+def test_release_gate_rejects_an_invalid_expected_tag(tmp_path: Path) -> None:
+    gate = _load_release_gate()
+    _write_release_fixture(
+        tmp_path, release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+
+    result = gate.scan(tmp_path, "", "", expected_tag="latest")
+
+    assert result["ok"] is False
+    assert "release-tag-grammar" in {error["rule"] for error in result["errors"]}
+
+
 def test_release_gate_breaking_change_still_requires_docs_sync(tmp_path: Path) -> None:
     gate = _load_release_gate()
 

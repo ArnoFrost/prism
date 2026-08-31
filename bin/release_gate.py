@@ -21,6 +21,7 @@ from pathlib import Path
 
 BREAKING_HEADER_RE = re.compile(r"^[a-z]+(?:\([^)]+\))?!:")
 CANARY_RELEASE_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)-canary\.(\d+)$")
+RELEASE_TAG_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)(?:-canary\.(\d+))?$")
 REQUIRED_DOCS = ("CHANGELOG.md", "docs/migration.md")
 
 
@@ -120,7 +121,12 @@ def package_version_for_release(release: str) -> str:
     return release.removeprefix("v")
 
 
-def analyze_version_metadata(repo: Path) -> dict:
+def release_name_for_tag(tag: str) -> str | None:
+    """把合法 Git release tag 映射成 VERSION 使用的无 ``v`` 发行名。"""
+    return tag[1:] if RELEASE_TAG_RE.fullmatch(tag) else None
+
+
+def analyze_version_metadata(repo: Path, expected_tag: str = "") -> dict:
     errors = []
     release = _read_text(repo, "VERSION").strip()
     expected_package_version = package_version_for_release(release)
@@ -138,6 +144,7 @@ def analyze_version_metadata(repo: Path) -> dict:
         "uv_lock": prism_package["version"],
         "changelog_entries": changelog.count(f"## [{release}]"),
         "readme_current_release": f"**当前发行**：{release}" in readme,
+        "expected_tag": expected_tag or None,
     }
 
     if project["version"] != expected_package_version:
@@ -167,6 +174,22 @@ def analyze_version_metadata(repo: Path) -> dict:
             "message": f"README.md 应包含 **当前发行**：{release}",
         })
 
+    if expected_tag:
+        expected_release = release_name_for_tag(expected_tag)
+        if expected_release is None:
+            errors.append({
+                "rule": "release-tag-grammar",
+                "message": f"{expected_tag} 不是合法 stable/canary release tag",
+            })
+        elif release != expected_release:
+            errors.append({
+                "rule": "release-tag-version-sync",
+                "message": (
+                    f"目标 tag {expected_tag} 要求 VERSION={expected_release}，"
+                    f"当前为 {release}"
+                ),
+            })
+
     if release == "4.0-canary":
         if "stage-4.0--canary" not in readme:
             errors.append({
@@ -195,8 +218,8 @@ def analyze_version_metadata(repo: Path) -> dict:
     }
 
 
-def scan(repo: Path, base: str, head: str) -> dict:
-    version = analyze_version_metadata(repo)
+def scan(repo: Path, base: str, head: str, expected_tag: str = "") -> dict:
+    version = analyze_version_metadata(repo, expected_tag)
     diff_result: dict
     if not base or not head:
         diff_result = {
@@ -228,12 +251,13 @@ def main() -> None:
     parser.add_argument("--repo", default=".", help="Git repository path")
     parser.add_argument("--base", default=os.environ.get("PRISM_RELEASE_GATE_BASE", ""))
     parser.add_argument("--head", default=os.environ.get("PRISM_RELEASE_GATE_HEAD", ""))
+    parser.add_argument("--expected-tag", default=os.environ.get("PRISM_RELEASE_TAG", ""))
     parser.add_argument("--json", action="store_true", help="Print JSON result")
     args = parser.parse_args()
 
     repo = Path(args.repo).resolve()
     try:
-        result = scan(repo, args.base, args.head)
+        result = scan(repo, args.base, args.head, args.expected_tag)
     except RuntimeError as exc:
         result = {"ok": False, "errors": [{"rule": "git-error", "message": str(exc)}]}
 

@@ -7,7 +7,7 @@ detached release tag 上，updater 只认当前通道里更新的不可变 tag�
 
 分支 checkout 属于贡献者的 source line，产品更新默认不接管：把工作副本
 从分支移到 tag 是一次不可逆的方向变化，只有显式 ``--bootstrap-to`` 才做。
-外部 prism-skills 是独立仓库，也只有显式 ``--skills`` 才会一并拉取。
+外部 prism-skills 是独立仓库，由 ``prism-maintain`` 管理，不进入产品更新事务。
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
-import os
 import re
 import subprocess
 import sys
@@ -107,7 +106,7 @@ def _blocked(reason: str, **extra) -> dict:
 def _resolve_channel(
     resolver, config: Path, args: argparse.Namespace
 ) -> tuple[str | None, int | None, bool]:
-    """返回 (channel, series, 是否刚写入过配置)。"""
+    """返回 (channel, series, 成功后是否需要持久化配置)。"""
     stored_channel, stored_series = resolver.read_channel(config)
 
     if args.check or args.dry_run:
@@ -116,7 +115,6 @@ def _resolve_channel(
 
     if args.channel:
         series = args.series or stored_series or _infer_series(Path(args.repo)) or 4
-        resolver.write_channel(config, args.channel, series)
         return args.channel, series, True
 
     return stored_channel, stored_series, False
@@ -165,24 +163,37 @@ def _post_switch_checks(repo: Path) -> bool:
     return relink.returncode == 0
 
 
-def _rollback(repo: Path, previous_branch: str | None, previous_sha: str) -> None:
+def _rollback(repo: Path, previous_branch: str | None, previous_sha: str) -> bool:
     """回到切换前的 commit，并重跑旧版本的 relink 让软链接状态自洽。
 
     回滚用 SHA 而不是 tag 名：tag 理论上可以被移动，而这次切换前的 commit
     是唯一确定的事实。
     """
-    if previous_branch:
-        _git(repo, ["checkout", previous_branch], timeout=300)
-    else:
-        _git(repo, ["checkout", "--detach", previous_sha], timeout=300)
-    subprocess.run(
-        [str(repo / "bin" / "relink"), "--no-workspace"],
-        cwd=str(repo),
-        capture_output=True,
-        text=True,
-        timeout=300,
-        check=False,
-    )
+    try:
+        if previous_branch:
+            checkout = _git(repo, ["checkout", previous_branch], timeout=300)
+            if checkout.returncode == 0:
+                checkout = _git(repo, ["reset", "--hard", previous_sha], timeout=300)
+        else:
+            checkout = _git(repo, ["checkout", "--detach", previous_sha], timeout=300)
+        if checkout.returncode != 0:
+            return False
+        relink = subprocess.run(
+            [str(repo / "bin" / "relink"), "--no-workspace"],
+            cwd=str(repo),
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+        current = _git(repo, ["rev-parse", "HEAD"])
+        return (
+            relink.returncode == 0
+            and current.returncode == 0
+            and current.stdout.strip() == previous_sha
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
 
 
 def _track_branch(repo: Path, mode: str, args: argparse.Namespace) -> dict:
@@ -211,35 +222,69 @@ def _track_branch(repo: Path, mode: str, args: argparse.Namespace) -> dict:
         "release": False,
     }
 
-    if args.check:
-        behind = _git(repo, ["rev-list", "--count", "HEAD..@{upstream}"])
-        payload["behind"] = behind.stdout.strip() if behind.returncode == 0 else None
-        payload["action"] = "noop" if payload["behind"] == "0" else "update"
-        payload["detail"] = (
-            f"分支 {branch} 落后 upstream {payload['behind']} 个 commit"
-            if payload["action"] == "update"
-            else f"分支 {branch} 已与 upstream 对齐"
+    if not args.no_fetch:
+        fetch = _git(repo, ["fetch", "--quiet"], timeout=300)
+        if fetch.returncode != 0:
+            return _blocked("无法刷新当前分支的 upstream 状态", **payload)
+
+    ahead = _git(repo, ["rev-list", "--count", "@{upstream}..HEAD"])
+    behind = _git(repo, ["rev-list", "--count", "HEAD..@{upstream}"])
+    if ahead.returncode != 0 or behind.returncode != 0:
+        return _blocked("当前分支没有可用 upstream，不能安全跟进", **payload)
+    ahead_count = int(ahead.stdout.strip())
+    behind_count = int(behind.stdout.strip())
+    payload["ahead"] = ahead_count
+    payload["behind"] = behind_count
+
+    if ahead_count > 0 and behind_count > 0:
+        return _blocked(
+            "当前分支与 upstream 已分叉；交给 prism-maintain 判断方向，不自动 rebase",
+            **payload,
         )
+
+    if args.check:
+        payload["action"] = "update" if behind_count > 0 else "noop"
+        if behind_count > 0:
+            payload["detail"] = f"分支 {branch} 落后 upstream {behind_count} 个 commit"
+        elif ahead_count > 0:
+            payload["detail"] = f"分支 {branch} 本地领先 upstream {ahead_count} 个 commit；不会自动 push"
+        else:
+            payload["detail"] = f"分支 {branch} 已与 upstream 对齐"
         if _is_dirty(repo):
             payload["detail"] += "；工作树有未提交变更，实际跟进前需先 commit/stash"
         return payload
 
     if args.dry_run:
-        payload["detail"] = f"[dry-run] git pull --rebase（分支 {branch}）"
+        payload["detail"] = f"[dry-run] git pull --ff-only（分支 {branch}）"
         return payload
 
-    pull = _git(repo, ["pull", "--rebase"], timeout=300)
+    if behind_count == 0:
+        payload["action"] = "noop"
+        payload["detail"] = (
+            f"分支 {branch} 本地领先 upstream {ahead_count} 个 commit；未执行写入"
+            if ahead_count > 0
+            else f"分支 {branch} 已与 upstream 对齐"
+        )
+        return payload
+
+    previous_sha = _git(repo, ["rev-parse", "HEAD"]).stdout.strip()
+    pull = _git(repo, ["pull", "--ff-only"], timeout=300)
     if pull.returncode != 0:
-        payload["detail"] = "git pull --rebase 失败"
+        payload["detail"] = "git pull --ff-only 失败"
         return _blocked(
             "分支跟进失败；若存在冲突或分叉，交给 prism-maintain 的方向判断与冲突协助",
             **payload,
         )
 
-    if not _post_switch_checks(repo):
+    try:
+        checks_ok = _post_switch_checks(repo)
+    except (OSError, subprocess.SubprocessError):
+        checks_ok = False
+    if not checks_ok:
+        rolled_back = _rollback(repo, branch, previous_sha)
         payload["detail"] = "分支更新后体检未通过"
         return _blocked(
-            "跟进后体检未通过，先修复再用 --track-branch 继续；不要用分支跟进掩盖坏状态",
+            "跟进后体检未通过，已回滚" if rolled_back else "跟进后体检未通过且自动回滚失败，需人工恢复",
             **payload,
         )
 
@@ -269,7 +314,18 @@ def run_update(args: argparse.Namespace) -> dict:
     if mode == DETACHED:
         return _blocked("当前 HEAD 既不在分支也不在 tag 上，先切到一个 release tag 或分支")
 
-    channel, series, wrote_channel = _resolve_channel(resolver, config, args)
+    if mode == SOURCE and args.check:
+        return {
+            "ok": True,
+            "mode": SOURCE,
+            "branch": _current_branch(repo),
+            "action": "source",
+            "writes": 0,
+            "release": False,
+            "detail": "source checkout 由 Git 管理；需要机械跟进时显式使用 --track-branch",
+        }
+
+    channel, series, persist_channel = _resolve_channel(resolver, config, args)
     if channel is None:
         return _blocked(
             "尚未选择更新通道；先运行 prism update --channel canary|stable",
@@ -333,7 +389,7 @@ def run_update(args: argparse.Namespace) -> dict:
         "current_tag": current,
         "latest_tag": latest["tag"] if latest else None,
         "target_tag": target["tag"],
-        "writes": 1 if wrote_channel else 0,
+        "writes": 0,
     }
 
     if args.check:
@@ -343,6 +399,12 @@ def run_update(args: argparse.Namespace) -> dict:
         return payload
 
     if not bootstrap and current == target["tag"]:
+        if persist_channel:
+            try:
+                resolver.write_channel(config, channel, series)
+            except OSError as error:
+                return _blocked(f"版本未变化，但通道配置写入失败：{error}", **payload)
+            payload["writes"] = 1
         payload["action"] = "noop"
         payload["detail"] = f"已是通道 {channel} 的最新版本 {target['tag']}"
         return payload
@@ -358,35 +420,39 @@ def run_update(args: argparse.Namespace) -> dict:
     if not _switch_to_tag(repo, target["tag"]):
         return _blocked(f"切换到 {target['tag']} 失败", **payload)
 
-    if not _post_switch_checks(repo):
-        _rollback(repo, previous_branch, previous_sha)
+    try:
+        checks_ok = _post_switch_checks(repo)
+    except (OSError, subprocess.SubprocessError):
+        checks_ok = False
+    if not checks_ok:
+        rolled_back = _rollback(repo, previous_branch, previous_sha)
         return _blocked(
-            f"切换到 {target['tag']} 后体检未通过，已回滚到 {previous_sha[:12]}",
+            (
+                f"切换到 {target['tag']} 后体检未通过，已回滚到 {previous_sha[:12]}"
+                if rolled_back
+                else f"切换到 {target['tag']} 后体检未通过，自动回滚失败，需人工恢复 {previous_sha[:12]}"
+            ),
             **payload,
         )
 
-    if args.skills:
-        skills_path = _read_skills_path(config)
-        if skills_path and os.path.isdir(skills_path):
-            pull = _git(Path(skills_path), ["pull", "--rebase"], timeout=300)
-            if pull.returncode != 0:
-                payload["skills"] = "pull 失败；外部 Skills 是独立仓库，不阻断 SDK 更新"
+    if persist_channel:
+        try:
+            resolver.write_channel(config, channel, series)
+        except OSError as error:
+            rolled_back = _rollback(repo, previous_branch, previous_sha)
+            return _blocked(
+                (
+                    f"通道配置写入失败，已回滚到 {previous_sha[:12]}：{error}"
+                    if rolled_back
+                    else f"通道配置写入失败且自动回滚失败，需人工恢复 {previous_sha[:12]}：{error}"
+                ),
+                **payload,
+            )
+        payload["writes"] += 1
 
     payload["detail"] = f"已切换到 {target['tag']}"
-    payload["writes"] = payload.get("writes", 0) + 1
+    payload["writes"] += 1
     return payload
-
-
-def _read_skills_path(config: Path) -> str | None:
-    try:
-        lines = config.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return None
-    for line in lines:
-        if line.startswith("skills_path:"):
-            value = line.split(":", 1)[1].strip().strip("'\"")
-            return os.path.expanduser(value) or None
-    return None
 
 
 def _render(payload: dict) -> None:
@@ -426,7 +492,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--track-branch", action="store_true",
                         help="分支 checkout 专用：跟随当前 upstream 做 commit 级跟进，不是发行版本")
     parser.add_argument("--check", action="store_true", help="只报告当前 / 通道 / 最新 / 动作，零写入")
-    parser.add_argument("--skills", action="store_true", help="同时 pull 外部 prism-skills")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-fetch", action="store_true", help="跳过 fetch，只用本地已有 tag")
     parser.add_argument("--json", action="store_true")

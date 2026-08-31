@@ -421,7 +421,7 @@ def test_prism_update_check_is_read_only():
 
     payload = json.loads(result.stdout)
     assert payload["writes"] == 0
-    assert payload["action"] in {"noop", "update", "blocked"}
+    assert payload["action"] in {"noop", "update", "blocked", "source"}
     assert head() == head_before
     if config_before is not None:
         assert LOCAL_CONFIG.read_text(encoding="utf-8") == config_before

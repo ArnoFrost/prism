@@ -66,7 +66,7 @@ def _upstream_synced(repo: Path) -> dict:
     ahead = _git(repo, ["rev-list", "--count", "@{upstream}..HEAD"])
     behind = _git(repo, ["rev-list", "--count", "HEAD..@{upstream}"])
     if ahead.returncode != 0 or behind.returncode != 0:
-        return _step("upstream-synced", WARN, "当前分支没有 upstream，跳过同步校验")
+        return _step("upstream-synced", FAIL, "当前分支没有 upstream，无法证明发布点已同步")
     if ahead.stdout.strip() != "0":
         return _step("upstream-synced", FAIL, f"本地领先 upstream {ahead.stdout.strip()} 个 commit")
     if behind.stdout.strip() != "0":
@@ -78,7 +78,18 @@ def _tag_absent(repo: Path, tag: str) -> dict:
     local = _git(repo, ["tag", "--list", tag])
     if local.returncode == 0 and tag in local.stdout.split():
         return _step("tag-absent", FAIL, f"tag {tag} 已存在；已发布的 tag 不可重写")
-    return _step("tag-absent", OK, f"tag {tag} 未占用")
+    branch = _git(repo, ["symbolic-ref", "-q", "--short", "HEAD"])
+    branch_name = branch.stdout.strip() if branch.returncode == 0 else ""
+    remote = _git(repo, ["config", "--get", f"branch.{branch_name}.remote"])
+    remote_name = remote.stdout.strip() if remote.returncode == 0 else ""
+    if not remote_name:
+        return _step("tag-absent", FAIL, "无法定位 upstream remote，不能确认远端 tag 是否未占用")
+    remote_tag = _git(repo, ["ls-remote", "--tags", remote_name, f"refs/tags/{tag}"])
+    if remote_tag.returncode != 0:
+        return _step("tag-absent", FAIL, remote_tag.stderr.strip() or "读取远端 tag 失败")
+    if remote_tag.stdout.strip():
+        return _step("tag-absent", FAIL, f"远端 tag {tag} 已存在；不可重写")
+    return _step("tag-absent", OK, f"本地与远端 tag {tag} 均未占用")
 
 
 def _branch_matches(repo: Path, expected: str) -> dict:
@@ -116,33 +127,28 @@ def _tag_grammar(tag: str) -> dict:
 
 def _version_metadata(repo: Path, tag: str) -> dict:
     gate = _load_module("release_gate", "release_gate.py")
-    result = gate.scan(repo, "", "")
+    result = gate.scan(repo, "", "", expected_tag=tag)
     metadata = result.get("version_metadata", {})
     if not metadata.get("ok"):
         errors = "; ".join(item.get("message", "") for item in result.get("errors", []))
         return _step("version-metadata", FAIL, errors or "版本元数据不一致")
 
-    resolver = _load_module("tag_resolve", "tag_resolve.py")
-    parsed = resolver.parse_tag(tag) or {}
     release = (metadata.get("release") or "").strip()
-    expected = f"{parsed.get('major')}.{parsed.get('minor')}.{parsed.get('patch')}"
-    if parsed.get("channel") == "canary":
-        expected = f"{expected}-canary.{parsed.get('prerelease')}"
-
-    if release == expected:
-        return _step("version-metadata", OK, f"VERSION {release} 与 tag 一致")
-    # 过渡态：VERSION 还是无序号的 canary 代号，提升动作属于发行前的准备，
-    # 在这里报告而不是放行，避免以为元数据已经对齐。
-    return _step(
-        "version-metadata",
-        WARN,
-        f"元数据自洽，但 VERSION 仍是 {release}，发行前需提升为 {expected}",
-    )
+    return _step("version-metadata", OK, f"VERSION {release} 与 tag 一致")
 
 
 def _release_gate(repo: Path, base: str, head: str) -> dict:
+    if not base or not head:
+        return _step(
+            "release-gate",
+            FAIL,
+            "release check 必须显式提供 --base 与 --head，不能跳过 diff evidence",
+        )
     gate = _load_module("release_gate", "release_gate.py")
-    result = gate.scan(repo, base, head)
+    try:
+        result = gate.scan(repo, base, head)
+    except RuntimeError as error:
+        return _step("release-gate", FAIL, str(error))
     if result.get("ok"):
         return _step("release-gate", OK, "release gate 通过")
     errors = "; ".join(item.get("message", "") for item in result.get("errors", []))
@@ -259,10 +265,28 @@ def cmd_push(args: argparse.Namespace) -> int:
         print(f"本机不存在 tag {args.tag}，先运行 bin/release tag。", file=sys.stderr)
         return 1
 
-    command = ["git", "push", args.remote, args.tag]
+    resolver = _load_module("tag_resolve", "tag_resolve.py")
+    parsed = resolver.parse_tag(args.tag)
+    if parsed is None:
+        print(f"{args.tag} 不是合法 release tag，拒绝推送。", file=sys.stderr)
+        return 1
+    object_type = _git(repo, ["cat-file", "-t", args.tag])
+    if object_type.returncode != 0 or object_type.stdout.strip() != "tag":
+        print(f"{args.tag} 不是 annotated tag，拒绝推送。", file=sys.stderr)
+        return 1
+    version = _git(repo, ["show", f"{args.tag}^{{commit}}:VERSION"])
+    expected_release = args.tag.removeprefix("v")
+    if version.returncode != 0 or version.stdout.strip() != expected_release:
+        print(
+            f"{args.tag} 指向的 VERSION 不是 {expected_release}，拒绝推送。",
+            file=sys.stderr,
+        )
+        return 1
+
+    command = ["push", args.remote, args.tag]
     if not args.confirm:
         # 唯一会产生外部写入的动作，默认只展示，避免把它当成顺手的收尾步骤。
-        print("[dry-run] " + " ".join(command))
+        print("[dry-run] git " + " ".join(command))
         print("确认后追加 --confirm 才会真正推送。")
         return 0
 

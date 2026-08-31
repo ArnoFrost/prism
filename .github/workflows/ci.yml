@@ -20,6 +20,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, mini, prism-4, "release/**"]
+    tags: ["v*"]
   pull_request:
     branches: [main, mini, prism-4]
 
@@ -81,6 +82,7 @@ jobs:
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
         # 显式 shell: bash 启用 pipefail（GHA 默认 `bash -e {0}` 不带 pipefail），
         # 否则 `release_gate.py … | tee` 中上游脚本非零退出会被 `tee` 吞成功，
         # 导致 breaking 提交可在无文档同步的情况下静默合入。
@@ -90,6 +92,7 @@ jobs:
             --repo . \
             --base "$PR_BASE_SHA" \
             --head "$PR_HEAD_SHA" \
+            --expected-tag "$PR_RELEASE_TAG" \
             --json | tee release-gate.json
 
       - name: Validate skills

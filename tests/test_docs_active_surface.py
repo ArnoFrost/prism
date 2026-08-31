@@ -94,6 +94,23 @@ def test_active_docs_advertise_prism4_default_surface() -> None:
         assert "旧 wrappers" not in surface
 
 
+def test_release_and_update_docs_preserve_product_ownership() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    onboarding = (ROOT / "docs" / "onboarding.md").read_text(encoding="utf-8")
+    release_process = (ROOT / "docs" / "release-process.md").read_text(encoding="utf-8")
+    update = (ROOT / "bin" / "update").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    assert "git switch prism-4" in readme
+    assert "prism update --skills" not in onboarding
+    assert 'add_argument("--skills"' not in update
+    assert "外部 `prism-skills` 不属于产品更新事务" in onboarding
+    assert "--channel canary --series 4 --bootstrap-to" in onboarding
+    assert "--base \"$BASE\" --head HEAD" in release_process
+    assert "--tag \"$TAG\" --confirm" in release_process
+    assert 'tags: ["v*"]' in workflow
+
+
 def test_active_public_surface_does_not_expose_rollout_phase_labels() -> None:
     surfaces = [
         ROOT / "README.md",

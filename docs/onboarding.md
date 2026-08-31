@@ -16,7 +16,7 @@
 | `./setup.sh check` | `bin/setup --check` | 健康检查（不修改） |
 | `./setup.sh relink` | `bin/relink` | 刷新项目/Skills 软链 |
 | `./setup.sh doctor` | `bin/doctor` | 深度体检（参数透传） |
-| `./setup.sh update` | `prism update` | pull → doctor ci → relink --no-workspace |
+| `./setup.sh update` | `prism update` | managed：解析 channel Tag → doctor ci → relink --no-workspace |
 
 ```bash
 # 首次（示例）
@@ -38,7 +38,7 @@ setup.sh init → prism --version 验收 → relink / 桥接
 | **验收** | `prism --version` · `./setup.sh check` | init 闭环 |
 | **桥接** | `prism relink` · `./setup.sh relink` | 本地 Workspace backend + 可选 IDE 分发 |
 | **topic** | `prism topic list` · `/prism` | 4.0 协作边界与当前状态入口 |
-| **升级** | `prism update` · `./setup.sh update` | pull + CI doctor + code-only relink |
+| **升级** | `prism update` · `./setup.sh update` | managed Tag 更新 + CI doctor + code-only relink |
 | **诊断** | `prism doctor --scope config\|release\|ci` | 分 scope；`--json` 为 flat passthrough |
 | **桥接修复** | `prism relink` | 软链漂移时 |
 
@@ -143,23 +143,24 @@ prism update --check                 # 只看不动：当前 / 通道 / 最新 /
 prism update                         # 切到本通道内更新的不可变 tag
 prism update --to v4.0.0-canary.1    # 精确安装或回滚
 prism update --channel stable        # 显式切换通道
-prism update --skills                # 同时拉外部 prism-skills
 ```
 
 - 只认当前通道内的不可变 tag；没有新 tag 就是 no-op，零写入。
 - 分支上的普通 commit 不是发行事件，不会把你带过去。
 - canary 与 stable 不自动互串，切通道是显式动作。
 - 切换后体检或重链失败会自动回滚到切换前的 commit。
+- 外部 `prism-skills` 不属于产品更新事务；它由 `prism-maintain` 独立检查、同步、重链和验证。
 
 #### 维护者 / 贡献者：source checkout（在分支上）
 
 ```bash
-prism update --track-branch                  # commit 级跟进：pull --rebase + 体检 + 重链
-prism update --bootstrap-to v4.0.0-canary.1  # 从分支迁移到 managed 安装
+prism update --track-branch  # 仅 clean behind 时 fast-forward；diverged 交给 prism-maintain
+prism update --channel canary --series 4 --bootstrap-to v4.0.0-canary.1
+                              # 从无 channel 的分支迁移到 managed 安装
 ```
 
 - `--track-branch` 跟的是 commit，不是发行版本。它从不自动执行，必须显式给出——这正是为了不让「拉分支」和「装版本」混成一个动作。
-- 工作树脏、与上游分叉或有冲突时它会停下，交给 `prism-maintain` 判断方向与解决冲突。
+- 工作树脏、ahead+behind 分叉、缺 upstream 或有冲突时它会停下，交给 `prism-maintain` 判断方向与解决冲突。
 - 想在分支上继续开发就留在分支；要验证使用者那条路，另开一个 detached checkout。
 
 两条路径之后的验证是一样的：
