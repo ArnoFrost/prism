@@ -7,7 +7,7 @@
 `VERSION` 是人类可读发行名的入口。当前 canary 使用：
 
 ```text
-4.0.0-canary.1
+4.0.0-canary.2
 ```
 
 Python package metadata 必须使用 PEP 440 兼容版本：
@@ -17,7 +17,7 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 | `X.Y.Z-canary.N` | `X.Y.Z.devN` |
 | `X.Y.Z` | `X.Y.Z` |
 
-`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前首枚 Canary 的三项映射为 `VERSION=4.0.0-canary.1`、Tag `v4.0.0-canary.1`、package version `4.0.0.dev1`。
+`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前 Canary 的三项映射为 `VERSION=4.0.0-canary.2`、Tag `v4.0.0-canary.2`、package version `4.0.0.dev2`。
 
 ## Tag 发行与更新合同
 
@@ -69,7 +69,7 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 | `bin/release`（check / tag / push 机械面） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |
 | Release Tag push 后触发 CI 并校验 Tag / VERSION | 已实现 |
-| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.1` / `4.0.0.dev1` |
+| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.2` / `4.0.0.dev2` |
 
 ## 版本提升 Checklist
 
@@ -90,11 +90,11 @@ uv run pytest
 
 ## 发行 Runbook
 
-下面以首枚 Canary 为例；`BASE` 必须是维护者确认过的上一发行 Tag 或基线 SHA，不能留空，也不要用 `HEAD` 伪造空 diff：
+下面以当前 Canary 为例；`BASE` 必须是维护者确认过的上一发行 Tag 或基线 SHA，不能留空，也不要用 `HEAD` 伪造空 diff：
 
 ```bash
-TAG=v4.0.0-canary.1
-BASE=legacy-3x-final  # 首枚 4.0 Canary 的已审基线；后续换成上一枚同系列发行 Tag
+TAG=v4.0.0-canary.2
+BASE=v4.0.0-canary.1
 
 bin/release check --tag "$TAG" --expect-branch prism-4 --base "$BASE" --head HEAD
 bin/release tag   --tag "$TAG" --expect-branch prism-4 --base "$BASE" --head HEAD

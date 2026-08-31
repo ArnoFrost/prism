@@ -141,7 +141,7 @@ prism update --check --json     # 看 mode：managed 还是 source
 ```bash
 prism update --check                 # 只看不动：当前 / 通道 / 最新 / 动作
 prism update                         # 切到本通道内更新的不可变 tag
-prism update --to v4.0.0-canary.1    # 精确安装或回滚
+prism update --to v4.0.0-canary.2    # 精确安装或回滚
 prism update --channel stable        # 显式切换通道
 ```
 
@@ -155,7 +155,7 @@ prism update --channel stable        # 显式切换通道
 
 ```bash
 prism update --track-branch  # 仅 clean behind 时 fast-forward；diverged 交给 prism-maintain
-prism update --channel canary --series 4 --bootstrap-to v4.0.0-canary.1
+prism update --channel canary --series 4 --bootstrap-to v4.0.0-canary.2
                               # 从无 channel 的分支迁移到 managed 安装
 ```
 
