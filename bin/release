@@ -81,6 +81,23 @@ def _tag_absent(repo: Path, tag: str) -> dict:
     return _step("tag-absent", OK, f"tag {tag} 未占用")
 
 
+def _branch_matches(repo: Path, expected: str) -> dict:
+    """校验 tag 打在预期的分支上。
+
+    两条发布线长期并存：实验线出 canary tag，稳定线出 stable tag。tag 名
+    本身已经能区分 channel，但「在稳定线上顺手打出 canary.2」不会体现在
+    tag 名里，只能靠发行时的分支校验兜住。不给 --expect-branch 就不校验，
+    下一轮实验想换分支发版时不必修改实现。
+    """
+    result = _git(repo, ["symbolic-ref", "-q", "--short", "HEAD"])
+    current = result.stdout.strip() if result.returncode == 0 else ""
+    if not current:
+        return _step("branch-matches", FAIL, f"HEAD 不在分支上，无法校验是否为 {expected}")
+    if current != expected:
+        return _step("branch-matches", FAIL, f"当前分支是 {current}，期望 {expected}")
+    return _step("branch-matches", OK, f"当前分支 {current} 与期望一致")
+
+
 def _tag_grammar(tag: str) -> dict:
     resolver = _load_module("tag_resolve", "tag_resolve.py")
     parsed = resolver.parse_tag(tag)
@@ -169,15 +186,22 @@ def run_check(
     base: str = "",
     head: str = "",
     skip_tests: bool = False,
+    expect_branch: str | None = None,
 ) -> dict:
-    steps = [
-        _worktree_clean(repo),
-        _upstream_synced(repo),
-        _tag_absent(repo, tag),
-        _tag_grammar(tag),
-        _version_metadata(repo, tag),
-        _release_gate(repo, base, head),
-    ]
+    steps = []
+    if expect_branch:
+        # 分支不对时后面几项检查没有意义，因此排在最前面。
+        steps.append(_branch_matches(repo, expect_branch))
+    steps.extend(
+        [
+            _worktree_clean(repo),
+            _upstream_synced(repo),
+            _tag_absent(repo, tag),
+            _tag_grammar(tag),
+            _version_metadata(repo, tag),
+            _release_gate(repo, base, head),
+        ]
+    )
     if not skip_tests:
         steps.extend(_test_surface(repo))
     return {
@@ -189,7 +213,9 @@ def run_check(
 
 def cmd_check(args: argparse.Namespace) -> int:
     repo = Path(args.repo).resolve()
-    result = run_check(repo, args.tag, args.base, args.head, args.skip_tests)
+    result = run_check(
+        repo, args.tag, args.base, args.head, args.skip_tests, args.expect_branch
+    )
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
     else:
@@ -205,7 +231,9 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_tag(args: argparse.Namespace) -> int:
     repo = Path(args.repo).resolve()
-    result = run_check(repo, args.tag, args.base, args.head, args.skip_tests)
+    result = run_check(
+        repo, args.tag, args.base, args.head, args.skip_tests, args.expect_branch
+    )
     if not result["ok"]:
         print("check 未通过，拒绝创建 tag；先修复上面的阻断项。", file=sys.stderr)
         if args.json:
@@ -256,6 +284,7 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--base", default="", help="release gate diff 起点")
     check.add_argument("--head", default="", help="release gate diff 终点")
     check.add_argument("--skip-tests", action="store_true", help="跳过 pytest / relink / skill / setup 面")
+    check.add_argument("--expect-branch", default=None, help="校验当前分支名，防止在错误的发布线上打 tag")
     check.add_argument("--json", action="store_true")
     check.set_defaults(func=cmd_check)
 
@@ -265,6 +294,7 @@ def main(argv: list[str] | None = None) -> int:
     tag.add_argument("--head", default="")
     tag.add_argument("--skip-tests", action="store_true")
     tag.add_argument("--message", default=None, help="annotated tag 说明")
+    tag.add_argument("--expect-branch", default=None, help="校验当前分支名，防止在错误的发布线上打 tag")
     tag.add_argument("--dry-run", action="store_true")
     tag.add_argument("--json", action="store_true")
     tag.set_defaults(func=cmd_tag)
