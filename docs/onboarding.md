@@ -141,7 +141,7 @@ prism relink --no-workspace
 prism --version
 ```
 
-> 上面的 commit-pull 是当前过渡行为：它跟随分支上的最新 commit。以不可变 Git tag 为发行单位、按 channel 过滤更新的产品级 updater 属于目标合同，尚未实现，见 [release-process.md](./release-process.md)。
+> 上面的手工展开只适用于**分支 checkout**——贡献者用 Git 管理自己的 source line。产品安装固定在不可变 release tag 上：`prism update --check` 查看当前通道有没有新版本，`prism update` 才切换，且只切到本通道内更新的 tag。分支 checkout 会被明确拒绝，除非用 `--bootstrap-to` 迁移。详见 [release-process.md](./release-process.md)。
 
 > `prism update` 遇 dirty working tree 会 abort。它只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
 

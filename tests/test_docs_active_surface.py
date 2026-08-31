@@ -739,18 +739,23 @@ def test_current_surfaces_do_not_teach_hardcoded_branch_pull() -> None:
         assert "git pull origin main" not in text, f"硬编码 branch pull 回到 {name}"
 
 
-def test_release_tag_contract_is_frozen_and_marked_as_target() -> None:
-    """Tag 发行合同既要被冻结，又要明确标注为尚未实现的目标合同。"""
+def test_release_tag_contract_stays_explicit_about_what_is_not_shipped() -> None:
+    """Tag 合同既要冻结规则，也要写明哪一项还没落地。
+
+    两个方向都会误导：整章标着「目标合同」却已经实现，读者会以为什么都
+    不能碰；实现落地后只删限定词不更新内容，读者又会以为什么都已完成。
+    """
     release = (ROOT / "docs" / "release-process.md").read_text(encoding="utf-8")
-    section = release.partition("## Tag 发行与更新合同（目标）")[2].partition("## 版本提升 Checklist")[0]
+    section = release.partition("## Tag 发行与更新合同")[2].partition("## 版本提升 Checklist")[0]
 
     assert section.strip()
-    assert "目标合同" in section
     assert "vMAJOR.MINOR.PATCH-canary.N" in section
     assert "不可重写" in section
     assert "不追 branch commit" in section
     assert "不自动跨 channel" in section
+    assert "已实现" in section
+    # 版本元数据提升是发行前的准备动作，不得被写成已经完成。
+    assert "未开始" in section
 
-    for name in ("README.md", "docs/onboarding.md"):
-        text = (ROOT / name).read_text(encoding="utf-8")
-        assert "update --channel" not in text, f"未实现的 channel updater 泄漏进 {name}"
+    onboarding = (ROOT / "docs" / "onboarding.md").read_text(encoding="utf-8")
+    assert "尚未实现" not in onboarding

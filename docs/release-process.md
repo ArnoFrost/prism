@@ -20,9 +20,9 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 
 `4.0-canary` 是当前过渡态：它是无序号的 canary 代号，不是 tag grammar。切到 tag 发行后 canary 版本名一律采用 `vMAJOR.MINOR.PATCH-canary.N`，见下节。
 
-## Tag 发行与更新合同（目标）
+## Tag 发行与更新合同
 
-> 本节是**目标合同 / 拟定接口**，不是当前可用命令。它冻结的是待实现的发行语义；`prism update` 当前仍执行 `git pull --rebase`（见 [onboarding](./onboarding.md)）。本节出现的命令在实现落地前均不存在。
+> 本节描述当前已实现的发行语义：两类 tag grammar、按通道过滤的 `prism update`、以及 `bin/release` 的 check / tag / push 机械面都已落地。唯一还没做的是把版本元数据切到 `canary.N` 形态，它属于首枚 canary 发行前的准备动作，见本节末尾的差距表。
 
 ### 两类不可变发布
 
@@ -44,14 +44,14 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 - canary 与 stable **不自动跨 channel**：stable tag 出现不会把 canary 用户转走；channel 切换是显式用户动作。
 - SDK 内置三入口（`prism` / `prism-review` / `prism-plan`）跟随 SDK tag 发布；外部 `prism-skills` 是开发者 / 个人扩展，不伪装成同一 product release，也不纳入产品 updater 的 commit pull。
 
-### 与当前实现的差距
+### 与发行就绪的差距
 
-| 目标能力 | 当前状态 |
-|----------|----------|
-| `prism update --check` / `--channel` / `--to` | 未实现；当前是 `git pull --rebase` |
-| `bin/release`（check / tag / push 机械面） | 未创建 |
-| `update_channel` / `update_series` 安装记录 | 未实现 |
-| 版本元数据切到 `canary.N` 形态 | 未开始；当前为 `4.0-canary` / `4.0.0.dev0` |
+| 能力 | 当前状态 |
+|------|----------|
+| `prism update --check` / `--channel` / `--to` | 已实现 |
+| `bin/release`（check / tag / push 机械面） | 已实现 |
+| `update_channel` / `update_series` 安装记录 | 已实现 |
+| 版本元数据切到 `canary.N` 形态 | 未开始；当前为 `4.0-canary` / `4.0.0.dev0`，随首枚 canary tag 一起提升 |
 
 ## 版本提升 Checklist
 

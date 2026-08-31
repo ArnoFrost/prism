@@ -134,7 +134,7 @@ bin/clean --restore <name> # 从 archived_skills 移除并重新 relink
 
 ```bash
 bin/doctor                        # 完整体检（env / skill / cli / config / ci_health）
-bin/doctor --quick                # 快速模式，跳过远程 sniff
+bin/doctor --quick                # 兼容旧调用保留；当前不跳过任何阶段
 bin/doctor --fix                  # 非破坏性自动修复
 bin/doctor --rollback             # 回滚 --fix 对 CLI 寻址层的修改（rc anchor + symlink）
 bin/doctor --json                 # JSON 输出供其他 skill 消费

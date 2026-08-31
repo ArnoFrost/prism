@@ -5,13 +5,18 @@
 - **两层公开叙事** — Protocol Core 只回答稳定语义，Reference Experience 负责让语义在本机跑起来；旧的分层总表降级为分发 / 所有权视图，不再与 Core 抢解释权。
 - **三入口与机械 CLI 分层** — `/prism`、`/prism-review`、`/prism-plan` 承担认知入口，CLI 只保留机械事实、投影、校验与 guarded commitment；通用 mutation 面退出活树。
 - **Conversation Choice Capture** — 人类的明确选择成为 target-bound evidence；Plan acceptance 与 Decision commitment 复用同一 authority guard，authority 模型不再只有拒绝路径。
-- **Tag 发行与更新合同（目标）** — `docs/release-process.md` 冻结 canary / stable 两类不可变 tag 的 grammar、channel 过滤规则与 source / managed install 边界。这是待实现合同，当前更新仍是 commit pull。
+- **Tag 发行与更新合同** — `docs/release-process.md` 冻结 canary / stable 两类不可变 tag 的 grammar、channel 过滤规则与 source / managed install 边界。
+- **Tag-aware 产品更新** — `prism update` 不再追分支 commit：managed install 固定在 detached release tag 上，只切到本通道内更新的不可变 tag；`--check` 零写入、`--to` 精确切换、`--channel` 显式持久化通道、`--bootstrap-to` 把分支 checkout 迁进 managed 安装。分支 checkout、dirty worktree、跨通道 tag 一律 fail-closed，切换后体检失败回滚到切换前的 commit。
+- **发行机械面 `bin/release`** — check / tag / push 三步分开：check 无副作用、tag 只在本机创建 annotated tag、push 必须显式 `--confirm` 才会真正推送。
+- **更新通道配置** — `prism.local.yaml` 新增 `update_channel` / `update_series`；通道必须由安装显式选择，不从当前 Git 分支推断。
 
 ### Fixed
 
 - **current config 控制面** — 修复 `bin/setenv --init / --example` dispatch 存在但实现缺失导致的 exit 127；setenv、setup、doctor、relink 与 Host 统一消费 `bin/workspace_resolve.py`，避免同一配置被多套 parser 得出不同结论。
 - **CLI 健壮性校准（workspace 加载链路）** — load 阶段由「遇错即停」改为聚合报错：一次列出全部不合规文档（每条带文件路径、原因、合法取值），不再「修一个暴露一个」；工件/澄清/主题的校验异常统一补上文件路径定位。`topic new` 查重与 `topic list` 改用仅主题结构的惰性加载（`load_topics`），无关 store 里的坏工件不再阻断新建 Topic 与列 Topic；写入路径仍做全量校验（prune 语义要求）。
 - **frontmatter 解析容错** — 支持手写 YAML 单引号值与块列表（键后跟 `- 条目`），此前这两种合法写法会让整个 store 加载失败。
+- **doctor 未知 scope 不再假绿** — `--scope` 取值不在白名单（env / skill / cli / config / release / ci）时直接报错退出。此前任意未知值会让所有阶段被跳过、计数器停在 0，最后照样输出「完全健康」并 exit 0；已退役的 `link` / `sync` 与拼写错误都属于这一类。
+- **macOS 下维护脚本 `--help`** — `bin/create-skill` 与 `bin/validate-skills` 改用可移植的 awk 提取头部注释。此前 `sed -n '2,/^$/{ ...; p }'` 在 BSD/macOS 下报 `extra characters at the end of p command`，自说明入口在当前明确支持的平台上不可用。
 
 ### Removed
 
