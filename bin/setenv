@@ -238,6 +238,11 @@ workspaces:
     workspace_root: ${HOME}/.local/share/prism
     workspace_subdir: Workspace
 
+# 产品更新通道：由 prism update --channel canary|stable 显式写入，
+# 不从当前 Git 分支推断。未设置时 updater 拒绝更新。
+# update_channel: canary
+# update_series: 4
+
 projects:
 EOF
 }
@@ -246,6 +251,12 @@ write_config() {
   local sdk="$1" skills="$2" workspace_root="$3" ws_sub="$4" env_p="${5:-}" obs_p="${6:-}"
   local device_id
   device_id=$(hostname -s)
+  # 更新通道是安装级选择，重新生成配置时必须原样带回：--init 重写整个文件，
+  # 丢掉它会把用户已选的 channel 悄悄退回「未设置」，而 updater 对此是
+  # fail-closed 的，用户会看到更新突然不可用。
+  local channel series
+  channel=$(yaml_get update_channel)
+  series=$(yaml_get update_series)
   {
     echo "# Prism Local Configuration — current named-workspaces contract"
     echo "# 本地路径状态，不入版本控制；由 bin/setenv 初始化。"
@@ -255,6 +266,8 @@ write_config() {
     [[ -n "$skills" ]] && echo "skills_path: ${skills}"
     [[ -n "$env_p" ]] && echo "env_path: ${env_p}"
     [[ -n "$obs_p" ]] && echo "obs_vault: ${obs_p}"
+    [[ -n "$channel" ]] && echo "update_channel: ${channel}"
+    [[ -n "$series" ]] && echo "update_series: ${series}"
     echo
     echo "default_workspace: work"
     echo "workspaces:"

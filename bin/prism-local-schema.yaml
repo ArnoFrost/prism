@@ -36,6 +36,13 @@ optional:
     type: absolute_path
   archived_skills:
     type: list
+  update_channel:
+    type: enum
+    values: [canary, stable]
+    description: "产品更新通道；新安装必须显式选择，不由当前 Git 分支推断"
+  update_series:
+    type: string
+    description: "跟随的 major 系列（如 4）；与 update_channel 共同决定 updater 只认哪些 tag"
   projects:
     type: map
     value:

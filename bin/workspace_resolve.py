@@ -67,6 +67,8 @@ def parse_prism_local_yaml(yaml_path: str) -> dict | None:
         "workspace_subdir": None,
         "obs_vault": None,
         "default_workspace": None,
+        "update_channel": None,
+        "update_series": None,
         "workspaces": {},
         "projects": {},
     }
@@ -375,6 +377,8 @@ def resolve_prism_config(yaml_path: str) -> dict | None:
         "workspace_root": default.get("workspace_root"),
         "workspace_subdir": default.get("workspace_subdir"),
         "prism_workspace_root": default.get("prism_workspace_root"),
+        "update_channel": parsed.get("update_channel"),
+        "update_series": parsed.get("update_series"),
         "workspaces": workspaces,
         "projects": resolve_all_project_bindings(parsed, config_path),
     }
@@ -429,6 +433,8 @@ def main() -> None:
             ("WS_SUBDIR", resolved["workspace_subdir"]),
             ("WS_ROOT", resolved["prism_workspace_root"]),
             ("DEFAULT_WORKSPACE", resolved["default_workspace"]),
+            ("UPDATE_CHANNEL", resolved["update_channel"]),
+            ("UPDATE_SERIES", resolved["update_series"]),
         )
         for key, value in fields:
             if value is not None:
