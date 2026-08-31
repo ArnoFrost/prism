@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [4.0.0-canary.3] — 2026-08-31
+
+### Added
+- **正式 Release workflow** — 维护者显式 dispatch 后冻结 exact SHA，Ubuntu / macOS preflight 全绿才创建 immutable annotated Tag；只有 publish job 拥有 `contents: write`。
+- **发行证据与 surface repair** — 普通 release 自动使用同 channel / major 的上一枚 Tag，4.0 stable 首发登记 `legacy-3x-final`；`repair-release` 只修复既有 Tag 的 GitHub Release。
+
+### Changed
+- **Developer CI read-only** — 普通 push / PR 不再监听 `v*` Tag，新增稳定聚合 check `CI / required`，CI green 与 publication 明确分离。
+- **Default-branch bootstrap** — 最小 Release 入口经 PR #4 合入 `main`，使 `--ref prism-4` 的 Canary workflow 可被 GitHub 调度。
+
 ## [4.0.0-canary.2] — 2026-08-31
 
 ### Fixed

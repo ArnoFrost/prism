@@ -102,8 +102,8 @@ def test_release_and_update_docs_preserve_product_ownership() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
     assert "git switch prism-4" not in readme
-    assert "git switch --detach v4.0.0-canary.2" in readme
-    assert "prism update --channel canary --series 4 --to v4.0.0-canary.2 --no-fetch" in readme
+    assert "git switch --detach v4.0.0-canary.3" in readme
+    assert "prism update --channel canary --series 4 --to v4.0.0-canary.3 --no-fetch" in readme
     assert "prism update --skills" not in onboarding
     assert 'add_argument("--skills"' not in update
     assert "外部 `prism-skills` 不属于产品更新事务" in onboarding

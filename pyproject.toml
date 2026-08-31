@@ -1,6 +1,6 @@
 [project]
 name = "prism"
-version = "4.0.0.dev2"
+version = "4.0.0.dev3"
 description = "A local-first collaboration protocol for humans and AI agents."
 readme = "README.md"
 requires-python = ">=3.11"

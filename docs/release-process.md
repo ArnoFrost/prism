@@ -7,7 +7,7 @@
 `VERSION` 是人类可读发行名的入口。当前 canary 使用：
 
 ```text
-4.0.0-canary.2
+4.0.0-canary.3
 ```
 
 Python package metadata 必须使用 PEP 440 兼容版本：
@@ -17,7 +17,7 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 | `X.Y.Z-canary.N` | `X.Y.Z.devN` |
 | `X.Y.Z` | `X.Y.Z` |
 
-`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前 Canary 的三项映射为 `VERSION=4.0.0-canary.2`、Tag `v4.0.0-canary.2`、package version `4.0.0.dev2`。
+`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前 Canary 的三项映射为 `VERSION=4.0.0-canary.3`、Tag `v4.0.0-canary.3`、package version `4.0.0.dev3`。
 
 ## Tag 发行与更新合同
 
@@ -70,7 +70,7 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 | `.github/workflows/release.yml`（唯一正式 publication 入口） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |
 | Release workflow 在 Tag push 前校验 exact SHA / Tag / VERSION | 已实现 |
-| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.2` / `4.0.0.dev2` |
+| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.3` / `4.0.0.dev3` |
 
 ## 版本提升 Checklist
 
