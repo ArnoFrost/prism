@@ -389,23 +389,42 @@ def test_prism_doctor_delegates():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_prism_update_dry_run():
-    """prism update --dry-run 应打印步骤且不 mutating。"""
+def test_prism_update_check_is_read_only():
+    """prism update --check 只报告：不移动 HEAD，也不写本机配置。
+
+    产品更新已经从「拉分支上的 commit」改成「切到通道里的不可变 tag」，
+    因此这里不再断言具体步骤，只钉住 --check 的零写入不变量——它必须
+    在任何仓库状态下都成立，包括当前开发 checkout 处于分支上的情况。
+    """
     if not PRISM.exists():
         pytest.skip("bin/prism 不存在")
 
+    def head() -> str:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(SDK_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        ).stdout
+
+    head_before = head()
+    config_before = LOCAL_CONFIG.read_text(encoding="utf-8") if LOCAL_CONFIG.exists() else None
+
     result = subprocess.run(
-        [str(PRISM), "update", "--dry-run"],
+        [str(PRISM), "update", "--check", "--json"],
         cwd=str(SDK_ROOT),
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=60,
     )
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert "[dry-run]" in result.stdout
-    assert "git pull" in result.stdout
-    assert "doctor --scope ci --quick" in result.stdout
-    assert "relink --no-workspace" in result.stdout
+
+    payload = json.loads(result.stdout)
+    assert payload["writes"] == 0
+    assert payload["action"] in {"noop", "update", "blocked"}
+    assert head() == head_before
+    if config_before is not None:
+        assert LOCAL_CONFIG.read_text(encoding="utf-8") == config_before
 
 
 def test_relink_no_workspace_does_not_require_vault_config(tmp_path):

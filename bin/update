@@ -1,100 +1,365 @@
 #!/usr/bin/env python3
-"""prism update — 拉取 SDK（可选 Skills）并执行核心体检 + 代码层 relink。
+"""prism update — 按不可变 Git tag 更新 Prism 安装。
 
-实现位于 bin/，自包含，不依赖 3.x 实现（自 prism_cli.py 抽出）。
-update 的核心职责是让 SDK / Skills 更新生效；Workspace/Vault 是可选协作状态，
-缺失或未同步不应阻断代码层升级。
+产品更新的单位是 tag，不是分支上的 commit：managed install 固定在一个
+detached release tag 上，updater 只认当前通道里更新的不可变 tag，没有
+新 tag 就什么都不做。
+
+分支 checkout 属于贡献者的 source line，产品更新默认不接管：把工作副本
+从分支移到 tag 是一次不可逆的方向变化，只有显式 ``--bootstrap-to`` 才做。
+外部 prism-skills 是独立仓库，也只有显式 ``--skills`` 才会一并拉取。
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 SDK_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = SDK_ROOT / "prism.local.yaml"
+
+MANAGED = "managed"
+SOURCE = "source"
+DETACHED = "detached"
+
+MAJOR_RE = re.compile(r"(\d+)")
 
 
-def _yaml_scalar(config_path: Path, key: str) -> str | None:
-    if not config_path.is_file():
+def _load_tag_resolve():
+    path = SDK_ROOT / "bin" / "tag_resolve.py"
+    spec = importlib.util.spec_from_file_location("tag_resolve", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载 {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _git(repo: Path, args: list[str], timeout: int = 60) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        check=False,
+    )
+
+
+def _current_branch(repo: Path) -> str | None:
+    result = _git(repo, ["symbolic-ref", "-q", "--short", "HEAD"])
+    if result.returncode != 0:
         return None
-    prefix = f"{key}:"
-    for line in config_path.read_text(encoding="utf-8").splitlines():
-        if line.startswith(prefix):
-            value = line[len(prefix):].strip().strip("'\"")
-            return value or None
+    return result.stdout.strip() or None
+
+
+def _current_tag(repo: Path) -> str | None:
+    result = _git(repo, ["describe", "--tags", "--exact-match", "HEAD"])
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
+
+
+def detect_install_mode(repo: Path) -> str:
+    if _current_branch(repo):
+        return SOURCE
+    return MANAGED if _current_tag(repo) else DETACHED
+
+
+def _is_dirty(repo: Path) -> bool:
+    result = _git(repo, ["status", "--porcelain"])
+    if result.returncode != 0:
+        return True
+    return bool(result.stdout.strip())
+
+
+def _infer_series(repo: Path) -> int | None:
+    """series 跟随当前安装的 major，让 major 升级成为显式动作。"""
+    current = _current_tag(repo)
+    source = current or _read_version(repo) or ""
+    match = MAJOR_RE.search(source)
+    return int(match.group(1)) if match else None
+
+
+def _read_version(repo: Path) -> str | None:
+    try:
+        return (repo / "VERSION").read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
+def _blocked(reason: str, **extra) -> dict:
+    """构造阻断结果；控制字段最后写入，不被调用方的上下文覆盖。"""
+    payload = dict(extra)
+    payload["ok"] = False
+    payload["action"] = "blocked"
+    payload["reason"] = reason
+    payload["writes"] = 0
+    return payload
+
+
+def _resolve_channel(
+    resolver, config: Path, args: argparse.Namespace
+) -> tuple[str | None, int | None, bool]:
+    """返回 (channel, series, 是否刚写入过配置)。"""
+    stored_channel, stored_series = resolver.read_channel(config)
+
+    if args.check or args.dry_run:
+        # --check / --dry-run 是只读动作，不能顺手把通道选择落盘。
+        return args.channel or stored_channel, args.series or stored_series, False
+
+    if args.channel:
+        series = args.series or stored_series or _infer_series(Path(args.repo)) or 4
+        resolver.write_channel(config, args.channel, series)
+        return args.channel, series, True
+
+    return stored_channel, stored_series, False
+
+
+def _validate_target(resolver, tags: list[str], tag: str, channel: str, series: int | None) -> dict | None:
+    parsed = resolver.parse_tag(tag)
+    if parsed is None:
+        return None
+    if parsed["channel"] != channel:
+        return None
+    if series is not None and parsed["major"] != series:
+        return None
+    return parsed if tag in tags else None
+
+
+def _switch_to_tag(repo: Path, tag: str) -> bool:
+    return _git(repo, ["checkout", "--detach", tag], timeout=300).returncode == 0
+
+
+def _post_switch_checks(repo: Path) -> bool:
+    """切换后的体检与重链；任一失败都要由调用方回滚。
+
+    体检用 ``ci`` scope：它不读本机配置、不依赖 PATH 锚点，因此切换后的
+    自检不会因为「这台机器还没配好」而误判成版本问题。
+    """
+    doctor = subprocess.run(
+        [str(repo / "bin" / "doctor"), "--scope", "ci"],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    if doctor.returncode not in (0, 2):
+        # bin/doctor：0=全绿，1=ERROR，2=仅 WARN — WARN 不阻断安装。
+        return False
+    relink = subprocess.run(
+        [str(repo / "bin" / "relink"), "--no-workspace"],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    return relink.returncode == 0
+
+
+def _rollback(repo: Path, previous_branch: str | None, previous_sha: str) -> None:
+    """回到切换前的 commit，并重跑旧版本的 relink 让软链接状态自洽。
+
+    回滚用 SHA 而不是 tag 名：tag 理论上可以被移动，而这次切换前的 commit
+    是唯一确定的事实。
+    """
+    if previous_branch:
+        _git(repo, ["checkout", previous_branch], timeout=300)
+    else:
+        _git(repo, ["checkout", "--detach", previous_sha], timeout=300)
+    subprocess.run(
+        [str(repo / "bin" / "relink"), "--no-workspace"],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+
+
+def run_update(args: argparse.Namespace) -> dict:
+    repo = Path(args.repo).resolve()
+    config = Path(args.config).resolve() if args.config else repo / "prism.local.yaml"
+    resolver = _load_tag_resolve()
+
+    if not (repo / ".git").exists():
+        return _blocked("不是 Git 仓库，无法进行 tag 更新")
+
+    if _is_dirty(repo):
+        return _blocked("工作树有未提交变更；更新会移动 HEAD，请先 commit/stash")
+
+    mode = detect_install_mode(repo)
+    if mode == DETACHED:
+        return _blocked("当前 HEAD 既不在分支也不在 tag 上，先切到一个 release tag 或分支")
+
+    channel, series, wrote_channel = _resolve_channel(resolver, config, args)
+    if channel is None:
+        return _blocked(
+            "尚未选择更新通道；先运行 prism update --channel canary|stable",
+            mode=mode,
+        )
+    if series is None:
+        series = _infer_series(repo)
+
+    bootstrap = bool(args.bootstrap_tag)
+    if mode == SOURCE and not bootstrap:
+        return _blocked(
+            "当前是分支 checkout（source 模式），产品更新不接管分支："
+            "贡献者用 Git 自行管理，或用 --bootstrap-to <tag> 迁移到 managed 安装",
+            mode=mode,
+            channel=channel,
+            series=series,
+        )
+
+    if not args.no_fetch:
+        fetch = _git(repo, ["fetch", "--tags", "--prune", "--quiet"], timeout=300)
+        if fetch.returncode != 0:
+            return _blocked("无法拉取远端 tag，稍后重试或检查远端配置", mode=mode, channel=channel)
+
+    tags = resolver.collect_tags(repo)
+    if bootstrap:
+        target = _validate_target(resolver, tags, args.bootstrap_tag, channel, series)
+        if target is None:
+            return _blocked(
+                f"{args.bootstrap_tag} 不是当前通道（{channel}）中可用的 tag",
+                mode=mode,
+                channel=channel,
+                series=series,
+            )
+    elif args.target_tag:
+        target = _validate_target(resolver, tags, args.target_tag, channel, series)
+        if target is None:
+            return _blocked(
+                f"{args.target_tag} 不存在，或不属于当前通道（{channel}）与系列（{series}）",
+                mode=mode,
+                channel=channel,
+                series=series,
+            )
+    else:
+        target = resolver.select_latest(tags, channel, series)
+        if target is None:
+            return _blocked(
+                f"通道 {channel} 中还没有可用 tag",
+                mode=mode,
+                channel=channel,
+                series=series,
+            )
+
+    current = _current_tag(repo)
+    latest = resolver.select_latest(tags, channel, series)
+    payload = {
+        "ok": True,
+        "mode": mode,
+        "channel": channel,
+        "series": series,
+        "current_tag": current,
+        "latest_tag": latest["tag"] if latest else None,
+        "target_tag": target["tag"],
+        "writes": 1 if wrote_channel else 0,
+    }
+
+    if args.check:
+        payload["action"] = "noop" if current == target["tag"] else "update"
+        return payload
+
+    if not bootstrap and current == target["tag"]:
+        payload["action"] = "noop"
+        payload["detail"] = f"已是通道 {channel} 的最新版本 {target['tag']}"
+        return payload
+
+    previous_branch = _current_branch(repo)
+    previous_sha = _git(repo, ["rev-parse", "HEAD"]).stdout.strip()
+    payload["action"] = "bootstrap" if bootstrap else "update"
+
+    if args.dry_run:
+        payload["detail"] = f"[dry-run] git checkout --detach {target['tag']}"
+        return payload
+
+    if not _switch_to_tag(repo, target["tag"]):
+        return _blocked(f"切换到 {target['tag']} 失败", **payload)
+
+    if not _post_switch_checks(repo):
+        _rollback(repo, previous_branch, previous_sha)
+        return _blocked(
+            f"切换到 {target['tag']} 后体检未通过，已回滚到 {previous_sha[:12]}",
+            **payload,
+        )
+
+    if args.skills:
+        skills_path = _read_skills_path(config)
+        if skills_path and os.path.isdir(skills_path):
+            pull = _git(Path(skills_path), ["pull", "--rebase"], timeout=300)
+            if pull.returncode != 0:
+                payload["skills"] = "pull 失败；外部 Skills 是独立仓库，不阻断 SDK 更新"
+
+    payload["detail"] = f"已切换到 {target['tag']}"
+    payload["writes"] = payload.get("writes", 0) + 1
+    return payload
+
+
+def _read_skills_path(config: Path) -> str | None:
+    try:
+        lines = config.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        if line.startswith("skills_path:"):
+            value = line.split(":", 1)[1].strip().strip("'\"")
+            return os.path.expanduser(value) or None
     return None
 
 
-def main() -> int:
+def _render(payload: dict) -> None:
+    if payload.get("action") == "blocked":
+        print(f"✗ {payload['reason']}")
+        return
+    print(f"mode:        {payload['mode']}")
+    print(f"channel:     {payload['channel']} (series {payload['series']})")
+    print(f"current tag: {payload.get('current_tag') or '-'}")
+    print(f"latest tag:  {payload.get('latest_tag') or '-'}")
+    print(f"action:      {payload['action']}")
+    if payload.get("detail"):
+        print(payload["detail"])
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="prism update",
-        description="git pull SDK → doctor ci --quick → relink --no-workspace",
+        description="按不可变 Git tag 更新 Prism 安装",
     )
-    parser.add_argument("--skills", action="store_true", help="同时 pull prism-skills")
-    parser.add_argument("--dry-run", action="store_true", help="只打印步骤")
-    args = parser.parse_args()
+    parser.add_argument("--channel", choices=["canary", "stable"], default=None)
+    parser.add_argument("--series", type=int, default=None, help="跟随的 major 系列")
+    parser.add_argument("--to", dest="target_tag", default=None, help="精确切换到指定 tag（调试 / 回滚）")
+    parser.add_argument("--bootstrap-to", dest="bootstrap_tag", default=None,
+                        help="从分支 checkout 一次性迁移到 managed 安装")
+    parser.add_argument("--check", action="store_true", help="只报告当前 / 通道 / 最新 / 动作，零写入")
+    parser.add_argument("--skills", action="store_true", help="同时 pull 外部 prism-skills")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--no-fetch", action="store_true", help="跳过 fetch，只用本地已有 tag")
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--repo", default=str(SDK_ROOT))
+    parser.add_argument("--config", default=None)
+    args = parser.parse_args(argv)
 
-    sdk_root = str(SDK_ROOT)
-    config = SDK_ROOT / "prism.local.yaml"
+    try:
+        payload = run_update(args)
+    except RuntimeError as error:
+        print(f"✗ {error}", file=sys.stderr)
+        return 127
 
-    status = subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=sdk_root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if status.returncode != 0:
-        print(status.stderr.strip() or "git status 失败", file=sys.stderr)
-        return status.returncode
-    if status.stdout.strip() and not args.dry_run:
-        print("✗ SDK 工作区有未提交变更，拒绝 update。请先 commit/stash。", file=sys.stderr)
-        return 1
-
-    skills_path = _yaml_scalar(config, "skills_path") if args.skills else None
-    if args.skills and skills_path and os.path.isdir(skills_path):
-        skills_status = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=skills_path,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if skills_status.stdout.strip() and not args.dry_run:
-            print("✗ prism-skills 有未提交变更，拒绝 update。", file=sys.stderr)
-            return 1
-
-    steps: list[tuple[str, list[str], str]] = [
-        ("git pull --rebase (sdk)", ["git", "pull", "--rebase"], sdk_root),
-    ]
-    if args.skills and skills_path and os.path.isdir(skills_path):
-        steps.append(("git pull --rebase (skills)", ["git", "pull", "--rebase"], skills_path))
-
-    doctor = str(SDK_ROOT / "bin" / "doctor")
-    relink = str(SDK_ROOT / "bin" / "relink")
-    steps.extend([
-        ("doctor --scope ci --quick", [doctor, "--scope", "ci", "--quick"], sdk_root),
-        ("relink --no-workspace", [relink, "--no-workspace"], sdk_root),
-    ])
-
-    for label, cmd, cwd in steps:
-        if args.dry_run:
-            print(f"[dry-run] ({cwd}) {' '.join(cmd)}")
-            continue
-        if cmd[0] == "git" and not os.path.isdir(os.path.join(cwd, ".git")):
-            print(f"✗ 跳过 {label}：非 git 仓库", file=sys.stderr)
-            return 1
-        completed = subprocess.run(cmd, cwd=cwd, check=False)
-        if "doctor" in label and completed.returncode == 2:
-            # bin/doctor：0=全绿，1=ERROR，2=仅 WARN — update 链不因 WARN 中断
-            continue
-        if completed.returncode != 0:
-            print(f"✗ update 在步骤失败: {label}", file=sys.stderr)
-            return completed.returncode
-    return 0
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False))
+    else:
+        _render(payload)
+    return 0 if payload.get("ok") else 1
 
 
 if __name__ == "__main__":
