@@ -203,7 +203,8 @@ def _seed_repo(
 
 def _attach_bare_remote(repo: Path, remote: Path, branch: str = "main") -> None:
     remote.mkdir(parents=True, exist_ok=True)
-    _git(remote, "init", "-q", "--bare")
+    # bare remote 的 HEAD 也必须指向被 push 的 branch；否则 clone 会得到空 checkout。
+    _git(remote, "init", "-q", "--bare", f"--initial-branch={branch}")
     _git(repo, "remote", "add", "origin", str(remote))
     _git(repo, "push", "-q", "-u", "origin", branch)
 
@@ -456,7 +457,8 @@ def test_release_check_reports_an_invalid_diff_range_without_crashing(tmp_path: 
 
 def _init_git_repo(repo: Path) -> None:
     repo.mkdir(parents=True, exist_ok=True)
-    _git(repo, "init", "-q")
+    # 测试 fixture 不得继承开发机的 init.defaultBranch；CI 上通常仍是 master。
+    _git(repo, "init", "-q", "--initial-branch=main")
     _git(repo, "config", "user.email", "prism-test@example.com")
     _git(repo, "config", "user.name", "Prism Test")
     _git(repo, "config", "commit.gpgsign", "false")
@@ -492,6 +494,11 @@ def _build_install(
     """造一个 detached 在 tag 上的 managed 安装，每个 tag 落在不同 commit 上。"""
     repo = root / "sdk"
     _init_git_repo(repo)
+    # 产品配置本来由全局 gitignore 排除；fixture 必须自行声明，不能依赖
+    # 维护者机器上的 ~/.gitignore_global，否则 CI 会把 managed install 判 dirty。
+    (repo / ".git" / "info" / "exclude").write_text(
+        "prism.local.yaml\n", encoding="utf-8"
+    )
     _write_stub_scripts(repo, doctor_exit=doctor_exit)
     (repo / "README.md").write_text("prism\n", encoding="utf-8")
     for index, tag in enumerate(tags):

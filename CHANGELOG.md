@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- **发行通道测试隔离** — 临时 Git 仓库显式固定 `main`、本地配置 ignore 与 bare remote HEAD，不再继承开发机的全局 Git 配置；避免本机全绿而 GitHub runner 把 managed fixture 误判为 dirty。
+
 ## [4.0.0-canary.1] — 2026-08-31
 
 ### Added
