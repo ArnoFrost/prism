@@ -19,12 +19,12 @@ Prism 的可执行工具入口。每个脚本可配合同名 Skill 使用，形�
 | 命令 | 职责 | 配对 Skill | 状态 |
 |------|------|-----------|------|
 | `setup` | 一键初始化 / 健康检查 / 重配置检测 | — | ✅ 可用 |
-| `doctor` | 统一体检入口（scope: env/skill/sync/cli/config/release；支持 `--rollback` / `--output`） | — | ✅ 可用 |
+| `doctor` | 统一体检入口（`--scope` 取值 env / skill / cli / config / release / ci；支持 `--rollback` / `--output`） | — | ✅ 可用 |
 | `setenv` | 管理 prism.local.yaml 配置，导出环境变量 | — | ✅ 可用 |
 | `relink` | 基于配置刷新所有软链接（项目 + Skills）；默认 `--skill-profile prism4` | prism-* | ✅ 可用 |
 | `create-skill` | 从模板创建新 skill 骨架 | — | ✅ 可用 |
 | `validate-skills` | 扫描全量 skill frontmatter 合规性 | — | ✅ 可用 |
-| `clean` | relink 的逆操作，清理软链接和配置 | — | ✅ 可用 |
+| `clean` | 按 `archived_skills` 清理已归档技能残留的软链接 | — | ✅ 可用 |
 | `prism` | 4.0 reference CLI（机械事实 / 投影 / 校验 / guarded commitment；含 relink / doctor / update facade） | prism-* | ✅ 可用 |
 
 > **`prism doctor --json`** 为 flat passthrough（非 outer envelope）；底层仍走 `bin/doctor`。
@@ -87,12 +87,24 @@ bin/relink --no-workspace
 ### create-skill — 创建新 Skill
 
 ```bash
-bin/create-skill <name>                  # 在 Skills 层创建（默认）
-bin/create-skill <name> --layer sdk      # 在 SDK 层创建
-bin/create-skill <name> --layer env      # 在 Env 层创建
+bin/create-skill --name <name>                                # 在 Skills 层创建（默认）
+bin/create-skill --name <name> --layer sdk --category prism4  # 在 SDK 层创建
+bin/create-skill --name <name> --layer env                    # 在 Env 层创建
+bin/create-skill --name <name> --dry-run                      # 只预览，不写盘
 ```
 
-从模板生成 SKILL.md 骨架 + 可选 scripts 目录，自动注册到 relink 分发列表。
+从模板生成 SKILL.md 骨架 + 可选 scripts 目录，创建后自动 relink。
+
+| 参数 | 说明 |
+|------|------|
+| `--name` | **必填**；`^[a-z][a-z0-9-]*$`，位置参数形式不被接受 |
+| `--layer` | `sdk` / `skills` / `env`，默认 `skills` |
+| `--category` | `--layer sdk` 时**必填**（如 `prism4`），否则直接报错退出 |
+| `--desc` | 一句话描述，缺省用占位文案 |
+| `--dry-run` | 打印将要创建的路径与内容后退出，不写盘 |
+| `--no-relink` | 跳过创建后的自动 relink |
+
+`--layer skills` 依赖 `prism.local.yaml` 的 `skills_path`；`--layer env` 依赖 `env_path`。未知参数一律报错退出，不静默忽略。
 
 ### validate-skills — Skill 合规校验
 
@@ -104,23 +116,24 @@ bin/validate-skills --layer skills  # 仅扫描 Skills 层
 
 检查 SKILL.md frontmatter（`name` / `description` / `description_zh`、书写顺序、`user_invocable` 小写布尔）；SDK 内置技能的 `visibility` / `stability` 与 `skills-catalog.yaml` 交叉校验。详见 `skills/schema/frontmatter-spec.md`。
 
-### clean — 清理（relink 逆操作）
+### clean — 归档技能的软链接清理
 
 ```bash
-bin/clean              # 清理所有 Prism 软链接（IDE + 项目桥接）
-bin/clean --config     # 同上 + 删除 prism.local.yaml（自动备份）
-bin/clean --dry-run    # 预览将要清理的内容
-bin/clean --project X  # 仅清理指定项目的桥接链接
+bin/clean --list           # 列出 archived_skills 条目与其残留软链接
+bin/clean --dry-run        # 预览将要移除的软链接，不写盘
+bin/clean                  # 移除 archived_skills 内技能残留的软链接
+bin/clean --add <name>     # 把技能名登记进 archived_skills
+bin/clean --restore <name> # 从 archived_skills 移除并重新 relink
 ```
 
-安全边界：**绝不删除** Vault/Workspace 内容、Skills 源码、SDK 仓库。仅移除 Prism 创建的软链接和配置文件。
+`clean` 只管理 `prism.local.yaml` 里的 `archived_skills`：把这些已归档技能在各 IDE / CLI 目录（Cursor、Claude、Codex、CodeBuddy 等）中残留的软链接摘掉。它**不是** relink 的逆操作——不清理项目桥接 `workspace.{code}.local`，不删除 `prism.local.yaml`，也不接受 `--config` / `--project` 这类参数。
 
-测试循环：`bin/clean --config` → `bin/setenv --init` → `bin/relink` 可反复执行验证开箱流程。
+安全边界：**绝不删除** Vault/Workspace 内容、Skills 源码、SDK 仓库。`archived_skills` 为空时直接报告无需清理并成功退出。
 
 ### doctor — 统一体检入口
 
 ```bash
-bin/doctor                        # 完整体检（env + skill + sync + cli）
+bin/doctor                        # 完整体检（env / skill / cli / config / ci_health）
 bin/doctor --quick                # 快速模式，跳过远程 sniff
 bin/doctor --fix                  # 非破坏性自动修复
 bin/doctor --rollback             # 回滚 --fix 对 CLI 寻址层的修改（rc anchor + symlink）
@@ -135,10 +148,12 @@ bin/doctor --scope <name>         # 只跑指定范围
 |-------|------|
 | `env` | setup --check 的环境完整性 |
 | `skill` | validate-skills 的 frontmatter 合规 |
-| `sync` | prism 三仓 Git 远端同步状态 |
 | `cli` | `prism` 寻址体检（PATH + symlink） |
 | `config` | `prism.local.yaml` 必填字段 + 路径可达性 |
 | `release` | 聚合以上全部（release 发布就绪闸门） |
+| `ci` | CI 自包含子集：`skill` + `ci_health`，不依赖本机配置 |
+
+`release` 是发布就绪闸门；`ci` 只跑 `skill` 与 `ci_health`（`bin/*` 可执行、`bin/prism --version` 可启动），不读 `prism.local.yaml`、不依赖 PATH 锚点，因此 CI runner 上没有本机配置也能跑通。`--scope` 不传值时跑全部阶段。
 
 `--rollback` 当前用于 CLI 寻址层回滚：删除 `--fix` 写入的 rc anchor 和 `~/.local/bin/prism` symlink。`--output` 适合生成 release health JSON 或给其他工具链消费。
 

@@ -130,12 +130,18 @@ prism decision record <topic_id> --body "..." --authority-evidence "<evidence re
 
 ```bash
 ./setup.sh update
-# 等价分步：
-cd ~/prism && git pull origin main
+```
+
+`./setup.sh update` 委托 `bin/update`，对当前 tracking branch 执行 `git pull --rebase`。它不拉入另一个发行线：手工展开时应跟随自己当前的 upstream，不要硬编码 branch 名。
+
+```bash
+cd ~/prism && git pull --rebase     # 跟随当前 upstream，不指定 main
 prism doctor --scope ci --quick
 prism relink --no-workspace
 prism --version
 ```
+
+> 上面的 commit-pull 是当前过渡行为：它跟随分支上的最新 commit。以不可变 Git tag 为发行单位、按 channel 过滤更新的产品级 updater 属于目标合同，尚未实现，见 [release-process.md](./release-process.md)。
 
 > `prism update` 遇 dirty working tree 会 abort。它只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
 

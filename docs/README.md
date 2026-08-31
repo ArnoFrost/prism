@@ -29,8 +29,7 @@
 | [migration.md](./migration.md) | 3.x Workspace → 4.0：冻结旧状态、重建 current Topic、重写协作入口（v1→v2 见 [historical/](./historical/)） |
 | [contributing.md](./contributing.md) | L1–L4 分层、SDK vs Workspace 边界、默认面 checklist |
 | [testing-contract.md](./testing-contract.md) | 4.0 测试分层与版本提升门禁 |
-| [release-process.md](./release-process.md) | 版本提升 checklist 与 release gate 规则 |
-| [ofm-cheatsheet.md](./ofm-cheatsheet.md) | Obsidian OFM callout 速查（维护者常用） |
+| [release-process.md](./release-process.md) | 版本提升 checklist、release gate 规则与 tag 发行合同 |
 
 机器真源：`bin/validate-skills` · [`skills/schema/frontmatter-spec.md`](../skills/schema/frontmatter-spec.md)（SKILL frontmatter 分层与顺序）
 
@@ -64,6 +63,7 @@ Alignment 是 Protocol Semantics SSOT；其余文档是受控 consumer / guide�
 | [cli-contract.md](./historical/cli-contract.md) | 3.x Legacy CLI Contract（verb 稳定性与 envelope） |
 | [cli-json-schema.json](./historical/cli-json-schema.json) | 3.x `--json` envelope schema |
 | [glossary.md](./historical/glossary.md) | 3.x 术语人类速查 |
+| [ofm-cheatsheet.md](./historical/ofm-cheatsheet.md) | 3.x Obsidian OFM callout 速查（正文中仍有 `rXX` / scope / focus 等 3.x 术语） |
 | [migration-v1-to-v2.md](./historical/migration-v1-to-v2.md) | v1.x → v2.0 历史迁移 |
 | [prism-4-dogfood-plan.md](./historical/prism-4-dogfood-plan.md) | 4.0-canary 起步期施工笔记（软切换策略已被后续的物理剔除超越） |
 | [prism-4-open-source-readiness-review.md](./historical/prism-4-open-source-readiness-review.md) | 2026-08-18 的开源准备度、测试结果与后续路线快照（已失效） |
