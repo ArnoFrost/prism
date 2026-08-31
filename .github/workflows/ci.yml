@@ -20,13 +20,15 @@ on:
   workflow_dispatch:
   push:
     branches: [main, mini, prism-4, "release/**"]
-    tags: ["v*"]
   pull_request:
     branches: [main, mini, prism-4]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   lint-and-test:
@@ -111,3 +113,14 @@ jobs:
             validate-skills.json
           if-no-files-found: ignore
           retention-days: 14
+
+  required:
+    name: required
+    if: ${{ always() }}
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every CI matrix leg
+        env:
+          MATRIX_RESULT: ${{ needs.lint-and-test.result }}
+        run: test "$MATRIX_RESULT" = success

@@ -21,7 +21,7 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 
 ## Tag 发行与更新合同
 
-> 本节描述当前已实现的发行语义：两类 tag grammar、按通道过滤的 `prism update`、`bin/release` 的 check / tag / push 机械面，以及 `canary.N` 版本元数据均已落地。
+> 本节描述当前发行语义：两类 tag grammar、按通道过滤的 `prism update`，以及由显式 Release workflow 控制的正式 publication。
 
 ### 两类不可变发布
 
@@ -66,9 +66,10 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 | 能力 | 当前状态 |
 |------|----------|
 | `prism update --check` / `--channel` / `--to` | 已实现 |
-| `bin/release`（check / tag / push 机械面） | 已实现 |
+| `bin/release`（本地 check / break-glass 与 hosted preflight） | 已实现 |
+| `.github/workflows/release.yml`（唯一正式 publication 入口） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |
-| Release Tag push 后触发 CI 并校验 Tag / VERSION | 已实现 |
+| Release workflow 在 Tag push 前校验 exact SHA / Tag / VERSION | 已实现 |
 | 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.2` / `4.0.0.dev2` |
 
 ## 版本提升 Checklist
@@ -88,21 +89,25 @@ uv run pytest
 ./setup.sh check
 ```
 
-## 发行 Runbook
+## 正式发行 Runbook
 
-下面以当前 Canary 为例；`BASE` 必须是维护者确认过的上一发行 Tag 或基线 SHA，不能留空，也不要用 `HEAD` 伪造空 diff：
+日常 Commit 与 PR 只进入 read-only `CI`，CI green 不等于发布。正式发行由维护者显式 dispatch `Release` workflow；workflow 冻结 source ref 的 exact SHA，在 Ubuntu 与 macOS preflight 全绿后才创建 annotated Tag：
 
 ```bash
-TAG=v4.0.0-canary.2
-BASE=v4.0.0-canary.1
-
-bin/release check --tag "$TAG" --expect-branch prism-4 --base "$BASE" --head HEAD
-bin/release tag   --tag "$TAG" --expect-branch prism-4 --base "$BASE" --head HEAD
-bin/release push  --tag "$TAG"                 # dry-run，只显示将执行的 push
-bin/release push  --tag "$TAG" --confirm       # 唯一真实远端写入
+gh workflow run release.yml --ref prism-4 \
+  -f tag=v4.0.0-canary.3 \
+  -f release_line=canary
 ```
 
-Stable 使用同一组命令，把 `TAG` 换成 `vX.Y.Z`、`--expect-branch` 换成 `main`。`check/tag` 会验证工作树、upstream、本地与远端 Tag 占用、annotated Tag grammar、VERSION/package/docs 一致性和 diff gate；push 前再次验证本地 Tag object 与 Tag 内 VERSION。
+Stable 从 `main` dispatch，并把 `release_line` 设为 `stable`。普通 release 的 diff base 自动取同 channel、同 major series 的上一枚 immutable annotated Tag；显式 `base` 只能作为推导结果断言。4.0 stable 首发唯一登记的 bootstrap baseline 是 `legacy-3x-final`。`HEAD~1`、branch 或任意普通 ref 都不能充当发行证据。
+
+Tag push 是 managed 用户可见的 machine publication 时点；GitHub Release 是基于既有 Tag 的 human-facing projection。若 Tag 已成功、GitHub Release 创建失败，不得重跑 publication 或移动 Tag，只运行幂等修复：
+
+```bash
+bin/release repair-release --tag v4.0.0-canary.3
+```
+
+`bin/release tag/push --confirm` 保留为低层 break-glass 机械面，不是与 Release workflow 并列的正式维护者按钮。
 
 ## CI 门禁
 
@@ -112,7 +117,7 @@ Stable 使用同一组命令，把 `TAG` 换成 `vX.Y.Z`、`--expect-branch` 换
 - 当传入 `--base` / `--head` 时，额外检查 breaking commit 是否同步 `CHANGELOG.md` 与 `docs/migration.md`。
 - 无 diff 范围时只跳过 diff gate，不跳过 version gate。
 - `bin/release check/tag` 不允许省略 diff 范围；上面的“可跳过”只适用于单独运行 `release_gate.py` 做日常元数据检查。
-- `v*` Tag push 会触发 CI；Tag event 额外用 `--expected-tag` 校验 Git Tag 与 VERSION 一致。
+- Developer CI 不监听 `v*` Tag；正式 Release workflow 在 Tag 出现前完成 exact-SHA 双平台 preflight，并在 publish job 取得唯一的 `contents: write`。
 
 ## 不做什么
 

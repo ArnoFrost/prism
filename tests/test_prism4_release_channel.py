@@ -75,6 +75,15 @@ def test_canary_prerelease_orders_numerically() -> None:
     assert latest["tag"] == "v4.0.0-canary.10"
 
 
+def test_predecessor_stays_in_the_same_channel_and_major() -> None:
+    resolver = _load("tag_resolve", "tag_resolve.py")
+    previous = resolver.select_predecessor(
+        ["v3.9.0-canary.9", "v4.0.0-canary.1", "v4.0.0-canary.2", "v4.0.0"],
+        "v4.0.0-canary.3",
+    )
+    assert previous["tag"] == "v4.0.0-canary.2"
+
+
 def test_stable_outranks_canary_on_the_same_version() -> None:
     resolver = _load("tag_resolve", "tag_resolve.py")
     tags = ["v4.0.0-canary.3", "v4.0.0"]
@@ -450,6 +459,53 @@ def test_release_check_reports_an_invalid_diff_range_without_crashing(tmp_path: 
 
     assert result.returncode == 1
     assert _status(json.loads(result.stdout), "release-gate") == "fail"
+
+
+def _seed_preflight_repo(tmp_path: Path) -> tuple[Path, str]:
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+    _git(repo, "tag", "-a", "v4.0.0-canary.1", "-m", "canary 1")
+    _git(repo, "push", "-q", "origin", "v4.0.0-canary.1")
+    _write_release_fixture(repo, release="4.0.0-canary.2", package_version="4.0.0.dev2")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "canary 2")
+    _git(repo, "push", "-q")
+    return repo, _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+
+def test_hosted_preflight_derives_immutable_predecessor(tmp_path: Path) -> None:
+    repo, sha = _seed_preflight_repo(tmp_path)
+    result = _run_release(
+        repo, "preflight", "--tag", "v4.0.0-canary.2", "--release-line", "canary",
+        "--sha", sha, "--remote", "origin", "--skip-tests", "--json",
+    )
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["base"] == "v4.0.0-canary.1"
+
+
+def test_hosted_preflight_rejects_arbitrary_or_mismatched_base(tmp_path: Path) -> None:
+    repo, sha = _seed_preflight_repo(tmp_path)
+    for bad_base in ("HEAD~1", "main"):
+        result = _run_release(
+            repo, "preflight", "--tag", "v4.0.0-canary.2", "--release-line", "canary",
+            "--sha", sha, "--base", bad_base, "--remote", "origin", "--skip-tests", "--json",
+        )
+        assert result.returncode == 1
+        assert _status(json.loads(result.stdout), "release-base") == "fail"
+
+
+def test_hosted_preflight_rejects_wrong_line_and_sha(tmp_path: Path) -> None:
+    repo, sha = _seed_preflight_repo(tmp_path)
+    result = _run_release(
+        repo, "preflight", "--tag", "v4.0.0-canary.2", "--release-line", "stable",
+        "--sha", "0" * 40, "--remote", "origin", "--skip-tests", "--json",
+    )
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert _status(payload, "exact-sha") == "fail"
+    assert _status(payload, "release-line") == "fail"
 
 
 # ── 产品更新（managed install）──────────────────────────

@@ -96,6 +96,27 @@ def select_latest(
     return max(candidates, key=lambda item: item["sort_key"])
 
 
+def select_predecessor(tags: list[str], target: str) -> dict | None:
+    """选择 target 同 channel、同 major 系列中严格更早的最近 release tag。"""
+    parsed_target = parse_tag(target)
+    if parsed_target is None:
+        return None
+    candidates = []
+    for raw in tags:
+        parsed = parse_tag(raw)
+        if parsed is None:
+            continue
+        if parsed["channel"] != parsed_target["channel"]:
+            continue
+        if parsed["major"] != parsed_target["major"]:
+            continue
+        if parsed["sort_key"] < parsed_target["sort_key"]:
+            candidates.append(parsed)
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: item["sort_key"])
+
+
 def collect_tags(repo: str | Path) -> list[str]:
     """读取仓库已有 annotated release tag；lightweight tag 不进入产品更新面。"""
     completed = subprocess.run(

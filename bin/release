@@ -26,6 +26,7 @@ SDK_ROOT = Path(__file__).resolve().parents[1]
 OK = "ok"
 WARN = "warn"
 FAIL = "fail"
+BOOTSTRAP_BASES = {("stable", 4): "legacy-3x-final"}
 
 
 def _load_module(name: str, filename: str):
@@ -92,6 +93,15 @@ def _tag_absent(repo: Path, tag: str) -> dict:
     return _step("tag-absent", OK, f"本地与远端 tag {tag} 均未占用")
 
 
+def _remote_tag_absent(repo: Path, tag: str, remote: str) -> dict:
+    result = _git(repo, ["ls-remote", "--tags", remote, f"refs/tags/{tag}"])
+    if result.returncode != 0:
+        return _step("tag-absent", FAIL, result.stderr.strip() or "读取远端 tag 失败")
+    if result.stdout.strip():
+        return _step("tag-absent", FAIL, f"远端 tag {tag} 已存在；不可重写")
+    return _step("tag-absent", OK, f"远端 tag {tag} 未占用")
+
+
 def _branch_matches(repo: Path, expected: str) -> dict:
     """校验 tag 打在预期的分支上。
 
@@ -155,6 +165,44 @@ def _release_gate(repo: Path, base: str, head: str) -> dict:
     return _step("release-gate", FAIL, errors or "release gate 失败")
 
 
+def _exact_sha(repo: Path, expected: str) -> dict:
+    actual = _git(repo, ["rev-parse", "HEAD"])
+    if actual.returncode != 0 or actual.stdout.strip() != expected:
+        return _step("exact-sha", FAIL, f"HEAD 不是冻结候选 {expected}")
+    return _step("exact-sha", OK, f"HEAD 已冻结为 {expected}")
+
+
+def _release_line(tag: str, line: str) -> dict:
+    resolver = _load_module("tag_resolve", "tag_resolve.py")
+    parsed = resolver.parse_tag(tag)
+    if parsed is None or parsed["channel"] != line:
+        return _step("release-line", FAIL, f"{tag} 不属于 {line} release line")
+    return _step("release-line", OK, f"{tag} 属于 {line} release line")
+
+
+def _resolve_release_base(repo: Path, tag: str, asserted: str, head: str) -> tuple[dict, str]:
+    resolver = _load_module("tag_resolve", "tag_resolve.py")
+    parsed = resolver.parse_tag(tag)
+    if parsed is None:
+        return _step("release-base", FAIL, "目标 tag grammar 非法，无法推导 predecessor"), ""
+    predecessor = resolver.select_predecessor(resolver.collect_tags(repo), tag)
+    derived = predecessor["tag"] if predecessor else BOOTSTRAP_BASES.get(
+        (parsed["channel"], parsed["major"]), ""
+    )
+    if not derived:
+        return _step("release-base", FAIL, "没有同通道 predecessor，也没有登记 bootstrap baseline"), ""
+    if asserted and asserted != derived:
+        return _step("release-base", FAIL, f"显式 base {asserted} 与推导结果 {derived} 不一致"), ""
+    object_type = _git(repo, ["cat-file", "-t", derived])
+    if object_type.returncode != 0 or object_type.stdout.strip() != "tag":
+        return _step("release-base", FAIL, f"{derived} 不是本地可验证的 annotated tag"), ""
+    ancestor = _git(repo, ["merge-base", "--is-ancestor", f"{derived}^{{commit}}", head])
+    if ancestor.returncode != 0:
+        return _step("release-base", FAIL, f"{derived} 不是冻结候选的 ancestor"), ""
+    kind = "predecessor" if predecessor else "registered bootstrap"
+    return _step("release-base", OK, f"{derived}（{kind}）"), derived
+
+
 def _command_step(name: str, command: list[str], repo: Path) -> dict:
     completed = subprocess.run(
         command,
@@ -215,6 +263,123 @@ def run_check(
         "tag": tag,
         "steps": steps,
     }
+
+
+def run_preflight(
+    repo: Path,
+    tag: str,
+    release_line: str,
+    sha: str,
+    base: str,
+    remote: str,
+    skip_tests: bool = False,
+) -> dict:
+    base_step, resolved_base = _resolve_release_base(repo, tag, base, sha)
+    steps = [
+        _exact_sha(repo, sha),
+        _remote_tag_absent(repo, tag, remote),
+        _tag_grammar(tag),
+        _release_line(tag, release_line),
+        _version_metadata(repo, tag),
+        base_step,
+    ]
+    if resolved_base:
+        steps.append(_release_gate(repo, resolved_base, sha))
+    if not skip_tests:
+        steps.extend(_test_surface(repo))
+    return {
+        "ok": all(step["status"] != FAIL for step in steps),
+        "tag": tag,
+        "sha": sha,
+        "base": resolved_base,
+        "steps": steps,
+    }
+
+
+def _print_result(label: str, result: dict, as_json: bool) -> int:
+    if as_json:
+        print(json.dumps(result, ensure_ascii=False))
+    else:
+        print(f"{label} {result['tag']}")
+        print("─────────────────────────────────")
+        for step in result["steps"]:
+            mark = {OK: "✓", WARN: "⚠", FAIL: "✗"}[step["status"]]
+            print(f"  {mark} {step['name']}: {step['detail']}")
+        print("─────────────────────────────────")
+        print("可发布" if result["ok"] else "存在阻断项")
+    return 0 if result["ok"] else 1
+
+
+def cmd_preflight(args: argparse.Namespace) -> int:
+    result = run_preflight(
+        Path(args.repo).resolve(), args.tag, args.release_line, args.sha,
+        args.base, args.remote, args.skip_tests,
+    )
+    return _print_result("release preflight", result, args.json)
+
+
+def _run(command: list[str], repo: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(command, cwd=str(repo), capture_output=True, text=True, timeout=120)
+
+
+def cmd_repair_release(args: argparse.Namespace) -> int:
+    repo = Path(args.repo).resolve()
+    resolver = _load_module("tag_resolve", "tag_resolve.py")
+    parsed = resolver.parse_tag(args.tag)
+    if parsed is None:
+        print(f"{args.tag} 不是合法 release tag", file=sys.stderr)
+        return 1
+    remote = _git(repo, ["ls-remote", "--tags", args.remote, f"refs/tags/{args.tag}*"])
+    lines = remote.stdout.splitlines() if remote.returncode == 0 else []
+    direct = [line for line in lines if line.endswith(f"refs/tags/{args.tag}")]
+    peeled = [line for line in lines if line.endswith(f"refs/tags/{args.tag}^{{}}")]
+    if not direct or not peeled:
+        print(f"远端 {args.tag} 不存在或不是 annotated tag", file=sys.stderr)
+        return 1
+    fetched = _git(repo, ["fetch", "--force", args.remote, f"refs/tags/{args.tag}:refs/tags/{args.tag}"])
+    if fetched.returncode != 0:
+        print(fetched.stderr.strip() or "无法读取远端 tag object", file=sys.stderr)
+        return 1
+    version = _git(repo, ["show", f"{args.tag}^{{commit}}:VERSION"])
+    if version.returncode != 0 or version.stdout.strip() != args.tag.removeprefix("v"):
+        print("远端 tag 内 VERSION 与 tag 不一致", file=sys.stderr)
+        return 1
+    title = f"Prism {args.tag}"
+    view = _run(
+        ["gh", "release", "view", args.tag, "--repo", args.repository,
+         "--json", "name,isPrerelease"], repo
+    )
+    prerelease = ["--prerelease"] if parsed["channel"] == "canary" else []
+    if view.returncode != 0:
+        command = ["gh", "release", "create", args.tag, "--repo", args.repository,
+                   "--title", title, "--generate-notes", *prerelease]
+        action = "created"
+    else:
+        current = json.loads(view.stdout)
+        expected_prerelease = parsed["channel"] == "canary"
+        if current.get("name") == title and current.get("isPrerelease") == expected_prerelease:
+            print(f"GitHub Release already aligned: {args.tag}; no-op")
+            return 0
+        release = _run(
+            ["gh", "api", f"repos/{args.repository}/releases/tags/{args.tag}"], repo
+        )
+        if release.returncode != 0:
+            print(release.stderr.strip() or "无法读取 GitHub Release", file=sys.stderr)
+            return 1
+        release_id = str(json.loads(release.stdout)["id"])
+        command = ["gh", "api", "--method", "PATCH",
+                   f"repos/{args.repository}/releases/{release_id}",
+                   "-f", f"name={title}", "-F", f"prerelease={str(expected_prerelease).lower()}"]
+        action = "reconciled"
+    if args.dry_run:
+        print("[dry-run] " + " ".join(command))
+        return 0
+    completed = _run(command, repo)
+    if completed.returncode != 0:
+        print(completed.stderr.strip() or "GitHub Release repair 失败", file=sys.stderr)
+        return completed.returncode
+    print(f"GitHub Release {action}: {args.tag}; immutable tag 未改动")
+    return 0
 
 
 def cmd_check(args: argparse.Namespace) -> int:
@@ -312,6 +477,16 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--json", action="store_true")
     check.set_defaults(func=cmd_check)
 
+    preflight = subparsers.add_parser("preflight", help="hosted runner 的 exact-SHA 正式发行门禁")
+    preflight.add_argument("--tag", required=True)
+    preflight.add_argument("--release-line", required=True, choices=["canary", "stable"])
+    preflight.add_argument("--sha", required=True)
+    preflight.add_argument("--base", default="", help="可选：必须与自动推导的 immutable base 一致")
+    preflight.add_argument("--remote", default="origin")
+    preflight.add_argument("--skip-tests", action="store_true", help="仅供 publish 阶段重查，不授予发布权")
+    preflight.add_argument("--json", action="store_true")
+    preflight.set_defaults(func=cmd_preflight)
+
     tag = subparsers.add_parser("tag", help="通过 check 后在本机创建 annotated tag")
     tag.add_argument("--tag", required=True)
     tag.add_argument("--base", default="")
@@ -328,6 +503,13 @@ def main(argv: list[str] | None = None) -> int:
     push.add_argument("--remote", default="origin")
     push.add_argument("--confirm", action="store_true", help="真正执行推送；不加则只打印")
     push.set_defaults(func=cmd_push)
+
+    repair = subparsers.add_parser("repair-release", help="只修复既有 immutable tag 的 GitHub Release surface")
+    repair.add_argument("--tag", required=True)
+    repair.add_argument("--remote", default="origin")
+    repair.add_argument("--repository", default="ArnoFrost/prism")
+    repair.add_argument("--dry-run", action="store_true")
+    repair.set_defaults(func=cmd_repair_release)
 
     args = parser.parse_args(argv)
     return args.func(args)

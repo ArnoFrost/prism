@@ -108,9 +108,10 @@ def test_release_and_update_docs_preserve_product_ownership() -> None:
     assert 'add_argument("--skills"' not in update
     assert "外部 `prism-skills` 不属于产品更新事务" in onboarding
     assert "--channel canary --series 4 --bootstrap-to" in onboarding
-    assert "--base \"$BASE\" --head HEAD" in release_process
-    assert "--tag \"$TAG\" --confirm" in release_process
-    assert 'tags: ["v*"]' in workflow
+    assert "同 channel、同 major series" in release_process
+    assert "repair-release --tag" in release_process
+    assert 'tags: ["v*"]' not in workflow
+    assert "contents: read" in workflow
 
 
 def test_active_public_surface_does_not_expose_rollout_phase_labels() -> None:
