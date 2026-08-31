@@ -106,13 +106,22 @@ Prism 的默认接入方式是本地优先、软链接桥接，不要求改造�
 | 本地优先 | 默认 local backend + `workspace.{code}.local` bridge | 协作状态留在用户控制范围内 | [快速开始](#快速开始) |
 | 无侵入接入 | 软链接 + `.local` 约定 + 全局 gitignore | 不接管业务仓库目录结构 | [会创建什么](#会创建什么) |
 | Small protocol surface | Topic / Artifact / Capability / Invocation + Decision Semantics | 不绑定某个 Agent harness 或文件格式 | [核心概念](#核心概念) |
+| 语义与实现分层 | Protocol Core 只回答稳定语义；Reference Experience 负责在本机跑起来 | 换 CLI、adapter 或存储方式都不需要重定义协议 | [架构速览](#架构速览) |
 | 能力可组合 | `/prism` 状态操作 + `/prism-review`、`/prism-plan` 认知入口 | 不预设固定治理管线 | [日常使用](#日常使用) |
 | 授权边界清楚 | Findings / Plan 是 advisory；Decision records authorized commitment | AI 建议不等于已批准变更 | [核心概念](#核心概念) |
+| 授权可捕获 | 人类的明确选择成为 target-bound evidence；Plan acceptance 与 Decision commitment 复用同一 guard | authority 模型不只有拒绝路径 | [核心概念](#核心概念) |
 | Brief 可再生成 | Brief 是 context recovery projection | 跨会话恢复更轻，不把切片当事实源 | [docs/prism-4-refoundation-alignment.md](docs/prism-4-refoundation-alignment.md) |
+| 失败可诊断 | current-only / fail-closed；加载错误聚合上报，每条都带文件路径 | 坏状态一次列全，不「修一个暴露一个」 | [docs/testing-contract.md](docs/testing-contract.md) |
 | 部署可选 | Skills、Env、Vault/Git backend 都在 Core 外 | Prism repository + `uv` 即可跑通 | [docs/architecture.md](docs/architecture.md) |
-| 发布可验收 | pytest + release gate + docs guard | 版本提升时能检查叙事和元数据漂移 | [docs/testing-contract.md](docs/testing-contract.md) |
+| 发布可验收 | pytest + release gate + docs guard；每个活测试登记 owner、inputs、lifecycle 与 retirement | 版本提升时能检查叙事、元数据与测试面的漂移 | [docs/testing-contract.md](docs/testing-contract.md) |
 
 Prism 当前不宣称自动闭环、成熟稳定的生产承诺、Agent 编排、任务调度、知识库替代或企业级安全合规。
+
+正在 dogfood、尚未承诺稳定的方向，不要当作稳定合同依赖：
+
+- **`/prism` effect-first 门面** —— 先判 effect，再只加载一个 method，写入前检查 authority。experimental。
+- **Reading Contract** —— 区分「状态正确」与「可恢复」，用 first glance / scan / read / drill-down 与 30 秒恢复判断工件是否好接手。draft。
+- **Invocation 可追踪性的保真度边界** —— 默认 Local Markdown Adapter 记录关系与来源，但不完整持久化 raw Invocation，属于 weak-provenance。
 
 ---
 

@@ -16,6 +16,42 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 |-----------|-----------------|
 | `4.0-canary` | `4.0.0.dev0` |
 | `vX.Y.Z` | `X.Y.Z` |
+| `vX.Y.Z-canary.N`（目标） | `X.Y.Z.devN` |
+
+`4.0-canary` 是当前过渡态：它是无序号的 canary 代号，不是 tag grammar。切到 tag 发行后 canary 版本名一律采用 `vMAJOR.MINOR.PATCH-canary.N`，见下节。
+
+## Tag 发行与更新合同（目标）
+
+> 本节是**目标合同 / 拟定接口**，不是当前可用命令。它冻结的是待实现的发行语义；`prism update` 当前仍执行 `git pull --rebase`（见 [onboarding](./onboarding.md)）。本节出现的命令在实现落地前均不存在。
+
+### 两类不可变发布
+
+| 类型 | tag 形态 | package version | 产出位置 |
+|------|----------|-----------------|----------|
+| canary prerelease | `vMAJOR.MINOR.PATCH-canary.N` | `X.Y.Z.devN` | 实验期从 `prism-4` 产出 |
+| stable release | `vMAJOR.MINOR.PATCH` | `X.Y.Z` | 合并 `main` 后从 `main` 产出 |
+
+- tag 使用 annotated tag；**已 push 的 tag 不可重写、不可覆盖**。发行单位是不可变 tag，不是分支上的 commit。
+- 排序按 SemVer prerelease 规则（`canary.9 < canary.10 < stable`），不做纯字符串排序。
+- tag 可以指向任意发布分支上的 commit，因此 source branch 与 update channel 保持解耦：实验期不需要提前把 README 或 updater 硬编码为 `main`。
+
+### 安装模式与更新行为
+
+- **managed install**：位于 detached release tag，由产品 updater 管理。
+- **source checkout**：位于 branch，由贡献者自行使用 Git；产品 updater **不追 branch commit**。
+- 安装记录 `update_channel`（`canary` / `stable`）与 major series；新安装显式选择 channel，不从当前分支暗推断。
+- updater 只解析**当前 channel** 中更新的不可变 tag；无新匹配 tag 时 no-op，保持当前版本且零写入。
+- canary 与 stable **不自动跨 channel**：stable tag 出现不会把 canary 用户转走；channel 切换是显式用户动作。
+- SDK 内置三入口（`prism` / `prism-review` / `prism-plan`）跟随 SDK tag 发布；外部 `prism-skills` 是开发者 / 个人扩展，不伪装成同一 product release，也不纳入产品 updater 的 commit pull。
+
+### 与当前实现的差距
+
+| 目标能力 | 当前状态 |
+|----------|----------|
+| `prism update --check` / `--channel` / `--to` | 未实现；当前是 `git pull --rebase` |
+| `bin/release`（check / tag / push 机械面） | 未创建 |
+| `update_channel` / `update_series` 安装记录 | 未实现 |
+| 版本元数据切到 `canary.N` 形态 | 未开始；当前为 `4.0-canary` / `4.0.0.dev0` |
 
 ## 版本提升 Checklist
 

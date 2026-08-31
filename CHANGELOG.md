@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Added
+
+- **两层公开叙事** — Protocol Core 只回答稳定语义，Reference Experience 负责让语义在本机跑起来；旧的分层总表降级为分发 / 所有权视图，不再与 Core 抢解释权。
+- **三入口与机械 CLI 分层** — `/prism`、`/prism-review`、`/prism-plan` 承担认知入口，CLI 只保留机械事实、投影、校验与 guarded commitment；通用 mutation 面退出活树。
+- **Conversation Choice Capture** — 人类的明确选择成为 target-bound evidence；Plan acceptance 与 Decision commitment 复用同一 authority guard，authority 模型不再只有拒绝路径。
+- **Tag 发行与更新合同（目标）** — `docs/release-process.md` 冻结 canary / stable 两类不可变 tag 的 grammar、channel 过滤规则与 source / managed install 边界。这是待实现合同，当前更新仍是 commit pull。
+
 ### Fixed
 
 - **current config 控制面** — 修复 `bin/setenv --init / --example` dispatch 存在但实现缺失导致的 exit 127；setenv、setup、doctor、relink 与 Host 统一消费 `bin/workspace_resolve.py`，避免同一配置被多套 parser 得出不同结论。
@@ -17,6 +24,8 @@
 
 ### Changed
 
+- **语义定义校准** — Artifact 的总定义改为「Topic 内可引用、可演进的协作状态单元」，「不可安全重建」下沉为 persistent Artifact 的持久化判据，Brief 作为 projected Artifact 不再与总定义冲突；`Record Decision` 的口径统一为 Reference / Adapter Operation；Workspace 的必需性改为三层表述（Core 无 primitive / Reference Experience 需要可用 store root / 项目模式默认经 Workspace backend 与 bridge）。
+- **维护手册对齐真实命令面** — `bin/README.md` 的 `create-skill` / `clean` / `doctor --scope` 示例改为当前实现真正接受的参数；`docs/onboarding.md` 去掉把 `git pull origin main` 写成 `./setup.sh update` 等价分步的伪口径；contributing 中 3.x 治理指令与 OFM 速查归档到 `docs/historical/`。
 - **测试控制面** — `docs/testing-contract.md` 登记全部活测试的 Contract ID、owner、supported inputs、lifecycle 与 retirement trigger；新增自动守卫，新增测试文件若未登记会直接失败。
 - **机械面强化** — `prism artifact next-id` 按 store-global role prefix 递增预分配工件 id，避免 parent / child 裸 ref 碰撞；`prism artifact locate` 提供 ref → 文档路径并与 save 落盘推导同源。
 - **4.0 写入表面收口** — Review / Clarify / Plan 输出由三入口按 Artifact Contracts 直写；CLI 只保留机械事实、投影、校验及 guarded commitment。
