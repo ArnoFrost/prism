@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Immutable target tag (vX.Y.Z-canary.N or vX.Y.Z)
+        required: true
+        type: string
+      release_line:
+        description: Source and product channel
+        required: true
+        type: choice
+        options: [canary, stable]
+      base:
+        description: Optional derived-base assertion; bootstrap uses registered baseline
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ inputs.release_line }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Freeze candidate
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.freeze.outputs.sha }}
+      source_ref: ${{ steps.freeze.outputs.source_ref }}
+    steps:
+      - name: Validate source line and freeze exact SHA
+        id: freeze
+        env:
+          RELEASE_LINE: ${{ inputs.release_line }}
+          SOURCE_REF: ${{ github.ref_name }}
+          EXACT_SHA: ${{ github.sha }}
+        run: |
+          expected_ref=main
+          if [ "$RELEASE_LINE" = canary ]; then expected_ref=prism-4; fi
+          test "$SOURCE_REF" = "$expected_ref"
+          echo "sha=$EXACT_SHA" >> "$GITHUB_OUTPUT"
+          echo "source_ref=$SOURCE_REF" >> "$GITHUB_OUTPUT"
+
+  preflight:
+    name: Preflight (${{ matrix.os }})
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+      - run: uv python install 3.11
+      - name: Release preflight
+        env:
+          TARGET_TAG: ${{ inputs.tag }}
+          RELEASE_LINE: ${{ inputs.release_line }}
+          EXACT_SHA: ${{ needs.prepare.outputs.sha }}
+          ASSERTED_BASE: ${{ inputs.base }}
+        run: |
+          bin/release preflight \
+            --tag "$TARGET_TAG" \
+            --release-line "$RELEASE_LINE" \
+            --sha "$EXACT_SHA" \
+            --base "$ASSERTED_BASE" \
+            --remote origin
+
+  publish:
+    name: Publish immutable tag and GitHub Release
+    needs: [prepare, preflight]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+      - name: Recheck candidate after concurrency wait
+        env:
+          TARGET_TAG: ${{ inputs.tag }}
+          RELEASE_LINE: ${{ inputs.release_line }}
+          EXACT_SHA: ${{ needs.prepare.outputs.sha }}
+          ASSERTED_BASE: ${{ inputs.base }}
+        run: bin/release preflight --tag "$TARGET_TAG" --release-line "$RELEASE_LINE" --sha "$EXACT_SHA" --base "$ASSERTED_BASE" --remote origin --skip-tests
+      - name: Create and push annotated tag
+        env:
+          TARGET_TAG: ${{ inputs.tag }}
+          EXACT_SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag -a "$TARGET_TAG" "$EXACT_SHA" -m "Prism $TARGET_TAG"
+          git push origin "refs/tags/$TARGET_TAG"
+      - name: Create human-facing GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_TAG: ${{ inputs.tag }}
+          RELEASE_LINE: ${{ inputs.release_line }}
+        run: |
+          prerelease=""
+          if [ "$RELEASE_LINE" = canary ]; then prerelease=--prerelease; fi
+          gh release create "$TARGET_TAG" --title "Prism $TARGET_TAG" --generate-notes $prerelease
