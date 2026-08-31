@@ -16,9 +16,12 @@ Prism 是一套**本地优先、无侵入**的轻量认知熵管理框架。它�
 
 > 共享规则，本地状态，清晰边界。
 
-**当前阶段**：v3.1 boundary-stable — 在 v3.0 GA 基线上推进强模型时代的治理瘦身；`focus` 单入口、按需 `task` 递归分解与 README grandfather 兼容仍是稳定基础。
+> [!IMPORTANT]
+> **3.x 已停止功能维护。** 本分支保留 3.x 的稳定代码与历史文档，不再承接新能力开发。Prism 正在以 4.0 重构 Topic / Artifact / Capability / Invocation / Decision Semantics；希望提前体验的用户请从不可变 Canary Tag 安装，参见 **[Prism 4.0 内测体验指南](docs/prism-4-preview.md)**。Prism 4 尚处于实验期，不构成 stable 兼容性承诺。
+
+**当前阶段**：v3.1 boundary-stable historical line — 代码继续可用，但已停止功能维护；新的协议与产品演进只发生在 Prism 4 实验线。
 **发行**：`prism --version`（同源 [`VERSION`](VERSION) · [CHANGELOG](CHANGELOG.md)）  
-**快速判断 Prism 是否成立** → [docs/prism-3.0.md](docs/prism-3.0.md) · **3.1 路线** → [CHANGELOG](CHANGELOG.md) · **已有 workspace 接入** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md) · **v2.0 历史** → [docs/prism-2.0.md](docs/prism-2.0.md)
+**Prism 4 内测** → [体验与安装](docs/prism-4-preview.md) · **4.0 当前说明** → [prism-4 README](https://github.com/ArnoFrost/prism/blob/prism-4/README.md) · **3.x 历史** → [docs/prism-3.0.md](docs/prism-3.0.md) · **已有 3.x workspace** → [docs/workspace-v3-upgrade.md](docs/workspace-v3-upgrade.md)
 
 ---
 
@@ -58,6 +61,8 @@ flowchart TB
 | 从 v2 迁到 v3 focus 入口 | [workspace-v3-upgrade](docs/workspace-v3-upgrade.md) |
 
 ## 快速开始
+
+> 新用户建议优先阅读 [Prism 4.0 内测体验指南](docs/prism-4-preview.md)。下面的命令安装的是本 `main` 分支保留的 3.x historical line。
 
 **一条命令 init**（clone 之后）：
 
@@ -155,6 +160,7 @@ README 只负责入口导航。完整分类见 **[docs/README.md](docs/README.md
 
 | 你想了解 | 入口 |
 |----------|------|
+| **体验 Prism 4.0 Canary** | [Prism 4.0 内测体验指南](docs/prism-4-preview.md) |
 | **安装（人类 · GitHub）** | [SETUP_GITHUB.md](SETUP_GITHUB.md) |
 | **安装（Agent）** | [SETUP_AGENT.md](SETUP_AGENT.md) |
 | **init 后日常 / 生命周期** | [docs/onboarding.md](docs/onboarding.md) · 上文 [生命周期总览](#生命周期总览) |
