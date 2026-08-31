@@ -282,7 +282,8 @@ def run_update(args: argparse.Namespace) -> dict:
     if mode == SOURCE and not bootstrap:
         return _blocked(
             "当前是分支 checkout（source 模式），产品更新不接管分支："
-            "贡献者用 Git 自行管理，或用 --bootstrap-to <tag> 迁移到 managed 安装",
+            "贡献者用 Git 自行管理，或用 --track-branch 做 commit 级跟进、"
+            "--bootstrap-to <tag> 迁移到 managed 安装",
             mode=mode,
             channel=channel,
             series=series,

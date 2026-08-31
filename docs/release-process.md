@@ -44,6 +44,24 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 - canary 与 stable **不自动跨 channel**：stable tag 出现不会把 canary 用户转走；channel 切换是显式用户动作。
 - SDK 内置三入口（`prism` / `prism-review` / `prism-plan`）跟随 SDK tag 发布；外部 `prism-skills` 是开发者 / 个人扩展，不伪装成同一 product release，也不纳入产品 updater 的 commit pull。
 
+### 两条发布线与发行节奏
+
+Prism 长期维护两条发布线，各自产出自己的 channel：
+
+| 发布线 | 分支 | 产出 | 打 tag 前 |
+|--------|------|------|-----------|
+| 实验线 | `prism-4` | `vX.Y.Z-canary.N` | `bin/release check --tag … --expect-branch prism-4` |
+| 稳定线 | `main` | `vX.Y.Z` | `bin/release check --tag … --expect-branch main` |
+
+一轮版本的典型走法：
+
+1. 在实验线上开发，达到可发行状态就打 `canary.N`，序号递增、不可重写。
+2. canary 证明成立后，合并进稳定线。
+3. 从稳定线打 `vX.Y.Z`——去掉 canary 后缀就是一次 stable 发布。
+4. **把 stable 的 commit 同步回实验线**。漏掉这一步两条线会持续分叉，下一次合并的代价会滚雪球。
+
+tag 名能区分 channel，但看不出它是在哪条线上打的，所以发行时用 `--expect-branch` 兜住：在稳定线上误打 canary tag（或反之）会被直接拦下。不给这个参数就不校验——下一轮实验想换分支发版时不必改动实现。
+
 ### 与发行就绪的差距
 
 | 能力 | 当前状态 |
@@ -54,6 +72,8 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 | 版本元数据切到 `canary.N` 形态 | 未开始；当前为 `4.0-canary` / `4.0.0.dev0`，随首枚 canary tag 一起提升 |
 
 ## 版本提升 Checklist
+
+> 两条发布线的 `VERSION` 形态不同：实验线是 `X.Y.Z-canary.N`，稳定线是 `X.Y.Z`。提升前用 `bin/release check --expect-branch <分支>` 确认自己在正确的线上。
 
 1. 改 `VERSION`。
 2. 同步 `pyproject.toml` 的 `[project].version`。

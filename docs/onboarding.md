@@ -126,24 +126,51 @@ prism decision record <topic_id> --body "..." --authority-evidence "<evidence re
 
 旧 3.x workflow 已随 prism-4 分支剔除；历史文档见 `docs/historical/`。
 
-### 升级 SDK
+### 更新：先看自己在哪条路径上
+
+Prism 区分「装了一个发行版本」和「在分支上开发」。先用一条命令确认：
 
 ```bash
-./setup.sh update
+prism update --check --json     # 看 mode：managed 还是 source
 ```
 
-`./setup.sh update` 委托 `bin/update`，对当前 tracking branch 执行 `git pull --rebase`。它不拉入另一个发行线：手工展开时应跟随自己当前的 upstream，不要硬编码 branch 名。
+`mode` 决定你下面该用哪一组命令。
+
+#### 使用者：managed 安装（detached 在 release tag 上）
 
 ```bash
-cd ~/prism && git pull --rebase     # 跟随当前 upstream，不指定 main
-prism doctor --scope ci --quick
+prism update --check                 # 只看不动：当前 / 通道 / 最新 / 动作
+prism update                         # 切到本通道内更新的不可变 tag
+prism update --to v4.0.0-canary.1    # 精确安装或回滚
+prism update --channel stable        # 显式切换通道
+prism update --skills                # 同时拉外部 prism-skills
+```
+
+- 只认当前通道内的不可变 tag；没有新 tag 就是 no-op，零写入。
+- 分支上的普通 commit 不是发行事件，不会把你带过去。
+- canary 与 stable 不自动互串，切通道是显式动作。
+- 切换后体检或重链失败会自动回滚到切换前的 commit。
+
+#### 维护者 / 贡献者：source checkout（在分支上）
+
+```bash
+prism update --track-branch                  # commit 级跟进：pull --rebase + 体检 + 重链
+prism update --bootstrap-to v4.0.0-canary.1  # 从分支迁移到 managed 安装
+```
+
+- `--track-branch` 跟的是 commit，不是发行版本。它从不自动执行，必须显式给出——这正是为了不让「拉分支」和「装版本」混成一个动作。
+- 工作树脏、与上游分叉或有冲突时它会停下，交给 `prism-maintain` 判断方向与解决冲突。
+- 想在分支上继续开发就留在分支；要验证使用者那条路，另开一个 detached checkout。
+
+两条路径之后的验证是一样的：
+
+```bash
+prism doctor --scope ci
 prism relink --no-workspace
 prism --version
 ```
 
-> 上面的手工展开只适用于**分支 checkout**——贡献者用 Git 管理自己的 source line。产品安装固定在不可变 release tag 上：`prism update --check` 查看当前通道有没有新版本，`prism update` 才切换，且只切到本通道内更新的 tag。分支 checkout 会被明确拒绝，除非用 `--bootstrap-to` 迁移。详见 [release-process.md](./release-process.md)。
-
-> `prism update` 遇 dirty working tree 会 abort。它只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
+> `./setup.sh update` 等价于不带参数的 `prism update`，因此只对 managed 安装成立；分支 checkout 请直接用上面的 `--track-branch`。`prism update` 遇 dirty working tree 会 abort，且只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
 
 ---
 

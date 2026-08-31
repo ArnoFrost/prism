@@ -9,6 +9,8 @@
 - **Tag-aware 产品更新** — `prism update` 不再追分支 commit：managed install 固定在 detached release tag 上，只切到本通道内更新的不可变 tag；`--check` 零写入、`--to` 精确切换、`--channel` 显式持久化通道、`--bootstrap-to` 把分支 checkout 迁进 managed 安装。分支 checkout、dirty worktree、跨通道 tag 一律 fail-closed，切换后体检失败回滚到切换前的 commit。
 - **发行机械面 `bin/release`** — check / tag / push 三步分开：check 无副作用、tag 只在本机创建 annotated tag、push 必须显式 `--confirm` 才会真正推送。
 - **更新通道配置** — `prism.local.yaml` 新增 `update_channel` / `update_series`；通道必须由安装显式选择，不从当前 Git 分支推断。
+- **两条更新链路** — 分支 checkout 可用 `prism update --track-branch` 做 commit 级跟进（`git pull --rebase` + 体检 + 重链），与 managed 安装的 tag 级更新严格分开：两条链路互斥，`--track-branch` 在 managed 安装上被拒，输出与返回都标注 commit 级 / 非发行版本。分支 checkout 上的普通 `prism update` 仍然拒绝——自动拉 commit 会让「拉分支」和「装版本」混成一个动作。
+- **发布线校验** — `bin/release check / tag` 支持 `--expect-branch`，确认 tag 打在预期的发布线上（实验线出 canary、稳定线出 stable）；不给参数就不校验，下一轮实验换分支发版不必改实现。
 
 ### Fixed
 
