@@ -2,20 +2,20 @@
 # Prism doctor — 统一健康检查入口，编排 setup / validate / sniff / relink 四件套。
 #
 # 用法:
-#   bin/doctor                    完整体检（仓库+配置+链接+skill+同步状态）
-#   bin/doctor --quick            快速模式，跳过访问远程的 sniff
+#   bin/doctor                    完整体检（env / skill / cli / config / ci_health）
+#   bin/doctor --quick            兼容旧调用保留；当前不跳过任何阶段
 #   bin/doctor --fix              非破坏性自动修复（validate --fix + relink + cli 注入）
-#   bin/doctor --rollback         回滚 --fix 的修改（删除 rc 锚点 + symlink）
+#   bin/doctor --rollback         回滚 --fix 对 CLI 寻址层的修改（rc 锚点 + symlink）
 #   bin/doctor --json             JSON 输出供其他 skill 消费
-#   bin/doctor --scope <name>     只跑指定范围：env / config / link / skill / sync / cli / release / ci
+#   bin/doctor --scope <name>     只跑指定范围：env / skill / cli / config / release / ci
 #
 #   scope 说明:
 #     env       setup --check 的环境完整性
 #     skill     validate-skills 的 frontmatter 合规
 #     cli       doctor_cli 的 prism 寻址体检
 #     config    prism.local.yaml 必填字段 + 路径可达性
-#     release   聚合以上全部（1.0 发布就绪闸门）
-#     ci        env + skill + cli（跳过 sync 远端访问；vault 路径不可达只 INFO 不计警告）
+#     release   聚合以上全部（发布就绪闸门）
+#     ci        skill + ci_health，不读本机配置、不依赖 PATH 锚点
 #
 #   --output <path>  将 JSON 结果写入文件（自动启用 --json）
 #
@@ -69,6 +69,20 @@ while [[ $# -gt 0 ]]; do
     *) echo -e "${RED}✗ 未知参数: $1${NC}" >&2; exit 1 ;;
   esac
 done
+
+# 未知 scope 会让每个阶段都被 _in_scope 跳过，计数器停在初始值 0，最终
+# 照样打印「完全健康」并 exit 0。健康检查对「什么都没检查」返回成功，比
+# 普通的 help 错字危险得多，所以先做白名单校验再进入任何阶段。
+if [[ -n "$SCOPE" ]]; then
+  case "$SCOPE" in
+    env|skill|cli|config|release|ci) ;;
+    *)
+      echo -e "${RED}✗ 未知 --scope: ${SCOPE}${NC}" >&2
+      echo "可用 scope: env / skill / cli / config / release / ci" >&2
+      exit 1
+      ;;
+  esac
+fi
 
 # ── 判定 scope 是否激活某阶段 ────────
 # release scope 聚合全部 4 个阶段（env/skill/cli/config）；

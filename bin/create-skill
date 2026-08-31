@@ -58,7 +58,10 @@ while [[ $# -gt 0 ]]; do
     --no-relink)  NO_RELINK=true; shift ;;
     --dry-run)    DRY_RUN=true; shift ;;
     --help|-h)
-      sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+      # 提取头部注释块。用 awk 而不是 sed 的 `{ ...; p }` 形式：BSD sed
+      # 要求块内命令以换行或分号分隔，GNU 下能跑的写法在 macOS 会直接报
+      # "extra characters at the end of p command"，自说明入口就废了。
+      awk 'NR==1 { next } /^$/ { exit } { sub(/^# ?/, ""); print }' "$0"
       exit 0 ;;
     *) echo -e "${RED}✗ 未知参数: $1${NC}" >&2; exit 1 ;;
   esac

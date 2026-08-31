@@ -36,7 +36,9 @@ while [[ $# -gt 0 ]]; do
       [[ $# -lt 2 ]] && { echo -e "${RED}✗ --layer 需要参数${NC}" >&2; exit 1; }
       FILTER_LAYER="$2"; shift 2 ;;
     --help|-h)
-      sed -n '2,/^$/{ s/^# //; s/^#//; p }' "$0"
+      # 与 bin/create-skill 同因：sed 的 `{ ...; p }` 在 BSD/macOS 下会报
+      # "extra characters at the end of p command"，改用可移植的 awk 提取。
+      awk 'NR==1 { next } /^$/ { exit } { sub(/^# ?/, ""); print }' "$0"
       exit 0 ;;
     *) echo -e "${RED}✗ 未知参数: $1${NC}" >&2; exit 1 ;;
   esac

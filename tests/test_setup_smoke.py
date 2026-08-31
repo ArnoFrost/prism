@@ -508,3 +508,84 @@ def test_bin_prism_header_has_python3_fallback():
     content = PRISM.read_text(encoding="utf-8")
     assert "exec python3" in content, "bin/prism 缺少 python3 fallback exec 分支"
     assert "command -v python3" in content, "bin/prism 缺少 python3 可用性检查"
+
+
+def test_doctor_scope_whitelist_is_fail_closed():
+    """未知 scope 必须 fail closed。
+
+    它曾经让所有阶段都被跳过、计数器停在 0，最后照样打印「完全健康」并
+    exit 0。健康检查对「什么都没检查」返回成功，比普通的 help 错字危险
+    得多，所以白名单要挡在任何阶段之前。
+    """
+    if not DOCTOR.exists():
+        pytest.skip("bin/doctor 不存在")
+
+    for scope in ("nonsense", "sync", "link"):
+        result = subprocess.run(
+            [str(DOCTOR), "--scope", scope],
+            cwd=str(SDK_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert result.returncode == 1, scope
+        assert "未知 --scope" in result.stdout + result.stderr, scope
+
+    # 白名单内的值要真的进入检查阶段，而不是被当成未知值挡掉。
+    for scope in ("ci", "config"):
+        result = subprocess.run(
+            [str(DOCTOR), "--scope", scope],
+            cwd=str(SDK_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        assert "未知 --scope" not in result.stdout + result.stderr, scope
+
+
+def test_maintenance_scripts_print_help_with_bsd_sed():
+    """macOS 默认的 BSD sed 不接受 `{ ...; p }`，两个维护脚本曾因此连
+    --help 都失败——自说明入口在当前明确支持的平台上不可用。"""
+    for name in ("create-skill", "validate-skills", "clean", "doctor"):
+        script = SDK_ROOT / "bin" / name
+        if not script.exists():
+            pytest.skip(f"bin/{name} 不存在")
+
+        result = subprocess.run(
+            [str(script), "--help"],
+            cwd=str(SDK_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        assert result.returncode == 0, f"{name}: {result.stdout}{result.stderr}"
+        assert result.stdout.strip(), f"{name} 的 --help 没有输出"
+
+
+def test_dry_run_entrypoints_stay_side_effect_free():
+    """手册里被推荐给维护者的 dry-run 入口必须真能跑，且不写盘。"""
+    if not LOCAL_CONFIG.exists():
+        pytest.skip("prism.local.yaml is local-only; dry-run smoke needs a configured workspace")
+    if not (SDK_ROOT / "bin" / "create-skill").exists():
+        pytest.skip("bin/create-skill 不存在")
+
+    marker = "prism-smoke-demo-skill"
+    create = subprocess.run(
+        [str(SDK_ROOT / "bin" / "create-skill"), "--name", marker, "--dry-run"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert create.returncode == 0, create.stdout + create.stderr
+    assert not (SDK_ROOT / "skills" / "prism4" / marker).exists()
+
+    clean = subprocess.run(
+        [str(SDK_ROOT / "bin" / "clean"), "--dry-run"],
+        cwd=str(SDK_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert clean.returncode == 0, clean.stdout + clean.stderr
