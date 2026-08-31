@@ -8,12 +8,12 @@
 
 ## 建议读序（L1 使用者）
 
-1. 仓库根 [README](../README.md) — **`./setup.sh init`** + 工具入口  
-2. [SETUP_GITHUB.md](../SETUP_GITHUB.md) — 人类安装；[SETUP_AGENT.md](../SETUP_AGENT.md) — Agent  
-3. [onboarding.md](./onboarding.md) — init 后：`setup.sh` · **`prism update` / `doctor`** · E2E  
-4. [prism-3.0.md](./prism-3.0.md) — 为什么是认知熵治理框架  
-5. [topic-lifecycle.md](./topic-lifecycle.md) + [skill-taxonomy.md](./skill-taxonomy.md) — topic 与 skill 怎么选  
-6. 已有 workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
+1. 新用户先选版本：[Prism 4.0 内测体验](./prism-4-preview.md)；3.x 仅作为停止功能维护的 historical line 保留
+2. 仓库根 [README](../README.md) — 3.x **`./setup.sh init`** + 工具入口
+3. [SETUP_GITHUB.md](../SETUP_GITHUB.md) — 3.x 人类安装；[SETUP_AGENT.md](../SETUP_AGENT.md) — Agent
+4. [onboarding.md](./onboarding.md) — 3.x init 后日常维护
+5. [prism-3.0.md](./prism-3.0.md) — 3.x 历史叙事
+6. 已有 3.x workspace → [workspace-v3-upgrade.md](./workspace-v3-upgrade.md)
 
 贡献者与协议修订 → [contributing.md](./contributing.md)（L3+）。
 
@@ -39,10 +39,11 @@
 
 ## B — 当前 3.0 叙事（guide）
 
-随 3.x 产品演进；允许改措辞，不进 vocabulary。不重复发行号。
+3.x 已停止功能维护；本层作为 historical line 的使用与迁移参考保留。
 
 | 文档 | 用途 |
 |------|------|
+| [prism-4-preview.md](./prism-4-preview.md) | 从 main 导向 4.0 Canary 的安装、更新、通道切换与风险说明 |
 | [prism-3.0.md](./prism-3.0.md) | v3.0 GA 定位、已落地锚点、后续观察项 |
 | [skill-taxonomy.md](./skill-taxonomy.md) | 按认知熵源选 workflow skill |
 | [topic-lifecycle.md](./topic-lifecycle.md) | topic 从 intake 到 archive |
