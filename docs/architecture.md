@@ -57,6 +57,12 @@ Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`；3.x 实现�
 
 外部技能仓库、Env 和 Vault backend 均按需配置；缺失时不阻断最小参考安装。
 
+Workspace 的「可选」是三个不同层次的判断，不要混用：
+
+1. **Protocol Core 没有 Workspace primitive** —— Topic / Artifact / Capability / Invocation / Decision Semantics 的定义不依赖它。
+2. **Reference Experience 需要一个可用的 store root** —— 协作状态必须有地方落盘；CLI 的显式 `--root` 可以指向任意目录，不经过 bridge。
+3. **项目日常模式默认经 Workspace backend + `workspace.{code}.local` bridge** —— 这是默认工作路径，不是 Protocol primitive。
+
 ---
 
 ## 桥接模式

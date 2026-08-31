@@ -133,7 +133,14 @@ Topic
 
 ### 4.3 Artifact
 
-`Artifact` 是 Topic 内可引用、可演进、不可安全遗忘的协作状态。Artifact role 使用名词。
+`Artifact` 是 Topic 内可引用、可演进的协作状态单元。Artifact role 使用名词。
+
+同一个 Artifact Role 集合里有两类承载方式，判据不同：
+
+- **Persistent Artifact Role** 承载不可安全重建的状态，判据是 §2 的可重建性测试。
+- **Projected Artifact** 是从现有权威状态再生成的投影，可重建、可丢弃后恢复，不作为事实源。当前只有 `Brief`。
+
+两类都是 Artifact Role；只有前者满足持久化判据。因此「不可安全遗忘 / 不可安全重建」是持久化的判据，不是 Artifact 这一类本身的定义。
 
 Artifact 不要求是 Markdown，不要求是文件，也不要求位于 Obsidian。Core 只要求它能表达必要语义和关系。
 
@@ -195,7 +202,7 @@ Reference Experience 可以把尚未吸收、但必须跨 session 保留精确�
 
 | 类别 | 当前语法 | 当前映射 |
 |------|----------|----------|
-| Artifact | 不可安全遗忘的持久协作状态；使用名词 | Intent / Brief / Findings / Decision / Plan |
+| Artifact | Topic 内可引用、可演进的协作状态单元；使用名词 | Intent / Brief（projected）/ Findings / Decision / Plan |
 | Capability | 语义变换能力；使用动作 | Review / Clarify / Plan |
 | Payload | Invocation 中的 typed semantic result；不因实现方便晋升为 Artifact | Understanding Update / Proposed Patch / Decision Candidate |
 | Operation | 显式副作用或记录动作 | Record Decision |
@@ -834,7 +841,7 @@ Prism 4.0 MVP 只有在以下条件成立时才算完成：
 - `Decision` 收缩为效力超出单一 Plan 生命周期的重要承诺；方案级选择优先吸收到 Plan。
 - Artifact lifecycle 改为 Authority / Evolution 双轴，避免存储实现泄漏。
 - `Clarify` 与 `Decision` 分层：Clarify 可以产生 Decision Candidate / Proposed Patch，但默认无权修改 authoritative artifacts。
-- `Decide` 暂不进入 MVP Core Capability；`Record Decision` 作为 Reference Capability / Adapter Operation。
+- `Decide` 暂不进入 MVP Core Capability；`Record Decision` 作为 Reference / Adapter Operation。
 - Capability Contract 只定义 typed inputs、typed outputs、effect policy，不定义固定执行顺序。
 - Capability semantic identity independent of provider/runtime realization；Provider 只属于 Core 外实现与 optional execution metadata。
 - Invocation 记录 semantic capability use and causal provenance，不吸收 runtime telemetry、execution graph 或 runtime dependency graph。

@@ -266,7 +266,7 @@ def test_state_boundary_contract_and_terminology_grammar_are_explicit() -> None:
     assert "### 4.5 Terminology Grammar Checkpoint" in alignment
     assert "不是最终 Terminology Freeze" in alignment
     assert "命名不能反向驱动 ontology" in alignment
-    assert "Artifact | 不可安全遗忘的持久协作状态；使用名词" in alignment
+    assert "Artifact | Topic 内可引用、可演进的协作状态单元；使用名词" in alignment
     assert "Capability | 语义变换能力；使用动作" in alignment
     assert "Payload | Invocation 中的 typed semantic result" in alignment
     assert "Operation | 显式副作用或记录动作 | Record Decision" in alignment

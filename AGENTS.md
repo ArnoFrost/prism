@@ -13,7 +13,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 | 原语 | 一句话 |
 |------|--------|
 | Topic | 持久的协作问题空间 |
-| Artifact | 承载**不可安全重建**的协作状态（Intent / Plan / Findings / Decision / Brief） |
+| Artifact | Topic 内可引用、可演进的协作状态单元；durable 类以「不可安全重建」为持久化判据 |
 | Capability | 加工状态（Review / Clarify / Plan 等） |
 | Invocation | 一次调用留下的可追踪关系 |
 | Decision | 被授权后固化的承诺；只承接效力超出单一 Plan 生命周期的承诺 |
@@ -28,7 +28,7 @@ Prism 是一套本地优先、无侵入的个人 AI 协作基座。人与 AI 共
 
 Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议级纪律：
 
-**可重建性测试**：可由足够强的 Agent 基于现有事实与 repository reality 安全、低成本、可靠重建的状态，默认投影，不持久化。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
+**可重建性测试**：可由足够强的 Agent 基于现有事实与 repository reality 安全、低成本、可靠重建的状态，默认投影，不持久化。不可安全重建是 persistent Artifact 的持久化判据；`Brief` 是可再生的 projection，仍属于 Artifact Role，但不因此成为事实源。Prism 保存不可安全遗忘的协作状态，不保存 Agent cognition。
 
 **Roles are available, not mandatory**：Artifact Role 是语义工具，不是 Topic 创建后的文件 checklist。简单 Topic 可以只有 Topic 与少量必要 Artifact 就结束；不为协议完整生成空壳 Intent / Plan / Findings。
 
@@ -81,6 +81,12 @@ Artifact 写法合同见 `skills/prism4/artifact-contracts/`；以下为协议�
 | **Workspace** | 项目级协作状态实例 | 逻辑上要有地方放 | 默认本地 backend，Vault 可选 |
 
 语义最小是 Protocol Core。跑起来还要 Minimal Reference Installation（SDK + `uv`）和可选的 Workspace 实例。不要把「Protocol + Workspace」说成最小可用集合而与 Core 抢解释权。
+
+Workspace 的「可选」分三层，不要混用：
+
+1. **Protocol Core 没有 Workspace primitive** —— Topic / Artifact / Capability 的语义不依赖它。
+2. **Reference Experience 需要一个可用的 store root** —— 协作状态必须有地方落盘；CLI 的显式 `--root` 可以指向任意目录，不经 bridge。
+3. **项目日常模式默认经 Workspace backend + `workspace.{code}.local` bridge** —— 这是默认路径，不是 Protocol primitive。
 
 Skills 和 Env 不是硬依赖。分发面只有 `skills/prism4/`。
 

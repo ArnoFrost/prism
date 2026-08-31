@@ -123,7 +123,7 @@ Protocol Core 保持很小：
 | 概念 | 一句话 |
 |------|--------|
 | Topic | 持久的协作问题边界 |
-| Artifact | 承载不可安全遗忘协作状态的可引用单元 |
+| Artifact | Topic 内可引用、可演进的协作状态单元 |
 | Capability | 加工状态的语义能力 |
 | Invocation | 一次调用留下的来源、因果和关系记录 |
 | Decision Semantics | 管理 authority、commitment、supersession 和 affected artifacts 的规则 |
@@ -137,6 +137,8 @@ Protocol Core 保持很小：
 | Findings | 仍无法吸收的重要悬置判断与关键证据 | advisory |
 | Plan | 当前可审查、可执行、可验证的实施方案 | advisory until accepted; not a projection |
 | Decision | 效力超出单一 Plan 生命周期的重要承诺 | authoritative / committed |
+
+两类承载方式的判据不同：Intent / Plan / Findings / Decision 是不可安全重建的 persistent 状态；Brief 是可再生成的投影，可丢弃后恢复，不是事实源。
 
 `supersedes` 表示一个 Artifact 被后续 Artifact 取代；`authorizes` 表示 Decision 可对某个 Artifact 形成授权关系。它们是关系，不是新的 lifecycle DSL。
 
