@@ -185,6 +185,69 @@ def _rollback(repo: Path, previous_branch: str | None, previous_sha: str) -> Non
     )
 
 
+def _track_branch(repo: Path, mode: str, args: argparse.Namespace) -> dict:
+    """分支 checkout 的 commit 级跟进。
+
+    它跟随当前 upstream 的分支 commit，不是发行版本——这一点必须写在
+    输出里：把「拉到了分支最新」误读成「装上了某个 release」，正是
+    tag 发行要杜绝的事情。
+    """
+    if mode == MANAGED:
+        return _blocked(
+            "当前是 managed 安装（detached 在 release tag 上）；分支跟进不适用，"
+            "请用 prism update 走 tag 通道",
+            mode=mode,
+        )
+    if mode != SOURCE:
+        return _blocked("--track-branch 需要分支 checkout，当前 HEAD 既不在分支也不在 tag 上")
+
+    branch = _current_branch(repo)
+    payload: dict = {
+        "ok": True,
+        "mode": mode,
+        "branch": branch,
+        "action": "track-branch",
+        "writes": 0,
+        "release": False,
+    }
+
+    if args.check:
+        behind = _git(repo, ["rev-list", "--count", "HEAD..@{upstream}"])
+        payload["behind"] = behind.stdout.strip() if behind.returncode == 0 else None
+        payload["action"] = "noop" if payload["behind"] == "0" else "update"
+        payload["detail"] = (
+            f"分支 {branch} 落后 upstream {payload['behind']} 个 commit"
+            if payload["action"] == "update"
+            else f"分支 {branch} 已与 upstream 对齐"
+        )
+        if _is_dirty(repo):
+            payload["detail"] += "；工作树有未提交变更，实际跟进前需先 commit/stash"
+        return payload
+
+    if args.dry_run:
+        payload["detail"] = f"[dry-run] git pull --rebase（分支 {branch}）"
+        return payload
+
+    pull = _git(repo, ["pull", "--rebase"], timeout=300)
+    if pull.returncode != 0:
+        payload["detail"] = "git pull --rebase 失败"
+        return _blocked(
+            "分支跟进失败；若存在冲突或分叉，交给 prism-maintain 的方向判断与冲突协助",
+            **payload,
+        )
+
+    if not _post_switch_checks(repo):
+        payload["detail"] = "分支更新后体检未通过"
+        return _blocked(
+            "跟进后体检未通过，先修复再用 --track-branch 继续；不要用分支跟进掩盖坏状态",
+            **payload,
+        )
+
+    payload["writes"] = 1
+    payload["detail"] = f"已跟随分支 {branch} 更新到最新 commit（source 模式，不是 release 版本）"
+    return payload
+
+
 def run_update(args: argparse.Namespace) -> dict:
     repo = Path(args.repo).resolve()
     config = Path(args.config).resolve() if args.config else repo / "prism.local.yaml"
@@ -193,10 +256,16 @@ def run_update(args: argparse.Namespace) -> dict:
     if not (repo / ".git").exists():
         return _blocked("不是 Git 仓库，无法进行 tag 更新")
 
-    if _is_dirty(repo):
+    dirty = _is_dirty(repo)
+    if dirty and not args.check:
+        # --check 是只读的，不移动 HEAD，因此即使工作树脏也要能给出判断——
+        # 维护者想知道「我落后多少」时，不该被要求先清理工作区。
         return _blocked("工作树有未提交变更；更新会移动 HEAD，请先 commit/stash")
 
     mode = detect_install_mode(repo)
+    if args.track_branch:
+        # 分支跟进不需要通道选择：它跟的是 commit，不是发行版本。
+        return _track_branch(repo, mode, args)
     if mode == DETACHED:
         return _blocked("当前 HEAD 既不在分支也不在 tag 上，先切到一个 release tag 或分支")
 
@@ -268,6 +337,8 @@ def run_update(args: argparse.Namespace) -> dict:
 
     if args.check:
         payload["action"] = "noop" if current == target["tag"] else "update"
+        if dirty:
+            payload["detail"] = "工作树有未提交变更，实际更新前需先 commit/stash"
         return payload
 
     if not bootstrap and current == target["tag"]:
@@ -321,6 +392,17 @@ def _render(payload: dict) -> None:
     if payload.get("action") == "blocked":
         print(f"✗ {payload['reason']}")
         return
+
+    if payload.get("release") is False:
+        # 分支跟进的输出不谈 tag：一旦出现 current tag / latest tag 字样，
+        # 就很容易被读成「装上了某个 release 版本」。
+        print(f"mode:        {payload['mode']}")
+        print(f"branch:      {payload.get('branch') or '-'}")
+        print(f"action:      {payload['action']} (commit 级，非发行版本)")
+        if payload.get("detail"):
+            print(payload["detail"])
+        return
+
     print(f"mode:        {payload['mode']}")
     print(f"channel:     {payload['channel']} (series {payload['series']})")
     print(f"current tag: {payload.get('current_tag') or '-'}")
@@ -340,6 +422,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--to", dest="target_tag", default=None, help="精确切换到指定 tag（调试 / 回滚）")
     parser.add_argument("--bootstrap-to", dest="bootstrap_tag", default=None,
                         help="从分支 checkout 一次性迁移到 managed 安装")
+    parser.add_argument("--track-branch", action="store_true",
+                        help="分支 checkout 专用：跟随当前 upstream 做 commit 级跟进，不是发行版本")
     parser.add_argument("--check", action="store_true", help="只报告当前 / 通道 / 最新 / 动作，零写入")
     parser.add_argument("--skills", action="store_true", help="同时 pull 外部 prism-skills")
     parser.add_argument("--dry-run", action="store_true")
@@ -348,6 +432,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", default=str(SDK_ROOT))
     parser.add_argument("--config", default=None)
     args = parser.parse_args(argv)
+
+    if args.track_branch and (args.channel or args.target_tag or args.bootstrap_tag):
+        # 两条链路的语义互斥：一个是 commit 级跟进，一个是发行版本切换。
+        print(
+            "error: --track-branch 不能与 --channel / --to / --bootstrap-to 混用",
+            file=sys.stderr,
+        )
+        return 2
 
     try:
         payload = run_update(args)

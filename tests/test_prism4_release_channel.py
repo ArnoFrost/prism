@@ -257,6 +257,46 @@ def test_release_check_warns_when_version_metadata_lags_the_tag(tmp_path: Path) 
     assert _status(payload, "version-metadata") == "warn"
 
 
+def test_release_check_accepts_the_expected_release_line(tmp_path: Path) -> None:
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+
+    result = _run_release(
+        repo, "check", "--tag", "v4.0.0-canary.1", "--expect-branch", "main",
+        "--skip-tests", "--json",
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert _status(json.loads(result.stdout), "branch-matches") == "ok"
+
+
+def test_release_check_blocks_a_tag_on_the_wrong_release_line(tmp_path: Path) -> None:
+    """实验线出 canary、稳定线出 stable；tag 名看不出是在哪条线上打的。"""
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+
+    result = _run_release(
+        repo, "check", "--tag", "v4.0.0-canary.1", "--expect-branch", "prism-4",
+        "--skip-tests", "--json",
+    )
+
+    assert result.returncode == 1
+    assert _status(json.loads(result.stdout), "branch-matches") == "fail"
+
+
+def test_release_check_skips_branch_check_when_no_line_is_expected(tmp_path: Path) -> None:
+    repo = _seed_repo(
+        tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
+    )
+
+    result = _run_release(repo, "check", "--tag", "v4.0.0-canary.1", "--skip-tests", "--json")
+
+    names = [step["name"] for step in json.loads(result.stdout)["steps"]]
+    assert "branch-matches" not in names
+
+
 def test_release_tag_creates_an_annotated_local_tag(tmp_path: Path) -> None:
     repo = _seed_repo(
         tmp_path / "repo", release="4.0.0-canary.1", package_version="4.0.0.dev1"
@@ -558,6 +598,74 @@ def test_update_blocks_on_a_branch_checkout_until_bootstrap(tmp_path: Path) -> N
     # bootstrap 之后不再是分支 checkout。
     assert _git(repo, "symbolic-ref", "-q", "--short", "HEAD", check=False).returncode != 0
     assert _git(repo, "describe", "--tags", "--exact-match", "HEAD").stdout.strip() == "v4.0.0"
+
+
+def test_track_branch_follows_the_branch_on_a_source_checkout(tmp_path: Path) -> None:
+    """维护者的分支跟进：跟 commit，不跟 tag。"""
+    repo = _build_install(tmp_path, tags=["v4.0.0-canary.1"], at="v4.0.0-canary.1")
+    _git(repo, "checkout", "-q", "-B", "main")
+    _attach_bare_remote(repo, tmp_path / "remote.git", branch="main")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    work = tmp_path / "work"
+    _git(work.parent, "clone", "-q", str(tmp_path / "remote.git"), str(work))
+    _init_git_repo(work)
+    (work / "feature.txt").write_text("upstream commit\n", encoding="utf-8")
+    _commit(work, "upstream moves")
+    _git(work, "push", "-q", "origin", "HEAD:main")
+
+    result = _run_update(repo, "--track-branch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["action"] == "track-branch"
+    assert payload["release"] is False
+    assert payload["branch"] == "main"
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() != before
+
+
+def test_track_branch_is_rejected_on_a_managed_install(tmp_path: Path) -> None:
+    """managed 安装没有分支可跟，混用两条链路会让人误以为装上了新版本。"""
+    repo = _build_install(tmp_path, tags=["v4.0.0-canary.1"], at="v4.0.0-canary.1")
+
+    result = _run_update(repo, "--track-branch", "--no-fetch")
+
+    assert result.returncode == 1
+    assert json.loads(result.stdout)["action"] == "blocked"
+
+
+def test_track_branch_refuses_to_mix_with_channel_switches() -> None:
+    """互斥校验发生在 run_update 之前，因此不依赖具体的仓库状态。"""
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "bin" / "update"),
+            "--repo",
+            str(ROOT),
+            "--track-branch",
+            "--channel",
+            "canary",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.returncode == 2
+    assert "不能与" in result.stderr
+
+
+def test_track_branch_check_is_read_only(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0-canary.1"], at="v4.0.0-canary.1")
+    _git(repo, "checkout", "-q", "-B", "main")
+    _attach_bare_remote(repo, tmp_path / "remote.git", branch="main")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    result = _run_update(repo, "--track-branch", "--check")
+
+    payload = json.loads(result.stdout)
+    assert payload["writes"] == 0
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
 
 
 def test_update_persists_an_explicit_channel_choice(tmp_path: Path) -> None:
