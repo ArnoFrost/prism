@@ -1,7 +1,7 @@
 # prism.local.yaml — Prism 4 current configuration contract
 # Human-readable contract. Runtime parsing is owned by bin/workspace_resolve.py.
 
-version: "4.0-canary"
+version: "4.0.0-canary.1"
 schema: named-workspaces
 
 required:

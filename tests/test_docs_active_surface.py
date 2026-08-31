@@ -101,7 +101,9 @@ def test_release_and_update_docs_preserve_product_ownership() -> None:
     update = (ROOT / "bin" / "update").read_text(encoding="utf-8")
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
-    assert "git switch prism-4" in readme
+    assert "git switch prism-4" not in readme
+    assert "git switch --detach v4.0.0-canary.1" in readme
+    assert "prism update --channel canary --series 4 --to v4.0.0-canary.1 --no-fetch" in readme
     assert "prism update --skills" not in onboarding
     assert 'add_argument("--skills"' not in update
     assert "外部 `prism-skills` 不属于产品更新事务" in onboarding
@@ -756,12 +758,8 @@ def test_current_surfaces_do_not_teach_hardcoded_branch_pull() -> None:
         assert "git pull origin main" not in text, f"硬编码 branch pull 回到 {name}"
 
 
-def test_release_tag_contract_stays_explicit_about_what_is_not_shipped() -> None:
-    """Tag 合同既要冻结规则，也要写明哪一项还没落地。
-
-    两个方向都会误导：整章标着「目标合同」却已经实现，读者会以为什么都
-    不能碰；实现落地后只删限定词不更新内容，读者又会以为什么都已完成。
-    """
+def test_release_tag_contract_matches_first_canary_readiness() -> None:
+    """首枚 Canary 准备完成后，合同不得继续宣称版本元数据尚未落地。"""
     release = (ROOT / "docs" / "release-process.md").read_text(encoding="utf-8")
     section = release.partition("## Tag 发行与更新合同")[2].partition("## 版本提升 Checklist")[0]
 
@@ -771,8 +769,9 @@ def test_release_tag_contract_stays_explicit_about_what_is_not_shipped() -> None
     assert "不追 branch commit" in section
     assert "不自动跨 channel" in section
     assert "已实现" in section
-    # 版本元数据提升是发行前的准备动作，不得被写成已经完成。
-    assert "未开始" in section
+    assert "版本元数据使用 `canary.N` 形态 | 已完成" in section
+    assert "未开始" not in section
+    assert "当前为 `4.0-canary` / `4.0.0.dev0`" not in section
 
     onboarding = (ROOT / "docs" / "onboarding.md").read_text(encoding="utf-8")
     assert "尚未实现" not in onboarding

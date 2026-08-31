@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 
@@ -23,7 +24,12 @@ def test_release_version_is_consistent() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     current_release = f"**当前发行**：{release}"
 
-    package_version = "4.0.0.dev0" if release == "4.0-canary" else release.removeprefix("v")
+    canary = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)-canary\.(\d+)", release)
+    if canary:
+        major, minor, patch, index = canary.groups()
+        package_version = f"{major}.{minor}.{patch}.dev{index}"
+    else:
+        package_version = "4.0.0.dev0" if release == "4.0-canary" else release.removeprefix("v")
 
     assert project["version"] == package_version
     assert prism_package["version"] == package_version

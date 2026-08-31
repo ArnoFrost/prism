@@ -7,22 +7,21 @@
 `VERSION` 是人类可读发行名的入口。当前 canary 使用：
 
 ```text
-4.0-canary
+4.0.0-canary.1
 ```
 
 Python package metadata 必须使用 PEP 440 兼容版本：
 
 | `VERSION` | package version |
 |-----------|-----------------|
-| `4.0-canary` | `4.0.0.dev0` |
-| `vX.Y.Z` | `X.Y.Z` |
-| `vX.Y.Z-canary.N`（目标） | `X.Y.Z.devN` |
+| `X.Y.Z-canary.N` | `X.Y.Z.devN` |
+| `X.Y.Z` | `X.Y.Z` |
 
-`4.0-canary` 是当前过渡态：它是无序号的 canary 代号，不是 tag grammar。切到 tag 发行后 canary 版本名一律采用 `vMAJOR.MINOR.PATCH-canary.N`，见下节。
+`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前首枚 Canary 的三项映射为 `VERSION=4.0.0-canary.1`、Tag `v4.0.0-canary.1`、package version `4.0.0.dev1`。
 
 ## Tag 发行与更新合同
 
-> 本节描述当前已实现的发行语义：两类 tag grammar、按通道过滤的 `prism update`、以及 `bin/release` 的 check / tag / push 机械面都已落地。唯一还没做的是把版本元数据切到 `canary.N` 形态，它属于首枚 canary 发行前的准备动作，见本节末尾的差距表。
+> 本节描述当前已实现的发行语义：两类 tag grammar、按通道过滤的 `prism update`、`bin/release` 的 check / tag / push 机械面，以及 `canary.N` 版本元数据均已落地。
 
 ### 两类不可变发布
 
@@ -62,7 +61,7 @@ Prism 长期维护两条发布线，各自产出自己的 channel：
 
 tag 名能区分 channel，但看不出它是在哪条线上打的，所以发行时用 `--expect-branch` 兜住：在稳定线上误打 canary tag（或反之）会被直接拦下。不给这个参数就不校验——下一轮实验想换分支发版时不必改动实现。
 
-### 与发行就绪的差距
+### 发行就绪能力
 
 | 能力 | 当前状态 |
 |------|----------|
@@ -70,7 +69,7 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 | `bin/release`（check / tag / push 机械面） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |
 | Release Tag push 后触发 CI 并校验 Tag / VERSION | 已实现 |
-| 版本元数据切到 `canary.N` 形态 | 未开始；当前为 `4.0-canary` / `4.0.0.dev0`，随首枚 canary tag 一起提升 |
+| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.1` / `4.0.0.dev1` |
 
 ## 版本提升 Checklist
 

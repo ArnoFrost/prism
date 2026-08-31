@@ -7,7 +7,7 @@
 **人与 AI 共同维护清晰的协作状态。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Stage](https://img.shields.io/badge/stage-4.0--canary-blue)](CHANGELOG.md)
+[![Stage](https://img.shields.io/badge/stage-4.0.0-canary.1-release-blue)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
 
 [快速开始](#快速开始) · [为什么选择 Prism](#为什么选择-prism) · [核心概念](#核心概念) · [日常使用](#日常使用) · [项目状态](#项目状态与稳定性) · [贡献](#contributing--support)
@@ -33,7 +33,7 @@ Prism Protocol revolves around **Topic / Artifact / Capability / Invocation**, w
 - 不是知识库替代品。
 - 不是重型运行时。
 
-**当前发行**：4.0-canary。当前使用 **experimental natural dogfood** Distribution Profile，只分发 `/prism`、`/prism-review`、`/prism-plan` 三个入口。3.x 实现已从本分支剔除，终态见 git tag `legacy-3x-final`；旧 topic 在本分支只读。
+**当前发行**：4.0.0-canary.1。当前使用 **experimental natural dogfood** Distribution Profile，只分发 `/prism`、`/prism-review`、`/prism-plan` 三个入口。3.x 实现已从本分支剔除，终态见 git tag `legacy-3x-final`；旧 topic 在本分支只读。
 
 ---
 
@@ -45,8 +45,9 @@ Reference implementation 需要 Python 3.11+ 和 `uv`。
 # 1. 获取 Prism repository
 git clone https://github.com/ArnoFrost/prism.git ~/prism
 cd ~/prism
-git switch prism-4                 # 首枚 4.0 Canary Tag 之前的临时 source 入口
+git switch --detach v4.0.0-canary.1
 ./setup.sh init
+prism update --channel canary --series 4 --to v4.0.0-canary.1 --no-fetch
 
 # 2. 验收当前安装
 prism --version
@@ -78,7 +79,7 @@ prism doctor --scope config --quick
 
 Agent 引导可直接使用：
 
-> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，切换到 `prism-4` 实验分支，执行 `./setup.sh init` 使用默认本地 Workspace backend，并用 `prism --version` 与 `./setup.sh check` 完成验收。首枚 Canary Tag 发布后再按版本 Tag 安装。
+> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，切换到 detached Tag `v4.0.0-canary.1`，执行 `./setup.sh init` 使用默认本地 Workspace backend，再运行 `prism update --channel canary --series 4 --to v4.0.0-canary.1 --no-fetch` 记录更新通道，并用 `prism --version` 与 `./setup.sh check` 完成验收。
 
 ---
 
@@ -232,8 +233,8 @@ Decision Semantics governs authorization
 
 | 项 | 当前口径 |
 |----|----------|
-| Release | [`4.0-canary`](VERSION) |
-| Package version | `4.0.0.dev0`（PEP 440） |
+| Release | [`4.0.0-canary.1`](VERSION) |
+| Package version | `4.0.0.dev1`（PEP 440） |
 | Python | 3.11+ |
 | License | [MIT](LICENSE) |
 | 当前命令面 | `prism --help` |

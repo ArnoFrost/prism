@@ -171,7 +171,7 @@ prism relink --no-workspace
 prism --version
 ```
 
-> `./setup.sh update` 等价于不带参数的 `prism update`，因此只对 managed 安装成立；分支 checkout 请直接用上面的 `--track-branch`。`prism update` 遇 dirty working tree 会 abort，且只保证 SDK 与可选 Skills 的代码层更新，不要求远端 Vault/Workspace 配置完整；backend 同步仍是可选独立动作（见下）。
+> `./setup.sh update` 等价于不带参数的 `prism update`，因此只对 managed 安装成立；分支 checkout 请直接用上面的 `--track-branch`。`prism update` 遇 dirty working tree 会 abort，且只负责 SDK 的 Tag 更新；外部 Skills 与 backend 同步都是独立的可选维护动作（见下）。
 
 ---
 

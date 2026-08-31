@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [4.0.0-canary.1] — 2026-08-31
+
 ### Added
 
 - **两层公开叙事** — Protocol Core 只回答稳定语义，Reference Experience 负责让语义在本机跑起来；旧的分层总表降级为分发 / 所有权视图，不再与 Core 抢解释权。
