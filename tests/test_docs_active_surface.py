@@ -666,3 +666,91 @@ def test_open_source_readiness_review_is_historical_not_actionable() -> None:
     assert "不是当前验收清单或执行指令" in review
     assert "综合评分：**7.9 / 10**" in review
     assert "当时的 Future Agent 指令（已失效）" in review
+
+
+def test_artifact_definition_is_consistent_across_core_consumers() -> None:
+    """Artifact 的总定义与持久化判据必须在 SSOT 和 consumer 之间同口径。
+
+    Artifact 一度同时被定义为「不可安全遗忘的状态」又包含可再生的 Brief，
+    读者在第一个 Core 名词上就会得到两个互斥解释。
+    """
+    alignment = (ROOT / "docs" / "prism-4-refoundation-alignment.md").read_text(encoding="utf-8")
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    for name, text in (("alignment", alignment), ("AGENTS.md", agents), ("README.md", readme)):
+        assert "Topic 内可引用、可演进的协作状态单元" in text, name
+    assert "不可安全重建是 persistent Artifact 的持久化判据" in agents
+    assert "两类承载方式的判据不同" in readme
+    assert "不可安全遗忘的持久协作状态；使用名词" not in alignment
+    assert "承载不可安全遗忘协作状态的可引用单元" not in readme
+
+
+def test_record_decision_operation_grammar_has_one_category() -> None:
+    """Record Decision 只能落在一个 category，不能同时是 Capability 与 Operation。"""
+    alignment = (ROOT / "docs" / "prism-4-refoundation-alignment.md").read_text(encoding="utf-8")
+
+    assert "Reference Capability" not in alignment
+    assert "Reference / Adapter Operation" in alignment
+
+
+def test_historical_ofm_cheatsheet_left_the_active_docs_index() -> None:
+    """3.x OFM 速查必须待在 historical 区，不再出现在 current 读序索引里。"""
+    assert not (ROOT / "docs" / "ofm-cheatsheet.md").exists()
+    assert (ROOT / "docs" / "historical" / "ofm-cheatsheet.md").exists()
+
+    docs_index = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+    active, _, archived = docs_index.partition("## C —")
+    assert "ofm-cheatsheet" not in active
+    assert "ofm-cheatsheet" in archived
+
+
+def _advertised_flags(bin_readme: str, script: str) -> set[str]:
+    """提取 `bin/README.md` 命令行示例中为某个脚本广告的 flag。"""
+    flags: set[str] = set()
+    for line in bin_readme.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith(f"bin/{script}"):
+            continue
+        for token in stripped.split():
+            if token.startswith("--"):
+                flags.add(token.rstrip(","))
+    return flags
+
+
+def test_bin_readme_advertises_only_real_command_flags() -> None:
+    """手册示例里的 flag 必须是对应脚本真正接受的参数。
+
+    手册照抄即失败比 help 错字代价更高：维护者会照文档构造命令，
+    并从中推断出不存在的破坏性参数（例如曾经的 `clean --config`）。
+    """
+    bin_readme = (ROOT / "bin" / "README.md").read_text(encoding="utf-8")
+
+    for script in ("create-skill", "clean", "doctor"):
+        source = (ROOT / "bin" / script).read_text(encoding="utf-8", errors="ignore")
+        for flag in sorted(_advertised_flags(bin_readme, script)):
+            assert flag in source, f"{script} 手册广告了实现不接受的参数 {flag}"
+
+
+def test_current_surfaces_do_not_teach_hardcoded_branch_pull() -> None:
+    """升级读序不得硬编码另一条发行线的 branch 名。"""
+    for name in ("README.md", "docs/onboarding.md"):
+        text = (ROOT / name).read_text(encoding="utf-8")
+        assert "git pull origin main" not in text, f"硬编码 branch pull 回到 {name}"
+
+
+def test_release_tag_contract_is_frozen_and_marked_as_target() -> None:
+    """Tag 发行合同既要被冻结，又要明确标注为尚未实现的目标合同。"""
+    release = (ROOT / "docs" / "release-process.md").read_text(encoding="utf-8")
+    section = release.partition("## Tag 发行与更新合同（目标）")[2].partition("## 版本提升 Checklist")[0]
+
+    assert section.strip()
+    assert "目标合同" in section
+    assert "vMAJOR.MINOR.PATCH-canary.N" in section
+    assert "不可重写" in section
+    assert "不追 branch commit" in section
+    assert "不自动跨 channel" in section
+
+    for name in ("README.md", "docs/onboarding.md"):
+        text = (ROOT / name).read_text(encoding="utf-8")
+        assert "update --channel" not in text, f"未实现的 channel updater 泄漏进 {name}"
