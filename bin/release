@@ -234,6 +234,16 @@ def _test_surface(repo: Path) -> list[dict]:
     ]
 
 
+def _hosted_test_surface(repo: Path) -> list[dict]:
+    """Hosted runner 不拥有 prism.local.yaml；只运行自包含的发行证明面。"""
+    return [
+        _command_step("doctor-ci", ["bin/doctor", "--scope", "ci"], repo),
+        _command_step("pytest", ["uv", "run", "pytest"], repo),
+        _command_step("relink-writeback", ["bash", "tests/test_relink_writeback.sh"], repo),
+        _command_step("skill-validation", ["bin/validate-skills", "--layer", "sdk"], repo),
+    ]
+
+
 def run_check(
     repo: Path,
     tag: str,
@@ -286,7 +296,7 @@ def run_preflight(
     if resolved_base:
         steps.append(_release_gate(repo, resolved_base, sha))
     if not skip_tests:
-        steps.extend(_test_surface(repo))
+        steps.extend(_hosted_test_surface(repo))
     return {
         "ok": all(step["status"] != FAIL for step in steps),
         "tag": tag,

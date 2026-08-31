@@ -485,6 +485,13 @@ def test_hosted_preflight_derives_immutable_predecessor(tmp_path: Path) -> None:
     assert payload["base"] == "v4.0.0-canary.1"
 
 
+def test_hosted_preflight_uses_self_contained_doctor_not_local_setup() -> None:
+    release = RELEASE_BIN.read_text(encoding="utf-8")
+    hosted = release.split("def _hosted_test_surface", 1)[1].split("def run_check", 1)[0]
+    assert '"--scope", "ci"' in hosted
+    assert "setup.sh" not in hosted
+
+
 def test_hosted_preflight_rejects_arbitrary_or_mismatched_base(tmp_path: Path) -> None:
     repo, sha = _seed_preflight_repo(tmp_path)
     for bad_base in ("HEAD~1", "main"):
