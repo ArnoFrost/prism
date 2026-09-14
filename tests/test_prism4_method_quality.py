@@ -98,3 +98,36 @@ def test_method_contracts_keep_format_and_authority_out_of_skills() -> None:
         assert copied_contract not in combined
     assert "Findings 是建议性的" in combined
     assert "Plan 不重新定义 Intent" in combined
+
+
+def test_plan_evolution_gate_precedes_number_allocation() -> None:
+    plan = _read(PLAN)
+    for contract in (
+        "复用 / 原地修订优先",
+        "显式替代",
+        "兄弟并存是有意例外",
+        "先选演进方式，再取新编号",
+        "实质变化本身不自动要求新文件",
+        "不得把旧 Plan 单方面缩写",
+        "artifact next-id",
+    ):
+        assert contract in plan
+    assert "只经显式 `--supersedes`" not in plan
+
+
+def test_plan_contract_separates_siblings_from_supersession() -> None:
+    contract = _read(ROOT / "skills/prism4/artifact-contracts/plan.md")
+    assert "两份 Plan 不建立 supersedes 关系" in contract
+    assert 'supersedes: ["plan:p01"]' in contract
+    assert "默认原地修订" in contract
+    assert '本计划 supersedes `<plan>` 的执行口径' not in contract
+
+
+def test_plan_evolution_cases_cover_positive_and_negative_routes() -> None:
+    cases = _read(PLAN.parent / "references/evolution-cases.md")
+    for case in (
+        "E1 等价复用", "E2 同目标追加", "E3 整体替代", "E4 合法兄弟",
+        "E5 已实施基线", "E6 仅跨会话", "E7 边界未授权", "E8 伪正交",
+    ):
+        assert case in cases
+    assert "不能代替真实 Agent 行为评测" in cases

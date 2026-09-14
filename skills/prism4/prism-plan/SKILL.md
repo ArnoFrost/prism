@@ -136,13 +136,23 @@ Plan 的语义要求是：
 
 Plan 不需要实时充当任务账本。普通动作完成后不为“同步一下”重复落盘；但当顶层阶段已改变、旧 Plan 会让跨 session 恢复得到错误阶段时，这已经是有意义的 recovery snapshot 变化。需要持久恢复时，应修订或 supersede 旧 Plan，而不是让 Brief 自行补写进度。
 
-同一段连续执行中，不要在 P0、P1、P2 每切换一次就各记录一份 Plan Artifact。只有行动模型实质改变、即将跨 session / handoff，或旧 Plan 已经会让下一位执行者恢复出错误路线时，才留下新 snapshot。当前轮的细粒度进度可留在对话内执行清单；测试矩阵、A/B、fixture 和临时验证脚本默认属于 `references/` 或 temp，不自动晋升为 Plan。**Child Topic 也不是 Child Plan**：独立子问题才建 Child Topic，普通任务拆解留在当前 Plan。
+同一段连续执行中，不要在 P0、P1、P2 每切换一次就各记录一份 Plan Artifact。只有行动模型实质改变、即将跨 session / handoff，或旧 Plan 已经会让下一位执行者恢复出错误路线时，才更新 durable snapshot；snapshot 默认通过原地修订形成，不等于新增编号。当前轮的细粒度进度可留在对话内执行清单；测试矩阵、A/B、fixture 和临时验证脚本默认属于 `references/` 或 temp，不自动晋升为 Plan。**Child Topic 也不是 Child Plan**：独立子问题才建 Child Topic，普通任务拆解留在当前 Plan。
 
 正文先写行动事实。frontmatter 已说明 Plan 是 advisory 时，不要在每个阶段重复“本 Plan 不授权”“仍需用户确认”等自证；只在真正的 decision gate 或误读风险处说明 authority 边界。避免用“为了实现这一目标”“基于上述分析”等填充句连接步骤。
 
 仅在用户要求、或当前 Prism 上下文需要持久工件（durable artifact）时持久化 Plan。持久化机制属于当前 adapter，不属于 Plan 语义。
 
-落盘前先检查当前 Topic 是否已有等价 Plan。只有行动结构发生实质变化、或需要保留 replanning 历史时才新建 Plan；这种情况应说明新 Plan 如何 supersede 旧 Plan。CLI 的 supersedes 只经显式 `--supersedes` 提交：重写同一行动模型时显式指定被替代的 Plan；目标正交、范围互斥的 sibling Plan 并存是有意选择，不是需要规避的异常。
+### Existing Plan 演进 Gate
+
+落盘前读取相关 Existing Plan 的目标、范围、行动与验收，不能只看标题、编号或“已实施”摘要。先选演进方式，再取新编号：
+
+1. **复用 / 原地修订优先**：等价内容直接引用；同一目标的新阶段、局部增强、验证补充或恢复状态变化，追加 / 改写现有 Plan 内部 Phase / Step。实质变化本身不自动要求新文件。
+2. **显式替代**：行动模型需要整体重写且旧版值得保留时，创建新的 replanning Plan，显式声明 supersedes；承接仍有效的约束、已实施基线、验证与理由，写清修正了什么。同一目标的新旧执行口径不能伪装成兄弟并存。Intent 边界变化须先获得授权并修订 Intent，再校准 Plan。
+3. **兄弟并存是有意例外**：仅当目标正交、范围互斥、有独立验收线，且旧 Plan 仍承担独立的当前行动时采用。逐项说明这些条件，不因“新增需求”“另一个阶段”或“旧方案已实施”就新建兄弟 Plan。
+
+保留旧代码、兜底行为或历史证据，不等于保留旧 Plan 为 current。判断范围以旧 Plan 原文为准，不得把旧 Plan 单方面缩写为“只负责未改动分支”来制造互斥。旧 Plan 已完成却仍写待执行时，应在授权范围内校准恢复状态，不靠新增 Plan 掩盖漂移。
+
+机制与写法见 [`../artifact-contracts/plan.md`](../artifact-contracts/plan.md)「生命周期与拆分规则」。当前 adapter 由 Agent 直写 Plan Markdown 后校验；`artifact next-id` 只提供编号，不决定是否需要新 Plan。
 
 ## 自检（Self-review）
 

@@ -83,7 +83,7 @@ supersedes: ["plan:p00"]    # 重写链，可选
 ## 进度与 snapshot 纪律
 
 - Plan 不是实时任务账本；普通动作完成不要求生成内容等价的新 Plan，Brief 不自行推断执行进度。
-- 不要把每个阶段状态变化都保存成新的 `pXX`。在同一段连续执行里，阶段进度使用当前对话的执行清单即可；只有路线实质变化、跨 session / handoff 或恢复会读错时，才新增 durable snapshot。
+- 不要把每个阶段状态变化都保存成新的 `pXX`。在同一段连续执行里，阶段进度使用当前对话的执行清单即可；只有路线实质变化、跨 session / handoff 或恢复会读错时，才更新 durable snapshot；默认原地修订，不因 snapshot 更新新增编号。
 - 测试计划、A/B、fixture 与短期验证过程默认放 `references/` 或临时目录；它们只有成为需要独立接受和跨会话执行的行动模型时，才值得记录为 Plan Artifact。
 - 若顶层阶段已经变化而旧 Plan 未更新，跨 session Brief 恢复会读出错误阶段；应修订或 supersede 为新的 recovery snapshot。
 
@@ -93,9 +93,16 @@ supersedes: ["plan:p00"]    # 重写链，可选
 |------|------|
 | 新阶段服务同一目标、同一验收线 | 追加 / 改写 Plan 内部 Phase / Step |
 | 新问题域目标正交、有独立验收线、原 Plan 仍在活跃执行 | 开**兄弟 Plan**；互斥范围在正文开头声明 |
-| 多 Plan 覆盖同一目标，或目标重定义 | supersedes 重写，旧版入 `plans/archive/` |
+| 同一行动模型需要整体重写且旧版值得保留，或已有多 Plan 覆盖同一目标需收敛 | 显式 supersedes 重写，旧版入 `plans/archive/`；边界变化先授权修订 Intent |
 
-Plan 永远平级，层次只由 child Topic 表达。当前有效 Plan 指同一 Topic 内未被 `supersedes`、且 `evolution` 非 `historical` 的 Plan；正常情况下应只有一份。兄弟 Plan 的范围声明写法：开头一节写明"本计划 supersedes `<plan>` 的执行口径；`<plan>` 保留为事实输入；`<plan>` 不在本计划取代范围内"。
+Plan 永远平级，层次只由 child Topic 表达。当前有效 Plan 指同一 Topic 内未被 `supersedes`、且 `evolution` 非 `historical` 的 Plan；同一目标默认维护一份当前实施口径，但不限制正交 Plan 的合法并存。
+
+先判关系，再分配编号；新阶段、局部增强与恢复状态变化默认原地修订。保留已实施代码、兜底行为或历史证据，不要求旧 Plan 继续 current。范围判断必须基于旧 Plan 正文，不能通过改写旧 Plan 的摘要来制造互斥。
+
+- **兄弟声明示例**：“本计划负责离线导出；现有计划负责在线查询。两者目标正交、范围互斥，分别以导出完整性和查询延迟验收，现有计划仍在执行。”两份 Plan 不建立 supersedes 关系。
+- **替代声明示例**：“本计划替代旧计划的当前执行口径，保留已实施基线和未改变的回归约束；旧计划作为历史输入。”同时在 frontmatter 写入 `supersedes: ["plan:p01"]`，不能只写正文。
+
+原地修订、整体替代、非法重叠与合法兄弟的泛化验收案例见 [`../prism-plan/references/evolution-cases.md`](../prism-plan/references/evolution-cases.md)。
 
 ## 吸收转写范例
 
