@@ -7,7 +7,7 @@
 `VERSION` 是人类可读发行名的入口。当前 canary 使用：
 
 ```text
-4.0.0-canary.3
+4.0.0-canary.4
 ```
 
 Python package metadata 必须使用 PEP 440 兼容版本：
@@ -17,7 +17,7 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 | `X.Y.Z-canary.N` | `X.Y.Z.devN` |
 | `X.Y.Z` | `X.Y.Z` |
 
-`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前 Canary 的三项映射为 `VERSION=4.0.0-canary.3`、Tag `v4.0.0-canary.3`、package version `4.0.0.dev3`。
+`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前 Canary 的三项映射为 `VERSION=4.0.0-canary.4`、Tag `v4.0.0-canary.4`、package version `4.0.0.dev4`。
 
 ## Tag 发行与更新合同
 
@@ -70,7 +70,7 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 | `.github/workflows/release.yml`（唯一正式 publication 入口） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |
 | Release workflow 在 Tag push 前校验 exact SHA / Tag / VERSION | 已实现 |
-| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.3` / `4.0.0.dev3` |
+| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.4` / `4.0.0.dev4` |
 
 ## 版本提升 Checklist
 
@@ -95,7 +95,7 @@ uv run pytest
 
 ```bash
 gh workflow run release.yml --ref prism-4 \
-  -f tag=v4.0.0-canary.3 \
+  -f tag=v4.0.0-canary.4 \
   -f release_line=canary
 ```
 
@@ -104,7 +104,7 @@ Stable 从 `main` dispatch，并把 `release_line` 设为 `stable`。普通 rele
 Tag push 是 managed 用户可见的 machine publication 时点；GitHub Release 是基于既有 Tag 的 human-facing projection。若 Tag 已成功、GitHub Release 创建失败，不得重跑 publication 或移动 Tag，只运行幂等修复：
 
 ```bash
-bin/release repair-release --tag v4.0.0-canary.3
+bin/release repair-release --tag v4.0.0-canary.4
 ```
 
 `bin/release tag/push --confirm` 保留为低层 break-glass 机械面，不是与 Release workflow 并列的正式维护者按钮。
