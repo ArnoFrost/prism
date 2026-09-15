@@ -107,3 +107,12 @@ Plan 永远平级，层次只由 child Topic 表达。当前有效 Plan 指同�
 ## 吸收转写范例
 
 Plan 内设「已吸收或修正的旧判断」章节，逐条写明：来源判断、被吸收还是被修正、修正后立场。这是理由链跨 supersedes 存续的标准形态。
+
+## Accepted operative action model
+
+Plan identity（`plan:pNN`）保存 continuity / provenance，不等于被人接受的具体行动含义。Reference Adapter 的 acceptance 因此绑定 **accepted operative action model**：有效 target-bound authority evidence、版本化 action-model digest，以及接受当时的 `basis_intent_ref`。
+
+- 同一 Plan 内的格式、明确的 progress/status、checkbox 标记和结构上可识别的 `执行记录` / `Evidence` 不改变 acceptance；未知 prose 保守视为行动模型的一部分。
+- goal、行动步骤、顺序/依赖、verification、decision gate、material risk/rollback/containment 的变化会让 acceptance stale：Plan 可以仍 current，但不再 accepted / operative；不因此新建 p02 或自动 supersede。
+- Plan 的 meaning 用 digest 绑定；Intent 的边界 authority 用 authoritative Intent identity / supersession lineage 绑定。语义保持型 Intent 原地整理不应误伤；Intent boundary change 必须先获权并 supersede，不能只重新 accept Plan 绕过。
+- 缺少 algorithm-compatible digest 或 Intent basis 的历史 acceptance 一律 fail-closed；`model_revision` 如未来存在，仅作审计/诊断，不能作为安全前提。

@@ -10,6 +10,7 @@ evidence remains a fail-closed historical input, not a compatibility path.
 
 import os
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -511,6 +512,101 @@ def test_record_decisions_reuses_relation_matrix():
 
 # ── Plan acceptance closed loop ───────────────────────────────────────────
 
+
+
+_ACTION_PLAN = """## 目标
+安全迁移并保留回滚能力。
+
+## 步骤
+### P1：探测
+**状态**：待执行
+1. probe 当前环境。
+### P2：迁移
+**状态**：待执行
+**依赖**：P1
+1. migrate 数据。
+
+## 验证
+- 迁移后 smoke test 通过。
+
+## 决策门
+- 人工确认后再切流。
+
+## 风险
+- 失败时 rollback 到旧版本。
+"""
+
+
+def _accepted_action_plan() -> tuple[ReferenceStore, str]:
+    store = _topic_store()
+    plan_id, _ = _put_plan(store, body=_ACTION_PLAN)
+    evidence = _evidence_payload(store, target_ref=plan_id)
+    accept_plan(store, plan_ref=plan_id, evidence_ref=evidence.id)
+    return store, plan_id
+
+
+def _rewrite_plan(store: ReferenceStore, plan_id: str, old: str, new: str) -> None:
+    artifact = store.artifacts[plan_id]
+    store.artifacts[plan_id] = replace(artifact, body=artifact.body.replace(old, new))
+
+
+def test_acceptance_action_model_contract_a1_to_a3_non_material_edits_stay_operative():
+    for old, new in [
+        ("## 目标", "##   目标  "),  # A1 formatting
+        ("**状态**：待执行", "**状态**：已完成"),  # A2 progress
+    ]:
+        store, plan_id = _accepted_action_plan()
+        _rewrite_plan(store, plan_id, old, new)
+        assert plan_state(store, plan_id)["operative"]
+    store, plan_id = _accepted_action_plan()  # A3 evidence
+    artifact = store.artifacts[plan_id]
+    store.artifacts[plan_id] = replace(
+        artifact, body=artifact.body + "\n## 执行记录\n- 2026-09-15: command succeeded.\n"
+    )
+    assert plan_state(store, plan_id)["operative"]
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("migrate 数据。", "delete production 数据。"),  # A4 step
+        ("**依赖**：P1", "**依赖**：P2"),  # A5 dependency/order
+        ("smoke test 通过。", "人工验收通过。"),  # A6 verification
+        ("人工确认后再切流。", "无需人工确认直接切流。"),  # A7 gate
+        ("rollback 到旧版本。", "直接继续，不提供 rollback。"),  # A8 containment
+    ],
+)
+def test_acceptance_action_model_contract_material_edit_stales(old: str, new: str):
+    store, plan_id = _accepted_action_plan()
+    _rewrite_plan(store, plan_id, old, new)
+    state = plan_state(store, plan_id)
+    assert state == {"current": True, "accepted": False, "operative": False, "historical": False, "superseded": False}
+    assert not [r for r in store.relations if r.kind == "supersedes"]  # A10
+
+
+def test_acceptance_legacy_missing_digest_fails_closed_a12():
+    store, plan_id = _accepted_action_plan()
+    acceptance = dict(store.artifacts[plan_id].metadata["acceptance"])
+    acceptance.pop("accepted_model_digest")
+    store.artifacts[plan_id] = replace(store.artifacts[plan_id], metadata={**store.artifacts[plan_id].metadata, "acceptance": acceptance})
+    assert plan_state(store, plan_id)["current"]
+    assert not plan_state(store, plan_id)["operative"]
+
+
+def test_acceptance_intent_same_identity_edit_stays_operative_a13():
+    store, plan_id = _accepted_action_plan()
+    intent = next(a for a in store.artifacts.values() if a.role == "intent")
+    store.artifacts[intent.id] = replace(intent, body="Keep the Core thin, without duplicate prose.")
+    assert plan_state(store, plan_id)["operative"]
+
+
+def test_acceptance_intent_supersession_stales_without_plan_edit_a14():
+    store, plan_id = _accepted_action_plan()
+    old_intent = next(a for a in store.artifacts.values() if a.role == "intent")
+    new_intent = Artifact(id="intent:i02", topic_id="topic:demo", role="intent", title="New boundary", body="A new authorized boundary.", metadata={"authority": "authoritative", "evolution": "supersedable"})
+    store.add_artifact(new_intent)
+    _add_validated_relation(store, source_ref=new_intent.id, kind="supersedes", target_ref=old_intent.id)
+    assert plan_state(store, plan_id) == {"current": True, "accepted": False, "operative": False, "historical": False, "superseded": False}
 
 def test_accept_plan_with_valid_evidence_and_operative_derivation():
     store = _topic_store()

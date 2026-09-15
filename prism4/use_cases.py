@@ -14,6 +14,7 @@ import re
 from collections.abc import Callable, Mapping
 from dataclasses import replace as _dataclass_replace
 
+from .action_model import ACTION_MODEL_VERSION, action_model_digest
 from .core import (
     Artifact,
     PrismProtocolError,
@@ -622,6 +623,21 @@ def _check_supersede_cycle(store: ReferenceStore, *, source_ref: str, target_ref
         )
 
 
+def _authoritative_intent_ref(store: ReferenceStore, topic_id: str) -> str | None:
+    """Return the sole current Intent identity for a Topic, otherwise fail closed."""
+    candidates = [
+        artifact.id
+        for artifact in store.artifacts.values()
+        if artifact.topic_id == topic_id
+        and artifact.role == "intent"
+        and str(artifact.metadata.get("evolution") or "") != "historical"
+        and not any(
+            relation.kind == "supersedes" and relation.target_ref == artifact.id
+            for relation in store.relations
+        )
+    ]
+    return candidates[0] if len(candidates) == 1 else None
+
 def accept_plan(
     store: ReferenceStore,
     *,
@@ -642,6 +658,11 @@ def accept_plan(
     info = validate_authority_evidence(
         store, evidence_ref=evidence_ref, target_ref=plan_ref, topic_id=artifact.topic_id
     )
+    basis_intent_ref = _authoritative_intent_ref(store, artifact.topic_id)
+    if basis_intent_ref is None:
+        raise PrismProtocolError(
+            f"plan cannot be accepted without one authoritative intent: {artifact.topic_id}"
+        )
     acceptance = {
         "status": "accepted",
         "evidence": evidence_ref,
@@ -650,6 +671,8 @@ def accept_plan(
         if info["kind"] == "delegated-context"
         else "decision",
         "granted_at": utc_now_iso()[:10],
+        "accepted_model_digest": action_model_digest(artifact),
+        "basis_intent_ref": basis_intent_ref,
     }
     store.artifacts[plan_ref] = _dataclass_replace(
         artifact, metadata={**artifact.metadata, "acceptance": acceptance}
@@ -684,7 +707,13 @@ def plan_state(store: ReferenceStore, plan_ref: str) -> dict[str, bool]:
                     target_ref=plan_ref,
                     topic_id=artifact.topic_id,
                 )
-                accepted = True
+                digest = str(acceptance.get("accepted_model_digest") or "")
+                basis_intent_ref = str(acceptance.get("basis_intent_ref") or "")
+                accepted = (
+                    digest.startswith(f"{ACTION_MODEL_VERSION}:")
+                    and digest == action_model_digest(artifact)
+                    and basis_intent_ref == _authoritative_intent_ref(store, artifact.topic_id)
+                )
             except PrismProtocolError:
                 accepted = False
     return {
@@ -737,6 +766,12 @@ def validate_store(store: ReferenceStore) -> list[str]:
         if not evidence_ref:
             problems.append(f"{artifact.id} acceptance is missing evidence")
             continue
+        digest = str(acceptance.get("accepted_model_digest") or "")
+        if not re.fullmatch(rf"{re.escape(ACTION_MODEL_VERSION)}:[0-9a-f]{{64}}", digest):
+            problems.append(f"{artifact.id} acceptance has invalid accepted_model_digest")
+        basis_intent_ref = str(acceptance.get("basis_intent_ref") or "").strip()
+        if not basis_intent_ref or basis_intent_ref not in store.artifacts or store.artifacts[basis_intent_ref].role != "intent":
+            problems.append(f"{artifact.id} acceptance has invalid basis_intent_ref")
         try:
             info = validate_authority_evidence(
                 store,

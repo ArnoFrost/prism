@@ -178,3 +178,9 @@ Plan 不需要实时充当任务账本。普通动作完成后不为“同步一
 仅在用户要求、或当前工作需要持久化 4.0 痕迹时落盘。落盘后仍是 advisory，除非后续有效 authority 接受它。
 
 不要把已持久化的 Plan 文件整体作为新 Plan 正文。若输入是一份已有 Plan Artifact，应抽取其有效内容后改写，或在需要保留历史时生成新的 replanning Plan 并标明 supersedes 关系。不要用持久 Plan 文件替代 Agent 对当前上下文的局部规划能力。
+
+### Accepted Plan 编辑 Guard
+
+若 Existing Plan 已被 acceptance 接受，`plan:pNN` 只说明连续性，不保证旧 acceptance 覆盖原地编辑后的行动模型。编辑后应区分：格式、明确 status/progress、checkbox 标记、明确执行记录/证据区可保留 acceptance；目标、步骤、顺序或依赖、验证、decision gate、风险/rollback/containment 的实质变化会使其 stale，需在同一 Plan 修订后重新接受，不应自动创建兄弟 Plan。未知 prose 不要擅自归类为“证据”。
+
+Intent 边界变化不是 Plan acceptance 的替代路径：先按 Intent authority 合同创建并 supersede 新 Intent，再校准/重新接受 Plan。Intent 的语义保持型原地整理保持同一 identity，不应因为文本 diff 而使 Plan acceptance 失效。
