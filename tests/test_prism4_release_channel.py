@@ -646,6 +646,82 @@ def test_update_switches_to_a_newer_tag_in_the_same_channel(tmp_path: Path) -> N
     )
 
 
+def test_user_facing_channel_position_switches_and_persists_choice(tmp_path: Path) -> None:
+    repo = _build_install(
+        tmp_path,
+        tags=["v4.0.0-canary.1", "v4.0.1"],
+        at="v4.0.0-canary.1",
+        channel="canary",
+    )
+
+    result = _run_update(repo, "stable", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["channel"] == "stable"
+    assert payload["target_tag"] == "v4.0.1"
+    assert "update_channel: stable" in (repo / "prism.local.yaml").read_text(encoding="utf-8")
+
+
+def test_status_is_read_only_and_reports_optional_new_major(tmp_path: Path) -> None:
+    repo = _build_install(
+        tmp_path,
+        tags=["v4.0.0", "v4.1.0", "v5.0.0"],
+        at="v4.0.0",
+        channel="stable",
+    )
+    before_head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    before_config = (repo / "prism.local.yaml").read_text(encoding="utf-8")
+
+    result = _run_update(repo, "status", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["action"] == "status"
+    assert payload["latest_tag"] == "v4.1.0"
+    assert payload["newer_major_tag"] == "v5.0.0"
+    assert payload["writes"] == 0
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before_head
+    assert (repo / "prism.local.yaml").read_text(encoding="utf-8") == before_config
+
+
+def test_user_facing_channel_rejects_conflicting_legacy_channel(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel="stable")
+
+    result = _run_update(repo, "stable", "--channel", "canary", "--no-fetch")
+
+    assert result.returncode == 2
+    assert "不一致" in result.stderr
+
+
+def test_user_facing_channel_keeps_source_checkout_blocked_until_p3(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel="stable")
+    _git(repo, "checkout", "-q", "-B", "main")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    result = _run_update(repo, "stable", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["action"] == "blocked"
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+
+
+def test_status_reports_source_checkout_without_requesting_a_switch(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel="stable")
+    _git(repo, "checkout", "-q", "-B", "main")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    result = _run_update(repo, "status", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["mode"] == "source"
+    assert payload["action"] == "status"
+    assert payload["writes"] == 0
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+
+
 def test_update_ignores_a_stable_tag_while_on_canary(tmp_path: Path) -> None:
     """通道隔离：stable tag 出现不得把 canary 用户带过去。"""
     repo = _build_install(

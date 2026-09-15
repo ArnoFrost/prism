@@ -26,6 +26,7 @@ DEFAULT_CONFIG = SDK_ROOT / "prism.local.yaml"
 MANAGED = "managed"
 SOURCE = "source"
 DETACHED = "detached"
+STATUS = "status"
 
 MAJOR_RE = re.compile(r"(\d+)")
 
@@ -293,6 +294,50 @@ def _track_branch(repo: Path, mode: str, args: argparse.Namespace) -> dict:
     return payload
 
 
+def _status_payload(
+    repo: Path,
+    config: Path,
+    resolver,
+    args: argparse.Namespace,
+    mode: str,
+) -> dict:
+    """只读投影当前发行状态，不把 source checkout 当成更新请求。"""
+    channel, stored_series = resolver.read_channel(config)
+    series = stored_series or _infer_series(repo)
+    if not args.no_fetch:
+        fetch = _git(repo, ["fetch", "--tags", "--prune", "--quiet"], timeout=300)
+        if fetch.returncode != 0:
+            return _blocked("无法拉取远端 tag，稍后重试或检查远端配置", mode=mode)
+
+    tags = resolver.collect_tags(repo)
+    latest_same_major = (
+        resolver.select_latest(tags, channel, series) if channel and series else None
+    )
+    latest_any_major = resolver.select_latest(tags, channel) if channel else None
+    newer_major = None
+    if latest_any_major and series is not None and latest_any_major["major"] > series:
+        newer_major = latest_any_major
+
+    return {
+        "ok": True,
+        "mode": mode,
+        "branch": _current_branch(repo) if mode == SOURCE else None,
+        "channel": channel,
+        "series": series,
+        "current_tag": _current_tag(repo),
+        "latest_tag": latest_same_major["tag"] if latest_same_major else None,
+        "newer_major_tag": newer_major["tag"] if newer_major else None,
+        "action": STATUS,
+        "writes": 0,
+        "release": mode != SOURCE,
+        "detail": (
+            "尚未选择更新通道；运行 prism update stable 或 prism update canary 选择。"
+            if channel is None
+            else None
+        ),
+    }
+
+
 def run_update(args: argparse.Namespace) -> dict:
     repo = Path(args.repo).resolve()
     config = Path(args.config).resolve() if args.config else repo / "prism.local.yaml"
@@ -302,12 +347,16 @@ def run_update(args: argparse.Namespace) -> dict:
         return _blocked("不是 Git 仓库，无法进行 tag 更新")
 
     dirty = _is_dirty(repo)
-    if dirty and not args.check:
+    if dirty and not (args.check or args.status):
         # --check 是只读的，不移动 HEAD，因此即使工作树脏也要能给出判断——
         # 维护者想知道「我落后多少」时，不该被要求先清理工作区。
         return _blocked("工作树有未提交变更；更新会移动 HEAD，请先 commit/stash")
 
     mode = detect_install_mode(repo)
+    if args.status:
+        if mode == DETACHED:
+            return _blocked("当前 HEAD 既不在分支也不在 tag 上，无法判断更新状态")
+        return _status_payload(repo, config, resolver, args, mode)
     if args.track_branch:
         # 分支跟进不需要通道选择：它跟的是 commit，不是发行版本。
         return _track_branch(repo, mode, args)
@@ -460,6 +509,16 @@ def _render(payload: dict) -> None:
         print(f"✗ {payload['reason']}")
         return
 
+    if payload.get("action") == STATUS:
+        print(f"mode:        {payload['mode']}")
+        print(f"channel:     {payload.get('channel') or '-'}")
+        print(f"current tag: {payload.get('current_tag') or '-'}")
+        print(f"latest tag:  {payload.get('latest_tag') or '-'}")
+        print(f"new major:   {payload.get('newer_major_tag') or '-'}")
+        if payload.get("detail"):
+            print(payload["detail"])
+        return
+
     if payload.get("release") is False:
         # 分支跟进的输出不谈 tag：一旦出现 current tag / latest tag 字样，
         # 就很容易被读成「装上了某个 release 版本」。
@@ -484,6 +543,12 @@ def main(argv: list[str] | None = None) -> int:
         prog="prism update",
         description="按不可变 Git tag 更新 Prism 安装",
     )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        choices=["stable", "canary", STATUS],
+        help="普通入口：选择 Stable / Canary，或用 status 查看状态",
+    )
     parser.add_argument("--channel", choices=["canary", "stable"], default=None)
     parser.add_argument("--series", type=int, default=None, help="跟随的 major 系列")
     parser.add_argument("--to", dest="target_tag", default=None, help="精确切换到指定 tag（调试 / 回滚）")
@@ -499,7 +564,37 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--config", default=None)
     args = parser.parse_args(argv)
 
-    if args.track_branch and (args.channel or args.target_tag or args.bootstrap_tag):
+    args.status = args.command == STATUS
+    if args.status:
+        conflicts = []
+        if args.channel:
+            conflicts.append("--channel")
+        if args.target_tag:
+            conflicts.append("--to")
+        if args.bootstrap_tag:
+            conflicts.append("--bootstrap-to")
+        if args.track_branch:
+            conflicts.append("--track-branch")
+        if args.dry_run:
+            conflicts.append("--dry-run")
+        if args.check:
+            conflicts.append("--check")
+        if conflicts:
+            print(
+                f"error: status 是只读命令，不能与 {' / '.join(conflicts)} 混用",
+                file=sys.stderr,
+            )
+            return 2
+    elif args.command:
+        if args.channel and args.channel != args.command:
+            print(
+                f"error: 位置通道 {args.command} 与 --channel {args.channel} 不一致",
+                file=sys.stderr,
+            )
+            return 2
+        args.channel = args.command
+
+    if args.track_branch and (args.command or args.channel or args.target_tag or args.bootstrap_tag):
         # 两条链路的语义互斥：一个是 commit 级跟进，一个是发行版本切换。
         print(
             "error: --track-branch 不能与 --channel / --to / --bootstrap-to 混用",
