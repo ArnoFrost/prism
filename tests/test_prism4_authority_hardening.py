@@ -584,6 +584,28 @@ def test_acceptance_action_model_contract_material_edit_stales(old: str, new: st
     assert not [r for r in store.relations if r.kind == "supersedes"]  # A10
 
 
+def test_acceptance_list_structure_is_material_but_indent_width_is_not():
+    nested_two = "## 步骤\n1. 部署\n  - 验证结果\n"
+    nested_four = "## 步骤\n1. 部署\n    - 验证结果\n"
+    flattened = "## 步骤\n1. 部署\n2. 验证结果\n"
+    unordered = "## 步骤\n- 部署\n- 验证结果\n"
+
+    store = _topic_store()
+    plan_id, _ = _put_plan(store, body=nested_two)
+    evidence = _evidence_payload(store, target_ref=plan_id)
+    accept_plan(store, plan_ref=plan_id, evidence_ref=evidence.id)
+    store.artifacts[plan_id] = replace(store.artifacts[plan_id], body=nested_four)
+    assert plan_state(store, plan_id)["operative"]
+
+    for material_body in (flattened, unordered):
+        store = _topic_store()
+        plan_id, _ = _put_plan(store, body=nested_two)
+        evidence = _evidence_payload(store, target_ref=plan_id)
+        accept_plan(store, plan_ref=plan_id, evidence_ref=evidence.id)
+        store.artifacts[plan_id] = replace(store.artifacts[plan_id], body=material_body)
+        assert not plan_state(store, plan_id)["operative"]
+
+
 def test_acceptance_legacy_missing_digest_fails_closed_a12():
     store, plan_id = _accepted_action_plan()
     acceptance = dict(store.artifacts[plan_id].metadata["acceptance"])
