@@ -10,7 +10,7 @@ source:
 # Prism Markdown Presentation Profile v0
 
 > [!IMPORTANT]
-> **GitHub Flavored Markdown（GFM）是 canonical portable baseline。**Obsidian 是兼容阅读器与可选增强环境，不是 Prism 的 canonical syntax target。
+> **GFM 定义可移植语法基线；GitHub Alerts 是 Prism 允许的 GitHub Presentation 扩展。**Obsidian 是兼容阅读器与可选增强环境，不是 Prism 的 canonical syntax target。
 
 > [!NOTE]
 > **呈现可以重复结构，不能复制状态。**
@@ -20,7 +20,7 @@ source:
 
 本文是 Reference Experience 的呈现指南；不新增 Protocol primitive、Artifact Role、Capability、relation、lifecycle DSL、Obsidian adapter、Markdown AST runtime 或 CSS/theme dependency。
 
-- GFM-compatible constructs 是 canonical：ATX headings、lists、task lists、fenced code、tables、blockquotes、relative Markdown links 与 GitHub Alerts。
+- GFM-compatible constructs 构成 canonical baseline：ATX headings、lists、task lists、fenced code、tables、blockquotes 与 relative Markdown links；GitHub Alerts 是允许的、受限的 GitHub Presentation extension。
 - YAML frontmatter 是 **Prism Reference Markdown Profile 的 metadata convention**，不宣称为 GFM semantic syntax。
 - Obsidian 可以增强 portable Markdown，但 canonical 文档不依赖 `[[wikilink]]`、`![[embed]]`、Dataview、CSS class、plugin syntax 或 custom callout parameters。
 - GitHub Alert 在不支持增强渲染的 reader 中至少应可退化为普通 blockquote；Reference action-model projection 仅忽略五种标准 Alert 的 wrapper，内部正文仍属于 semantic content。
@@ -48,11 +48,12 @@ source:
 | relative Markdown links | 默认（同一 portable surface） | 不伪造 SDK ↔ external Workspace backend 之间的 GitHub link。 |
 | YAML frontmatter | Profile metadata convention | 承载 machine metadata；正文不机械重复。 |
 | YAML `tags` list | 支持，但默认不推荐 | 仅用于 Core 未表达的 user-side retrieval category；不得编码 role/status/authority/evolution、`current`、`important` 或 `active`。 |
+| GitHub Alerts | 允许的 GitHub Presentation extension | 仅五种标准类型；wrapper 删除后正文仍完整。 |
 | `[[wikilink]]`、embeds、Dataview、CSS/plugin syntax | 不进入 canonical | 本地可读不等于 portable understanding 可依赖。 |
 
 ## GitHub Alert
 
-Alert 是可选 Presentation，不是 semantics。删除 wrapper 后正文仍必须是完整陈述。
+Alert 是可选 GitHub Presentation extension，不是 semantics，也不属于 GFM spec 本身。删除 wrapper 后正文仍必须是完整陈述。
 
 | Alert | 克制用法 | 绝不表示 |
 |---|---|---|
