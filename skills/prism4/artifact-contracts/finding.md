@@ -88,3 +88,8 @@ absorbed_at: "YYYY-MM-DD"
 ## 粒度：共享演进边界
 
 同一 Findings Artifact 内的 F 项应共享大致相同的 owner、Decision gate、验证方式和 supersede 节奏；需要独立演进的判断应拆开记录。这不表示一条 F 项必然对应一个 Artifact——也不要为了少文件把独立判断绑在一起。
+
+
+## 可选 Presentation Profile
+
+Markdown 的可移植呈现、GitHub Alert 与首屏阅读原则见 [`../../../docs/prism-markdown-presentation-profile.md`](../../../docs/prism-markdown-presentation-profile.md)。它是 Reference Experience style guideline，不新增本 Artifact 的语义字段、authority 或 lifecycle。

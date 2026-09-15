@@ -64,3 +64,8 @@ source_hint: "intent.md + plans/ + findings/ + decisions/ + repository reality"
 - 由 `prism brief project --save` 从当前有效状态再生成；Agent 按本合同手写等价（本合同即生成规则）。不维护"上次生成的 brief"，不增量修补。
 - 投影不出「当前阶段 / 本阶段完成信号 / 下一步」= 源 Plan 缺章节或只是引用资料摘要；修源工件，不手写 Brief 补洞。
 - 固定的 projection / authority 提示在开头说一次即可，不在每个章节重复解释协议。
+
+
+## 可选 Presentation Profile
+
+Markdown 的可移植呈现、GitHub Alert 与首屏阅读原则见 [`../../../docs/prism-markdown-presentation-profile.md`](../../../docs/prism-markdown-presentation-profile.md)。它是 Reference Experience style guideline，不新增本 Artifact 的语义字段、authority 或 lifecycle。

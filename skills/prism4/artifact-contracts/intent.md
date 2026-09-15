@@ -57,3 +57,8 @@ Intent 的编辑分两类，不要混同：
 - **边界修订**：新增或改变目标、非目标、长期约束、完成条件。必须有人类确认或明确的 delegated authority；需要保留历史时走 supersedes 生命周期，旧版归档。
 
 通用机械面对 Intent 的拒绝只说明 CLI 无法判断边界权限，不代表 Intent 没有合法写入路径；不存在专门的 "authority CLI 通道"。
+
+
+## 可选 Presentation Profile
+
+Markdown 的可移植呈现、GitHub Alert 与首屏阅读原则见 [`../../../docs/prism-markdown-presentation-profile.md`](../../../docs/prism-markdown-presentation-profile.md)。它是 Reference Experience style guideline，不新增本 Artifact 的语义字段、authority 或 lifecycle。

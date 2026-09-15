@@ -78,3 +78,8 @@ captured_from: "对话来源定位（可用时）；不可用时诚实说明 wea
 - validator 对 `plan accept` / `decision record` 逐个精确匹配 target；模糊 scope 不构成覆盖。
 - `delegated-context` 另需 `scope_refs` 覆盖本次目标。
 - candidate、Finding 与 Agent 建议不能自证；缺少有效 evidence 时 durable writes = 0。
+
+
+## 可选 Presentation Profile
+
+Markdown 的可移植呈现、GitHub Alert 与首屏阅读原则见 [`../../../docs/prism-markdown-presentation-profile.md`](../../../docs/prism-markdown-presentation-profile.md)。它是 Reference Experience style guideline，不新增本 Artifact 的语义字段、authority 或 lifecycle。

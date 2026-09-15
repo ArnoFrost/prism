@@ -117,3 +117,8 @@ Plan identity（`plan:pNN`）保存 continuity / provenance，不等于被人接
 - Plan 的 meaning 用 digest 绑定；Intent 的边界 authority 用 authoritative Intent identity / supersession lineage 绑定。语义保持型 Intent 原地整理不应误伤；Intent boundary change 必须先获权并 supersede，不能只重新 accept Plan 绕过。
 - 缺少 algorithm-compatible digest 或 Intent basis 的历史 acceptance 一律 fail-closed；`model_revision` 如未来存在，仅作审计/诊断，不能作为安全前提。
 - 列表的 ordered/unordered 形态与逻辑 nesting depth 也属于 action structure；Reference projection 不绑定具体缩进宽度，但不能把 child step 压平为顶层 step。
+
+
+## 可选 Presentation Profile
+
+Markdown 的可移植呈现、GitHub Alert 与首屏阅读原则见 [`../../../docs/prism-markdown-presentation-profile.md`](../../../docs/prism-markdown-presentation-profile.md)。它是 Reference Experience style guideline，不新增本 Artifact 的语义字段、authority 或 lifecycle。
