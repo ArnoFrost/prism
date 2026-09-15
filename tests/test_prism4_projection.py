@@ -314,6 +314,20 @@ def test_parent_brief_bubbles_child_findings_and_decisions_with_origin():
         )
     )
 
+    # Commitment fixtures need actual target-bound evidence, not a role label.
+    for ref, topic_id, evidence_id in (
+        ("decision:d00", parent.id, "clarify:c90"),
+        ("decision:d01", child.id, "clarify:c91"),
+    ):
+        store.add_payload(SemanticPayload(
+            id=evidence_id, type="evidence-reference", body="确认。",
+            metadata={"status": "confirmed", "evidence_kind": "human-choice",
+                      "target_ref": ref, "topic_id": topic_id},
+        ))
+        store.artifacts[ref].metadata.update(
+            evolution="committed", authority_evidence=evidence_id,
+        )
+
     brief = project_brief(store, parent.id)
 
     assert "`finding:f01` 子级发现（来源：`topic:demo.child`）" in brief.body

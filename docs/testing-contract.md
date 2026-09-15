@@ -6,6 +6,8 @@
 
 Authority 测试验证 trusted local collaboration 中的 semantic self-consistency，不证明 evidence 作者身份或防恶意 writer（Alignment §6.1）。Invocation 的内存语义测试与 Markdown roundtrip 分别验收：后者保留工件状态与所支持的关系，不要求完整 Invocation log（Alignment §11）。
 
+`store validate` 是 Reference Experience 的完整 contract validation 入口；Brief 只投影 effective authority，不替代 validator。当前 Plan 可作 advisory recovery 展示，不因此获得执行授权。
+
 ## 生命周期
 
 | 状态 | 含义 | 处理方式 |

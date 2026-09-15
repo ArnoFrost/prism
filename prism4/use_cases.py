@@ -396,11 +396,7 @@ def validate_authority_evidence(
                 "authority evidence must be an evidence-reference payload or "
                 f"a committed Decision, not a {artifact.role} artifact: {evidence_ref}"
             )
-        if str(artifact.metadata.get("evolution") or "") != "committed":
-            raise PrismProtocolError(
-                f"authority evidence Decision is not committed: {evidence_ref}"
-            )
-        _validate_committed_decision_authority(store, artifact, _seen=_seen)
+        validate_committed_decision_authority(store, artifact, _seen=_seen)
         if not _decision_explicitly_authorizes(store, artifact, target_ref):
             raise PrismProtocolError(
                 "authority evidence Decision does not explicitly authorize "
@@ -475,13 +471,18 @@ def _decision_explicitly_authorizes(
     return target_ref in {str(ref) for ref in scope}
 
 
-def _validate_committed_decision_authority(
+def validate_committed_decision_authority(
     store: ReferenceStore,
     decision: Artifact,
     *,
     _seen: frozenset[str] = frozenset(),
 ) -> None:
-    """Validate a committed Decision's own typed authority chain."""
+    """Shared authority check for validation and effective Decision projection."""
+    if (
+        decision.role != "decision"
+        or str(decision.metadata.get("evolution") or "") != "committed"
+    ):
+        raise PrismProtocolError(f"Decision is not committed: {decision.id}")
     if decision.id in _seen:
         raise PrismProtocolError(
             f"authority evidence cycle includes Decision: {decision.id}"
@@ -746,9 +747,9 @@ def validate_store(store: ReferenceStore) -> list[str]:
         if str(artifact.metadata.get("evolution") or "") != "committed":
             continue
         try:
-            _validate_committed_decision_authority(store, artifact)
+            validate_committed_decision_authority(store, artifact)
         except PrismProtocolError as error:
-            problems.append(str(error))
+            problems.append(f"{artifact.id}: {error}")
     for artifact in store.artifacts.values():
         if artifact.role != "plan" or "acceptance" not in artifact.metadata:
             continue

@@ -61,10 +61,38 @@ def project_brief(
     digested = [item for item in artifacts if item not in current]
 
     intent = _latest(current, "intent")
-    decisions = [item for item in current if item.role == "decision"]
+    # Lazy import avoids the use_cases -> projection dependency at module load.
+    # The authority chain has one validator; projection only routes its result.
+    from .use_cases import validate_committed_decision_authority
+
+    decisions = []
+    invalid_decisions = []
+    for item in current:
+        if item.role != "decision":
+            continue
+        try:
+            validate_committed_decision_authority(store, item)
+        except PrismProtocolError:
+            invalid_decisions.append(item)
+        else:
+            decisions.append(item)
     plans = [item for item in current if item.role == "plan"]
     findings = [item for item in current if item.role == "findings"]
     pending, unscoped_payload_count = _scoped_payloads(store, lineage)
+
+    open_lines = (
+        _open_lines(pending, findings, topic_id=topic_id)
+        if pending or findings or not invalid_decisions else []
+    )
+    if invalid_decisions:
+        refs = "、".join(
+            f"`{item.id}`{_origin_suffix(topic_id, item.topic_id)}"
+            for item in invalid_decisions
+        )
+        open_lines.append(
+            f"- authority 诊断：{len(invalid_decisions)} 条 Decision 未能证明有效承诺（{refs}）；"
+            "未计入当前承诺，请运行 `prism store validate` 查看。"
+        )
 
     lines = [
         f"# Brief — {store.topics[topic_id].title}",
@@ -94,7 +122,7 @@ def project_brief(
         "",
         "## 风险与未决",
         "",
-        *_open_lines(pending, findings, topic_id=topic_id),
+        *open_lines,
         "",
         "## 下一步",
         "",
@@ -109,7 +137,7 @@ def project_brief(
         *_history_navigation_lines(
             digested,
             topic_id=topic_id,
-            decisions=decisions,
+            decisions=[*decisions, *invalid_decisions],
             pending=pending,
             findings=findings,
             unscoped_payload_count=unscoped_payload_count,
@@ -258,7 +286,7 @@ def _compact_section(body: str, heading: str) -> str:
 def _stage_lines(plans: list[Artifact]) -> list[str]:
     if not plans:
         return ["- 尚未形成当前阶段路线。"]
-    lines: list[str] = []
+    lines: list[str] = ["- 当前 Plan 仅供协作恢复；此处展示不表示已获执行授权。"]
     for plan in plans:
         lines.append(f"- `{plan.id}` {plan.title or plan.id}")
         phases = _plan_phases(plan)
@@ -491,7 +519,7 @@ def _next_lines(plans: list[Artifact], pending, findings: list[Artifact]) -> lis
             )
         else:
             lines.append(
-                "- 有仍有效 Findings；若被取舍阻塞用 `/prism clarify`，否则按 Plan 推进"
+                "- 有仍有效 Findings；若被取舍阻塞用 `/prism clarify`，否则确认 Plan 授权后推进"
             )
     if not lines:
         if all_phased_plans_closed:

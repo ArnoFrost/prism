@@ -287,6 +287,13 @@ def test_brief_can_be_regenerated_as_projection():
         )
     )
 
+    evidence = store.add_payload(SemanticPayload(
+        id="clarify:c01", type="evidence-reference", body="Confirmed commitment.",
+        metadata={"status": "confirmed", "evidence_kind": "human-choice",
+                  "target_ref": decision.id, "topic_id": topic.id},
+    ))
+    decision.metadata.update(evolution="committed", authority_evidence=evidence.id)
+
     brief = project_brief(store, topic.id, artifact_id="artifact:brief.projection")
 
     assert brief.role == "brief"

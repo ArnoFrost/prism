@@ -788,3 +788,143 @@ def _run_prism(*cli_args: str, root: Path) -> subprocess.CompletedProcess:
         timeout=10,
         env=env,
     )
+
+
+def _disk_snapshot(root: Path):
+    return {
+        str(path.relative_to(root)): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in root.rglob('*') if path.is_file()
+    }
+
+
+def _unbacked_decision(store, ref='decision:d01', evidence=None):
+    return store.add_artifact(Artifact(
+        id=ref, topic_id='topic:demo', role='decision', title='待验证承诺',
+        body='保持原文。', metadata={'evolution': 'committed',
+        **({'authority_evidence': evidence} if evidence else {})},
+    ))
+
+
+@pytest.mark.parametrize('case, error', [
+    ('valid', None),
+    ('missing', 'missing authority evidence'),
+    ('misbound', 'not bound to target'),
+    ('plan', 'acceptance is missing evidence'),
+    ('multiple', 'missing authority evidence'),
+])
+def test_public_store_validate_consumes_contract_problems(tmp_path, case, error):
+    store = _topic_store()
+    if case in {'missing', 'multiple'}:
+        _unbacked_decision(store)
+    if case == 'misbound':
+        evidence = _evidence_payload(store, target_ref='decision:d99')
+        _unbacked_decision(store, evidence=evidence.id)
+    if case in {'plan', 'multiple'}:
+        plan, _ = _put_plan(store)
+        store.artifacts[plan].metadata['acceptance'] = {'status': 'accepted'}
+    if case == 'valid':
+        evidence = _confirmed_evidence(store, 'decision:d01')
+        record_decision(store, topic_id='topic:demo', body='有效承诺',
+                        authority_evidence=evidence.id, next_artifact_id=fake_artifact_id)
+    LocalFileStoreAdapter(tmp_path).save(store)
+    before = _disk_snapshot(tmp_path)
+    result = _run_prism('store', 'validate', root=tmp_path)
+    assert _disk_snapshot(tmp_path) == before
+    if error is None:
+        assert result.returncode == 0, result.stderr
+        assert result.stdout.startswith('ok:')
+    else:
+        assert result.returncode != 0
+        assert error in result.stderr
+        assert ('plan:p01' if case == 'plan' else 'decision:d01') in result.stderr
+        assert 'ok:' not in result.stdout
+    if case == 'multiple':
+        assert 'plan:p01 acceptance is missing evidence' in result.stderr
+        assert '2' in result.stderr
+
+
+@pytest.mark.parametrize('invalid', ['missing', 'misbound', 'candidate', 'noncommitted'])
+def test_public_brief_keeps_invalid_decision_observable_not_committed(tmp_path, invalid):
+    store = _topic_store()
+    evidence = _confirmed_evidence(store, 'decision:d01')
+    record_decision(store, topic_id='topic:demo', body='有效承诺', title='有效承诺',
+                    authority_evidence=evidence.id, next_artifact_id=fake_artifact_id)
+    bad_evidence = None
+    if invalid in {'misbound', 'candidate'}:
+        bad_evidence = _evidence_payload(
+            store, ref='clarify:c91', target_ref='decision:d99',
+            payload_type='decision-candidate' if invalid == 'candidate' else 'evidence-reference',
+        ).id
+    bad = _unbacked_decision(store, 'decision:d02', bad_evidence)
+    if invalid == 'noncommitted':
+        bad.metadata['evolution'] = 'supersedable'
+    LocalFileStoreAdapter(tmp_path).save(store)
+    before = _disk_snapshot(tmp_path)
+    result = _run_prism('brief', 'project', 'topic:demo', root=tmp_path)
+    assert result.returncode == 0, result.stderr
+    commitments = result.stdout.split('## 已承诺')[1].split('## 风险与未决')[0]
+    assert '`decision:d01` 有效承诺' in commitments
+    assert 'decision:d02' not in commitments
+    unresolved = result.stdout.split('## 风险与未决')[1].split('## 下一步')[0]
+    assert 'decision:d02' in unresolved
+    assert 'authority' in unresolved and 'prism store validate' in unresolved
+    assert 'decision:d02' not in result.stdout.split('## 历史与导航')[1]
+    assert _disk_snapshot(tmp_path) == before
+    reloaded = LocalFileStoreAdapter(tmp_path).load().artifacts[bad.id]
+    assert reloaded.metadata == bad.metadata
+    assert reloaded.body.strip() == bad.body
+
+
+@pytest.mark.parametrize('accepted', [False, True])
+def test_public_brief_current_plan_recovery_is_not_execution_authority(tmp_path, accepted):
+    store, plan_id = _accepted_action_plan() if accepted else (_topic_store(), None)
+    if plan_id is None:
+        plan_id, _ = _put_plan(store, body=_ACTION_PLAN)
+    else:
+        _rewrite_plan(store, plan_id, 'migrate 数据。', '验证后 migrate 数据。')
+    assert plan_state(store, plan_id)['current']
+    assert not plan_state(store, plan_id)['operative']
+    LocalFileStoreAdapter(tmp_path).save(store)
+    before = _disk_snapshot(tmp_path)
+    result = _run_prism('brief', 'project', 'topic:demo', root=tmp_path)
+    assert result.returncode == 0, result.stderr
+    stage = result.stdout.split('## 当前阶段')[1].split('## 本阶段完成信号')[0]
+    assert plan_id in stage
+    assert '不表示已获执行授权' in stage
+    assert 'probe 当前环境' in result.stdout.split('## 下一步')[1]
+    assert _disk_snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize('field, value, error', [
+    ('accepted_model_digest', 'bad-digest', 'invalid accepted_model_digest'),
+    ('basis_intent_ref', 'intent:missing', 'invalid basis_intent_ref'),
+    ('evidence_kind', 'delegated-context', 'evidence_kind does not match'),
+    ('granted_by', 'delegated-policy', 'granted_by does not match'),
+    ('evidence', 'clarify:missing', 'does not exist'),
+])
+def test_public_store_validate_exposes_existing_acceptance_checks(tmp_path, field, value, error):
+    store, plan_id = _accepted_action_plan()
+    store.artifacts[plan_id].metadata['acceptance'][field] = value
+    LocalFileStoreAdapter(tmp_path).save(store)
+    before = _disk_snapshot(tmp_path)
+    result = _run_prism('store', 'validate', root=tmp_path)
+    assert result.returncode != 0
+    assert plan_id in result.stderr and error in result.stderr
+    assert _disk_snapshot(tmp_path) == before
+
+
+def test_public_store_validate_accepts_valid_plan_and_rejects_illegal_relation(tmp_path):
+    from prism4.core import Relation
+
+    store, plan_id = _accepted_action_plan()
+    adapter = LocalFileStoreAdapter(tmp_path)
+    adapter.save(store)
+    assert _run_prism('store', 'validate', root=tmp_path).returncode == 0
+    finding_id = _finding(store)
+    store.add_relation(Relation(source_ref=plan_id, kind='supersedes', target_ref=finding_id))
+    adapter.save(store)
+    before = _disk_snapshot(tmp_path)
+    result = _run_prism('store', 'validate', root=tmp_path)
+    assert result.returncode != 0
+    assert 'must be a plan artifact' in result.stderr
+    assert _disk_snapshot(tmp_path) == before

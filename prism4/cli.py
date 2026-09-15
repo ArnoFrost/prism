@@ -44,6 +44,7 @@ from prism4.use_cases import (  # noqa: E402
     create_topic,
     persist_brief,
     record_decision,
+    validate_store,
 )
 from prism4.local_files import (  # noqa: E402
     locate_artifact_ref,
@@ -486,7 +487,14 @@ def cmd_artifact_locate(args: argparse.Namespace) -> int:
 
 
 def cmd_store_validate(args: argparse.Namespace) -> int:
-    store = open_adapter(resolve_root(args.root)).load()
+    adapter = open_adapter(resolve_root(args.root))
+    store = adapter.load()
+    problems = validate_store(store)
+    if problems:
+        raise PrismProtocolError(
+            f"{adapter.root}: {len(problems)} contract problems (writes=0):\n"
+            + "\n".join(f"  - {problem}" for problem in problems)
+        )
     print(
         f"ok: {len(store.topics)} topics, {len(store.artifacts)} artifacts, "
         f"{len(store.payloads)} payloads"
