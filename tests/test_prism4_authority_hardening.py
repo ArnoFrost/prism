@@ -584,6 +584,26 @@ def test_acceptance_action_model_contract_material_edit_stales(old: str, new: st
     assert not [r for r in store.relations if r.kind == "supersedes"]  # A10
 
 
+def test_acceptance_github_alert_wrapper_is_non_material_a15():
+    plain = "## 目标\n以 GFM 为 portable baseline。\n"
+    alert = "## 目标\n> [!IMPORTANT]\n> 以 GFM 为 portable baseline。\n"
+    ordinary_quote = "## 目标\n> 以 GFM 为 portable baseline。\n"
+
+    store = _topic_store()
+    plan_id, _ = _put_plan(store, body=plain)
+    evidence = _evidence_payload(store, target_ref=plan_id)
+    accept_plan(store, plan_ref=plan_id, evidence_ref=evidence.id)
+    store.artifacts[plan_id] = replace(store.artifacts[plan_id], body=alert)
+    assert plan_state(store, plan_id)["operative"]
+
+    store = _topic_store()
+    plan_id, _ = _put_plan(store, body=plain)
+    evidence = _evidence_payload(store, target_ref=plan_id)
+    accept_plan(store, plan_ref=plan_id, evidence_ref=evidence.id)
+    store.artifacts[plan_id] = replace(store.artifacts[plan_id], body=ordinary_quote)
+    assert not plan_state(store, plan_id)["operative"]
+
+
 def test_acceptance_list_structure_is_material_but_indent_width_is_not():
     nested_two = "## 步骤\n1. 部署\n  - 验证结果\n"
     nested_four = "## 步骤\n1. 部署\n    - 验证结果\n"

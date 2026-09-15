@@ -18,6 +18,8 @@ _STATUS_RE = re.compile(r"^\s*\*\*\s*状态\s*\*\*\s*[：:].*$", re.I)
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 _LIST_RE = re.compile(r"^([ \t]*)([-+*]|\d+[.)])\s+(.*)$")
 _CHECKBOX_RE = re.compile(r"^\[[ xX]\]\s*")
+_ALERT_RE = re.compile(r"^\s*>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$", re.I)
+_ALERT_QUOTE_RE = re.compile(r"^\s*> ?(.*)$")
 
 
 def _text(value: str) -> str:
@@ -34,7 +36,19 @@ def canonical_action_model(plan: Artifact) -> dict[str, object]:
     # semantic, so two-space and four-space styles can canonicalize alike.
     list_indents: list[int] = []
     excluded_heading_level: int | None = None
+    in_github_alert = False
     for raw_line in plan.body.replace("\r\n", "\n").replace("\r", "\n").split("\n"):
+        # Only the five standard GitHub Alert wrappers are presentation-only.
+        # An ordinary blockquote stays unknown semantic prose and is retained.
+        if _ALERT_RE.match(raw_line):
+            in_github_alert = True
+            continue
+        if in_github_alert:
+            quoted = _ALERT_QUOTE_RE.match(raw_line)
+            if quoted:
+                raw_line = quoted.group(1)
+            else:
+                in_github_alert = False
         heading = _HEADING_RE.match(raw_line)
         if heading:
             level, name = len(heading.group(1)), _text(heading.group(2)).casefold()

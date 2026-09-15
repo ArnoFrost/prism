@@ -13,7 +13,8 @@ source:
 > **GitHub Flavored Markdown（GFM）是 canonical portable baseline。**Obsidian 是兼容阅读器与可选增强环境，不是 Prism 的 canonical syntax target。
 
 > [!NOTE]
-> **呈现可以重复结构，不能复制状态。**Heading、Alert 与表格可以前置或重组已有事实；不得手工维护第二份 current phase、operative status、authority 或 route truth。
+> **呈现可以重复结构，不能复制状态。**
+> Heading、Alert 与表格可以前置或重组已有事实；不得手工维护第二份 current phase、operative status、authority 或 route truth。
 
 ## 边界
 
@@ -22,7 +23,7 @@ source:
 - GFM-compatible constructs 是 canonical：ATX headings、lists、task lists、fenced code、tables、blockquotes、relative Markdown links 与 GitHub Alerts。
 - YAML frontmatter 是 **Prism Reference Markdown Profile 的 metadata convention**，不宣称为 GFM semantic syntax。
 - Obsidian 可以增强 portable Markdown，但 canonical 文档不依赖 `[[wikilink]]`、`![[embed]]`、Dataview、CSS class、plugin syntax 或 custom callout parameters。
-- GitHub Alert 在不支持增强渲染的 reader 中至少应可退化为普通 blockquote。
+- GitHub Alert 在不支持增强渲染的 reader 中至少应可退化为普通 blockquote；Reference action-model projection 仅忽略五种标准 Alert 的 wrapper，内部正文仍属于 semantic content。
 
 ## 阅读布局
 
@@ -68,16 +69,18 @@ Alert 是可选 Presentation，不是 semantics。删除 wrapper 后正文仍必
 - **Intent：**首屏看见 purpose 与最重要 boundary；Scan 看见 non-goals、constraints 与 completion condition。
 - **Plan：**首屏看见 expected outcome 与 current route；Scan 看见 action map、phases、dependencies、verification、gates 与 material risks。不得制造第二份 action truth。
 - **Finding：**首屏交付 judgment 与为什么重要；Scan 区分 observation、evidence、impact、recommendation 与 uncertainty。`WARNING` 不定义风险强度。
-- **Brief：**服务 30 秒恢复：why、current phase、commitments、risks/unresolved 与 next step。只有 Alert 内容可从与普通 section 相同的 source matrix 生成时才使用。
+- **Brief：**服务 30 秒恢复：why、current phase、commitments、current unresolved 与 next step。只有 Alert 内容可从与普通 section 相同的 source matrix 生成时才使用。
 - **Decision：**首屏突出 commitment、scope 与 authority basis；Alert 本身不授予 authority。
 
 ## Dogfood gate
 
 在把规则变成默认 Reference Profile 前，需在 GitHub 上渲染真实 Intent、复杂 Plan 与 Finding，并在不通读正文的 30 秒内检查：
 
-- 能否说明为什么做？
-- 能否说明当前 route？
-- 能否指出最大 risk 或 unresolved judgment？
+- **Intent：**能否说明为什么做、边界是什么、什么算完成？
+- **Plan：**能否说明要达到什么、当前 route、material risk 或 decision gate？
+- **Finding：**能否说明最重要 judgment、为什么重要、evidence strength？
+- **Brief：**能否说明为什么做、当前在哪、next step 与 current unresolved？
+- **Decision：**能否说明 commitment、scope、authority basis？
 - 是否保持 role、authority、source strength、boundary 与 uncertainty？
 
 只让文档更漂亮、引入 machine-recognized presentation syntax，或要求 duplicate state 的规则，都不能通过。
