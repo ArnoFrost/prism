@@ -167,7 +167,7 @@ prism update canary --yes    # 非交互迁出或跨 major 的显式确认
 #### 进阶：精确恢复与旧脚本兼容
 
 ```bash
-prism update --to v4.0.0-canary.4  # 精确安装或回滚（需属于当前通道 / major）
+prism update --to v4.0.0-canary.5  # 精确安装或回滚（需属于当前通道 / major）
 prism update --check --json         # 兼容的机器可读状态检查
 prism update --channel stable       # 兼容的通道 flag；普通用户优先用位置命令
 ```
