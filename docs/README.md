@@ -45,6 +45,7 @@ Alignment 是 Protocol Semantics SSOT；其余文档是受控 consumer / guide�
 | [prism-4-architecture-guide.md](./prism-4-architecture-guide.md) | 4.0 架构图设计指导 |
 | [prism-4-reading-contract.md](./prism-4-reading-contract.md) | Reference Experience 阅读合同草案：认知任务、渐进展开与理解型 Eval |
 | [architecture.md](./architecture.md) | Protocol Core / Reference Experience、分发所有权与当前三入口 |
+| [prism-4-release-preview.md](./prism-4-release-preview.md) | 更新预览草稿：供 3.x 深度使用者按变化亮点阅读；不作为稳定承诺 |
 
 ## C — 历史归档（historical）
 

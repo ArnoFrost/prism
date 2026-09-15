@@ -7,7 +7,7 @@
 `VERSION` 是人类可读发行名的入口。当前 canary 使用：
 
 ```text
-4.0.0-canary.5
+4.0.0-canary.6
 ```
 
 Python package metadata 必须使用 PEP 440 兼容版本：
@@ -17,7 +17,7 @@ Python package metadata 必须使用 PEP 440 兼容版本：
 | `X.Y.Z-canary.N` | `X.Y.Z.devN` |
 | `X.Y.Z` | `X.Y.Z` |
 
-`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前 Canary 的三项映射为 `VERSION=4.0.0-canary.5`、Tag `v4.0.0-canary.5`、package version `4.0.0.dev5`。
+`VERSION` 不带 Git Tag 的 `v` 前缀；对应 Git Tag 分别是 `vX.Y.Z-canary.N` 与 `vX.Y.Z`。当前 Canary 的三项映射为 `VERSION=4.0.0-canary.6`、Tag `v4.0.0-canary.6`、package version `4.0.0.dev6`。
 
 ## Tag 发行与更新合同
 
@@ -70,7 +70,25 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 | `.github/workflows/release.yml`（唯一正式 publication 入口） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |
 | Release workflow 在 Tag push 前校验 exact SHA / Tag / VERSION | 已实现 |
-| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.5` / `4.0.0.dev5` |
+| 版本元数据使用 `canary.N` 形态 | 已完成；当前为 `4.0.0-canary.6` / `4.0.0.dev6` |
+
+## Changelog 与更新预览的编排
+
+两份内容共用事实来源，但不互相替代：
+
+| 产物 | 回答什么 | 维护口径 |
+|------|----------|----------|
+| `CHANGELOG.md` | 相对上一枚同通道发行 Tag，这次改变了什么、升级要注意什么 | 未发行内容先写 `Unreleased`；确认发行版本后归入对应版本，不重写历史条目 |
+| [4.0 更新预览](./prism-4-release-preview.md) | 3.x 深度使用者值得关注哪些变化 | 跨 Canary 选择亮点，明确已交付、源码已实现待发行与尚待验证；不是入门介绍或第二份 changelog |
+
+编辑时采用以下轻量约定，不增加发布 runtime 或新的必填工件：
+
+- 先核对同 channel / major 上一枚 immutable Tag 到候选源码的 diff，再按用户影响合并提交；同一个特性及其修复尽量形成一条完整叙述。
+- 分类沿用 `Added / Changed / Fixed / Removed`；只保留本批需要的分类。有兼容或操作影响时补 `Upgrade notes`，写明谁受影响、行为怎样变化、用户该做什么。
+- 每条优先写“特性或问题 → 用户可见变化”，技术机制只写解释影响所需的部分。文字澄清不包装成新增能力，检查更严格不包装成新增安全保证。
+- 重大更新预览按“过去的摩擦 → 现在怎么用 → 一个例子 → 升级注意”展开，每个亮点链接既有合同或使用说明，不复述完整协议。
+- 发布前逐条确认版本归属、实现/验证证据、升级动作与边界；不能把源码实现、测试通过或文档草案写成已发布或稳定承诺。
+- Canary changelog 可以独立完成与发布，不等待大版本预览定稿。预览只有出现独立迁移、示例或读者验证工作时，才需要另立协作问题空间。
 
 ## 版本提升 Checklist
 
@@ -95,7 +113,7 @@ uv run pytest
 
 ```bash
 gh workflow run release.yml --ref prism-4 \
-  -f tag=v4.0.0-canary.5 \
+  -f tag=v4.0.0-canary.6 \
   -f release_line=canary
 ```
 
@@ -104,7 +122,7 @@ Stable 从 `main` dispatch，并把 `release_line` 设为 `stable`。普通 rele
 Tag push 是 managed 用户可见的 machine publication 时点；GitHub Release 是基于既有 Tag 的 human-facing projection。若 Tag 已成功、GitHub Release 创建失败，不得重跑 publication 或移动 Tag，只运行幂等修复：
 
 ```bash
-bin/release repair-release --tag v4.0.0-canary.5
+bin/release repair-release --tag v4.0.0-canary.6
 ```
 
 `bin/release tag/push --confirm` 保留为低层 break-glass 机械面，不是与 Release workflow 并列的正式维护者按钮。

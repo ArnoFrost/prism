@@ -1,5 +1,30 @@
 ## [Unreleased]
 
+## [4.0.0-canary.6] — 2026-09-15
+
+> 本版聚焦 Plan 接受后的修订、authority 校验与可移植阅读。
+
+### Added
+
+- **Markdown 呈现指南** — 新增 Presentation Profile v0 草案：以 GFM 为可移植语法基线，允许五种标准 GitHub Alert；Obsidian 保持为可选阅读增强，不成为 canonical 文档的依赖。
+
+### Changed
+
+- **Plan acceptance 绑定具体行动模型** — 接受结果绑定 action-model digest 与当时的 Intent identity。目标、步骤、依赖、验收或重要风险变化后，旧 acceptance 会 stale；Plan 可以仍 current，但不再 operative。明确的格式、进度和执行记录更新可保留 acceptance，不要求新建 Plan 编号。
+- **协议边界说清楚** — authority guard 是 trusted-local 协作中的语义自洽检查，不认证 evidence 作者；Invocation 属于 provenance semantics，Markdown 默认 weak provenance，不承诺完整调用历史或已实现的 audit profile。
+
+### Fixed
+
+- **校验与恢复不再把无效状态当成承诺** — `prism store validate` 消费现有完整合同校验，聚合报告问题并返回非零状态；Brief 将 current authority-invalid Decision 留在简短 diagnostic 中，不列入“已承诺”、不修改原件。current Plan 可用于恢复，但展示不表示已获执行授权。
+- **Decision 当前态与历史态一致** — canonical 当前 Decision 使用 `committed` 和有效 authority evidence；替代由 `supersedes` 表达。validator 与 Brief 共用 current 判定，既不漏报 current 非 committed 形态，也不单独重验已退出 current 的旧件承诺条件。
+- **Plan 内容与呈现的边界** — 行动列表的顺序类型、逻辑层级纳入 digest；仅改变缩进宽度或五种标准 Alert 的 wrapper 不影响同一行动模型，Alert 内部正文仍参与判断。
+
+### Upgrade notes
+
+- 已有 Plan acceptance 若缺少兼容的 digest 或 basis Intent，将不再视为 operative；请先确认当前行动模型与边界，再通过 `prism plan accept` 接受。不要手填 digest 或伪造确认来消除诊断。
+- 手写 current Decision 若仍用 `evolution: supersedable`、缺少 committed form 或有效 evidence，`prism store validate` 现在会报错。应先核实承诺是否真实成立及其 target-bound evidence，不能只改标签使其“通过”；明确 historical / superseded 的旧件无需伪装成当前承诺。
+- 这些变化不提供 3.x 原地格式转换。3.x 用户继续按[迁移指南](docs/migration.md)冻结旧状态、重建少量仍有效的协作状态。
+
 ## [4.0.0-canary.5] — 2026-09-15
 
 ### Added
