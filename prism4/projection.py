@@ -57,7 +57,7 @@ def project_brief(
         if relation.kind == "supersedes"
     }
 
-    current = [item for item in artifacts if _is_current(item, superseded)]
+    current = [item for item in artifacts if is_current_artifact(item, superseded)]
     digested = [item for item in artifacts if item not in current]
 
     intent = _latest(current, "intent")
@@ -210,7 +210,8 @@ def _scoped_payloads(
     return pending, unscoped_count
 
 
-def _is_current(artifact: Artifact, superseded: set[str]) -> bool:
+def is_current_artifact(artifact: Artifact, superseded: set[str]) -> bool:
+    """Shared current-state selection for projection and contract validation."""
     if artifact.id in superseded:
         return False
     if str(artifact.metadata.get("status") or "") == "absorbed":

@@ -27,7 +27,8 @@ role: "decision"
 title: "..."
 topic: "topic:<slug>"
 authority: "authoritative"    # 承诺是事实源
-evolution: "supersedable"     # 被新承诺取代时旧版归档
+evolution: "committed"       # 当前承诺；可替代性由 supersedes 表达
+authority_evidence: "clarify:c01" # 指向已存在且 target-bound 的有效授权证据
 created_at: "YYYY-MM-DD"
 supersedes: ["decision:d00"]  # 可选
 derived_from: ["finding:f02"] # 可选：provenance
@@ -57,7 +58,9 @@ derived_from: ["finding:f02"] # 可选：provenance
 ## 状态纪律
 
 - 拍板前只有 **Decision candidate**（存在于 Plan 的 Decision Gates 区或 clarify payload），不得提前落 `decisions/`。
-- 落盘即 `authority: authoritative`；被 supersedes 时旧版归档保留。
+- Decision Artifact 落盘表示 commitment 已成立：当前有效件使用 `authority: authoritative` 与 `evolution: committed`，且必须通过 authority evidence 校验；字段声明本身不构成授权。
+- 后续新 Decision 通过 `supersedes` 取代旧 Decision；旧件保留为 historical / 非 current 状态，不再要求满足当前 effective commitment 条件。
+- “未来可被取代”由 relation / derived evolution 表达，不要求当前件写成 `supersedable`，也不引入多值 evolution。
 
 ## authority evidence payload 合同（捕获端）
 

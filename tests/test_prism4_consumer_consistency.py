@@ -69,3 +69,15 @@ def test_alignment_absorbs_released_intent_plan_and_authority_semantics() -> Non
     assert "范围互斥的 sibling Plan 可以并存" in alignment
     assert "typed authority evidence" in alignment
     assert "`human-required` 只是 requirement，不是 authority evidence" in alignment
+
+
+def test_decision_contract_uses_committed_reference_form() -> None:
+    contract = (
+        ROOT / 'skills' / 'prism4' / 'artifact-contracts' / 'decision.md'
+    ).read_text(encoding='utf-8')
+    canonical = contract.split('```yaml', 1)[1].split('```', 1)[0]
+    assert 'authority: "authoritative"' in canonical
+    assert 'evolution: "committed"' in canonical
+    assert 'evolution: "supersedable"' not in canonical
+    assert 'authority_evidence:' in canonical
+    assert 'supersedes:' in canonical

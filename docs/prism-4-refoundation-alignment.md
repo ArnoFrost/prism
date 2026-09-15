@@ -394,7 +394,7 @@ Committed Decision write 必须携带与本次 target 和 scope 绑定的 typed 
 | Intent | Authoritative | Durable / Supersedable |
 | Brief | Projected | Regenerable |
 | Findings | Advisory | Active when unresolved; Absorbed / Historical / Supersedable when resolved |
-| Decision | Authoritative | Historical / Supersedable / Committed |
+| Decision | Authoritative | Committed while current; Historical / non-current when superseded |
 | Plan | Advisory until accepted by applicable authority; Operative when accepted | Current implementation model; Supersedable / Historical when replaced |
 
 简写：

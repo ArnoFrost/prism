@@ -27,7 +27,7 @@ from .core import (
     review_capability,
     utc_now_iso,
 )
-from .projection import project_brief
+from .projection import is_current_artifact, project_brief
 from .reference import ReferenceStore
 
 NextArtifactId = Callable[[ReferenceStore, str], str]
@@ -727,7 +727,7 @@ def plan_state(store: ReferenceStore, plan_ref: str) -> dict[str, bool]:
 
 
 def validate_store(store: ReferenceStore) -> list[str]:
-    """全库合同校验：relation matrix + committed Decision evidence 链。"""
+    """全库合同校验：relation matrix + current Decision authority + Plan acceptance。"""
     problems: list[str] = []
     for relation in store.relations:
         if relation.kind not in RELATION_KINDS:
@@ -741,10 +741,12 @@ def validate_store(store: ReferenceStore) -> list[str]:
             )
         except PrismProtocolError as error:
             problems.append(str(error))
+    superseded = {
+        relation.target_ref for relation in store.relations
+        if relation.kind == "supersedes"
+    }
     for artifact in store.artifacts.values():
-        if artifact.role != "decision":
-            continue
-        if str(artifact.metadata.get("evolution") or "") != "committed":
+        if artifact.role != "decision" or not is_current_artifact(artifact, superseded):
             continue
         try:
             validate_committed_decision_authority(store, artifact)

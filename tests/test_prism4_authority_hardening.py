@@ -928,3 +928,63 @@ def test_public_store_validate_accepts_valid_plan_and_rejects_illegal_relation(t
     assert result.returncode != 0
     assert 'must be a plan artifact' in result.stderr
     assert _disk_snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize('evolution', ['supersedable', None, 'unknown'])
+def test_current_decision_contract_agrees_with_public_diagnostic(tmp_path, evolution):
+    store = _topic_store()
+    decision = _unbacked_decision(store)
+    if evolution is None:
+        decision.metadata.pop('evolution')
+    else:
+        decision.metadata['evolution'] = evolution
+    LocalFileStoreAdapter(tmp_path).save(store)
+    before = _disk_snapshot(tmp_path)
+    brief = _run_prism('brief', 'project', 'topic:demo', root=tmp_path)
+    assert brief.returncode == 0, brief.stderr
+    commitments = brief.stdout.split('## 已承诺')[1].split('## 风险与未决')[0]
+    unresolved = brief.stdout.split('## 风险与未决')[1].split('## 下一步')[0]
+    assert decision.id not in commitments
+    assert decision.id in unresolved and 'prism store validate' in unresolved
+    validation = _run_prism('store', 'validate', root=tmp_path)
+    assert validation.returncode == 2, validation.stdout
+    assert decision.id in validation.stderr and 'not committed' in validation.stderr
+    assert _disk_snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize('state, evolution', [
+    ('historical', 'historical'),
+    ('superseded', 'committed'),
+    ('superseded', 'supersedable'),
+    ('superseded', None),
+])
+def test_retired_decision_is_history_not_current_authority_defect(tmp_path, state, evolution):
+    store = _topic_store()
+    old = _unbacked_decision(store)
+    if evolution is None:
+        old.metadata.pop('evolution')
+    else:
+        old.metadata['evolution'] = evolution
+    # Old evidence is absent; only the new current commitment needs valid form.
+    evidence = _confirmed_evidence(store, 'decision:d02')
+    new_id, _, _ = record_decision(
+        store, topic_id='topic:demo', body='新承诺。', title='新承诺',
+        authority_evidence=evidence.id, next_artifact_id=fake_artifact_id,
+        supersedes=(old.id,) if state == 'superseded' else (),
+    )
+    assert store.artifacts[new_id].metadata['evolution'] == 'committed'
+    assert store.artifacts[new_id].metadata['authority'] == 'authoritative'
+    LocalFileStoreAdapter(tmp_path).save(store)
+    before = _disk_snapshot(tmp_path)
+    validation = _run_prism('store', 'validate', root=tmp_path)
+    assert validation.returncode == 0, validation.stderr
+    brief = _run_prism('brief', 'project', 'topic:demo', root=tmp_path)
+    assert brief.returncode == 0, brief.stderr
+    commitments = brief.stdout.split('## 已承诺')[1].split('## 风险与未决')[0]
+    unresolved = brief.stdout.split('## 风险与未决')[1].split('## 下一步')[0]
+    assert new_id in commitments and old.id not in commitments
+    assert old.id not in unresolved
+    assert old.id in brief.stdout.split('## 历史与导航')[1]
+    assert _disk_snapshot(tmp_path) == before
+    reloaded = LocalFileStoreAdapter(tmp_path).load()
+    assert reloaded.artifacts[old.id].metadata == old.metadata
