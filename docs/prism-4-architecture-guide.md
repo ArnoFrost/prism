@@ -308,7 +308,7 @@ Production does not imply acceptance or commitment.
 Availability, invocability, and authority are distinct concerns.
 ```
 
-These are semantic checks, not a requirement to add fixed schema fields such as `available`, `invocable_by`, or `authorized_by`.
+These are semantic checks, not a requirement to add fixed schema fields such as `available`, `invocable_by`, or `authorized_by`. In the trusted local Reference Experience, the guard is a self-consistency boundary, not an adversarial security boundary or evidence-author authentication (Alignment §6.1).
 
 ## 7. Invocation Graph
 
@@ -323,7 +323,7 @@ Graph = emergent view formed by invocation records and relations.
 Adapter fidelity:
 
 ```text
-In-memory / JSON reference store -> can expose a full Invocation graph.
+In-memory reference store -> exposes recorded Invocations for that store lifetime.
 Local Markdown files -> persist artifact-level relations and provenance projection.
 Brief / index files -> projections, never graph facts.
 ```
@@ -332,9 +332,11 @@ The local file adapter intentionally acts as a weak-provenance adapter. It does
 not persist raw Invocation records by default, and it does not promise a full
 Invocation graph. That does not remove Invocation from the protocol; it means
 this adapter exposes a weaker graph view through artifact frontmatter,
-artifact-level relations, indexes, and CLI record ids. Deep audit scenarios
-should use explicit Findings / Decision body evidence or an optional audit
-profile, not default write-only trace logs.
+artifact-level relations and source references; indexes and CLI artifact ids
+only navigate that surviving evidence. Invocation provenance is Protocol
+semantics; persistence fidelity is Adapter-dependent. Essential reasons and
+evidence belong in artifacts. An optional audit profile remains a future
+extension, not an implemented facility or a default write-only trace log.
 
 Runtime boundary:
 

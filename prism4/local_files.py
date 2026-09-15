@@ -28,8 +28,9 @@
 - **序号即时序**。`f01 → f02`、`d01 → d02` 让人和 Agent 一眼看出先后与总量。
 - **文件名含中文标题**。不打开文件即可判断内容。
 - **索引是投影**。`*.index.md` 由工件再生成，读取时被忽略，不作为事实源。
-- **Invocation 不落盘**。它仍是 Core 协议概念，但实测其存储形态是无读取路径的
-  write-only 数据；溯源改由工件 frontmatter 的 `capability` / `created_at` 承载。
+- **Invocation 不落盘**。provenance 属于 Core semantics，持久化精度由 Adapter
+  选择；当前 weak provenance 由工件 metadata、关系与正文来源承载，不保证完整
+  调用历史。仅在内存 Invocation 中的 input refs 不会自动转存到工件。
 - **工件间语义关系存于来源文档**。`supersedes` / `authorizes` 是工件自身属性，
   不是调用日志。
 """
@@ -101,7 +102,7 @@ INDEX_SUFFIX = ".index.md"
 FINDING_INDEX = f"finding{INDEX_SUFFIX}"
 DECISION_INDEX = f"decision{INDEX_SUFFIX}"
 
-# 存于来源文档 frontmatter 的工件间语义关系。references / derived-from 专指
+# 存于来源文档 frontmatter 的工件间语义关系。本参考实现的 references / derived-from 用于
 # Invocation 关联，与 Invocation 本体一同在保存时丢弃（weak-provenance）。
 PERSISTED_RELATION_KINDS = ("supersedes", "authorizes", "supports", "projects")
 

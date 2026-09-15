@@ -173,7 +173,8 @@ def add_input_refs_arg(parser: argparse.ArgumentParser) -> None:
         default=None,
         help=(
             "exact semantic input ref used by this invocation; may be repeated. "
-            "Omission is persisted as declared-unavailable, never inferred by role."
+            "In-memory only, not persisted by Markdown; omission is "
+            "declared-unavailable, never inferred by role."
         ),
     )
 

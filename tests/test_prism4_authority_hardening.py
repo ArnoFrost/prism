@@ -1,8 +1,8 @@
-"""Authority and relation hardening — adversarial contract tests.
+"""Authority and relation hardening — semantic self-consistency tests.
 
-These tests guard typed authority evidence as a long-term contract and attack
-the public surface the way an unauthorized writer would; every rejection keeps
-durable writes = 0.
+These tests reject protocol-invalid evidence on guarded operations in trusted
+local collaboration; rejected operations keep durable writes = 0. They do not
+authenticate evidence authors or protect against malicious Markdown writers.
 
 Committed Decisions must carry typed, target-bound authority evidence. Missing
 evidence remains a fail-closed historical input, not a compatibility path.

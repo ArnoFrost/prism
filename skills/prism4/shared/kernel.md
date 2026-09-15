@@ -48,7 +48,7 @@
 ## 8. Capability / Invocation identity
 
 - Capability semantic identity 独立于 provider / runtime realization：`prism:review` 等身份不绑定任何 `SKILL.md`、CLI noun 或 Skill 文件清单。
-- Invocation 记录 semantic provenance，不是 runtime telemetry；本地 Markdown adapter 为 weak-provenance（不落 Invocation、record 输出不带 invocation id），且不存在完整持久化 Invocation 的存储路径。Durable envelope 的 inputs 必须是调用方显式提交的 exact refs；无法声明时保存 `input_refs: []` + `metadata.input_provenance_grade: declared-unavailable`，不做 Topic role sweep。
+- Invocation 记录 semantic provenance，不是 runtime telemetry；本地 Markdown adapter 为 weak-provenance（不落 Invocation、record 输出不带 invocation id），且不存在完整持久化 Invocation 的存储路径。inputs 必须来自调用方显式提交的 exact refs，不做 Topic role sweep。当前 `decision record --input-ref` 及 `input_provenance_grade` 只留在内存 Invocation，未声明时记为 `declared-unavailable`，并不跨 session 保存；需要长期引用的依据应明确写入工件 metadata / 正文来源。
 
 ## 9. 无固定 workflow 与兼容边界
 

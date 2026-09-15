@@ -3,7 +3,7 @@ status: current
 target: Prism 4.0
 type: alignment
 created: 2026-08-14
-updated: 2026-08-30
+updated: 2026-09-15
 ---
 
 # Prism 4.0 语义地基
@@ -270,7 +270,7 @@ Brief 不是事实源。若 Brief 与 Decision、Intent 或源 Findings 冲突�
 
 Intent 与 Plan 不从 Child Topic 冒泡到 Parent Brief。Clarify payload 必须保留 Topic provenance；无法证明归属的 payload 不得因为实现方便而被视为全局未决项。兼容旧数据时，仅当 Store 只有一个 Topic 才可推断归属；多 Topic Store 中缺少 provenance 的历史 payload 不进入 Brief，并显示诊断但不删除原数据。
 
-Projected state must remain reconstructable from more durable authoritative and provenance-bearing state. Brief、handoff summary、dashboard 或 context package 这类 projected artifacts 可以存在，但其来源应由现有 `projects` relation 与 Invocation provenance 表达；不要为 projection 过早新增 `projection_of`、`generated_from` 或其他 projection-specific schema fields。
+Projected state must remain reconstructable from more durable authoritative and provenance-bearing state. Brief、handoff summary、dashboard 或 context package 这类 projected artifacts 可以存在，但其来源应由现有 `projects` relation 与 Invocation provenance 表达（可由 artifact-carried 来源承载，持久化精度见 §11）；不要为 projection 过早新增 `projection_of`、`generated_from` 或其他 projection-specific schema fields。
 
 ### 5.3 Findings
 
@@ -374,6 +374,8 @@ Production does not imply acceptance or commitment. Agent 生成了 Findings、P
 Committed Decision write 必须携带与本次 target 和 scope 绑定的 typed authority evidence：已确认的人类选择、明确覆盖本次目标的 committed Decision，或作用域有效的 delegated authority context。Decision Candidate 不得自证，所有 Adapter 写入路径必须复用同一 authority guard；`human-required` 只是 requirement，不是 authority evidence。
 
 这两条是 semantic invariants，不是本轮 schema 设计。不要因此新增 `available`、`invocable_by` 或 `authorized_by` 等固定字段。
+
+当前 authority guard 是 semantic governance / self-consistency boundary，不是 adversarial security boundary。Reference Experience 默认 trusted local collaboration：guard 校验 commitment 是否满足协议，但不认证 evidence 作者身份；恶意 local Markdown / Workspace writer 伪造 human-choice evidence 时，Reference Adapter 不提供 cryptographic protection。signature、tamper-proof audit log、remote attestation 与 hostile multi-writer security 均不在当前承诺内；只有实际出现相应 threat model 后，才作为 Adapter / deployment concern 评估，不进入当前 Core。
 
 ### 6.2 Evolution
 
@@ -607,6 +609,8 @@ Intent + Brief + Decisions -> Plan
 
 Invocation records semantic capability use and causal provenance, not exhaustive runtime telemetry.
 
+Invocation provenance is part of Protocol semantics; persistence fidelity is Adapter-dependent. 当前 Markdown Reference Experience 默认 weak provenance：必要来源由 artifact metadata、工件间 relation 与 source references 承载，不保证完整 Invocation graph 或 runtime invocation history。完整 Invocation persistence 没有实际协作读取路径时，不成为默认写入成本；optional audit profile 仅为未来扩展方向，当前未实现。
+
 Runtime Event != Invocation. Tool calls, token generation, retries, cache hits, sandbox creation, plugin mounting, approval prompts, and session forks are runtime events unless they produce a collaboration-semantic transformation.
 
 Execution Graph != Invocation Graph. Runtime Dependency Graph != Invocation Graph. Execution graphs decide what runs next; dependency graphs explain what requires what; Invocation Graph explains why current collaboration state exists.
@@ -806,7 +810,7 @@ Prism 4.0 MVP 只有在以下条件成立时才算完成：
 - 至少三个不同领域 case 能使用相同基本语义。
 - 替换 runtime、storage、model、UI 或 CLI，不要求重新定义 Prism。
 - 替换 Provider 或 Runtime 后，Capability semantic identity 仍然成立。
-- Invocation 仍记录 semantic provenance，而不是 runtime telemetry。
+- Invocation 仍表达 semantic provenance，而不是 runtime telemetry；按 Adapter 声明的 fidelity 验收，不要求 Markdown Reference Experience 全量持久化 Invocation。
 - Generated / produced artifacts 不会在缺少 authority 时自动变成 accepted、operative 或 committed。
 - Projected state 保持可重建且不成为事实源。
 - Topic identity 不依赖 runtime session identity。

@@ -4,6 +4,8 @@
 
 协议语义见 `prism-4-refoundation-alignment.md`，模块边界见 `architecture.md`。历史格式只允许作为“应 fail closed”的反例输入，不得成为继续支持的正向合同。
 
+Authority 测试验证 trusted local collaboration 中的 semantic self-consistency，不证明 evidence 作者身份或防恶意 writer（Alignment §6.1）。Invocation 的内存语义测试与 Markdown roundtrip 分别验收：后者保留工件状态与所支持的关系，不要求完整 Invocation log（Alignment §11）。
+
 ## 生命周期
 
 | 状态 | 含义 | 处理方式 |
@@ -18,7 +20,7 @@
 | Contract ID | 守护边界 | Owner | Supported inputs | Lifecycle | Primary tests | 最小运行命令 | Retirement trigger |
 |-------------|----------|-------|------------------|-----------|---------------|--------------|--------------------|
 | C-PROTOCOL | Topic / Artifact / Capability / Invocation / Decision Semantics；Findings 不授权、Plan 默认 advisory | `prism4/` | current 4.0 typed models 与 use cases | canonical | `test_prism4_core.py`、`test_prism4_use_cases.py` | `uv run pytest tests/test_prism4_core.py tests/test_prism4_use_cases.py -q` | 五原语或 use-case 边界重定义 |
-| C-AUTHORITY | authority evidence、Plan acceptance、Decision commitment 与 candidate 拒绝路径 | `prism4/use_cases.py` | current typed refs；无证据、伪证据与早期 Decision 形态仅作 fail-closed 反例 | canonical | `test_prism4_authority_hardening.py` | `uv run pytest tests/test_prism4_authority_hardening.py -q` | authority 模型重定义 |
+| C-AUTHORITY | authority evidence、Plan acceptance、Decision commitment 与 candidate 拒绝路径 | `prism4/use_cases.py` | current typed refs；无证据、类型/目标不合规证据与早期 Decision 形态仅作 fail-closed 反例 | canonical | `test_prism4_authority_hardening.py` | `uv run pytest tests/test_prism4_authority_hardening.py -q` | authority 模型重定义 |
 | C-STORE | Local Markdown adapter、序号唯一、写入 guard、索引投影 | `prism4/local_files.py` | current Markdown store；历史布局仅作 fail-closed 反例 | canonical | `test_prism4_local_files.py` | `uv run pytest tests/test_prism4_local_files.py -q` | 更换持久化 adapter |
 | C-ROOT | store root discovery 不误认旧 JSON 或相邻目录 | `prism4/local_files.py` | current store roots；旧 JSON 仅作反例 | boundary | `test_prism4_root_discovery.py` | `uv run pytest tests/test_prism4_root_discovery.py -q` | root discovery 并入另一 canonical contract |
 | C-PROJECTION | Brief / index 只投影 current effective state，可安全重建 | `prism4/projection.py` | current artifacts；无 provenance 历史 payload 仅作诊断反例 | canonical | `test_prism4_projection.py` | `uv run pytest tests/test_prism4_projection.py -q` | Brief / index 不再是投影 |

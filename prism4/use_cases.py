@@ -4,8 +4,8 @@ CLI, and later other adapters, call these functions. They mutate a
 ReferenceStore; they do not parse argv, render output, or touch the
 filesystem.
 
-Return values keep the current tuple shapes. invocation ids are printed
-by the CLI for compatibility and are not a stable application contract.
+Return values keep Invocation ids in the in-memory tuple shapes. The Markdown
+CLI omits them because its adapter does not persist Invocation records.
 """
 
 from __future__ import annotations
@@ -61,8 +61,8 @@ DEFAULT_ARTIFACT_METADATA: dict[str, dict[str, str]] = {
 }
 
 # 显式 relation add 支持的 artifact 间语义关系（Alignment §11 starter set 的
-# artifact-to-artifact 子集）。references / derived-from 在 Core 语义中专指
-# Invocation 关联，由 invoke 自动创建，不开放为手写 relation。
+# artifact-to-artifact 子集）。本参考实现仅用 references / derived-from 表达
+# invoke 自动创建的 Invocation 关联；这不是 Core 对关系端点的限制。
 RELATION_KINDS = ("supersedes", "authorizes", "supports", "projects")
 
 INPUT_PROVENANCE_EXACT = "exact"
