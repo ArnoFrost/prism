@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+### Added
+
+- **通道优先升级入口** — 普通用户可用 `prism update`、`prism update stable`、`prism update canary` 与 `prism update status` 管理发行通道；tag、series 与安装模式不再是日常命令的前置知识。
+
+### Changed
+
+- **安全迁出** — source checkout 选择 Stable / Canary 时，必须 clean、与 upstream 同步并经确认；非交互与跨 major 升级要求 `--yes`，失败回滚原分支、SHA 与本机通道配置。
+
 ## [4.0.0-canary.4] — 2026-09-14
 
 ### Fixed

@@ -722,6 +722,93 @@ def test_status_reports_source_checkout_without_requesting_a_switch(tmp_path: Pa
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
 
 
+def test_source_migration_requires_yes_for_noninteractive_calls(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel="stable")
+    _git(repo, "checkout", "-q", "-B", "main")
+    _attach_bare_remote(repo, tmp_path / "remote.git", branch="main")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    result = _run_update(repo, "stable", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert "--yes" in payload["reason"]
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert _git(repo, "symbolic-ref", "--short", "HEAD").stdout.strip() == "main"
+
+
+def test_source_migration_requires_clean_synced_upstream(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel="stable")
+    _git(repo, "checkout", "-q", "-B", "main")
+    _attach_bare_remote(repo, tmp_path / "remote.git", branch="main")
+    (repo / "local.txt").write_text("ahead\n", encoding="utf-8")
+    _commit(repo, "local work")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    config = (repo / "prism.local.yaml").read_text(encoding="utf-8")
+
+    result = _run_update(repo, "stable", "--yes", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ahead"] == 1
+    assert payload["behind"] == 0
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert (repo / "prism.local.yaml").read_text(encoding="utf-8") == config
+
+
+def test_clean_synced_source_migrates_to_the_selected_channel(tmp_path: Path) -> None:
+    repo = _build_install(tmp_path, tags=["v4.0.0"], at="v4.0.0", channel="stable")
+    _git(repo, "checkout", "-q", "-B", "main")
+    _attach_bare_remote(repo, tmp_path / "remote.git", branch="main")
+
+    result = _run_update(repo, "stable", "--yes", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["action"] == "migrate"
+    assert _git(repo, "symbolic-ref", "-q", "--short", "HEAD", check=False).returncode != 0
+    assert _git(repo, "describe", "--tags", "--exact-match", "HEAD").stdout.strip() == "v4.0.0"
+
+
+def test_source_migration_rolls_back_to_its_branch_when_post_checks_fail(tmp_path: Path) -> None:
+    repo = _build_install(
+        tmp_path,
+        tags=["v4.0.0"],
+        at="v4.0.0",
+        channel="stable",
+        doctor_exit=1,
+    )
+    _git(repo, "checkout", "-q", "-B", "main")
+    _attach_bare_remote(repo, tmp_path / "remote.git", branch="main")
+    before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    config = (repo / "prism.local.yaml").read_text(encoding="utf-8")
+
+    result = _run_update(repo, "stable", "--yes", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["action"] == "blocked"
+    assert _git(repo, "symbolic-ref", "--short", "HEAD").stdout.strip() == "main"
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
+    assert (repo / "prism.local.yaml").read_text(encoding="utf-8") == config
+
+
+def test_explicit_channel_confirms_and_records_a_cross_major_upgrade(tmp_path: Path) -> None:
+    repo = _build_install(
+        tmp_path,
+        tags=["v4.0.0", "v5.0.0"],
+        at="v4.0.0",
+        channel="stable",
+    )
+
+    result = _run_update(repo, "stable", "--yes", "--no-fetch")
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert payload["target_tag"] == "v5.0.0"
+    assert "update_series: 5" in (repo / "prism.local.yaml").read_text(encoding="utf-8")
+
+
 def test_update_ignores_a_stable_tag_while_on_canary(tmp_path: Path) -> None:
     """通道隔离：stable tag 出现不得把 canary 用户带过去。"""
     repo = _build_install(

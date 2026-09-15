@@ -6,7 +6,8 @@ detached release tag 上，updater 只认当前通道里更新的不可变 tag�
 新 tag 就什么都不做。
 
 分支 checkout 属于贡献者的 source line，产品更新默认不接管：把工作副本
-从分支移到 tag 是一次不可逆的方向变化，只有显式 ``--bootstrap-to`` 才做。
+从分支移到 tag 是一次方向变化，只有高级 ``--bootstrap-to``，或用户显式
+选择 Stable / Canary 且通过 source migration guard 与确认时才做。
 外部 prism-skills 是独立仓库，由 ``prism-maintain`` 管理，不进入产品更新事务。
 """
 
@@ -338,6 +339,44 @@ def _status_payload(
     }
 
 
+def _source_migration_guard(repo: Path) -> dict | None:
+    """确认 source checkout 没有未同步的开发工作，才允许迁出到发行 tag。"""
+    branch = _current_branch(repo)
+    ahead = _git(repo, ["rev-list", "--count", "@{upstream}..HEAD"])
+    behind = _git(repo, ["rev-list", "--count", "HEAD..@{upstream}"])
+    if ahead.returncode != 0 or behind.returncode != 0:
+        return _blocked(
+            "当前分支没有可用 upstream，不能安全迁出到发行通道",
+            mode=SOURCE,
+            branch=branch,
+        )
+
+    ahead_count = int(ahead.stdout.strip())
+    behind_count = int(behind.stdout.strip())
+    if ahead_count or behind_count:
+        return _blocked(
+            "当前分支与 upstream 未完全同步，不能安全迁出到发行通道",
+            mode=SOURCE,
+            branch=branch,
+            ahead=ahead_count,
+            behind=behind_count,
+        )
+    return None
+
+
+def _confirm_switch(args: argparse.Namespace, prompt: str) -> bool:
+    """交互式切换必须确认；JSON/非 TTY 调用只能用 --yes 明示确认。"""
+    if args.yes:
+        return True
+    if args.json or not sys.stdin.isatty():
+        return False
+    try:
+        answer = input(f"{prompt} [y/N]: ").strip().lower()
+    except EOFError:
+        return False
+    return answer in {"y", "yes"}
+
+
 def run_update(args: argparse.Namespace) -> dict:
     repo = Path(args.repo).resolve()
     config = Path(args.config).resolve() if args.config else repo / "prism.local.yaml"
@@ -384,7 +423,8 @@ def run_update(args: argparse.Namespace) -> dict:
         series = _infer_series(repo)
 
     bootstrap = bool(args.bootstrap_tag)
-    if mode == SOURCE and not bootstrap:
+    source_migration = mode == SOURCE and args.command in {"stable", "canary"}
+    if mode == SOURCE and not bootstrap and not source_migration:
         return _blocked(
             "当前是分支 checkout（source 模式），产品更新不接管分支："
             "贡献者用 Git 自行管理，或用 --track-branch 做 commit 级跟进、"
@@ -419,7 +459,10 @@ def run_update(args: argparse.Namespace) -> dict:
                 series=series,
             )
     else:
-        target = resolver.select_latest(tags, channel, series)
+        # 位置通道是用户主动选择的发行线：它可以提出跨 major 候选，随后
+        # 由确认 guard 放行。旧 --channel 与裸 update 仍只看当前 major。
+        target_series = None if args.command in {"stable", "canary"} else series
+        target = resolver.select_latest(tags, channel, target_series)
         if target is None:
             return _blocked(
                 f"通道 {channel} 中还没有可用 tag",
@@ -430,11 +473,13 @@ def run_update(args: argparse.Namespace) -> dict:
 
     current = _current_tag(repo)
     latest = resolver.select_latest(tags, channel, series)
+    selected_series = target["major"]
+    cross_major = series is not None and selected_series > series
     payload = {
         "ok": True,
         "mode": mode,
         "channel": channel,
-        "series": series,
+        "series": selected_series,
         "current_tag": current,
         "latest_tag": latest["tag"] if latest else None,
         "target_tag": target["tag"],
@@ -447,10 +492,15 @@ def run_update(args: argparse.Namespace) -> dict:
             payload["detail"] = "工作树有未提交变更，实际更新前需先 commit/stash"
         return payload
 
-    if not bootstrap and current == target["tag"]:
+    if source_migration:
+        blocked = _source_migration_guard(repo)
+        if blocked is not None:
+            return blocked
+
+    if not bootstrap and not source_migration and current == target["tag"]:
         if persist_channel:
             try:
-                resolver.write_channel(config, channel, series)
+                resolver.write_channel(config, channel, selected_series)
             except OSError as error:
                 return _blocked(f"版本未变化，但通道配置写入失败：{error}", **payload)
             payload["writes"] = 1
@@ -460,11 +510,24 @@ def run_update(args: argparse.Namespace) -> dict:
 
     previous_branch = _current_branch(repo)
     previous_sha = _git(repo, ["rev-parse", "HEAD"]).stdout.strip()
-    payload["action"] = "bootstrap" if bootstrap else "update"
+    payload["action"] = "bootstrap" if bootstrap else "migrate" if source_migration else "update"
 
     if args.dry_run:
         payload["detail"] = f"[dry-run] git checkout --detach {target['tag']}"
         return payload
+
+    if source_migration or cross_major:
+        reasons = []
+        if source_migration:
+            reasons.append("这会把当前开发分支迁出为发行版安装；原分支会保留")
+        if cross_major:
+            reasons.append(f"这会从 major {series} 升级到 {selected_series}")
+        prompt = f"将切换到 {target['tag']}。{'；'.join(reasons)}。继续吗？"
+        if not _confirm_switch(args, prompt):
+            return _blocked(
+                "此切换需要交互确认；非交互或 JSON 调用请显式传 --yes",
+                **payload,
+            )
 
     if not _switch_to_tag(repo, target["tag"]):
         return _blocked(f"切换到 {target['tag']} 失败", **payload)
@@ -486,7 +549,7 @@ def run_update(args: argparse.Namespace) -> dict:
 
     if persist_channel:
         try:
-            resolver.write_channel(config, channel, series)
+            resolver.write_channel(config, channel, selected_series)
         except OSError as error:
             rolled_back = _rollback(repo, previous_branch, previous_sha)
             return _blocked(
@@ -558,6 +621,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="分支 checkout 专用：跟随当前 upstream 做 commit 级跟进，不是发行版本")
     parser.add_argument("--check", action="store_true", help="只报告当前 / 通道 / 最新 / 动作，零写入")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--yes", action="store_true", help="确认需要用户确认的迁出或跨 major 升级")
     parser.add_argument("--no-fetch", action="store_true", help="跳过 fetch，只用本地已有 tag")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--repo", default=str(SDK_ROOT))
@@ -579,6 +643,8 @@ def main(argv: list[str] | None = None) -> int:
             conflicts.append("--dry-run")
         if args.check:
             conflicts.append("--check")
+        if args.yes:
+            conflicts.append("--yes")
         if conflicts:
             print(
                 f"error: status 是只读命令，不能与 {' / '.join(conflicts)} 混用",

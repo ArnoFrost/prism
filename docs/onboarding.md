@@ -128,26 +128,27 @@ prism decision record <topic_id> --body "..." --authority-evidence "<evidence re
 
 ### 更新：先看自己在哪条路径上
 
-Prism 区分「装了一个发行版本」和「在分支上开发」。先用一条命令确认：
+普通使用者只需选择发行通道：**Stable** 是正式版本，**Canary** 是测试版本。先用一条命令查看当前状态：
 
 ```bash
-prism update --check --json     # 看 mode：managed 还是 source
+prism update status
 ```
 
-`mode` 决定你下面该用哪一组命令。
+`status` 不修改安装、通道或 Workspace；它会显示同 major 的可用更新和可选的新 major。
 
-#### 使用者：managed 安装（detached 在 release tag 上）
+#### 使用者：选择并更新发行通道
 
 ```bash
-prism update --check                 # 只看不动：当前 / 通道 / 最新 / 动作
-prism update                         # 切到本通道内更新的不可变 tag
-prism update --to v4.0.0-canary.4    # 精确安装或回滚
-prism update --channel stable        # 显式切换通道
+prism update          # 更新当前通道、当前 major
+prism update stable   # 选择正式通道并更新
+prism update canary   # 选择测试通道并更新
+prism update status   # 只查看状态，零写入
 ```
 
 - 只认当前通道内的不可变 tag；没有新 tag 就是 no-op，零写入。
 - 分支上的普通 commit 不是发行事件，不会把你带过去。
 - canary 与 stable 不自动互串，切通道是显式动作。
+- `prism update` 不跨 major；`prism update stable` / `canary` 遇到新 major 会先说明并确认。非交互调用须加 `--yes`。
 - 切换后体检或重链失败会自动回滚到切换前的 commit。
 - 外部 `prism-skills` 不属于产品更新事务；它由 `prism-maintain` 独立检查、同步、重链和验证。
 
@@ -155,13 +156,21 @@ prism update --channel stable        # 显式切换通道
 
 ```bash
 prism update --track-branch  # 仅 clean behind 时 fast-forward；diverged 交给 prism-maintain
-prism update --channel canary --series 4 --bootstrap-to v4.0.0-canary.4
-                              # 从无 channel 的分支迁移到 managed 安装
+prism update canary          # clean 且同步的分支：确认后迁到测试发行通道
+prism update canary --yes    # 非交互迁出或跨 major 的显式确认
 ```
 
 - `--track-branch` 跟的是 commit，不是发行版本。它从不自动执行，必须显式给出——这正是为了不让「拉分支」和「装版本」混成一个动作。
-- 工作树脏、ahead+behind 分叉、缺 upstream 或有冲突时它会停下，交给 `prism-maintain` 判断方向与解决冲突。
-- 想在分支上继续开发就留在分支；要验证使用者那条路，另开一个 detached checkout。
+- 从分支迁到 Stable / Canary 前，CLI 要求 working tree clean、存在 upstream、ahead/behind 都为 0；它不自动 stash、commit、push、reset 或 rebase。原分支会保留。
+- 想在分支上继续开发就留在分支；要验证使用者那条路，可迁出后再用 Git 切回原分支。
+
+#### 进阶：精确恢复与旧脚本兼容
+
+```bash
+prism update --to v4.0.0-canary.4  # 精确安装或回滚（需属于当前通道 / major）
+prism update --check --json         # 兼容的机器可读状态检查
+prism update --channel stable       # 兼容的通道 flag；普通用户优先用位置命令
+```
 
 两条路径之后的验证是一样的：
 
@@ -171,7 +180,7 @@ prism relink --no-workspace
 prism --version
 ```
 
-> `./setup.sh update` 等价于不带参数的 `prism update`，因此只对 managed 安装成立；分支 checkout 请直接用上面的 `--track-branch`。`prism update` 遇 dirty working tree 会 abort，且只负责 SDK 的 Tag 更新；外部 Skills 与 backend 同步都是独立的可选维护动作（见下）。
+> `./setup.sh update` 等价于不带参数的 `prism update`，因此只对 managed 安装成立；分支 checkout 请直接用上面的 `--track-branch`，或显式选择 Stable / Canary 迁出。`prism update` 遇 dirty working tree 会 abort，且只负责 SDK 的 Tag 更新；外部 Skills 与 backend 同步都是独立的可选维护动作（见下）。
 
 ---
 

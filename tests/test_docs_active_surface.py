@@ -104,11 +104,14 @@ def test_release_and_update_docs_preserve_product_ownership() -> None:
     assert "git switch prism-4" not in readme
     release = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     assert f"git switch --detach v{release}" in readme
-    assert f"prism update --channel canary --series 4 --to v{release} --no-fetch" in readme
+    assert "prism update canary --no-fetch" in readme
     assert "prism update --skills" not in onboarding
     assert 'add_argument("--skills"' not in update
     assert "外部 `prism-skills` 不属于产品更新事务" in onboarding
-    assert "--channel canary --series 4 --bootstrap-to" in onboarding
+    assert "prism update stable" in onboarding
+    assert "prism update canary" in onboarding
+    assert "prism update status" in onboarding
+    assert "prism update canary --yes" in onboarding
     assert "同 channel、同 major series" in release_process
     assert "repair-release --tag" in release_process
     assert 'tags: ["v*"]' not in workflow

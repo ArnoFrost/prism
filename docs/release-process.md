@@ -65,7 +65,7 @@ tag 名能区分 channel，但看不出它是在哪条线上打的，所以发�
 
 | 能力 | 当前状态 |
 |------|----------|
-| `prism update --check` / `--channel` / `--to` | 已实现 |
+| `prism update` / `stable` / `canary` / `status`（高级 `--check` / `--channel` / `--to` 兼容保留） | 已实现 |
 | `bin/release`（本地 check / break-glass 与 hosted preflight） | 已实现 |
 | `.github/workflows/release.yml`（唯一正式 publication 入口） | 已实现 |
 | `update_channel` / `update_series` 安装记录 | 已实现 |

@@ -47,7 +47,7 @@ git clone https://github.com/ArnoFrost/prism.git ~/prism
 cd ~/prism
 git switch --detach v4.0.0-canary.4
 ./setup.sh init
-prism update --channel canary --series 4 --to v4.0.0-canary.4 --no-fetch
+prism update canary --no-fetch
 
 # 2. 验收当前安装
 prism --version
@@ -79,7 +79,7 @@ prism doctor --scope config --quick
 
 Agent 引导可直接使用：
 
-> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，切换到 detached Tag `v4.0.0-canary.4`，执行 `./setup.sh init` 使用默认本地 Workspace backend，再运行 `prism update --channel canary --series 4 --to v4.0.0-canary.4 --no-fetch` 记录更新通道，并用 `prism --version` 与 `./setup.sh check` 完成验收。
+> 帮我 clone `https://github.com/ArnoFrost/prism.git` 到 `~/prism`，切换到 detached Tag `v4.0.0-canary.4`，执行 `./setup.sh init` 使用默认本地 Workspace backend，再运行 `prism update canary --no-fetch` 选择测试通道，并用 `prism --version` 与 `./setup.sh check` 完成验收。
 
 ---
 
