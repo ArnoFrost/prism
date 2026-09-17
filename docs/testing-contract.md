@@ -33,10 +33,10 @@ Authority 测试验证 trusted local collaboration 中的 semantic self-consiste
 | C-DISTRIBUTION | Distribution Profile 是三入口分发唯一权威 | `skills/schema/dist-whitelist.yaml` | current `prism4` profile | canonical | `test_prism4_distribution_profile.py` | `uv run pytest tests/test_prism4_distribution_profile.py -q` | 分发模型重定义 |
 | C-INSTALL | setup、安装包、版本元数据、release gate 与 doctor 最小健康合同 | `bin/`、release metadata | current SDK checkout / package；缺依赖失败路径 | smoke | `test_setup_smoke.py`、`test_install_e2e.py`、`test_release_metadata.py`、`test_release_gate.py` | `uv run pytest tests/test_setup_smoke.py tests/test_install_e2e.py tests/test_release_metadata.py tests/test_release_gate.py -q` | 安装或发布载体重定义 |
 | C-RELEASE | tag grammar、annotated Tag、通道隔离与发行 / 更新机械面：exact-SHA preflight、单一 write job、目标版本 fail-closed、channel/HEAD 回滚一致、source divergence 停止、外部 Skills 不进入产品 updater | `bin/tag_resolve.py`、`bin/release`、`bin/update`、`.github/workflows/` | current annotated tag 集合、显式 release line 与已选通道；lightweight/任意 ref/非 SemVer Tag、无 upstream、无 channel source 与 diverged branch 作 fail-closed 反例 | canonical | `test_prism4_release_channel.py`、`test_release_workflows.py` | `uv run pytest tests/test_prism4_release_channel.py tests/test_release_workflows.py -q` | 发行单位改为非 tag 载体 |
-| C-RELINK | current profile 分发、项目 bridge 回写与幂等 | `bin/relink` | named-workspaces；旧 path list 只作单向清理输入 | boundary | `test_relink_writeback.sh` | `bash tests/test_relink_writeback.sh` | relink 不再负责 bridge / writeback |
+| C-RELINK | current profile 分发、项目 bridge 回写与幂等；来源域归档与未归属链接不得夺取或误删分发入口 | `bin/relink` | named-workspaces；旧 path list 只作单向清理输入；缺失 `_archived/` 目录、指向未知 `prism-skills*` 的链接、无来源的归档配置作 fail-closed 反例 | boundary | `test_relink_writeback.sh`、`test_relink_safety.sh` | `bash tests/test_relink_writeback.sh && bash tests/test_relink_safety.sh` | relink 不再负责 bridge / writeback |
 | C-TEST-CONTROL | 所有活测试均登记，且登记表含 owner / inputs / lifecycle / retirement | 本文档 | `tests/test_*` 文件清单 | canonical | `test_testing_contract.py` | `uv run pytest tests/test_testing_contract.py -q` | 测试控制面迁移到可生成清单 |
 
-`test_relink_writeback.sh` 不是 pytest 用例，由 CI 显式调用。其余 `test_*.py` 必须被 `C-TEST-CONTROL` 自动核对，不能成为无主测试。
+C-RELINK 下的 shell tests（`test_relink_*.sh`）不由 pytest 收集，由 CI 显式调用。其余 `test_*.py` 必须被 `C-TEST-CONTROL` 自动核对，不能成为无主测试。
 
 ## 分层与重复预算
 
@@ -67,6 +67,7 @@ Authority 测试验证 trusted local collaboration 中的 semantic self-consiste
 ```bash
 uv run pytest tests -q
 bash tests/test_relink_writeback.sh
+bash tests/test_relink_safety.sh
 bin/validate-skills --layer sdk
 bin/doctor --scope ci
 ```

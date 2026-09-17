@@ -217,14 +217,22 @@ def _command_step(name: str, command: list[str], repo: Path) -> dict:
     return _step(name, FAIL, tail[-1] if tail else f"退出码 {completed.returncode}")
 
 
+def _relink_regression_steps(repo: Path) -> list[dict]:
+    """relink 的 shell 用例不在 pytest 收集面内，发行前必须显式执行。"""
+    return [
+        _command_step(
+            "relink-writeback", ["bash", "tests/test_relink_writeback.sh"], repo
+        ),
+        _command_step(
+            "relink-safety", ["bash", "tests/test_relink_safety.sh"], repo
+        ),
+    ]
+
+
 def _test_surface(repo: Path) -> list[dict]:
     return [
         _command_step("pytest", ["uv", "run", "pytest"], repo),
-        _command_step(
-            "relink-writeback",
-            ["bash", "tests/test_relink_writeback.sh"],
-            repo,
-        ),
+        *_relink_regression_steps(repo),
         _command_step(
             "skill-validation",
             ["bin/validate-skills", "--layer", "sdk"],
@@ -239,7 +247,7 @@ def _hosted_test_surface(repo: Path) -> list[dict]:
     return [
         _command_step("doctor-ci", ["bin/doctor", "--scope", "ci"], repo),
         _command_step("pytest", ["uv", "run", "pytest"], repo),
-        _command_step("relink-writeback", ["bash", "tests/test_relink_writeback.sh"], repo),
+        *_relink_regression_steps(repo),
         _command_step("skill-validation", ["bin/validate-skills", "--layer", "sdk"], repo),
     ]
 

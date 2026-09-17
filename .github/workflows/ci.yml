@@ -5,7 +5,7 @@ name: CI
 #   2. bin/* 可执行 + bin/prism --version 启动正常（doctor --scope ci）
 #   3. skills frontmatter 合规（doctor --scope ci 内含 skill 阶段）
 #   4. pytest tests/ 全绿（4.0 主线 + setup smoke + release metadata）；
-#      bin/ 的 bash 用例单独一步调用（pytest 不收集 .sh）
+#      relink 的 bash 用例单独一步调用（pytest 不收集 .sh）
 #   5. release gate：版本元数据一致；BREAKING 变更必须同步 CHANGELOG.md + docs/migration.md
 #      （bin/release_gate.py；3.x 时代的 check_cli_contract_sync 已随 legacy 树剔除）
 # 双 runner（macos-latest + ubuntu-latest）覆盖分发用户主流 OS。
@@ -74,11 +74,14 @@ jobs:
         run: |
           uv run --with pytest python -m pytest tests/ -q
 
-      # pytest 只收集 test_*.py，这个 bash 用例守 bin/relink 的 Workspace
-      # 回写路径（含二次写入幂等与重复 paths: 防护），必须显式调用。
-      - name: relink writeback 健壮性
+      # pytest 只收集 test_*.py，relink 的 bash 用例不在收集面内，必须显式调用：
+      # writeback 守 Workspace 回写路径（含二次写入幂等与重复 paths: 防护），
+      # safety 守来源域归档、未归属链接与活跃分发入口之间的边界。
+      - name: relink regression tests
         shell: bash
-        run: bash tests/test_relink_writeback.sh
+        run: |
+          bash tests/test_relink_writeback.sh
+          bash tests/test_relink_safety.sh
 
       - name: Release gate — version metadata + breaking docs sync
         env:
