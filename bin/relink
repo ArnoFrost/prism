@@ -283,7 +283,8 @@ is_archived() {
 # 双源合并：扫描各仓库 _archived/ 目录，追加到归档集合
 _scan_archived_dir() {
   local dir="$1"
-  [[ -d "$dir" ]] || return
+  # _archived/ 是可选目录；其不存在不能在 set -e 下中断分发。
+  [[ -d "$dir" ]] || return 0
   for _d in "$dir"/*/; do
     [[ -d "$_d" ]] || continue
     local _name
@@ -292,6 +293,7 @@ _scan_archived_dir() {
       ARCHIVED_SKILLS+=("$_name")
     fi
   done
+  return 0
 }
 
 [[ -n "$SKILLS_PATH" ]] && _scan_archived_dir "$SKILLS_PATH/_archived"
@@ -300,7 +302,7 @@ _scan_archived_dir() {
 # 回写 archived_skills 到 prism.local.yaml（仅当配置已声明该段；缺省不 surprise 写盘）
 _sync_archived_yaml() {
   [[ ${#ARCHIVED_SKILLS[@]} -eq 0 ]] && return
-  grep -q '^archived_skills:' "$CONFIG" 2>/dev/null || return
+  grep -q '^archived_skills:' "$CONFIG" 2>/dev/null || return 0
   $CHECK_ONLY && return
   $DRY_RUN && return
 
