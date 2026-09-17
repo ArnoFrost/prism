@@ -22,6 +22,7 @@ from prism4.local_files import (
     next_artifact_id,
     next_payload_id,
 )
+from prism4.use_cases import validate_store
 
 
 def _sequenced(directory: Path, label: str) -> Path:
@@ -862,6 +863,9 @@ def test_superseded_intent_is_written_to_archive(tmp_path: Path) -> None:
         relation.kind == "supersedes" and relation.target_ref == "intent:i01"
         for relation in reloaded.relations
     )
+    # 已归档目标不再可加载：validate 必须与 add_relation 口径一致地容忍，
+    # 而不是在缺失目标上崩溃。
+    assert validate_store(reloaded) == []
 
 
 def test_legacy_early_layout_fails_closed(tmp_path: Path) -> None:

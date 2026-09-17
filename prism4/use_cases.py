@@ -531,6 +531,10 @@ def validate_relation(
                 "supersedes applies to artifacts, not semantic payloads: "
                 f"{source_ref} -> {target_ref}"
             )
+        if target_artifact is None:
+            # 被取代的 Intent 会由 Adapter 写入 archive/ 并不再加载，
+            # supersedes 目标缺失是合法终态；口径与 add_relation 一致。
+            return
         if source_artifact.id == target_artifact.id:
             raise PrismProtocolError(f"supersedes target cannot be itself: {target_ref}")
         if source_artifact.role != target_artifact.role:
